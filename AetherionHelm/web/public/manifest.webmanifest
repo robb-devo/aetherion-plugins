@@ -1,14 +1,14 @@
 {
   "name": "Aetherion Helm",
   "short_name": "Helm",
-  "description": "Staff-Konsole des Aetherion-Netzwerks",
+  "description": "Staff console for the Aetherion network",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#04050a",
   "theme_color": "#05060b",
-  "lang": "de",
+  "lang": "en",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },

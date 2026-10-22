@@ -1,4 +1,5 @@
 import { BellRing, Cpu, Flag, Gavel, LayoutGrid, MessagesSquare, ScrollText, Server, Settings, ShieldCheck, Users, type LucideIcon } from "lucide-react";
+import { t } from "../lib/i18n";
 import { createStore } from "../lib/store";
 
 export interface NavItem {
@@ -13,27 +14,27 @@ export const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Live",
     items: [
-      { id: "overview", label: "Übersicht", icon: LayoutGrid, hint: "Netzwerk auf einen Blick" },
-      { id: "servers", label: "Server", icon: Server, hint: "TPS, Konsole, Steuerung" },
-      { id: "host", label: "Hetzner", icon: Cpu, perm: "host.view", hint: "CPU, RAM, Platten, Netz" },
+      { id: "overview", label: t("Overview"), icon: LayoutGrid, hint: t("The network at a glance") },
+      { id: "servers", label: t("Servers"), icon: Server, hint: t("TPS, console, controls") },
+      { id: "host", label: "Hetzner", icon: Cpu, perm: "host.view", hint: t("CPU, RAM, disks, network") },
     ],
   },
   {
     group: "Community",
     items: [
-      { id: "players", label: "Spieler", icon: Users, perm: "players.view", hint: "Suchen, Profile, Inventare" },
-      { id: "activity", label: "Chat & Aktivität", icon: MessagesSquare, hint: "Live-Chat, Befehle, Joins" },
-      { id: "reports", label: "Meldungen", icon: Flag, hint: "/report aus dem Spiel" },
-      { id: "punishments", label: "Strafen", icon: Gavel, perm: "players.view", hint: "Bans und Mutes" },
+      { id: "players", label: t("Players"), icon: Users, perm: "players.view", hint: t("Search, profiles, inventories") },
+      { id: "activity", label: t("Chat & activity"), icon: MessagesSquare, hint: t("Live chat, commands, joins") },
+      { id: "reports", label: t("Reports"), icon: Flag, hint: t("In-game /report") },
+      { id: "punishments", label: t("Punishments"), icon: Gavel, perm: "players.view", hint: t("Bans and mutes") },
     ],
   },
   {
     group: "Team",
     items: [
-      { id: "alerts", label: "Warnungen", icon: BellRing, hint: "Was gerade nicht stimmt" },
-      { id: "audit", label: "Protokoll", icon: ScrollText, perm: "audit.view", hint: "Wer hat was gemacht" },
-      { id: "team", label: "Team", icon: ShieldCheck, hint: "Konten und Rollen" },
-      { id: "settings", label: "Einstellungen", icon: Settings, hint: "Konto, Sicherheit, Alerts" },
+      { id: "alerts", label: t("Alerts"), icon: BellRing, hint: t("What needs attention") },
+      { id: "audit", label: t("Audit log"), icon: ScrollText, perm: "audit.view", hint: t("Who did what") },
+      { id: "team", label: "Team", icon: ShieldCheck, hint: t("Accounts and roles") },
+      { id: "settings", label: t("Settings"), icon: Settings, hint: t("Account, security, alerts") },
     ],
   },
 ];

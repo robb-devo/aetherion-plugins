@@ -10,17 +10,18 @@ import type { HelmEvent } from "../lib/types";
 import { AreaChart } from "../components/charts";
 import { openSheet } from "../components/nav";
 import { Button, Card, CardHead, Empty, PageHead, cx, useTick } from "../components/ui";
+import { t } from "../lib/i18n";
 
 const KIND: Record<string, { icon: typeof Zap; tone: string; label: string }> = {
   chat: { icon: MessageSquare, tone: "blue", label: "Chat" },
-  command: { icon: Terminal, tone: "", label: "Befehl" },
-  death: { icon: Skull, tone: "red", label: "Tod" },
+  command: { icon: Terminal, tone: "", label: t("Command") },
+  death: { icon: Skull, tone: "red", label: t("Death") },
   join: { icon: LogIn, tone: "green", label: "Join" },
   quit: { icon: LogOut, tone: "", label: "Quit" },
-  switch: { icon: ArrowRightLeft, tone: "accent", label: "Wechsel" },
-  mod: { icon: Gavel, tone: "red", label: "Strafe" },
-  report: { icon: Flag, tone: "orange", label: "Meldung" },
-  staffmsg: { icon: Mail, tone: "accent", label: "Team-Nachricht" },
+  switch: { icon: ArrowRightLeft, tone: "accent", label: t("Switch") },
+  mod: { icon: Gavel, tone: "red", label: t("Punishment") },
+  report: { icon: Flag, tone: "orange", label: t("Report") },
+  staffmsg: { icon: Mail, tone: "accent", label: t("Team message") },
   staffchat: { icon: Megaphone, tone: "accent", label: "Broadcast" },
   server: { icon: Power, tone: "blue", label: "Server" },
 };
@@ -53,10 +54,10 @@ export function EventRow({ e, serverLabel, compact }: { e: HelmEvent; serverLabe
 
 const FILTERS: { id: string; label: string; kinds: string[] }[] = [
   { id: "chat", label: "Chat", kinds: ["chat", "staffchat", "staffmsg"] },
-  { id: "command", label: "Befehle", kinds: ["command"] },
+  { id: "command", label: t("Commands"), kinds: ["command"] },
   { id: "join", label: "Joins", kinds: ["join", "quit", "switch"] },
-  { id: "death", label: "Tode", kinds: ["death"] },
-  { id: "mod", label: "Strafen & Meldungen", kinds: ["mod", "report"] },
+  { id: "death", label: t("Deaths"), kinds: ["death"] },
+  { id: "mod", label: t("Punishments & reports"), kinds: ["mod", "report"] },
   { id: "server", label: "Server", kinds: ["server"] },
 ];
 
@@ -110,12 +111,12 @@ export function Activity() {
   return (
     <div className="page">
       <PageHead
-        title="Chat & Aktivität"
-        sub="Alles, was im Netzwerk passiert, live und durchsuchbar."
+        title={t("Chat & activity")}
+        sub={t("Everything happening on the network, live and searchable.")}
         actions={
           <>
             <Button icon={paused ? <Play /> : <Pause />} onClick={() => setPaused(paused ? null : events)}>
-              {paused ? "Weiter" : "Pausieren"}
+              {paused ? t("Continue") : t("Pause")}
             </Button>
             {can(me, "chat.send") && (
               <Button variant="primary" icon={<Megaphone />} onClick={() => openSheet({ kind: "broadcast" })}>
@@ -132,10 +133,10 @@ export function Activity() {
             <div className="col" style={{ gap: 12 }}>
               <div className="input-icon">
                 <Search />
-                <input className="input" placeholder="Text oder Spieler" value={q} onChange={(e) => setQ(e.target.value)} />
+                <input className="input" placeholder={t("Text or player")} value={q} onChange={(e) => setQ(e.target.value)} />
               </div>
               <select className="select" value={server} onChange={(e) => setServer(e.target.value)}>
-                <option value="">Alle Server</option>
+                <option value="">{t("All servers")}</option>
                 {servers.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -152,20 +153,20 @@ export function Activity() {
             </div>
           </Card>
           <Card>
-            <CardHead title="Chat pro Stunde" icon={<MessageSquare />} sub="letzte 24 Std." />
-            <AreaChart data={chatPerHour} height={150} series={[{ key: "n", label: "Nachrichten", color: "var(--c2)" }]} xFormat={clock} />
+            <CardHead title={t("Chat per hour")} icon={<MessageSquare />} sub={t("last 24 h")} />
+            <AreaChart data={chatPerHour} height={150} series={[{ key: "n", label: t("Messages"), color: "var(--c2)" }]} xFormat={clock} />
           </Card>
         </div>
         <Card className="flush">
           <div style={{ padding: "18px 20px 6px" }}>
             <CardHead
-              title={paused ? "Pausiert" : "Live"}
+              title={paused ? t("Paused") : "Live"}
               icon={paused ? <Pause /> : <span className="dot green pulse" style={{ marginRight: 2 }} />}
-              sub={`${shown.length} Einträge`}
+              sub={t("{n} entries", { n: shown.length })}
             />
           </div>
           {shown.length === 0 ? (
-            <Empty icon={<MessageSquare />} title="Nichts zu sehen" text="Passe die Filter an oder warte, bis im Spiel etwas passiert." />
+            <Empty icon={<MessageSquare />} title={t("Nothing to see")} text={t("Adjust the filters or wait until something happens in game.")} />
           ) : (
             <div>
               {shown.slice(0, 400).map((e) => (
@@ -175,7 +176,7 @@ export function Activity() {
           )}
           <div style={{ padding: 16, display: "flex", justifyContent: "center" }}>
             <Button variant="ghost" icon={<History />} busy={loadingOlder} onClick={older}>
-              Ältere laden
+              {t("Load older")}
             </Button>
           </div>
         </Card>

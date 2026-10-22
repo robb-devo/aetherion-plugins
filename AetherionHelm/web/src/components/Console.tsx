@@ -4,6 +4,7 @@ import { api, post } from "../lib/api";
 import { live, watchConsole } from "../lib/live";
 import { useStore } from "../lib/store";
 import { clockS } from "../lib/format";
+import { t } from "../lib/i18n";
 import { legacy } from "../lib/mc";
 import { toast } from "../lib/toast";
 import type { ConsoleLine } from "../lib/types";
@@ -128,7 +129,7 @@ export function Console({ server, canSend, offline }: { server: string; canSend:
 
   const copy = () => {
     const text = shown.map((l) => `[${clockS(l.ts)} ${l.lvl}] ${l.msg}`).join("\n");
-    navigator.clipboard?.writeText(text).then(() => toast(`${shown.length} Zeilen kopiert`), () => toast("Kopieren nicht erlaubt", "err"));
+    navigator.clipboard?.writeText(text).then(() => toast(shown.length === 1 ? t("1 line copied") : t("{n} lines copied", { n: shown.length })), () => toast(t("Clipboard access denied"), "err"));
   };
 
   return (
@@ -138,26 +139,26 @@ export function Console({ server, canSend, offline }: { server: string; canSend:
           value={level}
           onChange={setLevel}
           options={[
-            { value: "all", label: "Alles" },
-            { value: "warn", label: "Warnungen" },
-            { value: "error", label: "Fehler" },
+            { value: "all", label: t("All") },
+            { value: "warn", label: t("Warnings") },
+            { value: "error", label: t("Errors") },
           ]}
         />
         <div className="input-icon grow" style={{ maxWidth: 280 }}>
           <Search />
-          <input className="input" style={{ height: 34, background: "rgba(255,255,255,0.05)" }} placeholder="Im Log suchen" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="input" style={{ height: 34, background: "rgba(255,255,255,0.05)" }} placeholder={t("Search log")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="row" style={{ marginLeft: "auto", gap: 2 }}>
-          <IconButton label="Ansicht leeren" size="sm" onClick={() => { setClearedAt(Date.now()); setLocal([]); }}>
+          <IconButton label={t("Clear view")} size="sm" onClick={() => { setClearedAt(Date.now()); setLocal([]); }}>
             <Eraser />
           </IconButton>
-          <IconButton label="Kopieren" size="sm" onClick={copy}>
+          <IconButton label={t("Copy")} size="sm" onClick={copy}>
             <Copy />
           </IconButton>
         </div>
       </div>
       <div className="console-lines" ref={box} onScroll={onScroll}>
-        {offline && shown.length === 0 && <div className="console-line"><span /><span className="msg" style={{ color: "rgba(235,238,255,.4)" }}>Der Server ist nicht verbunden. Sobald das Helm-Plugin läuft, erscheint hier sein Log.</span></div>}
+        {offline && shown.length === 0 && <div className="console-line"><span /><span className="msg" style={{ color: "rgba(235,238,255,.4)" }}>{t("This server isn't connected. Its log appears here once the Helm plugin is running.")}</span></div>}
         {shown.map((l, i) => (
           <div key={i} className={cx("console-line", l.lvl, l.lvl === "CMD" && "cmd")}>
             <span className="ts">{clockS(l.ts)}</span>
@@ -174,7 +175,7 @@ export function Console({ server, canSend, offline }: { server: string; canSend:
           style={{ position: "absolute", right: 24, bottom: canSend ? 72 : 20, zIndex: 3 }}
           onClick={() => setStick(true)}
         >
-          <ArrowDown /> Neueste
+          <ArrowDown /> {t("Jump to latest")}
         </button>
       )}
       {canSend && (
@@ -197,14 +198,14 @@ export function Console({ server, canSend, offline }: { server: string; canSend:
               if (sugg.length) complete(e.target.value);
             }}
             onKeyDown={onKey}
-            placeholder={offline ? "Server nicht verbunden" : "Befehl eingeben · Tab ergänzt · ↑ Verlauf"}
+            placeholder={offline ? t("Server not connected") : t("Enter a command · Tab to complete · ↑ for history")}
             disabled={offline}
             spellCheck={false}
             autoCapitalize="off"
             autoComplete="off"
             autoCorrect="off"
           />
-          <IconButton label="Senden" size="sm" onClick={send} disabled={offline || !input.trim()}>
+          <IconButton label={t("Send")} size="sm" onClick={send} disabled={offline || !input.trim()}>
             <CornerDownLeft />
           </IconButton>
         </div>

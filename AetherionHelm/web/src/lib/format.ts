@@ -1,20 +1,21 @@
-// German formatting helpers. Everything the UI prints goes through here so units stay consistent.
+// Formatting helpers for the UI language. Everything the UI prints goes through here so units stay consistent.
+import { locale, t } from "./i18n";
 
-const nf0 = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const nf1 = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const nf2 = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const time = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit" });
-const timeS = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-const date = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-const dateShort = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short" });
-const dateTime = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
-const weekday = new Intl.DateTimeFormat("de-DE", { weekday: "short" });
+const nf0 = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
+const timeS = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const date = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
+const dateShort = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
+const dateTime = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" });
 
 export const n0 = (v?: number | null) => (v == null || !isFinite(v) ? "–" : nf0.format(v));
 export const n1 = (v?: number | null) => (v == null || !isFinite(v) ? "–" : nf1.format(v));
 export const n2 = (v?: number | null) => (v == null || !isFinite(v) ? "–" : nf2.format(v));
 export const pct = (v?: number | null, digits = 0) =>
-  v == null || !isFinite(v) ? "–" : (digits ? nf1.format(v * 100) : nf0.format(v * 100)) + " %";
+  v == null || !isFinite(v) ? "–" : t("{n}%", { n: digits ? nf1.format(v * 100) : nf0.format(v * 100) });
 
 export function bytes(v?: number | null, digits = 1): string {
   if (v == null || !isFinite(v)) return "–";
@@ -48,10 +49,10 @@ export function byteRate(bps?: number | null): string {
   return bytes(bps) + "/s";
 }
 
-/** 3725000 → "1 Std. 2 Min." */
+/** 3725000 → "1 h 2 min" */
 export function duration(ms?: number | null, parts = 2): string {
   if (ms == null || !isFinite(ms)) return "–";
-  if (ms < 1000) return "0 Sek.";
+  if (ms < 1000) return t("{n} s", { n: 0 });
   let s = Math.floor(ms / 1000);
   const d = Math.floor(s / 86400);
   s -= d * 86400;
@@ -60,14 +61,14 @@ export function duration(ms?: number | null, parts = 2): string {
   const m = Math.floor(s / 60);
   s -= m * 60;
   const out: string[] = [];
-  if (d) out.push(d + (d === 1 ? " Tag" : " Tage"));
-  if (h) out.push(h + " Std.");
-  if (m) out.push(m + " Min.");
-  if (s && !d) out.push(s + " Sek.");
-  return out.slice(0, parts).join(" ") || "0 Sek.";
+  if (d) out.push(d === 1 ? t("1 day") : t("{n} days", { n: d }));
+  if (h) out.push(t("{n} h", { n: h }));
+  if (m) out.push(t("{n} min", { n: m }));
+  if (s && !d) out.push(t("{n} s", { n: s }));
+  return out.slice(0, parts).join(" ") || t("{n} s", { n: 0 });
 }
 
-/** compact: "3 T 4 h", "5 h 12 m", "42 m", "12 s" */
+/** compact: "3 d 4 h", "5 h 12 m", "42 m", "12 s" */
 export function short(ms?: number | null): string {
   if (ms == null || !isFinite(ms)) return "–";
   const s = Math.floor(ms / 1000);
@@ -77,29 +78,29 @@ export function short(ms?: number | null): string {
   const h = Math.floor(m / 60);
   if (h < 48) return h + " h " + (m % 60) + " m";
   const d = Math.floor(h / 24);
-  return d + " T " + (h % 24) + " h";
+  return t("{d} d {h} h", { d, h: h % 24 });
 }
 
 export function ago(ts?: number | null, now = Date.now()): string {
   if (!ts) return "–";
   const s = Math.round((now - ts) / 1000);
-  if (s < 5) return "gerade eben";
-  if (s < 60) return `vor ${s} Sek.`;
+  if (s < 5) return t("just now");
+  if (s < 60) return t("{n} s ago", { n: s });
   const m = Math.floor(s / 60);
-  if (m < 60) return `vor ${m} Min.`;
+  if (m < 60) return t("{n} min ago", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `vor ${h} Std.`;
+  if (h < 24) return t("{n} h ago", { n: h });
   const d = Math.floor(h / 24);
-  if (d === 1) return "gestern";
-  if (d < 7) return `vor ${d} Tagen`;
+  if (d === 1) return t("yesterday");
+  if (d < 7) return t("{n} days ago", { n: d });
   return date.format(ts);
 }
 
 export function until(ts?: number | null, now = Date.now()): string {
-  if (!ts) return "dauerhaft";
+  if (!ts) return t("permanent");
   const left = ts - now;
-  if (left <= 0) return "abgelaufen";
-  return "noch " + duration(left, 2);
+  if (left <= 0) return t("expired");
+  return t("{time} left", { time: duration(left, 2) });
 }
 
 export const clock = (ts?: number | null) => (ts ? time.format(ts) : "–");
@@ -117,7 +118,7 @@ export function when(ts?: number | null): string {
   if (d.toDateString() === now.toDateString()) return time.format(ts);
   const y = new Date(now);
   y.setDate(now.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return "gestern " + time.format(ts);
+  if (d.toDateString() === y.toDateString()) return t("Yesterday {time}", { time: time.format(ts) });
   if (now.getTime() - ts < 6 * 86400_000) return weekday.format(ts) + " " + time.format(ts);
   return dateTime.format(ts);
 }
@@ -134,21 +135,21 @@ export const pingTone = (p?: number) => (p == null ? "" : p < 60 ? "green" : p <
 export function stateInfo(s: string): { label: string; tone: string; pulse: boolean } {
   switch (s) {
     case "online":
-      return { label: "Online", tone: "green", pulse: true };
+      return { label: t("Online"), tone: "green", pulse: true };
     case "starting":
-      return { label: "Startet", tone: "blue", pulse: true };
+      return { label: t("Starting"), tone: "blue", pulse: true };
     case "restarting":
-      return { label: "Neustart", tone: "blue", pulse: true };
+      return { label: t("Restarting"), tone: "blue", pulse: true };
     case "stopping":
-      return { label: "Stoppt", tone: "orange", pulse: true };
+      return { label: t("Stopping"), tone: "orange", pulse: true };
     case "degraded":
-      return { label: "Ohne Plugin", tone: "yellow", pulse: false };
+      return { label: t("No plugin"), tone: "yellow", pulse: false };
     case "stopped":
-      return { label: "Gestoppt", tone: "", pulse: false };
+      return { label: t("Stopped"), tone: "", pulse: false };
     case "offline":
-      return { label: "Offline", tone: "red", pulse: true };
+      return { label: t("Offline"), tone: "red", pulse: true };
     default:
-      return { label: "Unbekannt", tone: "", pulse: false };
+      return { label: t("Unknown"), tone: "", pulse: false };
   }
 }
 
@@ -165,12 +166,12 @@ export function maskIp(ip?: string) {
 }
 
 export const DURATIONS: { label: string; ms: number | null }[] = [
-  { label: "30 Min.", ms: 30 * 60_000 },
-  { label: "1 Std.", ms: 3600_000 },
-  { label: "6 Std.", ms: 6 * 3600_000 },
-  { label: "1 Tag", ms: 86400_000 },
-  { label: "3 Tage", ms: 3 * 86400_000 },
-  { label: "7 Tage", ms: 7 * 86400_000 },
-  { label: "30 Tage", ms: 30 * 86400_000 },
-  { label: "Dauerhaft", ms: null },
+  { label: t("{n} min", { n: 30 }), ms: 30 * 60_000 },
+  { label: t("{n} h", { n: 1 }), ms: 3600_000 },
+  { label: t("{n} h", { n: 6 }), ms: 6 * 3600_000 },
+  { label: t("1 day"), ms: 86400_000 },
+  { label: t("{n} days", { n: 3 }), ms: 3 * 86400_000 },
+  { label: t("{n} days", { n: 7 }), ms: 7 * 86400_000 },
+  { label: t("{n} days", { n: 30 }), ms: 30 * 86400_000 },
+  { label: t("Permanent"), ms: null },
 ];

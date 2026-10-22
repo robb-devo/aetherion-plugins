@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { lang } from "./i18n";
 
 // Minecraft text: legacy § codes (console, kick screens) and Adventure/vanilla JSON components (item names, lore).
 
@@ -159,7 +160,8 @@ const EFFECT_DE: Record<string, string> = {
   conduit_power: "Meereskraft", dolphins_grace: "Gunst des Delfins", bad_omen: "Böses Omen", hero_of_the_village: "Held des Dorfes",
   darkness: "Dunkelheit",
 };
-export const effectName = (id: string) => EFFECT_DE[id] ?? prettyId(id);
+const EFFECT_EN: Record<string, string> = { dolphins_grace: "Dolphin's Grace", hero_of_the_village: "Hero of the Village", unluck: "Bad Luck" };
+export const effectName = (id: string) => (lang === "de" ? EFFECT_DE : EFFECT_EN)[id] ?? prettyId(id);
 
 // ------------------------------------------------------------------ item icons
 

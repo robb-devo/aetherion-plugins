@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Apple, Backpack, Gem, Heart, MapPin, RefreshCw, Sparkles, Star } from "lucide-react";
 import { useApi } from "../lib/api";
 import { n0, n1 } from "../lib/format";
+import { t } from "../lib/i18n";
 import { RARITY_COLOR, component, effectName, iconFor, loadIcons, plain, prettyId, roman } from "../lib/mc";
 import type { Inventory as Inv, Item } from "../lib/types";
 import { Sheet } from "./overlay";
@@ -42,12 +43,10 @@ function ItemTooltip({ tip }: { tip: Tip }) {
           {component(l, { color: "dark_purple", i: true })}
         </div>
       ))}
-      {it.contents && <div style={{ color: "#AAAAAA" }}>{it.contents.length} Stacks drin · klicken zum Öffnen</div>}
-      {it.unbreakable && <div style={{ color: "#5555FF" }}>Unzerstörbar</div>}
+      {it.contents && <div style={{ color: "#AAAAAA" }}>{it.contents.length === 1 ? t("1 stack inside · click to open") : t("{n} stacks inside · click to open", { n: it.contents.length })}</div>}
+      {it.unbreakable && <div style={{ color: "#5555FF" }}>{t("Unbreakable")}</div>}
       {it.maxDmg ? (
-        <div style={{ color: "#fff" }}>
-          Haltbarkeit: {n0(it.maxDmg - (it.dmg ?? 0))} / {n0(it.maxDmg)}
-        </div>
+        <div style={{ color: "#fff" }}>{t("Durability: {left} / {max}", { left: n0(it.maxDmg - (it.dmg ?? 0)), max: n0(it.maxDmg) })}</div>
       ) : null}
       <div className="meta">
         minecraft:{it.id}
@@ -129,7 +128,7 @@ export function InventoryView({ uuid, online }: { uuid: string; online: boolean 
   if (!online) {
     return (
       <Card>
-        <Empty icon={<Backpack />} title="Inventar ist live" text="Sobald der Spieler online ist, siehst du hier sein Inventar, die Rüstung und die Endertruhe." />
+        <Empty icon={<Backpack />} title={t("Available while online")} text={t("When this player is online, you'll see their inventory, armor and ender chest here.")} />
       </Card>
     );
   }
@@ -148,18 +147,19 @@ export function InventoryView({ uuid, online }: { uuid: string; online: boolean 
   const armorGhost = ["netherite_helmet", "netherite_chestplate", "netherite_leggings", "netherite_boots"];
   const totalItems = [...data.inventory, ...data.enderchest].reduce((a, i) => a + i.count, 0);
   const worth = valuables([...data.inventory, ...data.armor.filter((a): a is Item => !!a), ...(data.offhand ? [data.offhand] : []), ...data.enderchest]);
+  const stacks = (tab === "inv" ? data.inventory : data.enderchest).length;
   const ticksToClock = (d: number) => (d > 1_000_000 ? "∞" : `${Math.floor(d / 20 / 60)}:${String(Math.floor((d / 20) % 60)).padStart(2, "0")}`);
 
   return (
     <div className="inv-layout">
       <Card>
         <CardHead
-          title={tab === "inv" ? "Inventar" : "Endertruhe"}
+          title={tab === "inv" ? t("Inventory") : t("Ender chest")}
           icon={<Backpack />}
           right={
             <>
-              <Segmented value={tab} onChange={setTab} options={[{ value: "inv", label: "Inventar" }, { value: "ender", label: "Endertruhe" }]} />
-              <IconButton label="Neu laden" onClick={reload}>
+              <Segmented value={tab} onChange={setTab} options={[{ value: "inv", label: t("Inventory") }, { value: "ender", label: t("Ender chest") }]} />
+              <IconButton label={t("Refresh")} onClick={reload}>
                 <RefreshCw />
               </IconButton>
             </>
@@ -183,20 +183,20 @@ export function InventoryView({ uuid, online }: { uuid: string; online: boolean 
           <Grid items={data.enderchest} size={27} icons={icons} onTip={setTip} onOpen={setOpen} />
         )}
         <div className="tiny faint mt">
-          {(tab === "inv" ? data.inventory : data.enderchest).length} Stacks. Fahr über ein Item (oder tipp drauf) für Name, Verzauberungen und Lore. Shulkerkisten öffnen sich per Klick.
+          {stacks === 1 ? t("1 stack.") : t("{n} stacks.", { n: stacks })} {t("Hover over an item (or tap it) to see its name, enchantments and lore. Click a shulker box to open it.")}
         </div>
       </Card>
 
       <div className="col" style={{ gap: 16 }}>
         <Card>
-          <CardHead title="Zustand" icon={<Heart />} sub={`${prettyId(data.gamemode)} · ${data.world}`} />
+          <CardHead title={t("Vitals")} icon={<Heart />} sub={`${prettyId(data.gamemode)} · ${data.world}`} />
           <div className="col" style={{ gap: 14 }}>
-            <Bar icon={<Heart className="red" size={15} />} label="Leben" value={`${n1(data.health)} / ${n0(data.maxHealth)}`} frac={data.health / Math.max(1, data.maxHealth)} tone="red" />
-            <Bar icon={<Apple className="orange" size={15} />} label="Hunger" value={`${data.food} / 20 · Sättigung ${n1(data.saturation)}`} frac={data.food / 20} tone="orange" />
-            <Bar icon={<Star className="green" size={15} />} label={`Level ${data.level}`} value={`${Math.round(data.exp * 100)} % zum nächsten`} frac={data.exp} tone="green" />
+            <Bar icon={<Heart className="red" size={15} />} label={t("Health")} value={`${n1(data.health)} / ${n0(data.maxHealth)}`} frac={data.health / Math.max(1, data.maxHealth)} tone="red" />
+            <Bar icon={<Apple className="orange" size={15} />} label={t("Hunger")} value={t("{food} / 20 · Saturation {sat}", { food: data.food, sat: n1(data.saturation) })} frac={data.food / 20} tone="orange" />
+            <Bar icon={<Star className="green" size={15} />} label={t("Level {n}", { n: data.level })} value={t("{n}% to next level", { n: Math.round(data.exp * 100) })} frac={data.exp} tone="green" />
             <div className="row" style={{ gap: 10 }}>
               <MapPin className="blue" size={15} />
-              <span className="small grow">Position</span>
+              <span className="small grow">{t("Position")}</span>
               <span className="mono small">{n0(data.x)} {n0(data.y)} {n0(data.z)}</span>
             </div>
           </div>
@@ -211,9 +211,9 @@ export function InventoryView({ uuid, online }: { uuid: string; online: boolean 
           )}
         </Card>
         <Card>
-          <CardHead title="Wertsachen" icon={<Gem />} sub="Inventar, Endertruhe und Shulker zusammen" />
+          <CardHead title={t("Valuables")} icon={<Gem />} sub={t("Inventory, ender chest and shulker boxes combined")} />
           {worth.length === 0 ? (
-            <div className="small faint">Nichts Wertvolles dabei.</div>
+            <div className="small faint">{t("No valuables found.")}</div>
           ) : (
             <div className="worth">
               {worth.map((w) => (
@@ -225,12 +225,14 @@ export function InventoryView({ uuid, online }: { uuid: string; online: boolean 
               ))}
             </div>
           )}
-          <div className="tiny faint mt">{n0(totalItems)} Items insgesamt. Ungewöhnlich hohe Zahlen früh im Spiel sind oft ein Zeichen für Duping.</div>
+          <div className="tiny faint mt">
+            {totalItems === 1 ? t("1 item in total.") : t("{n} items in total.", { n: n0(totalItems) })} {t("Unusually high counts early in the game often point to duping.")}
+          </div>
         </Card>
       </div>
 
       {open && (
-        <Sheet title={plain(open.name) || prettyId(open.id)} sub={`${open.contents?.length ?? 0} Stacks`} icon={<Gem className="accent" />} onClose={() => setOpen(null)}>
+        <Sheet title={plain(open.name) || prettyId(open.id)} sub={open.contents?.length === 1 ? t("1 stack") : t("{n} stacks", { n: open.contents?.length ?? 0 })} icon={<Gem className="accent" />} onClose={() => setOpen(null)}>
           <Grid items={open.contents ?? []} size={27} icons={icons} onTip={setTip} />
         </Sheet>
       )}
@@ -254,26 +256,26 @@ function Bar({ icon, label, value, frac, tone }: { icon: React.ReactNode; label:
 
 /** What staff look at first when something smells like duping: the rare stuff, counted through every container. */
 const VALUABLE: Record<string, [id: string, label: string, per: number]> = {
-  netherite_ingot: ["netherite_ingot", "Netherite-Barren", 1],
-  netherite_block: ["netherite_ingot", "Netherite-Barren", 9],
-  diamond: ["diamond", "Diamanten", 1],
-  diamond_block: ["diamond", "Diamanten", 9],
-  emerald: ["emerald", "Smaragde", 1],
-  emerald_block: ["emerald", "Smaragde", 9],
-  gold_ingot: ["gold_ingot", "Goldbarren", 1],
-  gold_block: ["gold_ingot", "Goldbarren", 9],
-  elytra: ["elytra", "Elytren", 1],
-  totem_of_undying: ["totem_of_undying", "Totems", 1],
-  enchanted_golden_apple: ["enchanted_golden_apple", "Verzauberte Goldäpfel", 1],
-  nether_star: ["nether_star", "Nethersterne", 1],
-  beacon: ["beacon", "Leuchtfeuer", 1],
+  netherite_ingot: ["netherite_ingot", t("Netherite ingots"), 1],
+  netherite_block: ["netherite_ingot", t("Netherite ingots"), 9],
+  diamond: ["diamond", t("Diamonds"), 1],
+  diamond_block: ["diamond", t("Diamonds"), 9],
+  emerald: ["emerald", t("Emeralds"), 1],
+  emerald_block: ["emerald", t("Emeralds"), 9],
+  gold_ingot: ["gold_ingot", t("Gold ingots"), 1],
+  gold_block: ["gold_ingot", t("Gold ingots"), 9],
+  elytra: ["elytra", t("Elytra"), 1],
+  totem_of_undying: ["totem_of_undying", t("Totems"), 1],
+  enchanted_golden_apple: ["enchanted_golden_apple", t("Enchanted golden apples"), 1],
+  nether_star: ["nether_star", t("Nether stars"), 1],
+  beacon: ["beacon", t("Beacons"), 1],
 };
 
 function valuables(items: Item[]) {
   const acc = new Map<string, { id: string; label: string; count: number }>();
   const walk = (list: Item[]) => {
     for (const it of list) {
-      const v = VALUABLE[it.id] ?? (it.id.endsWith("shulker_box") ? (["shulker_box", "Shulkerkisten", 1] as const) : null);
+      const v = VALUABLE[it.id] ?? (it.id.endsWith("shulker_box") ? (["shulker_box", t("Shulker boxes"), 1] as const) : null);
       if (v) {
         const row = acc.get(v[0]) ?? { id: v[0], label: v[1], count: 0 };
         row.count += it.count * v[2];

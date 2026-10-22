@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { initials, stateInfo } from "../lib/format";
+import { t } from "../lib/i18n";
 import { tap } from "../lib/native";
 
 export function cx(...c: (string | false | null | undefined)[]) {
@@ -113,7 +114,7 @@ export function HoldButton({ onConfirm, ms = 900, children, className, icon, var
       }}
       onContextMenu={(e) => e.preventDefault()}
       disabled={disabled}
-      title="Gedrückt halten"
+      title={t("Press and hold")}
     >
       <span className="fill" ref={fill} />
       {icon}
@@ -360,7 +361,7 @@ export function PageHead({ title, sub, actions }: { title: ReactNode; sub?: Reac
   );
 }
 
-/** Re-renders every `ms` so relative times ("vor 3 Min.") stay true. */
+/** Re-renders every `ms` so relative times ("3 min ago") stay true. */
 export function useTick(ms = 15000) {
   const [, set] = useState(0);
   useEffect(() => {

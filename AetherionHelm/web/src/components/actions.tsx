@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRightLeft, Ban, Gavel, Megaphone, MessageSquare, MicOff, TriangleAlert, UserX } from "lucide-react";
 import { del, post } from "../lib/api";
 import { DURATIONS } from "../lib/format";
+import { t } from "../lib/i18n";
 import { useMe } from "../lib/session";
 import { useStore } from "../lib/store";
 import { live } from "../lib/live";
@@ -12,10 +13,10 @@ import { ui } from "./nav";
 import { Button, Field, IconTile, cx } from "./ui";
 
 const REASONS: Record<string, string[]> = {
-  ban: ["Hacking / Cheats", "Griefing", "Ausnutzen von Bugs", "Beleidigung", "Werbung", "Ban-Umgehung"],
-  mute: ["Spam", "Beleidigung", "Werbung", "Caps", "Provokation"],
-  kick: ["AFK", "Bitte neu verbinden", "Verwarnung missachtet"],
-  warn: ["Spam", "Ton im Chat", "Regel 3 beachten", "Kein Betteln"],
+  ban: [t("Hacking / cheats"), "Griefing", t("Exploiting bugs"), t("Insults"), t("Advertising"), t("Ban evasion")],
+  mute: ["Spam", t("Insults"), t("Advertising"), "Caps", t("Provocation")],
+  kick: ["AFK", t("Please reconnect"), t("Ignored a warning")],
+  warn: ["Spam", t("Chat tone"), t("Follow rule 3"), t("No begging")],
 };
 
 function Reasons({ type, value, onPick }: { type: string; value: string; onPick: (r: string) => void }) {
@@ -43,10 +44,38 @@ function Durations({ value, onPick }: { value: number | null; onPick: (v: number
 }
 
 const META = {
-  ban: { title: "Bannen", icon: <Ban />, tone: "red", verb: "Bannen" },
-  mute: { title: "Muten", icon: <MicOff />, tone: "orange", verb: "Muten" },
-  kick: { title: "Kicken", icon: <UserX />, tone: "orange", verb: "Kicken" },
-  warn: { title: "Verwarnen", icon: <TriangleAlert />, tone: "yellow", verb: "Verwarnen" },
+  ban: {
+    icon: <Ban />,
+    tone: "red",
+    verb: t("Ban player"),
+    title: (name: string) => t("Ban {name}", { name }),
+    done: (name: string) => t("{name} banned", { name }),
+    sub: t("Takes effect immediately across the network, even if the player is online."),
+  },
+  mute: {
+    icon: <MicOff />,
+    tone: "orange",
+    verb: t("Mute player"),
+    title: (name: string) => t("Mute {name}", { name }),
+    done: (name: string) => t("{name} muted", { name }),
+    sub: t("Blocks chat and message commands."),
+  },
+  kick: {
+    icon: <UserX />,
+    tone: "orange",
+    verb: t("Kick player"),
+    title: (name: string) => t("Kick {name}", { name }),
+    done: (name: string) => t("{name} kicked", { name }),
+    sub: t("Disconnects the player. They can rejoin right away."),
+  },
+  warn: {
+    icon: <TriangleAlert />,
+    tone: "yellow",
+    verb: t("Warn player"),
+    title: (name: string) => t("Warn {name}", { name }),
+    done: (name: string) => t("{name} warned", { name }),
+    sub: t("The player sees the warning in chat. It stays on their record."),
+  },
 } as const;
 
 /** Ban, mute, kick or warn one known player. */
@@ -58,13 +87,13 @@ export function PunishSheet({ type, uuid, name, onClose, onDone }: { type: keyof
   const timed = type === "ban" || type === "mute";
   return (
     <Sheet
-      title={`${name} ${m.title.toLowerCase()}`}
-      sub={type === "ban" ? "Gilt sofort im ganzen Netzwerk, auch wenn der Spieler gerade online ist." : type === "mute" ? "Chat und Nachrichten-Befehle werden gesperrt." : type === "warn" ? "Der Spieler sieht die Verwarnung im Chat; sie bleibt in seiner Akte." : "Trennt die Verbindung, der Spieler kann sofort wieder joinen."}
+      title={m.title(name)}
+      sub={m.sub}
       icon={<IconTile tone={m.tone}>{m.icon}</IconTile>}
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant={type === "ban" ? "danger" : "primary"}
             busy={busy}
@@ -74,12 +103,12 @@ export function PunishSheet({ type, uuid, name, onClose, onDone }: { type: keyof
               try {
                 await post(`/api/players/${uuid}/${type}`, { reason: reason.trim() || undefined, duration: timed ? dur ?? undefined : undefined });
                 tap("success");
-                toast(`${name}: ${m.verb.toLowerCase()} erledigt`);
+                toast(m.done(name));
                 onDone?.();
                 close();
               } catch (e) {
                 tap("error");
-                toast((e as Error).message, "err");
+                toast(t((e as Error).message), "err");
               } finally {
                 setBusy(false);
               }
@@ -91,12 +120,12 @@ export function PunishSheet({ type, uuid, name, onClose, onDone }: { type: keyof
       )}
     >
       {timed && (
-        <Field label="Dauer">
+        <Field label={t("Duration")}>
           <Durations value={dur} onPick={setDur} />
         </Field>
       )}
-      <Field label={type === "warn" ? "Grund (Pflicht)" : "Grund"} help="Der Spieler sieht den Grund. Er landet auch in seiner Akte und im Protokoll.">
-        <input className="input" value={reason} maxLength={300} placeholder="z. B. Spam im Chat" onChange={(e) => setReason(e.target.value)} autoFocus />
+      <Field label={type === "warn" ? t("Reason (required)") : t("Reason")} help={t("The player sees the reason. It’s also kept on their record and in the audit log.")}>
+        <input className="input" value={reason} maxLength={300} placeholder={t("e.g. Spam in chat")} onChange={(e) => setReason(e.target.value)} autoFocus />
         <Reasons type={type} value={reason} onPick={setReason} />
       </Field>
     </Sheet>
@@ -112,13 +141,13 @@ export function PunishByName({ type: initial = "ban", name: initialName = "", on
   const [busy, setBusy] = useState(false);
   return (
     <Sheet
-      title="Strafe per Name"
-      sub="Funktioniert auch, wenn der Spieler offline ist oder noch nie hier war. Der Name wird bei Mojang nachgeschlagen."
+      title={t("Punish by name")}
+      sub={t("Works even if the player is offline or has never joined. The name is looked up with Mojang.")}
       icon={<IconTile tone="red"><Gavel /></IconTile>}
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant={type === "ban" ? "danger" : "primary"}
             busy={busy}
@@ -127,31 +156,31 @@ export function PunishByName({ type: initial = "ban", name: initialName = "", on
               setBusy(true);
               try {
                 const r = await post<{ name: string }>("/api/punish", { type, target: name.trim(), reason: reason.trim() || undefined, duration: dur ?? undefined });
-                toast(`${r.name} ist jetzt ${type === "ban" ? "gebannt" : "gemutet"}`);
+                toast(type === "ban" ? t("{name} is now banned", { name: r.name }) : t("{name} is now muted", { name: r.name }));
                 close();
               } catch (e) {
-                toast((e as Error).message, "err");
+                toast(t((e as Error).message), "err");
               } finally {
                 setBusy(false);
               }
             }}
           >
-            {type === "ban" ? "Bannen" : "Muten"}
+            {type === "ban" ? t("Ban player") : t("Mute player")}
           </Button>
         </>
       )}
     >
       <div className="dur-presets">
-        <button className={cx("chip", type === "ban" && "on")} onClick={() => setType("ban")}><Ban /> Bann</button>
+        <button className={cx("chip", type === "ban" && "on")} onClick={() => setType("ban")}><Ban /> {t("Ban")}</button>
         <button className={cx("chip", type === "mute" && "on")} onClick={() => setType("mute")}><MicOff /> Mute</button>
       </div>
-      <Field label="Minecraft-Name">
-        <input className="input" value={name} placeholder="z. B. Notch" onChange={(e) => setName(e.target.value)} autoFocus spellCheck={false} autoCapitalize="off" />
+      <Field label={t("Minecraft name")}>
+        <input className="input" value={name} placeholder={t("e.g. Notch")} onChange={(e) => setName(e.target.value)} autoFocus spellCheck={false} autoCapitalize="off" />
       </Field>
-      <Field label="Dauer">
+      <Field label={t("Duration")}>
         <Durations value={dur} onPick={setDur} />
       </Field>
-      <Field label="Grund">
+      <Field label={t("Reason")}>
         <input className="input" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} />
         <Reasons type={type} value={reason} onPick={setReason} />
       </Field>
@@ -165,13 +194,13 @@ export function MessageSheet({ uuid, name, onClose }: { uuid: string; name: stri
   const [busy, setBusy] = useState(false);
   return (
     <Sheet
-      title={`Nachricht an ${name}`}
-      sub={`Kommt im Chat an als „Team · ${me?.user.display}“. Nur ${name} sieht sie.`}
+      title={t("Message {name}", { name })}
+      sub={t("Arrives in chat as “Team · {sender}”. Only {name} can see it.", { sender: me?.user.display ?? "", name })}
       icon={<IconTile tone="accent"><MessageSquare /></IconTile>}
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant="primary"
             busy={busy}
@@ -180,21 +209,21 @@ export function MessageSheet({ uuid, name, onClose }: { uuid: string; name: stri
               setBusy(true);
               try {
                 await post(`/api/players/${uuid}/message`, { text: text.trim() });
-                toast("Nachricht zugestellt");
+                toast(t("Message delivered"));
                 close();
               } catch (e) {
-                toast((e as Error).message, "err");
+                toast(t((e as Error).message), "err");
               } finally {
                 setBusy(false);
               }
             }}
           >
-            Senden
+            {t("Send")}
           </Button>
         </>
       )}
     >
-      <textarea className="textarea" value={text} maxLength={400} onChange={(e) => setText(e.target.value)} placeholder="Hey, kurz zu deinem Bauwerk …" autoFocus />
+      <textarea className="textarea" value={text} maxLength={400} onChange={(e) => setText(e.target.value)} placeholder={t("Hey, quick note about your build…")} autoFocus />
     </Sheet>
   );
 }
@@ -204,7 +233,7 @@ export function SendSheet({ uuid, name, current, onClose }: { uuid: string; name
   const [busy, setBusy] = useState<string | null>(null);
   const targets = (servers ?? []).filter((s) => s.kind === "paper");
   return (
-    <Sheet title={`${name} verschieben`} sub="Schickt den Spieler über den Proxy auf einen anderen Server." icon={<IconTile tone="blue"><ArrowRightLeft /></IconTile>} onClose={onClose}>
+    <Sheet title={t("Move {name}", { name })} sub={t("Sends the player to another server through the proxy.")} icon={<IconTile tone="blue"><ArrowRightLeft /></IconTile>} onClose={onClose}>
       <div className="list glass" style={{ borderRadius: 18, background: "var(--well)" }}>
         {targets.map((s) => (
           <button
@@ -219,7 +248,7 @@ export function SendSheet({ uuid, name, current, onClose }: { uuid: string; name
                 toast(`${name} → ${s.name}`);
                 onClose();
               } catch (e) {
-                toast((e as Error).message, "err");
+                toast(t((e as Error).message), "err");
               } finally {
                 setBusy(null);
               }
@@ -227,9 +256,9 @@ export function SendSheet({ uuid, name, current, onClose }: { uuid: string; name
           >
             <div className="grow">
               <div className="title">{s.name}</div>
-              <div className="sub">{s.id === current ? "Ist gerade hier" : s.state !== "online" ? "Nicht online" : `${s.players} Spieler · ${s.role}`}</div>
+              <div className="sub">{s.id === current ? t("Currently here") : s.state !== "online" ? t("Not online") : `${s.players === 1 ? t("1 player") : t("{n} players", { n: s.players })} · ${t(s.role)}`}</div>
             </div>
-            {busy === s.id ? <span className="faint small">verbinde …</span> : null}
+            {busy === s.id ? <span className="faint small">{t("Moving…")}</span> : null}
           </button>
         ))}
       </div>
@@ -243,15 +272,16 @@ export function BroadcastSheet({ server: initial, onClose }: { server?: string; 
   const [text, setText] = useState("");
   const [server, setServer] = useState<string>(initial ?? "");
   const [busy, setBusy] = useState(false);
+  const [before, after] = (server ? t("Appears in chat as {sender} for all players on this server.") : t("Appears in chat as {sender} for all players.")).split("{sender}");
   return (
     <Sheet
-      title="Nachricht ans Netzwerk"
-      sub={<>Erscheint im Chat als <b style={{ color: "#FF55FF" }}>[Team] {me?.user.display}</b> bei allen Spielern{server ? " auf diesem Server" : ""}.</>}
+      title={t("Message the network")}
+      sub={<>{before}<b style={{ color: "#FF55FF" }}>[Team] {me?.user.display}</b>{after}</>}
       icon={<IconTile tone="accent"><Megaphone /></IconTile>}
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant="primary"
             busy={busy}
@@ -261,30 +291,30 @@ export function BroadcastSheet({ server: initial, onClose }: { server?: string; 
               setBusy(true);
               try {
                 await post("/api/chat", { text: text.trim(), server: server || undefined });
-                toast("Gesendet");
+                toast(t("Sent"));
                 close();
               } catch (e) {
-                toast((e as Error).message, "err");
+                toast(t((e as Error).message), "err");
               } finally {
                 setBusy(false);
               }
             }}
           >
-            Senden
+            {t("Send")}
           </Button>
         </>
       )}
     >
-      <Field label="An">
+      <Field label={t("Send to")}>
         <select className="select" value={server} onChange={(e) => setServer(e.target.value)}>
-          <option value="">Ganzes Netzwerk</option>
+          <option value="">{t("Entire network")}</option>
           {(servers ?? []).filter((s) => s.kind === "paper").map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
       </Field>
-      <Field label="Nachricht">
-        <textarea className="textarea" value={text} maxLength={400} onChange={(e) => setText(e.target.value)} placeholder="Server-Neustart in 10 Minuten. Bitte sucht euch einen sicheren Ort." autoFocus />
+      <Field label={t("Message")}>
+        <textarea className="textarea" value={text} maxLength={400} onChange={(e) => setText(e.target.value)} placeholder={t("Server restart in 10 minutes. Please find a safe spot.")} autoFocus />
       </Field>
     </Sheet>
   );
@@ -293,10 +323,10 @@ export function BroadcastSheet({ server: initial, onClose }: { server?: string; 
 export async function revoke(type: "ban" | "mute", uuid: string, name: string) {
   try {
     await del(`/api/players/${uuid}/${type}`);
-    toast(`${name} ${type === "ban" ? "entbannt" : "entmutet"}`);
+    toast(type === "ban" ? t("{name} unbanned", { name }) : t("{name} unmuted", { name }));
     return true;
   } catch (e) {
-    toast((e as Error).message, "err");
+    toast(t((e as Error).message), "err");
     return false;
   }
 }

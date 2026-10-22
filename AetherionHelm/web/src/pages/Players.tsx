@@ -11,6 +11,7 @@ import type { PlayerRow } from "../lib/types";
 import { openSheet } from "../components/nav";
 import { Avatar, Badge, Button, Card, CardHead, Empty, PageHead, Segmented, Skeleton, useDebounced, useTick } from "../components/ui";
 import { toneColor } from "./Overview";
+import { t } from "../lib/i18n";
 
 export function Players() {
   const me = useStore(session, (s) => s.me)!;
@@ -19,8 +20,8 @@ export function Players() {
   return (
     <div className="page">
       <PageHead
-        title="Spieler"
-        sub={mode === "online" ? `${online} gerade online` : "Jeder, der je auf dem Netzwerk war"}
+        title={t("Players")}
+        sub={mode === "online" ? t("{n} online now", { n: online }) : t("Everyone who has ever been on the network")}
         actions={
           <>
             <Segmented
@@ -31,12 +32,12 @@ export function Players() {
               }}
               options={[
                 { value: "online", label: "Online", icon: <Wifi /> },
-                { value: "all", label: "Alle", icon: <Users /> },
+                { value: "all", label: t("All"), icon: <Users /> },
               ]}
             />
             {can(me, "players.ban") && (
               <Button icon={<Gavel />} onClick={() => openSheet({ kind: "punish", type: "ban" })}>
-                Strafe per Name
+                {t("Punish by name")}
               </Button>
             )}
           </>
@@ -73,11 +74,11 @@ function OnlineList() {
       <div className="row wrap mb" style={{ gap: 10 }}>
         <div className="input-icon grow" style={{ maxWidth: 360 }}>
           <Search />
-          <input className="input" placeholder="Name filtern" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="input" placeholder={t("Filter by name")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="dur-presets">
           <button className={"chip" + (server === "" ? " on" : "")} onClick={() => setServer("")}>
-            Alle <span className="faint">{players.length}</span>
+            {t("All")}{" "}<span className="faint">{players.length}</span>
           </button>
           {servers
             .filter((s) => s.kind === "paper")
@@ -101,7 +102,7 @@ function OnlineList() {
       </div>
       {list.length === 0 ? (
         <Card>
-          <Empty icon={<Moon />} title={players.length ? "Niemand passt" : "Gerade ist niemand online"} text={players.length ? "Filter anpassen." : "Sobald jemand joint, taucht er hier live auf."} />
+          <Empty icon={<Moon />} title={players.length ? t("No one matches") : t("No one is online right now")} text={players.length ? t("Adjust the filters.") : t("As soon as someone joins, they show up here live.")} />
         </Card>
       ) : (
         <div className="grid g-auto-sm">
@@ -145,13 +146,13 @@ function AllPlayers() {
       <div className="row wrap mb">
         <div className="input-icon grow" style={{ maxWidth: 480 }}>
           <Search />
-          <input className="input lg" placeholder={data ? `${n0(data.total)} Spieler durchsuchen (Name oder UUID)` : "Spieler suchen"} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+          <input className="input lg" placeholder={data ? t("Search {n} players (name or UUID)", { n: n0(data.total) }) : t("Search players")} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
         </div>
       </div>
       {!dq && data?.newest && (
         <div className="grid g2 mb">
           <Card>
-            <CardHead title="Neu dabei" icon={<Sparkles />} />
+            <CardHead title={t("New")} icon={<Sparkles />} />
             <div className="list" style={{ margin: "0 -16px -8px" }}>
               {data.newest.map((p) => (
                 <a key={p.uuid} href={href("players", p.uuid)} className="list-item inset">
@@ -163,7 +164,7 @@ function AllPlayers() {
             </div>
           </Card>
           <Card>
-            <CardHead title="Meiste Spielzeit" icon={<Trophy />} />
+            <CardHead title={t("Most playtime")} icon={<Trophy />} />
             <div className="list" style={{ margin: "0 -16px -8px" }}>
               {(data.top ?? []).map((p, i) => (
                 <a key={p.uuid} href={href("players", p.uuid)} className="list-item inset">
@@ -183,17 +184,17 @@ function AllPlayers() {
             {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} h={36} />)}
           </div>
         ) : !data?.results.length ? (
-          <Empty icon={<Search />} title="Keine Treffer" text="Nur Spieler, die seit dem Start von Helm online waren, stehen hier. Für alle anderen gibt es „Strafe per Name“." />
+          <Empty icon={<Search />} title={t("No matches")} text={t("Only players who have been online since Helm started are listed. For everyone else use “Punish by name”.")} />
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Spieler</th>
-                  <th>Zuletzt</th>
-                  <th className="r hide-m">Spielzeit</th>
-                  <th className="r hide-m">Sitzungen</th>
-                  <th className="hide-m">Erster Join</th>
+                  <th>{t("Players")}</th>
+                  <th>{t("Last seen")}</th>
+                  <th className="r hide-m">{t("Playtime")}</th>
+                  <th className="r hide-m">{t("Sessions")}</th>
+                  <th className="hide-m">{t("First join")}</th>
                 </tr>
               </thead>
               <tbody>

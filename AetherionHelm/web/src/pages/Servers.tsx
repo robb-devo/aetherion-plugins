@@ -7,6 +7,7 @@ import { go } from "../lib/router";
 import { bytes, n1, pct, short, msptTone, tpsTone } from "../lib/format";
 import { Card, PageHead, Segmented, StateChip } from "../components/ui";
 import { ServerTile, toneColor } from "./Overview";
+import { t } from "../lib/i18n";
 
 export function Servers() {
   const snap = useStore(live, (s) => s.snap);
@@ -21,14 +22,14 @@ export function Servers() {
     <div className="page">
       <PageHead
         title="Server"
-        sub={`${servers.filter((s) => s.state === "online").length} von ${servers.length} online · ${snap?.network.online ?? 0} Spieler`}
+        sub={t("{up} of {all} online · {p} players", { up: servers.filter((s) => s.state === "online").length, all: servers.length, p: snap?.network.online ?? 0 })}
         actions={
           <Segmented
             value={view}
             onChange={setV}
             options={[
-              { value: "tiles", label: "Kacheln", icon: <LayoutGrid /> },
-              { value: "table", label: "Tabelle", icon: <Rows3 /> },
+              { value: "tiles", label: t("Tiles"), icon: <LayoutGrid /> },
+              { value: "table", label: t("Table"), icon: <Rows3 /> },
             ]}
           />
         }
@@ -47,13 +48,13 @@ export function Servers() {
                 <tr>
                   <th>Server</th>
                   <th>Status</th>
-                  <th className="r">Spieler</th>
+                  <th className="r">{t("Players")}</th>
                   <th className="r">TPS 1 · 5 · 15</th>
-                  <th className="r">MSPT Ø · P95</th>
+                  <th className="r">{t("MSPT avg · P95")}</th>
                   <th className="r">Heap</th>
                   <th className="r">CPU</th>
-                  <th className="r">RAM (Prozess)</th>
-                  <th className="r">Laufzeit</th>
+                  <th className="r">{t("RAM (process)")}</th>
+                  <th className="r">{t("Uptime")}</th>
                   <th className="r">Entities</th>
                 </tr>
               </thead>

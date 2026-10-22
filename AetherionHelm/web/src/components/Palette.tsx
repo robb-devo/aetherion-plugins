@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Ban, LogOut, Megaphone, MicOff, Moon, Search, Server, Sun, Terminal } from "lucide-react";
 import { api } from "../lib/api";
+import { t } from "../lib/i18n";
 import { go } from "../lib/router";
 import { can, logout, session } from "../lib/session";
 import { useStore } from "../lib/store";
@@ -37,8 +38,8 @@ export function Palette() {
   const open = useStore(ui, (s) => s.palette);
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      const el = e.target as HTMLElement;
+      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         openPalette(!ui.get().palette);
@@ -83,14 +84,14 @@ function PaletteBody() {
     for (const n of ALL_NAV) {
       if (n.perm && !can(me, n.perm)) continue;
       const I = n.icon;
-      out.push({ id: "p:" + n.id, group: "Seiten", label: n.label, sub: n.hint, icon: <I />, run: () => go(n.id), keywords: n.hint });
+      out.push({ id: "p:" + n.id, group: t("Pages"), label: n.label, sub: n.hint, icon: <I />, run: () => go(n.id), keywords: n.hint });
     }
     for (const s of snap?.servers ?? me?.servers ?? []) {
       out.push({
         id: "s:" + s.id,
-        group: "Server",
+        group: t("Servers"),
         label: s.name,
-        sub: s.role,
+        sub: t(s.role),
         icon: <Server />,
         run: () => go("servers", s.id),
         keywords: s.id + " server",
@@ -98,28 +99,28 @@ function PaletteBody() {
       if (can(me, "console.view"))
         out.push({
           id: "c:" + s.id,
-          group: "Server",
-          label: `Konsole ${s.name}`,
+          group: t("Servers"),
+          label: t("{server} console", { server: s.name }),
           icon: <Terminal />,
           run: () => go("servers", s.id, "console"),
-          keywords: "console log befehl " + s.id,
+          keywords: "console log command befehl " + s.id,
         });
     }
     if (can(me, "chat.send"))
-      out.push({ id: "a:broadcast", group: "Aktionen", label: "Nachricht an alle", sub: "Broadcast ins Spiel", icon: <Megaphone />, run: () => openSheet({ kind: "broadcast" }), keywords: "broadcast chat ankündigung" });
+      out.push({ id: "a:broadcast", group: t("Actions"), label: t("Message everyone"), sub: t("In-game broadcast"), icon: <Megaphone />, run: () => openSheet({ kind: "broadcast" }), keywords: "broadcast announcement chat ankündigung" });
     if (can(me, "players.ban"))
-      out.push({ id: "a:ban", group: "Aktionen", label: "Spieler bannen …", sub: "auch offline, per Name", icon: <Ban />, run: () => openSheet({ kind: "punish", type: "ban" }), keywords: "ban sperren" });
+      out.push({ id: "a:ban", group: t("Actions"), label: t("Ban player…"), sub: t("By name, even when offline"), icon: <Ban />, run: () => openSheet({ kind: "punish", type: "ban" }), keywords: "ban sperren" });
     if (can(me, "players.mute"))
-      out.push({ id: "a:mute", group: "Aktionen", label: "Spieler muten …", icon: <MicOff />, run: () => openSheet({ kind: "punish", type: "mute" }), keywords: "mute stumm" });
+      out.push({ id: "a:mute", group: t("Actions"), label: t("Mute player…"), icon: <MicOff />, run: () => openSheet({ kind: "punish", type: "mute" }), keywords: "mute silence stumm" });
     out.push({
       id: "a:theme",
-      group: "Aktionen",
-      label: resolved() === "dark" ? "Helles Design" : "Dunkles Design",
+      group: t("Actions"),
+      label: resolved() === "dark" ? t("Light mode") : t("Dark mode"),
       icon: resolved() === "dark" ? <Sun /> : <Moon />,
       run: () => setTheme(resolved() === "dark" ? "light" : "dark"),
-      keywords: "theme design hell dunkel dark light",
+      keywords: "theme appearance design light dark hell dunkel",
     });
-    out.push({ id: "a:logout", group: "Aktionen", label: "Abmelden", icon: <LogOut />, run: () => logout(), keywords: "logout" });
+    out.push({ id: "a:logout", group: t("Actions"), label: t("Sign out"), icon: <LogOut />, run: () => logout(), keywords: "logout sign out abmelden" });
 
     const online = new Set((snap?.players ?? []).map((p) => p.uuid));
     const onlineMatches = ql.length >= 1 ? (snap?.players ?? []).filter((p) => p.name.toLowerCase().includes(ql)).slice(0, 6) : [];
@@ -131,7 +132,7 @@ function PaletteBody() {
       const srv = "server" in p ? (p as { server?: string }).server : undefined;
       pl.push({
         id: "u:" + p.uuid,
-        group: "Spieler",
+        group: t("Players"),
         label: p.name,
         sub: online.has(p.uuid) ? "online" + (srv ? " · " + srv : "") : "offline",
         icon: <Avatar uuid={p.uuid} name={p.name} size="sm" />,
@@ -157,12 +158,12 @@ function PaletteBody() {
   let lastGroup = "";
   return (
     <div className="scrim palette-scrim" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="glass palette" role="dialog" aria-label="Suche">
+      <div className="glass palette" role="dialog" aria-label={t("Search")}>
         <div className="palette-input">
           <Search />
           <input
             autoFocus
-            placeholder="Spieler, Server, Seiten, Aktionen …"
+            placeholder={t("Players, servers, pages, actions…")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
@@ -175,7 +176,7 @@ function PaletteBody() {
           <kbd>esc</kbd>
         </div>
         <div className="palette-list" ref={listRef}>
-          {entries.length === 0 && <div className="empty"><b>Nichts gefunden</b><span>Versuch einen Spielernamen oder „Konsole“.</span></div>}
+          {entries.length === 0 && <div className="empty"><b>{t("No results")}</b><span>{t("Try a player name or “console”.")}</span></div>}
           {entries.map((e, i) => {
             const head = e.group !== lastGroup ? <div className="palette-group">{e.group}</div> : null;
             lastGroup = e.group;
@@ -192,9 +193,9 @@ function PaletteBody() {
           })}
         </div>
         <div className="palette-foot hide-m">
-          <span><kbd>↑</kbd> <kbd>↓</kbd> auswählen</span>
-          <span><kbd>↵</kbd> öffnen</span>
-          <span><kbd>⌘</kbd> <kbd>K</kbd> überall</span>
+          <span><kbd>↑</kbd> <kbd>↓</kbd> {t("to select")}</span>
+          <span><kbd>↵</kbd> {t("to open")}</span>
+          <span><kbd>⌘</kbd> <kbd>K</kbd> {t("anywhere")}</span>
         </div>
       </div>
     </div>

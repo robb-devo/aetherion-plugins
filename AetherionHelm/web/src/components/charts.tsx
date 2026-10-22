@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { clock, dayShort, n0 } from "../lib/format";
+import { t } from "../lib/i18n";
 
 // Hand-drawn SVG charts: no chart library, so they look exactly like the rest of the app.
 
@@ -70,7 +71,7 @@ export interface SeriesDef {
   dashed?: boolean;
 }
 
-export function AreaChart({ data, series, height = 200, yMax, yMin = 0, yFormat = n0, xFormat, refLines = [], empty = "Noch keine Daten" }: {
+export function AreaChart({ data, series, height = 200, yMax, yMin = 0, yFormat = n0, xFormat, refLines = [], empty = t("No data yet") }: {
   data: Record<string, any>[];
   series: SeriesDef[];
   height?: number;
@@ -290,7 +291,7 @@ export function Donut({ parts, size = 140, stroke = 16, children }: { parts: { v
 }
 
 export function HeatMap({ grid }: { grid: number[][] }) {
-  const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const days = [t("Mon"), t("Tue"), t("Wed"), t("Thu"), t("Fri"), t("Sat"), t("Sun")];
   const max = Math.max(1, ...grid.flat());
   return (
     <div className="heat">
@@ -304,7 +305,7 @@ export function HeatMap({ grid }: { grid: number[][] }) {
           {row.map((v, h) => (
             <i
               key={h}
-              title={`${days[d]} ${h}–${h + 1} Uhr: ${Math.round(v)} Min. (4 Wochen)`}
+              title={t("{day}, {from}:00–{to}:00 · {n} min over 4 weeks", { day: days[d], from: h, to: h + 1, n: Math.round(v) })}
               style={{ background: v ? `color-mix(in srgb, var(--accent) ${Math.round(18 + (v / max) * 82)}%, transparent)` : undefined }}
             />
           ))}

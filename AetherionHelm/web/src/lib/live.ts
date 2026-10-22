@@ -2,6 +2,7 @@ import { createStore } from "./store";
 import type { Alert, AuditRow, ConsoleLine, HelmEvent, Snapshot } from "./types";
 import { demoLive } from "./demo";
 import { toast } from "./toast";
+import { t } from "./i18n";
 
 export type Conn = "connecting" | "live" | "offline";
 
@@ -80,7 +81,7 @@ function onSnap(s: Snapshot) {
     seriesT.push(s.ts);
     // alerts that just appeared get a toast
     const before = new Set((st.snap?.alerts ?? []).map((a) => a.key));
-    if (st.snap) for (const a of s.alerts) if (!before.has(a.key) && a.level === "crit") toast(a.title, "err");
+    if (st.snap) for (const a of s.alerts) if (!before.has(a.key) && a.level === "crit") toast(t(a.title), "err");
     return { ...st, snap: s, series, seriesT };
   });
 }
@@ -107,7 +108,7 @@ export function handleMessage(m: any) {
     }
     case "alert": {
       const a = m.data as Alert;
-      if (a.level === "info") toast(a.title, "info");
+      if (a.level === "info") toast(t(a.title), "info");
       break;
     }
     case "audit":

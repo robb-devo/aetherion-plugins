@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronRight, LayoutGrid, LogOut, Menu as MenuIcon, MessagesSquare, Search, Server, Users } from "lucide-react";
 import { api } from "./lib/api";
+import { t } from "./lib/i18n";
 import { live, seedEvents } from "./lib/live";
 import { useRoute, go, href } from "./lib/router";
 import { can, logout, refreshMe, session } from "./lib/session";
@@ -28,7 +29,7 @@ import { Alerts } from "./pages/Alerts";
 import { Team } from "./pages/Team";
 import { Settings } from "./pages/Settings";
 
-/** Detail pages name themselves here, so the top bar can show "Spieler › Notch". */
+/** Detail pages name themselves here, so the top bar can show "Players › Notch". */
 export const crumb = createStore<{ page: string; label: string } | null>(null);
 export function useCrumb(page: string, label?: string) {
   useEffect(() => {
@@ -155,7 +156,7 @@ function Sidebar() {
         </span>
         <div>
           <div className="brand-name">Aetherion Helm</div>
-          <div className="brand-sub">Staff-Konsole</div>
+          <div className="brand-sub">{t("Staff console")}</div>
         </div>
       </a>
       <nav className="nav">
@@ -180,7 +181,7 @@ function Sidebar() {
           );
         })}
       </nav>
-      <a className="me-card" href={href("settings")} title="Einstellungen">
+      <a className="me-card" href={href("settings")} title={t("Settings")}>
         <Avatar name={me.user.mcName ?? me.user.display} uuid={me.user.mcName} size="sm" />
         <div className="who">
           <b>{me.user.display}</b>
@@ -216,24 +217,24 @@ function Topbar({ scrolled }: { scrolled: boolean }) {
       </div>
       <div className="spacer" />
       {__DEMO__ && (
-        <span className="demo-pill" title="Diese Vorschau läuft mit erfundenen Beispieldaten. Das echte Panel zeigt dein Netzwerk.">
-          Vorschau mit Beispieldaten
+        <span className="demo-pill" title={t("This preview runs on made-up sample data. The real panel shows your network.")}>
+          {t("Preview with sample data")}
         </span>
       )}
-      <span className="live-pill" title={conn === "live" ? "Live verbunden" : conn === "connecting" ? "Verbinde …" : "Verbindung unterbrochen, versuche es erneut"}>
+      <span className="live-pill" title={conn === "live" ? t("Live connection") : conn === "connecting" ? t("Connecting…") : t("Connection lost. Reconnecting…")}>
         <Dot tone={conn === "live" ? "green" : conn === "connecting" ? "yellow" : "red"} pulse={conn !== "offline"} />
-        <span className="lp-text">{conn === "live" ? "Live" : conn === "connecting" ? "Verbinde" : "Offline"}</span>
+        <span className="lp-text">{conn === "live" ? "Live" : conn === "connecting" ? t("Connecting") : "Offline"}</span>
         {online != null && <span className="num" style={{ color: "var(--text)" }}>· {online}</span>}
       </span>
       <button className="search-trigger hide-m" onClick={() => openPalette()}>
         <Search />
-        <span>Suchen …</span>
+        <span>{t("Search…")}</span>
         <kbd>⌘K</kbd>
       </button>
-      <IconButton label="Suchen" className="show-m" onClick={() => openPalette()}>
+      <IconButton label={t("Search")} className="show-m" onClick={() => openPalette()}>
         <Search />
       </IconButton>
-      <IconButton label="Warnungen" onClick={() => go("alerts")} dot={alerts > 0}>
+      <IconButton label={t("Alerts")} onClick={() => go("alerts")} dot={alerts > 0}>
         <Bell />
       </IconButton>
     </header>
@@ -241,9 +242,9 @@ function Topbar({ scrolled }: { scrolled: boolean }) {
 }
 
 const TABS = [
-  { id: "overview", label: "Übersicht", icon: LayoutGrid },
-  { id: "servers", label: "Server", icon: Server },
-  { id: "players", label: "Spieler", icon: Users, perm: "players.view" },
+  { id: "overview", label: t("Overview"), icon: LayoutGrid },
+  { id: "servers", label: t("Servers"), icon: Server },
+  { id: "players", label: t("Players"), icon: Users, perm: "players.view" },
   { id: "activity", label: "Chat", icon: MessagesSquare },
 ];
 
@@ -251,23 +252,23 @@ function TabBar() {
   const me = useStore(session, (s) => s.me)!;
   const route = useRoute();
   const badges = useBadges();
-  const inTabs = TABS.some((t) => t.id === route.page);
+  const inTabs = TABS.some((tab) => tab.id === route.page);
   const moreCount = (badges.reports ?? 0) + (badges.alerts ?? 0);
   return (
     <nav className="glass tabbar">
-      {TABS.filter((t) => !t.perm || can(me, t.perm)).map((t) => {
-        const I = t.icon;
+      {TABS.filter((tab) => !tab.perm || can(me, tab.perm)).map((tab) => {
+        const I = tab.icon;
         return (
           <button
-            key={t.id}
-            className={route.page === t.id ? "on" : ""}
+            key={tab.id}
+            className={route.page === tab.id ? "on" : ""}
             onClick={() => {
               tap("light");
-              go(t.id);
+              go(tab.id);
             }}
           >
             <I />
-            {t.label}
+            {tab.label}
           </button>
         );
       })}
@@ -279,7 +280,7 @@ function TabBar() {
         }}
       >
         <MenuIcon />
-        Mehr
+        {t("More")}
         {moreCount > 0 && <span className="count">{moreCount}</span>}
       </button>
     </nav>
@@ -292,9 +293,9 @@ function MoreSheet() {
   const badges = useBadges();
   if (!open) return null;
   const close = () => ui.set((s) => ({ ...s, sheet: null }));
-  const items = NAV.flatMap((g) => g.items).filter((i) => !TABS.some((t) => t.id === i.id) && (!i.perm || can(me, i.perm)));
+  const items = NAV.flatMap((g) => g.items).filter((i) => !TABS.some((tab) => tab.id === i.id) && (!i.perm || can(me, i.perm)));
   return (
-    <Sheet title="Mehr" onClose={close}>
+    <Sheet title={t("More")} onClose={close}>
       <div className="list glass" style={{ borderRadius: 18, background: "var(--well)" }}>
         {items.map((i) => {
           const I = i.icon;
@@ -328,7 +329,7 @@ function MoreSheet() {
             <div className="sub">{me.user.roleLabel}</div>
           </div>
           <button className="btn sm tinted red" onClick={() => logout()}>
-            <LogOut /> Abmelden
+            <LogOut /> {t("Sign out")}
           </button>
         </div>
       </div>

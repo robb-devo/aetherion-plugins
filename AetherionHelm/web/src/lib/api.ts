@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { demoApi } from "./demo";
+import { t } from "./i18n";
 
 export class ApiError extends Error {
   status: number;
@@ -30,7 +31,7 @@ export async function api<T = any>(path: string, init: { method?: string; body?:
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new ApiError(0, "Keine Verbindung zum Panel. Prüfe deine Internetverbindung.");
+    throw new ApiError(0, t("Can't reach the panel. Check your internet connection."));
   }
   let data: any = null;
   try {
@@ -40,7 +41,7 @@ export async function api<T = any>(path: string, init: { method?: string; body?:
   }
   if (!res.ok) {
     if (res.status === 401 && !path.startsWith("/api/auth/")) unauthorized();
-    throw new ApiError(res.status, data?.error || `Fehler ${res.status}`, data);
+    throw new ApiError(res.status, data?.error ? t(String(data.error)) : t("Request failed ({status})", { status: res.status }), data);
   }
   return data as T;
 }

@@ -6,6 +6,7 @@ import "./styles/app.css";
 import "./lib/theme";
 import { resolved } from "./lib/theme";
 import { initNative, isNative } from "./lib/native";
+import { initLiquid } from "./lib/liquid";
 import { App } from "./App";
 
 initNative(resolved() === "dark");
@@ -19,3 +20,4 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </StrictMode>,
 );
+initLiquid();

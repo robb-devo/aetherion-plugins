@@ -15,6 +15,7 @@ import { MessageSheet, PunishSheet, SendSheet, revoke } from "../components/acti
 import { Avatar, Badge, Banner, Button, Card, CardHead, Empty, KV, Meter, Skeleton, Tabs, useTick } from "../components/ui";
 import { EventRow } from "./Activity";
 import { toneColor } from "./Overview";
+import { t } from "../lib/i18n";
 
 type Tab = "overview" | "inventory" | "record" | "links" | "history";
 
@@ -54,11 +55,11 @@ export function PlayerPage({ uuid, tab: rawTab }: { uuid: string; tab?: string }
   const name = data.name;
 
   const tabs = [
-    { value: "overview" as Tab, label: "Übersicht", icon: <User /> },
-    { value: "inventory" as Tab, label: "Inventar", icon: <Gamepad2 />, hidden: !can(me, "players.inventory") },
-    { value: "record" as Tab, label: `Akte${data.punishments.length ? ` · ${data.punishments.length}` : ""}`, icon: <FileText /> },
-    { value: "links" as Tab, label: "Verbindungen", icon: <Fingerprint /> },
-    { value: "history" as Tab, label: "Verlauf", icon: <History /> },
+    { value: "overview" as Tab, label: t("Overview"), icon: <User /> },
+    { value: "inventory" as Tab, label: t("Inventory"), icon: <Gamepad2 />, hidden: !can(me, "players.inventory") },
+    { value: "record" as Tab, label: t("Record") + (data.punishments.length ? ` · ${data.punishments.length}` : ""), icon: <FileText /> },
+    { value: "links" as Tab, label: t("Connections"), icon: <Fingerprint /> },
+    { value: "history" as Tab, label: t("History"), icon: <History /> },
   ];
 
   return (
@@ -69,35 +70,35 @@ export function PlayerPage({ uuid, tab: rawTab }: { uuid: string; tab?: string }
           <div className="row wrap" style={{ gap: 10 }}>
             <h1 className="ellipsis">{name}</h1>
             {online ? <Badge tone="green" icon={<Wifi />}>online · {serverName(me, lv.server)}</Badge> : <Badge>zuletzt {ago(rec?.lastSeen)}</Badge>}
-            {ban && <Badge tone="red" icon={<Ban />}>gebannt · {until(ban.expires)}</Badge>}
-            {mute && <Badge tone="orange" icon={<MicOff />}>gemutet · {until(mute.expires)}</Badge>}
+            {ban && <Badge tone="red" icon={<Ban />}>{t("banned ·")}{" "}{until(ban.expires)}</Badge>}
+            {mute && <Badge tone="orange" icon={<MicOff />}>{t("muted ·")}{" "}{until(mute.expires)}</Badge>}
           </div>
           <div className="row wrap small muted" style={{ gap: 16 }}>
             <span className="row" style={{ gap: 6 }}><Clock size={14} /> {duration(rec?.playtime, 2)} gespielt</span>
             <span className="row" style={{ gap: 6 }}><CalendarClock size={14} /> seit {day(rec?.firstSeen)}</span>
-            <span className="row" style={{ gap: 6 }}><History size={14} /> {rec?.sessions ?? 0} Sitzungen</span>
+            <span className="row" style={{ gap: 6 }}><History size={14} /> {rec?.sessions ?? 0} {t("Sessions")}</span>
             {lv.client || rec?.client ? <span className="row" style={{ gap: 6 }}><Gamepad2 size={14} /> {lv.client ?? rec?.client}</span> : null}
           </div>
-          <button className="row tiny faint mono" style={{ gap: 6, width: "fit-content" }} onClick={() => attempt(() => navigator.clipboard.writeText(uuid), "UUID kopiert")}>
+          <button className="row tiny faint mono" style={{ gap: 6, width: "fit-content" }} onClick={() => attempt(() => navigator.clipboard.writeText(uuid), t("UUID copied"))}>
             {uuid} <Copy size={12} />
           </button>
         </div>
         <div className="ph-actions row wrap" style={{ gap: 8, justifyContent: "flex-end" }}>
-          {can(me, "players.message") && <Button size="sm" icon={<MessageSquare />} disabled={!online} onClick={() => setSheet("msg")}>Nachricht</Button>}
-          {can(me, "players.send") && <Button size="sm" icon={<ArrowRightLeft />} disabled={!online} onClick={() => setSheet("send")}>Verschieben</Button>}
+          {can(me, "players.message") && <Button size="sm" icon={<MessageSquare />} disabled={!online} onClick={() => setSheet("msg")}>{t("Message")}</Button>}
+          {can(me, "players.send") && <Button size="sm" icon={<ArrowRightLeft />} disabled={!online} onClick={() => setSheet("send")}>{t("Move")}</Button>}
           {can(me, "players.kick") && <Button size="sm" icon={<UserX />} disabled={!online} onClick={() => setSheet("kick")}>Kick</Button>}
-          {can(me, "players.kick") && <Button size="sm" icon={<TriangleAlert />} onClick={() => setSheet("warn")}>Verwarnen</Button>}
+          {can(me, "players.kick") && <Button size="sm" icon={<TriangleAlert />} onClick={() => setSheet("warn")}>{t("Warn")}</Button>}
           {can(me, "players.mute") &&
             (mute ? (
-              <Button size="sm" variant="tinted" icon={<MicOff />} onClick={async () => (await revoke("mute", uuid, name)) && reload()}>Entmuten</Button>
+              <Button size="sm" variant="tinted" icon={<MicOff />} onClick={async () => (await revoke("mute", uuid, name)) && reload()}>{t("Unmute")}</Button>
             ) : (
-              <Button size="sm" variant="tinted" tone="orange" icon={<MicOff />} onClick={() => setSheet("mute")}>Muten</Button>
+              <Button size="sm" variant="tinted" tone="orange" icon={<MicOff />} onClick={() => setSheet("mute")}>{t("Mute")}</Button>
             ))}
           {can(me, "players.ban") &&
             (ban ? (
-              <Button size="sm" variant="tinted" tone="green" icon={<ShieldCheck />} onClick={async () => (await revoke("ban", uuid, name)) && reload()}>Entbannen</Button>
+              <Button size="sm" variant="tinted" tone="green" icon={<ShieldCheck />} onClick={async () => (await revoke("ban", uuid, name)) && reload()}>{t("Unban")}</Button>
             ) : (
-              <Button size="sm" variant="danger" icon={<Ban />} onClick={() => setSheet("ban")}>Bannen</Button>
+              <Button size="sm" variant="danger" icon={<Ban />} onClick={() => setSheet("ban")}>{t("Ban")}</Button>
             ))}
         </div>
       </div>
@@ -129,11 +130,11 @@ function Overview({ data, online, lv }: { data: PlayerDetail; online: boolean; l
       <div className="col" style={{ gap: 16 }}>
         {online ? (
           <Card>
-            <CardHead title="Gerade" icon={<Wifi />} sub={serverName(me, lv.server)} />
+            <CardHead title={t("Right now")} icon={<Wifi />} sub={serverName(me, lv.server)} />
             <div className="grid g2" style={{ gap: 18 }}>
               <div className="col" style={{ gap: 12 }}>
                 <div className="col" style={{ gap: 5 }}>
-                  <div className="row between small"><span className="row" style={{ gap: 6 }}><Heart size={14} className="red" /> Leben</span><span className="num">{n1(lv.health)} / {n0(maxH)}</span></div>
+                  <div className="row between small"><span className="row" style={{ gap: 6 }}><Heart size={14} className="red" /> {t("Health")}</span><span className="num">{n1(lv.health)} / {n0(maxH)}</span></div>
                   <Meter value={(lv.health ?? 0) / maxH} tone="red" />
                 </div>
                 <div className="col" style={{ gap: 5 }}>
@@ -150,31 +151,31 @@ function Overview({ data, online, lv }: { data: PlayerDetail; online: boolean; l
               </div>
               <KV
                 rows={[
-                  ["Welt", lv.world],
+                  [t("World"), lv.world],
                   ["Position", lv.x != null ? <span className="mono">{lv.x} {lv.y} {lv.z}</span> : undefined],
                   ["Ping", lv.ping != null ? <span style={{ color: toneColor(pingTone(lv.ping)) }}>{lv.ping} ms</span> : undefined],
                   ["Client", [lv.client, lv.brand].filter(Boolean).join(" · ") || undefined],
-                  ["Sprache", lv.locale],
-                  ["Adresse", lv.host],
+                  [t("Language"), lv.locale],
+                  [t("Address"), lv.host],
                 ]}
               />
             </div>
           </Card>
         ) : (
           <Card>
-            <Empty icon={<Wifi />} title="Gerade offline" text={`Zuletzt ${ago(data.record?.lastSeen)} auf ${serverName(me, data.record?.lastServer)}.`} />
+            <Empty icon={<Wifi />} title={t("Offline now")} text={t("Last seen {when} on {server}.", { when: ago(data.record?.lastSeen), server: serverName(me, data.record?.lastServer) })} />
           </Card>
         )}
         <Card>
-          <CardHead title="Wann online" icon={<CalendarClock />} sub="letzte 4 Wochen, nach Wochentag und Uhrzeit" />
+          <CardHead title={t("When online")} icon={<CalendarClock />} sub={t("last 4 weeks, by weekday and hour")} />
           <HeatMap grid={data.activity?.length === 7 ? data.activity : Array.from({ length: 7 }, () => Array(24).fill(0))} />
         </Card>
       </div>
       <div className="col" style={{ gap: 16 }}>
         <Card>
-          <CardHead title="Letzte Sitzungen" icon={<History />} />
+          <CardHead title={t("Recent sessions")} icon={<History />} />
           {sessions.length === 0 ? (
-            <div className="small faint">Noch keine Sitzungen erfasst.</div>
+            <div className="small faint">{t("No sessions recorded yet.")}</div>
           ) : (
             <div className="col" style={{ gap: 8 }}>
               {[...sessions].reverse().slice(0, 8).map((s, i) => {
@@ -183,7 +184,7 @@ function Overview({ data, online, lv }: { data: PlayerDetail; online: boolean; l
                   <div key={i} className="col" style={{ gap: 4 }}>
                     <div className="row between tiny">
                       <span className="muted">{when(s.start)}</span>
-                      <span className="num">{s.end ? duration(len, 2) : <b className="green">läuft · {duration(len, 1)}</b>}</span>
+                      <span className="num">{s.end ? duration(len, 2) : <b className="green">{t("running ·")}{" "}{duration(len, 1)}</b>}</span>
                     </div>
                     <Meter value={len / longest} tone={s.end ? "" : "green"} />
                   </div>
@@ -194,10 +195,10 @@ function Overview({ data, online, lv }: { data: PlayerDetail; online: boolean; l
         </Card>
         <Card className="flush">
           <div style={{ padding: "18px 20px 4px" }}>
-            <CardHead title="Zuletzt" icon={<MessageSquare />} />
+            <CardHead title={t("Last seen")} icon={<MessageSquare />} />
           </div>
           {data.events.length === 0 ? (
-            <Empty title="Noch nichts" />
+            <Empty title={t("Nothing yet")} />
           ) : (
             <div style={{ paddingBottom: 8 }}>
               {data.events.slice(0, 8).map((e) => (
@@ -217,15 +218,15 @@ function Record({ data, reload }: { data: PlayerDetail; reload: () => void }) {
   const [busy, setBusy] = useState(false);
   const icon = { ban: <Ban />, mute: <MicOff />, kick: <UserX />, warn: <TriangleAlert /> };
   const tone = { ban: "red", mute: "orange", kick: "orange", warn: "yellow" };
-  const label = { ban: "Bann", mute: "Mute", kick: "Kick", warn: "Verwarnung" };
+  const label = { ban: t("Ban"), mute: "Mute", kick: "Kick", warn: t("Warning") };
   return (
     <div className="grid g-split">
       <Card className="flush">
         <div style={{ padding: "18px 20px 4px" }}>
-          <CardHead title="Strafen" icon={<Gavel />} sub={data.punishments.length ? `${data.punishments.length} insgesamt` : undefined} />
+          <CardHead title={t("Punishments")} icon={<Gavel />} sub={data.punishments.length ? t("{n} total", { n: data.punishments.length }) : undefined} />
         </div>
         {data.punishments.length === 0 ? (
-          <Empty icon={<ShieldCheck />} title="Weiße Weste" text="Keine Bans, Mutes, Kicks oder Verwarnungen." />
+          <Empty icon={<ShieldCheck />} title={t("Clean record")} text={t("No bans, mutes, kicks or warnings.")} />
         ) : (
           <div className="list">
             {data.punishments.map((p) => {
@@ -236,14 +237,14 @@ function Record({ data, reload }: { data: PlayerDetail; reload: () => void }) {
                   <div className="grow">
                     <div className="row wrap" style={{ gap: 8 }}>
                       <span className="title">{label[p.type]}</span>
-                      {act && <Badge tone="red">aktiv · {until(p.expires)}</Badge>}
-                      {p.revokedAt && <Badge outline>aufgehoben von {p.revokedBy}</Badge>}
+                      {act && <Badge tone="red">{t("active ·")}{" "}{until(p.expires)}</Badge>}
+                      {p.revokedAt && <Badge outline>{t("revoked by")}{" "}{p.revokedBy}</Badge>}
                       {!act && !p.revokedAt && (p.type === "ban" || p.type === "mute") && <Badge outline>abgelaufen</Badge>}
                     </div>
-                    <div className="small" style={{ marginTop: 2 }}>{p.reason || <span className="faint">kein Grund angegeben</span>}</div>
+                    <div className="small" style={{ marginTop: 2 }}>{p.reason || <span className="faint">{t("no reason given")}</span>}</div>
                     <div className="sub">
-                      {stamp(p.created)} · von {p.byUser}
-                      {p.expires ? ` · bis ${stamp(p.expires)}` : p.type === "ban" || p.type === "mute" ? " · dauerhaft" : ""}
+                      {stamp(p.created)} {t("· by")}{" "}{p.byUser}
+                      {p.expires ? t(" · until {d}", { d: stamp(p.expires) }) : p.type === "ban" || p.type === "mute" ? " · dauerhaft" : ""}
                     </div>
                   </div>
                 </div>
@@ -253,10 +254,10 @@ function Record({ data, reload }: { data: PlayerDetail; reload: () => void }) {
         )}
       </Card>
       <Card>
-        <CardHead title="Team-Notizen" icon={<NotebookPen />} sub="nur fürs Team sichtbar" />
+        <CardHead title={t("Team notes")} icon={<NotebookPen />} sub={t("visible to the team only")} />
         {can(me, "notes.write") && (
           <div className="col mb" style={{ gap: 8 }}>
-            <textarea className="textarea" placeholder="z. B. „Hat sich für den Spam entschuldigt, beim nächsten Mal Mute.“" value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} />
+            <textarea className="textarea" placeholder={t("e.g. “Apologised for the spam, mute next time.”")} value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} />
             <Button
               variant="primary"
               size="sm"
@@ -266,19 +267,19 @@ function Record({ data, reload }: { data: PlayerDetail; reload: () => void }) {
               style={{ alignSelf: "flex-end" }}
               onClick={async () => {
                 setBusy(true);
-                if (await attempt(() => post(`/api/players/${data.uuid}/notes`, { text: note.trim() }), "Notiz gespeichert")) {
+                if (await attempt(() => post(`/api/players/${data.uuid}/notes`, { text: note.trim() }), t("Note saved"))) {
                   setNote("");
                   reload();
                 }
                 setBusy(false);
               }}
             >
-              Notiz speichern
+              {t("Save note")}
             </Button>
           </div>
         )}
         {data.notes.length === 0 ? (
-          <div className="small faint">Noch keine Notizen.</div>
+          <div className="small faint">{t("No notes yet.")}</div>
         ) : (
           <div className="col" style={{ gap: 10 }}>
             {data.notes.map((n) => (
@@ -305,22 +306,22 @@ function Links({ data }: { data: PlayerDetail }) {
             icon={<Fingerprint />}
             right={
               <Button size="sm" variant="ghost" icon={reveal ? <EyeOff /> : <Eye />} onClick={() => setReveal(!reveal)}>
-                {reveal ? "Verbergen" : "Zeigen"}
+                {reveal ? t("Hide") : t("Show")}
               </Button>
             }
           />
         </div>
         {data.ips.length === 0 ? (
-          <Empty title="Keine Daten" />
+          <Empty title={t("No data")} />
         ) : (
           <div className="list">
             {data.ips.map((ip) => (
               <div key={ip.ip} className="list-item">
                 <div className="grow">
                   <div className="title mono">{reveal ? ip.ip : maskIp(ip.ip)}</div>
-                  <div className="sub">zuerst {day(ip.first)} · zuletzt {ago(ip.last)}</div>
+                  <div className="sub">zuerst {day(ip.first)} {t("· last")}{" "}{ago(ip.last)}</div>
                 </div>
-                {ip.accounts > 1 ? <Badge tone="orange">{ip.accounts} Konten</Badge> : <Badge outline>nur dieses Konto</Badge>}
+                {ip.accounts > 1 ? <Badge tone="orange">{ip.accounts} {t("Accounts")}</Badge> : <Badge outline>{t("this account only")}</Badge>}
               </div>
             ))}
           </div>
@@ -328,10 +329,10 @@ function Links({ data }: { data: PlayerDetail }) {
       </Card>
       <Card className="flush">
         <div style={{ padding: "18px 20px 4px" }}>
-          <CardHead title="Mögliche Zweitkonten" icon={<Users />} sub="gleiche IP gesehen" />
+          <CardHead title={t("Possible alt accounts")} icon={<Users />} sub={t("same IP seen")} />
         </div>
         {data.alts.length === 0 ? (
-          <Empty icon={<ShieldCheck />} title="Keine gefunden" text="Niemand sonst hat sich von diesen Adressen eingeloggt." />
+          <Empty icon={<ShieldCheck />} title={t("None found")} text={t("No one else has signed in from these addresses.")} />
         ) : (
           <div className="list">
             {data.alts.map((a) => (
@@ -355,7 +356,7 @@ function PlayerHistory({ data }: { data: PlayerDetail }) {
   return (
     <Card className="flush">
       {data.events.length === 0 ? (
-        <Empty icon={<History />} title="Noch kein Verlauf" />
+        <Empty icon={<History />} title={t("No history yet")} />
       ) : (
         <div style={{ padding: "8px 0" }}>
           {data.events.map((e) => (

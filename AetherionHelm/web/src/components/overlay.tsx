@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import { t } from "../lib/i18n";
 import { useStore } from "../lib/store";
 import { toasts } from "../lib/toast";
 import { Button, IconButton, cx } from "./ui";
@@ -37,7 +38,7 @@ export function Sheet({ title, sub, children, foot, onClose, wide, icon }: {
             <h2>{title}</h2>
             {sub && <p>{sub}</p>}
           </div>
-          <IconButton label="Schließen" size="sm" onClick={close} data-dismiss>
+          <IconButton label={t("Close")} size="sm" onClick={close} data-dismiss>
             <X />
           </IconButton>
         </div>
@@ -50,7 +51,7 @@ export function Sheet({ title, sub, children, foot, onClose, wide, icon }: {
 }
 
 /** Yes/no question with an optional danger tone. Resolves through `onConfirm`. */
-export function Confirm({ title, text, confirm = "Bestätigen", danger, onConfirm, onClose }: {
+export function Confirm({ title, text, confirm = t("Confirm"), danger, onConfirm, onClose }: {
   title: string;
   text?: ReactNode;
   confirm?: string;
@@ -66,7 +67,7 @@ export function Confirm({ title, text, confirm = "Bestätigen", danger, onConfir
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant={danger ? "danger" : "primary"}
             busy={busy}
@@ -89,13 +90,13 @@ export function Confirm({ title, text, confirm = "Bestätigen", danger, onConfir
 }
 
 export function Toasts() {
-  const list = useStore(toasts, (t) => t);
+  const list = useStore(toasts, (s) => s);
   return createPortal(
     <div className="toasts" aria-live="polite">
-      {list.map((t) => (
-        <div key={t.id} className={cx("glass toast", t.kind, t.out && "out")}>
-          <span className="ic">{t.kind === "ok" ? <CheckCircle2 /> : t.kind === "err" ? <AlertTriangle /> : <Info />}</span>
-          <span>{t.text}</span>
+      {list.map((n) => (
+        <div key={n.id} className={cx("glass toast", n.kind, n.out && "out")}>
+          <span className="ic">{n.kind === "ok" ? <CheckCircle2 /> : n.kind === "err" ? <AlertTriangle /> : <Info />}</span>
+          <span>{n.text}</span>
         </div>
       ))}
     </div>,

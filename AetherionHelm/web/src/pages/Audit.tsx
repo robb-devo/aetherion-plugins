@@ -5,49 +5,50 @@ import { onAudit } from "../lib/live";
 import { ago, maskIp, stamp } from "../lib/format";
 import type { AuditRow, TeamUser } from "../lib/types";
 import { Badge, Button, Card, Empty, PageHead, Skeleton, cx, useTick } from "../components/ui";
+import { t } from "../lib/i18n";
 
 const LABELS: Record<string, string> = {
-  login: "Angemeldet",
-  "login.failed": "Fehlgeschlagene Anmeldung",
-  "2fa.enabled": "Zwei-Faktor eingerichtet",
-  "password.changed": "Passwort geändert",
-  "session.revoked": "Sitzung beendet",
-  "console.command": "Konsolenbefehl",
-  "server.start": "Server gestartet",
-  "server.stop": "Server gestoppt",
-  "server.restart": "Server neu gestartet",
-  "server.kill": "Server hart beendet",
-  "server.save": "Welten gespeichert",
-  "player.inventory": "Inventar angesehen",
-  "player.kick": "Gekickt",
-  "player.ban": "Gebannt",
-  "player.unban": "Entbannt",
-  "player.mute": "Gemutet",
-  "player.unmute": "Entmutet",
-  "player.warn": "Verwarnt",
-  "player.message": "Nachricht geschickt",
-  "player.send": "Verschoben",
-  "player.note": "Notiz",
+  login: t("Signed in"),
+  "login.failed": t("Failed sign-in"),
+  "2fa.enabled": t("Two-factor set up"),
+  "password.changed": t("Password changed"),
+  "session.revoked": t("Session ended"),
+  "console.command": t("Console command"),
+  "server.start": t("Server started"),
+  "server.stop": t("Server stopped"),
+  "server.restart": t("Server restarted"),
+  "server.kill": t("Server killed"),
+  "server.save": t("Worlds saved"),
+  "player.inventory": t("Viewed inventory"),
+  "player.kick": t("Kicked"),
+  "player.ban": t("Banned"),
+  "player.unban": t("Unbanned"),
+  "player.mute": t("Muted"),
+  "player.unmute": t("Unmuted"),
+  "player.warn": t("Warned"),
+  "player.message": t("Message sent"),
+  "player.send": t("Moved"),
+  "player.note": t("Note"),
   "chat.broadcast": "Broadcast",
-  "report.resolved": "Meldung erledigt",
-  "alert.ack": "Warnung bestätigt",
-  "team.created": "Konto erstellt",
-  "team.updated": "Konto geändert",
-  "team.removed": "Konto entfernt",
-  "team.reset-2fa": "2FA zurückgesetzt",
-  "team.reset-password": "Passwort zurückgesetzt",
-  "settings.changed": "Einstellungen geändert",
+  "report.resolved": t("Report resolved"),
+  "alert.ack": t("Alert acknowledged"),
+  "team.created": t("Account created"),
+  "team.updated": t("Account updated"),
+  "team.removed": t("Account removed"),
+  "team.reset-2fa": t("2FA reset"),
+  "team.reset-password": t("Password reset"),
+  "settings.changed": t("Settings changed"),
 };
 
 const GROUPS: { id: string; label: string; prefix: string; icon: React.ReactNode }[] = [
-  { id: "", label: "Alles", prefix: "", icon: <ScrollText /> },
+  { id: "", label: t("All"), prefix: "", icon: <ScrollText /> },
   { id: "player", label: "Moderation", prefix: "player", icon: <Ban /> },
-  { id: "console", label: "Konsole", prefix: "console", icon: <Terminal /> },
+  { id: "console", label: t("Console"), prefix: "console", icon: <Terminal /> },
   { id: "server", label: "Server", prefix: "server", icon: <Power /> },
   { id: "chat", label: "Chat", prefix: "chat", icon: <MessageSquare /> },
-  { id: "login", label: "Anmeldungen", prefix: "login", icon: <LogIn /> },
+  { id: "login", label: t("Sign-ins"), prefix: "login", icon: <LogIn /> },
   { id: "team", label: "Team", prefix: "team", icon: <Users /> },
-  { id: "settings", label: "Einstellungen", prefix: "settings", icon: <Settings /> },
+  { id: "settings", label: t("Settings"), prefix: "settings", icon: <Settings /> },
 ];
 
 function iconFor(a: string) {
@@ -92,7 +93,7 @@ export function Audit() {
 
   return (
     <div className="page">
-      <PageHead title="Protokoll" sub="Jede Aktion im Panel, mit Person, Zeit und Herkunft. Nicht löschbar." />
+      <PageHead title={t("Audit log")} sub={t("Every action in the panel, with who, when and from where. Cannot be deleted.")} />
       <div className="row wrap mb" style={{ gap: 10 }}>
         <div className="dur-presets">
           {GROUPS.map((g) => (
@@ -103,7 +104,7 @@ export function Audit() {
           ))}
         </div>
         <select className="select" style={{ width: 200, marginLeft: "auto" }} value={user} onChange={(e) => setUser(e.target.value)}>
-          <option value="">Alle Personen</option>
+          <option value="">{t("Everyone")}</option>
           {(team?.users ?? []).map((u) => (
             <option key={u.id} value={u.display}>{u.display}</option>
           ))}
@@ -113,7 +114,7 @@ export function Audit() {
         {loading && !data ? (
           <div style={{ padding: 16 }}><Skeleton h={200} /></div>
         ) : !data?.length ? (
-          <Empty icon={<ScrollText />} title="Keine Einträge" />
+          <Empty icon={<ScrollText />} title={t("No entries")} />
         ) : (
           <div className="list">
             {data.map((r) => {
@@ -137,7 +138,7 @@ export function Audit() {
         )}
         {data && data.length >= 150 && (
           <div style={{ padding: 16, display: "flex", justifyContent: "center" }}>
-            <Button variant="ghost" icon={<History />} busy={more} onClick={older}>Ältere laden</Button>
+            <Button variant="ghost" icon={<History />} busy={more} onClick={older}>{t("Load older")}</Button>
           </div>
         )}
       </Card>

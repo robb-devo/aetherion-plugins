@@ -8,6 +8,7 @@ import { tap } from "../lib/native";
 import { toast } from "../lib/toast";
 import { HelmMark } from "../components/Logo";
 import { Banner, Button, Switch, cx } from "../components/ui";
+import { t } from "../lib/i18n";
 
 export function Login() {
   const phase = useStore(session, (s) => s.phase);
@@ -54,7 +55,7 @@ function Otp({ onDone, disabled, shake }: { onDone: (code: string) => void; disa
             maxLength={i === 0 ? 6 : 1}
             autoFocus={i === 0}
             disabled={disabled}
-            aria-label={`Ziffer ${i + 1}`}
+            aria-label={t("Digit {n}", { n: i + 1 })}
             onChange={(e) => set(i, e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Backspace" && !d[i] && i > 0) refs.current[i - 1]?.focus();
@@ -139,8 +140,8 @@ function SignIn() {
         <div className="auth-logo">
           <ShieldCheck />
         </div>
-        <h1>Bestätigen</h1>
-        <p className="lead">{recovery ? "Gib einen deiner Wiederherstellungscodes ein. Jeder Code geht nur einmal." : "Gib den 6-stelligen Code aus deiner Authenticator-App ein."}</p>
+        <h1>{t("Confirm")}</h1>
+        <p className="lead">{recovery ? t("Enter one of your recovery codes. Each code works only once.") : t("Enter the 6-digit code from your authenticator app.")}</p>
         {recovery ? (
           <form
             onSubmit={(e) => {
@@ -150,16 +151,16 @@ function SignIn() {
             className="col"
           >
             <input className="input lg mono" style={{ textAlign: "center", letterSpacing: "0.12em" }} placeholder="XXXX-XXXX" value={rc} onChange={(e) => setRc(e.target.value.toUpperCase())} autoFocus />
-            <Button variant="primary" size="lg" block busy={busy} type="submit">Anmelden</Button>
+            <Button variant="primary" size="lg" block busy={busy} type="submit">{t("Sign in")}</Button>
           </form>
         ) : (
           <Otp onDone={second} disabled={busy} shake={shake} />
         )}
         {error && <div className="mt"><Banner tone="red">{error}</Banner></div>}
         <div className="row between mt">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft />} onClick={() => { setTicket(null); setError(null); }}>Zurück</Button>
+          <Button variant="ghost" size="sm" icon={<ArrowLeft />} onClick={() => { setTicket(null); setError(null); }}>{t("Back")}</Button>
           <Button variant="ghost" size="sm" icon={recovery ? <Smartphone /> : <KeyRound />} onClick={() => { setRecovery(!recovery); setError(null); }}>
-            {recovery ? "Authenticator-Code" : "Wiederherstellungscode"}
+            {recovery ? t("Authenticator code") : t("Recovery code")}
           </Button>
         </div>
       </div>
@@ -172,29 +173,29 @@ function SignIn() {
         <HelmMark size={34} />
       </div>
       <h1>Aetherion Helm</h1>
-      <p className="lead">Melde dich mit deinem Staff-Konto an.</p>
+      <p className="lead">{t("Sign in with your staff account.")}</p>
       <div className="col" style={{ gap: 12 }} ref={shakeRef}>
         <div className="input-icon">
           <User />
-          <input className="input lg" placeholder="Benutzername" autoComplete="username" autoCapitalize="off" spellCheck={false} value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
+          <input className="input lg" placeholder={t("Username")} autoComplete="username" autoCapitalize="off" spellCheck={false} value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
         </div>
         <div className="input-icon" style={{ position: "relative" }}>
           <Lock />
-          <input className="input lg" type={show ? "text" : "password"} placeholder="Passwort" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ paddingRight: 46 }} />
-          <button type="button" className="icon-btn sm" style={{ position: "absolute", right: 8, top: 9 }} onClick={() => setShow(!show)} aria-label={show ? "Passwort verbergen" : "Passwort zeigen"}>
+          <input className="input lg" type={show ? "text" : "password"} placeholder={t("Password")} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ paddingRight: 46 }} />
+          <button type="button" className="icon-btn sm" style={{ position: "absolute", right: 8, top: 9 }} onClick={() => setShow(!show)} aria-label={show ? t("Hide password") : t("Show password")}>
             {show ? <EyeOff /> : <Eye />}
           </button>
         </div>
         <label className="row between" style={{ padding: "4px 2px" }}>
-          <span className="muted small">Angemeldet bleiben (30 Tage)</span>
-          <Switch on={remember} onChange={setRemember} label="Angemeldet bleiben" />
+          <span className="muted small">{t("Stay signed in (30 days)")}</span>
+          <Switch on={remember} onChange={setRemember} label={t("Stay signed in")} />
         </label>
         {error && <Banner tone="red">{error}</Banner>}
         <Button variant="primary" size="lg" block busy={busy} type="submit" disabled={!username || !password}>
-          Weiter
+          {t("Continue")}
         </Button>
       </div>
-      <p className="legal">Geschützt mit Zwei-Faktor-Anmeldung. Jede Aktion wird protokolliert.</p>
+      <p className="legal">{t("Protected by two-factor sign-in. Every action is logged.")}</p>
     </form>
   );
 }
@@ -237,10 +238,10 @@ function Enroll() {
   };
 
   const copyCodes = () => {
-    navigator.clipboard?.writeText(codes!.join("\n")).then(() => toast("Codes kopiert"), () => toast("Kopieren nicht erlaubt", "err"));
+    navigator.clipboard?.writeText(codes!.join("\n")).then(() => toast(t("Codes copied")), () => toast(t("Copying not allowed"), "err"));
   };
   const downloadCodes = () => {
-    const text = `Aetherion Helm – Wiederherstellungscodes für ${me?.user.username}\nJeder Code funktioniert genau einmal.\n\n${codes!.join("\n")}\n`;
+    const text = t("Aetherion Helm – recovery codes for {user}\nEach code works exactly once.\n\n{codes}\n", { user: me?.user.username ?? "", codes: codes!.join("\n") });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
     a.download = `helm-codes-${me?.user.username}.txt`;
@@ -255,50 +256,50 @@ function Enroll() {
       </div>
       {step === 0 && (
         <>
-          <h1>Willkommen, {me?.user.display}</h1>
-          <p className="lead">Einmal kurz absichern. Scanne den Code mit einer Authenticator-App wie Google Authenticator, Authy oder 1Password.</p>
-          <div className="qr">{qr ? <img src={qr} alt="QR-Code für die Authenticator-App" /> : <div className="skel" style={{ width: "100%", height: "100%" }} />}</div>
-          <p className="faint small" style={{ textAlign: "center", margin: "16px 0 8px" }}>Kein Scanner? Gib den Schlüssel von Hand ein:</p>
-          <div className="secret" onClick={() => secret && navigator.clipboard?.writeText(secret).then(() => toast("Schlüssel kopiert"))}>
+          <h1>{t("Welcome,")}{" "}{me?.user.display}</h1>
+          <p className="lead">{t("One quick security step. Scan the code with an authenticator app like Google Authenticator, Authy or 1Password.")}</p>
+          <div className="qr">{qr ? <img src={qr} alt={t("QR code for the authenticator app")} /> : <div className="skel" style={{ width: "100%", height: "100%" }} />}</div>
+          <p className="faint small" style={{ textAlign: "center", margin: "16px 0 8px" }}>{t("No scanner? Enter the key by hand:")}</p>
+          <div className="secret" onClick={() => secret && navigator.clipboard?.writeText(secret).then(() => toast(t("Key copied")))}>
             {secret ? secret.replace(/(.{4})/g, "$1 ").trim() : "…"}
           </div>
           {error && <div className="mt"><Banner tone="red">{error}</Banner></div>}
           <div className="mt">
-            <Button variant="primary" size="lg" block onClick={() => setStep(1)} disabled={!secret}>Ich hab ihn gescannt</Button>
+            <Button variant="primary" size="lg" block onClick={() => setStep(1)} disabled={!secret}>{t("I've scanned it")}</Button>
           </div>
           <div className="row" style={{ justifyContent: "center", marginTop: 10 }}>
-            <Button variant="ghost" size="sm" onClick={() => logout()}>Abmelden</Button>
+            <Button variant="ghost" size="sm" onClick={() => logout()}>{t("Sign out")}</Button>
           </div>
         </>
       )}
       {step === 1 && (
         <>
-          <h1>Code eingeben</h1>
-          <p className="lead">Die App zeigt jetzt „Aetherion Helm“ mit einem 6-stelligen Code. Tipp ihn hier ein.</p>
+          <h1>{t("Enter code")}</h1>
+          <p className="lead">{t("The app now shows “Aetherion Helm” with a 6-digit code. Type it in here.")}</p>
           <Otp onDone={finish} disabled={busy} shake={shake} />
           {error && <div className="mt"><Banner tone="red">{error}</Banner></div>}
           <div className="row" style={{ justifyContent: "center", marginTop: 16 }}>
-            <Button variant="ghost" size="sm" icon={<ArrowLeft />} onClick={() => setStep(0)}>QR-Code nochmal zeigen</Button>
+            <Button variant="ghost" size="sm" icon={<ArrowLeft />} onClick={() => setStep(0)}>{t("Show QR code again")}</Button>
           </div>
         </>
       )}
       {step === 2 && codes && (
         <>
-          <h1>Fast fertig</h1>
-          <p className="lead">Das sind deine Wiederherstellungscodes, falls das Handy mal weg ist. Bewahr sie sicher auf, sie werden nur jetzt angezeigt.</p>
+          <h1>{t("Almost done")}</h1>
+          <p className="lead">{t("These are your recovery codes in case you lose your phone. Keep them somewhere safe; they are only shown now.")}</p>
           <div className="codes">
             {codes.map((c) => <span key={c}>{c}</span>)}
           </div>
           <div className="row mt" style={{ gap: 8 }}>
-            <Button className="grow" icon={<Copy />} onClick={() => { copyCodes(); setSaved(true); }}>Kopieren</Button>
-            <Button className="grow" icon={<Download />} onClick={downloadCodes}>Als Datei</Button>
+            <Button className="grow" icon={<Copy />} onClick={() => { copyCodes(); setSaved(true); }}>{t("Copy")}</Button>
+            <Button className="grow" icon={<Download />} onClick={downloadCodes}>{t("As file")}</Button>
           </div>
           <label className="row mt" style={{ cursor: "pointer" }}>
-            <Switch on={saved} onChange={setSaved} label="Gespeichert" />
-            <span className="small muted">Ich habe die Codes sicher abgelegt.</span>
+            <Switch on={saved} onChange={setSaved} label={t("Saved")} />
+            <span className="small muted">{t("I've stored the codes safely.")}</span>
           </label>
           <div className="mt">
-            <Button variant="primary" size="lg" block icon={<Check />} disabled={!saved} onClick={() => refreshMe()}>Los geht's</Button>
+            <Button variant="primary" size="lg" block icon={<Check />} disabled={!saved} onClick={() => refreshMe()}>{t("Let's go")}</Button>
           </div>
         </>
       )}

@@ -173,15 +173,16 @@ a {
 
 .glass {
   position: relative;
-  background: var(--glass), var(--glass-tint);
+  background: var(--glass-sheen), var(--glass), var(--glass-tint);
   -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--lq,) var(--glass-blur);
   border-radius: var(--r-lg);
   box-shadow: var(--glass-shadow);
   isolation: isolate;
 }
-/* the rim: a gradient hairline that catches light on the upper-left edge */
-.glass::before {
+/* the rim: a gradient hairline that catches light on the upper-left and lower-right edges */
+.glass::before,
+.topbar.scrolled::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -203,7 +204,16 @@ a {
   pointer-events: none;
 }
 .glass.strong {
-  background: var(--glass-strong), var(--glass-tint);
+  background: var(--glass-sheen), var(--glass-strong), var(--glass-tint);
+}
+/* the pointer carries a soft light across glass it hovers (lib/liquid.ts sets --mx/--my) */
+@media (hover: hover) {
+  .glass.card[style*="--mx"]:hover {
+    background: radial-gradient(260px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.07), transparent 65%), var(--glass-sheen), var(--glass), var(--glass-tint);
+  }
+  :root[data-theme="light"] .glass.card[style*="--mx"]:hover {
+    background: radial-gradient(260px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.55), transparent 65%), var(--glass-sheen), var(--glass), var(--glass-tint);
+  }
 }
 .glass.solid {
   background: var(--glass-solid);
@@ -309,12 +319,8 @@ a {
 }
 .nav-item.active {
   color: var(--text);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 4px 14px -6px rgba(0, 0, 0, 0.5);
-}
-:root[data-theme="light"] .nav-item.active {
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 1) inset, 0 4px 14px -6px rgba(40, 44, 90, 0.25);
+  background: var(--bubble);
+  box-shadow: var(--bubble-shadow);
 }
 .nav-item.active svg {
   color: var(--accent);
@@ -371,6 +377,7 @@ a {
 }
 
 .main {
+  position: relative;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -397,10 +404,35 @@ a {
   transition: background var(--t), box-shadow var(--t), -webkit-backdrop-filter var(--t), backdrop-filter var(--t);
 }
 .topbar.scrolled {
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  backdrop-filter: blur(24px) saturate(170%);
-  box-shadow: 0 1px 0 var(--line);
+  background: var(--glass-chrome);
+  -webkit-backdrop-filter: var(--glass-blur-clear);
+  backdrop-filter: var(--lq,) var(--glass-blur-clear);
+  box-shadow: var(--glass-shadow);
+}
+/* on wide screens the bar floats as a capsule once content scrolls under it; content passing above the capsule
+   softens into a blur instead of showing through the gap */
+@media (min-width: 681px) {
+  .main::before {
+    content: "";
+    position: absolute;
+    z-index: 5;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(#000 35%, transparent);
+    mask-image: linear-gradient(#000 35%, transparent);
+  }
+  .topbar {
+    top: 10px;
+    margin: 10px 14px 0;
+    padding: 10px 14px;
+    min-height: 56px;
+    border-radius: 20px;
+  }
 }
 .topbar .crumbs {
   display: flex;
@@ -721,14 +753,13 @@ h2.section,
   font-size: 13.5px;
   white-space: nowrap;
   color: var(--text);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.055));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.07), 0 4px 12px -6px rgba(0, 0, 0, 0.5);
-  transition: transform var(--t-fast) var(--ease), background var(--t-fast), box-shadow var(--t-fast), opacity var(--t-fast);
+  background: var(--bubble);
+  box-shadow: var(--bubble-shadow);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
+  /* presses squeeze quickly and spring back on release, like a drop of liquid */
+  transition: transform var(--t) var(--spring), background var(--t-fast), box-shadow var(--t-fast), opacity var(--t-fast);
   user-select: none;
-}
-:root[data-theme="light"] .btn {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.75));
-  box-shadow: inset 0 0 0 1px rgba(30, 36, 80, 0.1), 0 2px 8px -4px rgba(40, 44, 90, 0.25);
 }
 .btn svg {
   width: 16px;
@@ -739,16 +770,17 @@ h2.section,
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
 }
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
+  transition-duration: var(--t-fast);
 }
 .btn:disabled {
   opacity: 0.45;
   pointer-events: none;
 }
 .btn.primary {
-  background: var(--accent-grad);
+  background: radial-gradient(120% 100% at 30% -30%, rgba(255, 255, 255, 0.42), transparent 55%), var(--accent-grad);
   color: var(--on-accent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 24px -10px color-mix(in srgb, var(--accent) 90%, transparent);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55), inset 0 -2px 6px rgba(20, 10, 80, 0.18), 0 8px 24px -10px color-mix(in srgb, var(--accent) 90%, transparent);
 }
 .btn.primary:hover {
   filter: brightness(1.08);
@@ -1030,13 +1062,11 @@ h2.section,
   top: 3px;
   bottom: 3px;
   border-radius: 9px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.09));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 3px 10px -4px rgba(0, 0, 0, 0.6);
+  background: var(--bubble);
+  box-shadow: var(--bubble-shadow);
+  -webkit-backdrop-filter: blur(3px) saturate(220%) brightness(1.12);
+  backdrop-filter: blur(3px) saturate(220%) brightness(1.12);
   transition: left var(--t) var(--spring), width var(--t) var(--spring);
-}
-:root[data-theme="light"] .segmented .thumb {
-  background: white;
-  box-shadow: 0 2px 8px -2px rgba(40, 44, 90, 0.25);
 }
 
 .chip {
@@ -1280,7 +1310,7 @@ button.list-item {
   flex-direction: column;
   border-radius: var(--r-xl);
   animation: sheet-in var(--t-slow) var(--spring) both;
-  background: var(--glass-strong), var(--glass-solid);
+  background: var(--glass-sheen), var(--glass-strong), var(--glass-solid);
 }
 .sheet.wide {
   width: min(760px, 100%);
@@ -1362,7 +1392,9 @@ button.list-item {
   font-weight: 540;
   max-width: 100%;
   animation: toast-in var(--t-slow) var(--spring) both;
-  background: var(--glass-strong), var(--glass-solid);
+  background: var(--glass-sheen), var(--glass-chrome);
+  -webkit-backdrop-filter: var(--glass-blur-clear);
+  backdrop-filter: var(--lq,) var(--glass-blur-clear);
 }
 .toast.out {
   animation: toast-out var(--t) var(--ease) both;
@@ -1491,7 +1523,7 @@ button.list-item {
   border-radius: 24px;
   overflow: hidden;
   animation: sheet-in var(--t) var(--spring) both;
-  background: var(--glass-strong), var(--glass-solid);
+  background: var(--glass-sheen), var(--glass-strong), var(--glass-solid);
 }
 .palette-input {
   display: flex;
@@ -1560,7 +1592,8 @@ button.list-item {
   margin-left: auto;
 }
 .palette-item.sel {
-  background: var(--accent);
+  background: radial-gradient(120% 140% at 20% -40%, rgba(255, 255, 255, 0.38), transparent 55%), var(--accent-grad);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45), inset 0 -2px 6px rgba(20, 10, 80, 0.16), 0 8px 22px -12px color-mix(in srgb, var(--accent) 90%, transparent);
   color: white;
 }
 .palette-item.sel .pi-icon {
@@ -2663,9 +2696,12 @@ button.list-item {
     right: 12px;
     bottom: calc(10px + var(--safe-bottom));
     height: 64px;
-    border-radius: 26px;
+    border-radius: 28px;
     padding: 6px;
     justify-content: space-around;
+    background: var(--glass-sheen), var(--glass-chrome);
+    -webkit-backdrop-filter: var(--glass-blur-clear);
+    backdrop-filter: var(--lq,) var(--glass-blur-clear);
   }
   .tabbar button {
     position: relative;
@@ -2687,7 +2723,8 @@ button.list-item {
   }
   .tabbar button.on {
     color: var(--accent);
-    background: var(--well);
+    background: var(--bubble);
+    box-shadow: var(--bubble-shadow);
   }
   .tabbar button .count {
     position: absolute;

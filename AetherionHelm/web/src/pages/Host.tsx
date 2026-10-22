@@ -10,6 +10,7 @@ import type { HostDetail, Point } from "../lib/types";
 import { AreaChart, Donut, PALETTE, Spark } from "../components/charts";
 import { Badge, Banner, Card, CardHead, Empty, KV, Meter, PageHead, Segmented, Skeleton, Stat } from "../components/ui";
 import { toneColor } from "./Overview";
+import { t } from "../lib/i18n";
 
 type Range = "1h" | "6h" | "24h" | "7d" | "30d";
 
@@ -48,7 +49,7 @@ export function Host() {
   if (!h) {
     return (
       <div className="page">
-        <PageHead title="Hetzner" sub="Lade Maschinendaten …" />
+        <PageHead title="Hetzner" sub={t("Loading machine data …")} />
         <div className="grid g4">{[0, 1, 2, 3].map((i) => <Card key={i}><Skeleton h={120} /></Card>)}</div>
       </div>
     );
@@ -76,13 +77,13 @@ export function Host() {
     <div className="page">
       <PageHead
         title="Hetzner"
-        sub={[st.vendor && st.product ? `${st.vendor} ${st.product}` : null, st.hostname, st.os, h.uptime ? `online seit ${duration(h.uptime)}` : null].filter(Boolean).join(" · ")}
+        sub={[st.vendor && st.product ? `${st.vendor} ${st.product}` : null, st.hostname, st.os, h.uptime ? t("up for {d}", { d: duration(h.uptime) }) : null].filter(Boolean).join(" · ")}
       />
 
       {raidBad.length > 0 && (
         <div className="mb">
           <Banner tone="red" icon={<ShieldAlert />}>
-            <b>RAID braucht Aufmerksamkeit:</b> {raidBad.map((r) => `${r.name} ${r.degraded ? "läuft degradiert" : r.sync}`).join(", ")}
+            <b>{t("RAID needs attention:")}</b> {raidBad.map((r) => `${r.name} ${r.degraded ? t("running degraded") : r.sync}`).join(", ")}
           </Banner>
         </div>
       )}
@@ -92,7 +93,7 @@ export function Host() {
           <Stat icon={<Cpu />} label="CPU" value={<span style={{ color: toneColor(loadTone(h.cpu)) }}>{n0((h.cpu ?? 0) * 100)}</span>} unit="%" hint={`IO-Wait ${pct(h.iowait, 1)} · Steal ${pct(h.steal, 1)}`} />
           <div className="core-grid mt">
             {(h.perCore ?? []).map((v, i) => (
-              <div className="core" key={i} title={`Kern ${i}: ${pct(v)}`}>
+              <div className="core" key={i} title={t("Core {i}: {v}", { i, v: pct(v) })}>
                 <span>{Math.round(v * 100)}</span>
                 <i style={{ height: `${Math.max(4, v * 100)}%`, background: coreColor(v) }} />
               </div>
@@ -100,7 +101,7 @@ export function Host() {
           </div>
         </Card>
         <Card>
-          <Stat icon={<MemoryStick />} label="Arbeitsspeicher" value={bytes(h.memUsed).split(" ")[0]} unit={`${bytes(h.memUsed).split(" ")[1]} von ${bytes(h.memTotal, 0)}`} hint={`${pct(memFrac)} belegt · ${bytes(h.memCached)} Cache`} />
+          <Stat icon={<MemoryStick />} label={t("Memory")} value={bytes(h.memUsed).split(" ")[0]} unit={t("{a} of {b}", { a: bytes(h.memUsed).split(" ")[1], b: bytes(h.memTotal, 0) })} hint={t("{p} used · {c} cache", { p: pct(memFrac), c: bytes(h.memCached) })} />
           <div className="mt" style={{ position: "relative" }}>
             <div className="meter lg">
               <i style={{ width: `${memFrac * 100}%`, background: memFrac > 0.92 ? "linear-gradient(90deg, #ff3b30, #ff6a5f)" : "var(--accent-grad)" }} />
@@ -116,12 +117,12 @@ export function Host() {
           </div>
         </Card>
         <Card>
-          <Stat icon={<HardDrive />} label="Platte (/)" value={n0(diskFrac * 100)} unit="%" hint={`${bytes(h.diskUsed)} von ${bytes(h.diskTotal, 0)} · ${bytes((h.diskTotal ?? 0) - (h.diskUsed ?? 0))} frei`} />
+          <Stat icon={<HardDrive />} label={t("Disk (/)")} value={n0(diskFrac * 100)} unit="%" hint={t("{a} of {b} · {f} free", { a: bytes(h.diskUsed), b: bytes(h.diskTotal, 0), f: bytes((h.diskTotal ?? 0) - (h.diskUsed ?? 0)) })} />
           <div className="mt">
             <Meter value={diskFrac} lg tone={diskFrac > 0.9 ? "red" : diskFrac > 0.8 ? "orange" : ""} />
             <div className="row between tiny faint mt-s">
-              <span>Lesen {byteRate(h.diskRead)}</span>
-              <span>Schreiben {byteRate(h.diskWrite)}</span>
+              <span>{t("Read")}{" "}{byteRate(h.diskRead)}</span>
+              <span>{t("Write")}{" "}{byteRate(h.diskWrite)}</span>
             </div>
           </div>
           <div className="stat-spark">
@@ -129,12 +130,12 @@ export function Host() {
           </div>
         </Card>
         <Card>
-          <Stat icon={<Gauge />} label="Load" value={n1(h.load?.[0])} unit={`auf ${h.cores ?? "?"} Threads`} hint={`5 Min. ${n1(h.load?.[1])} · 15 Min. ${n1(h.load?.[2])}`} tone="" />
+          <Stat icon={<Gauge />} label="Load" value={n1(h.load?.[0])} unit={t("across {n} threads", { n: h.cores ?? "?" })} hint={t("5 min {a} · 15 min {b}", { a: n1(h.load?.[1]), b: n1(h.load?.[2]) })} tone="" />
           <div className="mt">
             <Meter value={loadPerCore ?? 0} lg tone={loadPerCore == null ? "" : loadPerCore > 1 ? "red" : loadPerCore > 0.75 ? "orange" : "green"} />
             <div className="row between tiny faint mt-s">
-              <span>{h.procs ?? "?"} Prozesse</span>
-              <span>{pct(loadPerCore)} pro Thread</span>
+              <span>{h.procs ?? "?"} {t("Processes")}</span>
+              <span>{pct(loadPerCore)} {t("per thread")}</span>
             </div>
           </div>
           <div className="stat-spark">
@@ -145,7 +146,7 @@ export function Host() {
 
       <div className="grid g2 mt">
         <Card>
-          <CardHead title="Live: CPU und RAM" icon={<Cpu />} sub="letzte 5 Minuten" />
+          <CardHead title={t("Live: CPU and RAM")} icon={<Cpu />} sub={t("last 5 minutes")} />
           <AreaChart
             data={liveData}
             height={180}
@@ -155,12 +156,12 @@ export function Host() {
               { key: "cpu", label: "CPU", color: "var(--c1)", format: (v) => n1(v) + " %" },
               { key: "mem", label: "RAM", color: "var(--c2)", area: false, format: (v) => n1(v) + " %" },
             ]}
-            empty="Sammle Live-Daten …"
+            empty={t("Collecting live data …")}
           />
         </Card>
         <Card>
           <CardHead
-            title="Live: Netzwerk"
+            title={t("Live: network")}
             icon={<Network />}
             right={
               <span className="tiny faint">
@@ -173,16 +174,16 @@ export function Host() {
             height={180}
             yFormat={(v) => rate(v).replace("bit/s", "")}
             series={[
-              { key: "tx", label: "Raus", color: "var(--c1)", format: rate },
-              { key: "rx", label: "Rein", color: "var(--c3)", format: rate },
+              { key: "tx", label: t("Out"), color: "var(--c1)", format: rate },
+              { key: "rx", label: t("In"), color: "var(--c3)", format: rate },
             ]}
-            empty="Sammle Live-Daten …"
+            empty={t("Collecting live data …")}
           />
         </Card>
       </div>
 
       <h2 className="section">
-        Verlauf
+        {t("History")}
         <span style={{ marginLeft: "auto" }}>
           <Segmented
             value={range}
@@ -191,39 +192,39 @@ export function Host() {
               setPref("host.range", r);
             }}
             options={[
-              { value: "1h", label: "1 Std." },
-              { value: "6h", label: "6 Std." },
-              { value: "24h", label: "24 Std." },
-              { value: "7d", label: "7 T." },
-              { value: "30d", label: "30 T." },
+              { value: "1h", label: t("1 h") },
+              { value: "6h", label: t("6 h") },
+              { value: "24h", label: t("24 h") },
+              { value: "7d", label: t("7 d") },
+              { value: "30d", label: t("30 d") },
             ]}
           />
         </span>
       </h2>
       <div className="grid g2">
         <Card>
-          <CardHead title="CPU und Load" icon={<Cpu />} />
+          <CardHead title={t("CPU and load")} icon={<Cpu />} />
           <AreaChart
             data={(hist ?? []).map((p) => ({ t: p.t, cpu: p.cpu != null ? (p.cpu as number) * 100 : null, load: p.load1 != null && h.cores ? ((p.load1 as number) / h.cores) * 100 : null }))}
             height={190}
             yFormat={(v) => n0(v) + "%"}
             series={[
               { key: "cpu", label: "CPU", color: "var(--c1)", format: (v) => n1(v) + " %" },
-              { key: "load", label: "Load pro Thread", color: "var(--c4)", area: false, format: (v) => n0(v) + " %" },
+              { key: "load", label: t("Load per thread"), color: "var(--c4)", area: false, format: (v) => n0(v) + " %" },
             ]}
           />
         </Card>
         <Card>
-          <CardHead title="Arbeitsspeicher" icon={<MemoryStick />} />
-          <AreaChart data={hist ?? []} height={190} yMax={h.memTotal} yFormat={(v) => bytes(v, 0)} series={[{ key: "mem", label: "Belegt", color: "var(--c2)", format: (v) => bytes(v) }, { key: "swap", label: "Swap", color: "var(--c6)", area: false, format: (v) => bytes(v) }]} />
+          <CardHead title={t("Memory")} icon={<MemoryStick />} />
+          <AreaChart data={hist ?? []} height={190} yMax={h.memTotal} yFormat={(v) => bytes(v, 0)} series={[{ key: "mem", label: t("Used"), color: "var(--c2)", format: (v) => bytes(v) }, { key: "swap", label: "Swap", color: "var(--c6)", area: false, format: (v) => bytes(v) }]} />
         </Card>
         <Card>
-          <CardHead title="Netzwerk" icon={<Network />} />
-          <AreaChart data={hist ?? []} height={190} yFormat={(v) => rate(v).replace("bit/s", "")} series={[{ key: "tx", label: "Raus", color: "var(--c1)", format: rate }, { key: "rx", label: "Rein", color: "var(--c3)", format: rate }]} />
+          <CardHead title={t("Network")} icon={<Network />} />
+          <AreaChart data={hist ?? []} height={190} yFormat={(v) => rate(v).replace("bit/s", "")} series={[{ key: "tx", label: t("Out"), color: "var(--c1)", format: rate }, { key: "rx", label: t("In"), color: "var(--c3)", format: rate }]} />
         </Card>
         <Card>
-          <CardHead title="Platten-IO" icon={<HardDrive />} />
-          <AreaChart data={hist ?? []} height={190} yFormat={(v) => bytes(v, 0)} series={[{ key: "diskWrite", label: "Schreiben", color: "var(--c5)", format: byteRate }, { key: "diskRead", label: "Lesen", color: "var(--c2)", format: byteRate }]} />
+          <CardHead title={t("Disk I/O")} icon={<HardDrive />} />
+          <AreaChart data={hist ?? []} height={190} yFormat={(v) => bytes(v, 0)} series={[{ key: "diskWrite", label: t("Write"), color: "var(--c5)", format: byteRate }, { key: "diskRead", label: t("Read"), color: "var(--c2)", format: byteRate }]} />
         </Card>
       </div>
 
@@ -231,7 +232,7 @@ export function Host() {
         <Card className="flush">
           <div style={{ padding: "18px 20px 4px" }}>
             <CardHead
-              title="Prozesse"
+              title={t("Processes")}
               icon={<ServerIcon />}
               right={<Segmented value={sort} onChange={setSort} options={[{ value: "cpu", label: "CPU" }, { value: "rss", label: "RAM" }]} />}
             />
@@ -240,11 +241,11 @@ export function Host() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Prozess</th>
+                  <th>{t("Process")}</th>
                   <th className="r">CPU</th>
                   <th className="r">RAM</th>
                   <th className="r hide-m">Threads</th>
-                  <th className="r hide-m">läuft</th>
+                  <th className="r hide-m">{t("running")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,7 +270,7 @@ export function Host() {
         </Card>
         <div className="col" style={{ gap: 16 }}>
           <Card>
-            <CardHead title="Wer belegt den RAM" icon={<MemoryStick />} />
+            <CardHead title={t("What's using RAM")} icon={<MemoryStick />} />
             <div className="row" style={{ gap: 18, alignItems: "center" }}>
               <Donut parts={[...rssParts, { label: "Rest", value: other, color: "var(--text-4)" }]} size={128} stroke={14}>
                 <b>{pct(memFrac)}</b>
@@ -288,7 +289,7 @@ export function Host() {
                 <div className="row between small">
                   <span className="row" style={{ gap: 6 }}>
                     <i style={{ width: 8, height: 8, borderRadius: 3, background: "var(--text-4)" }} />
-                    System und Rest
+                    {t("System and other")}
                   </span>
                   <span className="num faint">{bytes(other)}</span>
                 </div>
@@ -296,9 +297,9 @@ export function Host() {
             </div>
           </Card>
           <Card>
-            <CardHead title="Speicherplatz" icon={<Archive />} />
+            <CardHead title={t("Storage")} icon={<Archive />} />
             {sizeRows.length === 0 && !sizes?.backups ? (
-              <div className="small faint">Die Größen werden alle 10 Minuten gemessen.</div>
+              <div className="small faint">{t("Sizes are measured every 10 minutes.")}</div>
             ) : (
               <div className="col" style={{ gap: 10 }}>
                 {sizeRows.map(([id, v]) => (
@@ -316,7 +317,7 @@ export function Host() {
                     <div className="grow">
                       <div className="strong small">Backups: {bytes(sizes.backups.bytes)}</div>
                       <div className="tiny faint">
-                        {sizes.backups.count ?? 0} Snapshots{sizes.backups.latest ? ` · letzter ${ago(sizes.backups.latest)}` : ""}
+                        {sizes.backups.count ?? 0} Snapshots{sizes.backups.latest ? t(" · latest {when}", { when: ago(sizes.backups.latest) }) : ""}
                       </div>
                     </div>
                   </div>
@@ -329,7 +330,7 @@ export function Host() {
 
       <div className="grid g3 mt" style={{ marginTop: 24 }}>
         <Card>
-          <CardHead title="Dateisysteme" icon={<HardDrive />} />
+          <CardHead title={t("File systems")} icon={<HardDrive />} />
           <div className="col" style={{ gap: 12 }}>
             {(h.filesystems ?? []).map((f) => {
               const fr = f.total ? f.used / f.total : 0;
@@ -347,7 +348,7 @@ export function Host() {
           </div>
         </Card>
         <Card>
-          <CardHead title="Laufwerke und RAID" icon={(st.raid ?? []).some((r) => r.degraded) ? <ShieldAlert /> : <ShieldCheck />} />
+          <CardHead title={t("Drives and RAID")} icon={(st.raid ?? []).some((r) => r.degraded) ? <ShieldAlert /> : <ShieldCheck />} />
           <div className="col" style={{ gap: 10 }}>
             {(st.raid ?? []).map((r) => (
               <div key={r.name} className="row" style={{ padding: 10, borderRadius: 12, background: "var(--well)" }}>
@@ -367,12 +368,12 @@ export function Host() {
                   <HardDrive size={16} className="faint" />
                   <div className="grow">
                     <div className="small strong">{d.name} <span className="faint" style={{ fontWeight: 400 }}>{d.model}</span></div>
-                    <div className="tiny faint">{bytes(d.size, 0)} · {d.ssd ? "SSD/NVMe" : "HDD"}{io ? ` · ${pct(io.busy)} ausgelastet` : ""}</div>
+                    <div className="tiny faint">{bytes(d.size, 0)} · {d.ssd ? "SSD/NVMe" : "HDD"}{io ? t(" · {p} busy", { p: pct(io.busy) }) : ""}</div>
                   </div>
                 </div>
               );
             })}
-            {!(st.raid ?? []).length && !(st.disks ?? []).length && <div className="small faint">Keine Laufwerksdaten.</div>}
+            {!(st.raid ?? []).length && !(st.disks ?? []).length && <div className="small faint">{t("No drive data.")}</div>}
           </div>
         </Card>
         <Card>
@@ -380,14 +381,14 @@ export function Host() {
           <KV
             rows={[
               ["CPU", st.cpuModel],
-              ["Kerne", st.cores ? `${st.cores} Kerne · ${st.threads} Threads` : undefined],
-              ["Takt", st.mhz ? `${n0(st.mhz)} MHz` : undefined],
+              [t("Cores"), st.cores ? t("{c} cores · {n} threads", { c: st.cores, n: st.threads ?? "?" }) : undefined],
+              [t("Clock"), st.mhz ? `${n0(st.mhz)} MHz` : undefined],
               ["Kernel", st.kernel],
               ["Java", st.java],
               ...((st.nics ?? []).map((n) => [n.name, `${n.speed ? (n.speed >= 1000 ? n.speed / 1000 + " Gbit/s" : n.speed + " Mbit/s") : "?"} · ${n.state}`]) as [string, string][]),
-              ["Gesendet gesamt", bytes(h.txTotal)],
-              ["Empfangen gesamt", bytes(h.rxTotal)],
-              ["Panel läuft seit", h.gatewayUptime ? duration(h.gatewayUptime) : undefined],
+              [t("Sent total"), bytes(h.txTotal)],
+              [t("Received total"), bytes(h.rxTotal)],
+              [t("Panel running for"), h.gatewayUptime ? duration(h.gatewayUptime) : undefined],
             ]}
           />
         </Card>
@@ -395,7 +396,7 @@ export function Host() {
 
       {(h.temps ?? []).length > 0 && (
         <>
-          <h2 className="section">Temperaturen</h2>
+          <h2 className="section">{t("Temperatures")}</h2>
           <div className="grid g-auto-sm">
             {h.temps!.map((t, i) => {
               const crit = t.crit ?? 100;
@@ -415,7 +416,7 @@ export function Host() {
           </div>
         </>
       )}
-      {h.error && <Empty title="Teilweise keine Daten" text={h.error} />}
+      {h.error && <Empty title={t("Partly no data")} text={h.error} />}
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { useMenu } from "../components/overlay";
 import { openSheet } from "../components/nav";
 import { Avatar, Badge, Banner, Button, Card, CardHead, Empty, HoldButton, KV, Meter, Segmented, Skeleton, StateChip, Stat, Tabs, useTick } from "../components/ui";
 import { toneColor } from "./Overview";
+import { t } from "../lib/i18n";
 
 type Tab = "overview" | "console" | "players" | "radar" | "plugins" | "system" | "backends";
 type Range = "1h" | "6h" | "24h" | "7d" | "30d";
@@ -47,17 +48,17 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
   const canPower = can(me, "server.power");
 
   const power = async (action: "start" | "stop" | "restart" | "kill") => {
-    const labels = { start: "Start", stop: "Stopp", restart: "Neustart", kill: "Kill" };
-    await attempt(() => post(`/api/servers/${id}/power`, { action }), `${labels[action]} für ${srv.name} läuft`);
+    const labels = { start: "Start", stop: t("Stop"), restart: t("Restart"), kill: "Kill" };
+    await attempt(() => post(`/api/servers/${id}/power`, { action }), t("{action} for {name} in progress", { action: labels[action], name: srv.name }));
     reload();
   };
 
   const tabs: { value: Tab; label: string; icon: React.ReactNode; hidden?: boolean }[] = [
-    { value: "overview", label: "Überblick", icon: <Gauge /> },
-    { value: "console", label: "Konsole", icon: <Terminal />, hidden: !can(me, "console.view") },
-    { value: "players", label: "Spieler", icon: <Users /> },
+    { value: "overview", label: t("Overview"), icon: <Gauge /> },
+    { value: "console", label: t("Console"), icon: <Terminal />, hidden: !can(me, "console.view") },
+    { value: "players", label: t("Players"), icon: <Users /> },
     { value: "backends", label: "Backends", icon: <Network />, hidden: !proxy },
-    { value: "radar", label: "Lag-Radar", icon: <Radar />, hidden: proxy },
+    { value: "radar", label: t("Lag radar"), icon: <Radar />, hidden: proxy },
     { value: "plugins", label: "Plugins", icon: <Puzzle /> },
     { value: "system", label: "System", icon: <Info /> },
   ];
@@ -73,34 +74,34 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
           <p>
             {srv.role}
             {srv.info?.software ? ` · ${srv.info.software.replace(/\(.*\)/, "").trim()}` : ""}
-            {srv.uptime && online ? ` · läuft seit ${duration(srv.uptime)}` : ""}
+            {srv.uptime && online ? t(" · up for {d}", { d: duration(srv.uptime) }) : ""}
           </p>
         </div>
         <div className="actions">
           {canPower && (srv.state === "stopped" || srv.state === "offline") && (
             <Button variant="primary" icon={<Play />} onClick={() => power("start")}>
-              Starten
+              {t("Start")}
             </Button>
           )}
           {canPower && online && (
             <HoldButton variant="tinted" className="orange" icon={<RotateCcw />} onConfirm={() => power("restart")}>
-              Neustart halten
+              {t("Hold to restart")}
             </HoldButton>
           )}
           {canPower && (online || srv.state === "degraded" || srv.state === "starting") && (
             <HoldButton variant="tinted" className="red" icon={<Square />} onConfirm={() => power("stop")}>
-              Stopp halten
+              {t("Hold to stop")}
             </HoldButton>
           )}
-          <Button icon={<MoreHorizontal />} onClick={menu.open} aria-label="Mehr">
-            <span className="hide-m">Mehr</span>
+          <Button icon={<MoreHorizontal />} onClick={menu.open} aria-label={t("More")}>
+            <span className="hide-m">{t("More")}</span>
           </Button>
           {menu.render([
-            { label: proxy ? "Velocity neu laden" : "Welt speichern (save-all)", icon: <Save />, hidden: !can(me, "console.command") || !online, onClick: () => attempt(() => post(`/api/servers/${id}/save`), proxy ? "Konfiguration neu geladen" : "Welten werden gespeichert") },
-            { label: "Nachricht an diesen Server", icon: <Activity />, hidden: !can(me, "chat.send") || proxy, onClick: () => openSheet({ kind: "broadcast", server: id }) },
-            { label: "Konsole öffnen", icon: <Terminal />, hidden: !can(me, "console.view"), onClick: () => go("servers", id, "console") },
+            { label: proxy ? t("Reload Velocity") : t("Save world (save-all)"), icon: <Save />, hidden: !can(me, "console.command") || !online, onClick: () => attempt(() => post(`/api/servers/${id}/save`), proxy ? t("Configuration reloaded") : t("Saving worlds")) },
+            { label: t("Message to this server"), icon: <Activity />, hidden: !can(me, "chat.send") || proxy, onClick: () => openSheet({ kind: "broadcast", server: id }) },
+            { label: t("Open console"), icon: <Terminal />, hidden: !can(me, "console.view"), onClick: () => go("servers", id, "console") },
             { sep: true, label: "", onClick: () => {}, hidden: !canPower },
-            { label: "Prozess hart beenden (Kill)", icon: <Skull />, danger: true, hidden: !canPower || !srv.pid, onClick: () => setConfirm("kill") },
+            { label: t("Force-kill the process"), icon: <Skull />, danger: true, hidden: !canPower || !srv.pid, onClick: () => setConfirm("kill") },
           ])}
         </div>
       </div>
@@ -108,7 +109,7 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
       {srv.power && Date.now() - srv.power.since < 5 * 60_000 && (
         <div className="mb">
           <Banner tone="accent" icon={<RefreshCw className="spin" />}>
-            <b>{srv.power.op === "restart" ? "Neustart" : srv.power.op === "start" ? "Start" : srv.power.op === "kill" ? "Kill" : "Stopp"}</b> läuft, ausgelöst von {srv.power.by} {ago(srv.power.since)}.
+            <b>{srv.power.op === "restart" ? t("Restart") : srv.power.op === "start" ? "Start" : srv.power.op === "kill" ? "Kill" : t("Stop")}</b> {t("in progress, started by")}{" "}{srv.power.by} {ago(srv.power.since)}.
             {srv.power.op !== "kill" && " Spieler bekommen den Countdown im Spiel."}
           </Banner>
         </div>
@@ -116,7 +117,7 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
       {srv.state === "degraded" && (
         <div className="mb">
           <Banner tone="orange" icon={<Info />}>
-            Der Prozess läuft, aber das Helm-Plugin meldet sich nicht. Ist <span className="mono">AetherionHelm.jar</span> installiert und das Token in der config.yml gesetzt?
+            {t("The process is running, but the Helm plugin isn't reporting. Is")}{" "}<span className="mono">AetherionHelm.jar</span> {t("installed and the token set in config.yml?")}
           </Banner>
         </div>
       )}
@@ -133,9 +134,9 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
 
       {confirm === "kill" && (
         <Confirm
-          title={`${srv.name} hart beenden?`}
-          text="Kill beendet den Prozess sofort, ohne zu speichern. Nur nehmen, wenn der Server hängt und auf Stopp nicht reagiert. Der Watchdog startet ihn danach nicht automatisch."
-          confirm="Jetzt beenden"
+          title={t("Force-stop {name}?", { name: srv.name })}
+          text={t("Kill ends the process immediately without saving. Only use it when the server hangs and doesn't respond to Stop. The watchdog won't restart it afterwards.")}
+          confirm={t("End now")}
           danger
           onConfirm={() => power("kill")}
           onClose={() => setConfirm(null)}
@@ -157,11 +158,11 @@ function useHistory(id: string) {
       value={range}
       onChange={set}
       options={[
-        { value: "1h", label: "1 Std." },
-        { value: "6h", label: "6 Std." },
-        { value: "24h", label: "24 Std." },
-        { value: "7d", label: "7 T." },
-        { value: "30d", label: "30 T." },
+        { value: "1h", label: t("1 h") },
+        { value: "6h", label: t("6 h") },
+        { value: "24h", label: t("24 h") },
+        { value: "7d", label: t("7 d") },
+        { value: "30d", label: t("30 d") },
       ]}
     />
   );
@@ -192,23 +193,23 @@ function PaperOverview({ s }: { s: ServerDetail }) {
               <span>TPS</span>
             </Ring>
             <div className="col" style={{ gap: 4 }}>
-              <span className="small muted">Ticks pro Sekunde</span>
-              <span className="tiny faint num">5 Min. {n1(s.tps?.[1])} · 15 Min. {n1(s.tps?.[2])}</span>
-              <span className="tiny faint">Ziel ist 20.</span>
+              <span className="small muted">{t("Ticks per second")}</span>
+              <span className="tiny faint num">{t("5 min")}{" "}{n1(s.tps?.[1])} {t("· 15 min")}{" "}{n1(s.tps?.[2])}</span>
+              <span className="tiny faint">{t("Target is 20.")}</span>
             </div>
           </div>
         </Card>
         <Card>
-          <Stat icon={<Timer />} label="Tick-Zeit Ø" value={<span style={{ color: toneColor(msptTone(s.mspt)) }}>{n1(s.mspt)}</span>} unit="ms" hint={`P95 ${n1(s.msptP95)} ms · Spitze ${n1(s.msptMax)} ms`} />
+          <Stat icon={<Timer />} label={t("Tick time avg")} value={<span style={{ color: toneColor(msptTone(s.mspt)) }}>{n1(s.mspt)}</span>} unit="ms" hint={t("P95 {a} ms · peak {b} ms", { a: n1(s.msptP95), b: n1(s.msptMax) })} />
         </Card>
         <Card>
-          <Stat icon={<Cpu />} label="Heap" value={heap != null ? n0(heap * 100) : "–"} unit="%" hint={`${bytes(s.heapUsed)} von ${bytes(s.heapMax, 0)}${s.rss ? ` · Prozess ${bytes(s.rss)}` : ""}`} />
+          <Stat icon={<Cpu />} label="Heap" value={heap != null ? n0(heap * 100) : "–"} unit="%" hint={t("{a} of {b}", { a: bytes(s.heapUsed), b: bytes(s.heapMax, 0) }) + (s.rss ? t(" · process {p}", { p: bytes(s.rss) }) : "")} />
           <div style={{ marginTop: 10 }}>
             <Meter value={heap ?? 0} tone={heap == null ? "" : heap > 0.9 ? "red" : heap > 0.75 ? "orange" : ""} />
           </div>
         </Card>
         <Card>
-          <Stat icon={<Users />} label="Spieler" value={s.players} unit={s.maxPlayers ? `/ ${s.maxPlayers}` : undefined} hint={`${n0(s.entities)} Entities · ${n0(s.chunks)} Chunks`} />
+          <Stat icon={<Users />} label={t("Players")} value={s.players} unit={s.maxPlayers ? `/ ${s.maxPlayers}` : undefined} hint={t("{e} entities · {c} chunks", { e: n0(s.entities), c: n0(s.chunks) })} />
           <div style={{ marginTop: 6 }}>
             <Spark values={series[`${s.id}.players`] ?? []} height={26} color="var(--c2)" />
           </div>
@@ -217,7 +218,7 @@ function PaperOverview({ s }: { s: ServerDetail }) {
 
       <div className="grid g-split">
         <Card>
-          <CardHead title="Live" icon={<Activity />} sub="letzte 5 Minuten" />
+          <CardHead title="Live" icon={<Activity />} sub={t("last 5 minutes")} />
           <AreaChart
             data={liveData}
             height={200}
@@ -226,12 +227,12 @@ function PaperOverview({ s }: { s: ServerDetail }) {
               { key: "mspt", label: "MSPT", color: "var(--c4)", format: (v) => n1(v) + " ms" },
               { key: "tps", label: "TPS", color: "var(--c3)", area: false, format: (v) => n1(v) },
             ]}
-            refLines={[{ y: 50, label: "50 ms = Lag-Grenze", color: "var(--red)" }]}
-            empty="Sammle Live-Daten …"
+            refLines={[{ y: 50, label: t("50 ms = lag threshold"), color: "var(--red)" }]}
+            empty={t("Collecting live data …")}
           />
         </Card>
         <Card>
-          <CardHead title="Letzte 60 Ticks" icon={<Gauge />} sub={ticks.length ? `max. ${n1(Math.max(...ticks))} ms` : undefined} />
+          <CardHead title={t("Last 60 ticks")} icon={<Gauge />} sub={ticks.length ? t("max {v} ms", { v: n1(Math.max(...ticks)) }) : undefined} />
           {ticks.length ? (
             <>
               <div className="tick-bars" style={{ height: 150, position: "relative" }}>
@@ -241,51 +242,51 @@ function PaperOverview({ s }: { s: ServerDetail }) {
                 ))}
               </div>
               <div className="row between tiny faint mt-s">
-                <span>vor 3 Sek.</span>
+                <span>{t("3 s ago")}</span>
                 <span>jetzt</span>
               </div>
             </>
           ) : (
-            <Empty icon={<Gauge />} title="Keine Tick-Daten" />
+            <Empty icon={<Gauge />} title={t("No tick data")} />
           )}
         </Card>
       </div>
 
       <h2 className="section">
-        Verlauf
+        {t("History")}
         <span style={{ marginLeft: "auto" }}>{picker}</span>
       </h2>
       <div className="grid g2">
         <Card>
-          <CardHead title="TPS und Tick-Zeit" icon={<Timer />} />
+          <CardHead title={t("TPS and tick time")} icon={<Timer />} />
           <AreaChart
             data={data}
             height={190}
             series={[
-              { key: "mspt", label: "MSPT Ø", color: "var(--c4)", format: (v) => n1(v) + " ms" },
+              { key: "mspt", label: t("MSPT avg"), color: "var(--c4)", format: (v) => n1(v) + " ms" },
               { key: "msptMax", label: "MSPT max", color: "var(--c6)", area: false, dashed: true, format: (v) => n1(v) + " ms" },
               { key: "tpsMin", label: "TPS min", color: "var(--c3)", area: false, format: (v) => n1(v) },
             ]}
           />
         </Card>
         <Card>
-          <CardHead title="Spieler" icon={<Users />} />
-          <AreaChart data={data} height={190} series={[{ key: "players", label: "Spieler", color: "var(--c1)" }, { key: "playersMax", label: "Spitze", color: "var(--c2)", area: false, dashed: true }]} />
+          <CardHead title={t("Players")} icon={<Users />} />
+          <AreaChart data={data} height={190} series={[{ key: "players", label: t("Players"), color: "var(--c1)" }, { key: "playersMax", label: t("Peak"), color: "var(--c2)", area: false, dashed: true }]} />
         </Card>
         <Card>
-          <CardHead title="Speicher" icon={<HardDrive />} />
+          <CardHead title={t("Memory")} icon={<HardDrive />} />
           <AreaChart
             data={heapData}
             height={190}
             yFormat={(v) => bytes(v, 0)}
             series={[
-              { key: "rss", label: "Prozess (RSS)", color: "var(--c5)", area: false, format: (v) => bytes(v) },
+              { key: "rss", label: t("Process (RSS)"), color: "var(--c5)", area: false, format: (v) => bytes(v) },
               { key: "heap", label: "Heap", color: "var(--c2)", format: (v) => bytes(v) },
             ]}
           />
         </Card>
         <Card>
-          <CardHead title="CPU" icon={<Cpu />} sub="Anteil an der ganzen Maschine" />
+          <CardHead title="CPU" icon={<Cpu />} sub={t("Share of the whole machine")} />
           <AreaChart
             data={data.map((p) => ({ t: p.t, cpu: p.cpu != null ? (p.cpu as number) * 100 : null }))}
             height={190}
@@ -298,25 +299,25 @@ function PaperOverview({ s }: { s: ServerDetail }) {
           <AreaChart data={data} height={190} series={[{ key: "entities", label: "Entities", color: "var(--c4)", format: (v) => n0(v) }]} />
         </Card>
         <Card>
-          <CardHead title="Geladene Chunks" icon={<Boxes />} />
+          <CardHead title={t("Loaded chunks")} icon={<Boxes />} />
           <AreaChart data={data} height={190} series={[{ key: "chunks", label: "Chunks", color: "var(--c3)", format: (v) => n0(v) }]} />
         </Card>
       </div>
 
       {s.worlds && s.worlds.length > 0 && (
         <>
-          <h2 className="section">Welten</h2>
+          <h2 className="section">{t("Worlds")}</h2>
           <Card className="flush">
             <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Welt</th>
-                    <th className="r">Spieler</th>
+                    <th>{t("World")}</th>
+                    <th className="r">{t("Players")}</th>
                     <th className="r">Chunks</th>
                     <th className="r">Entities</th>
                     <th className="r">Tile-Entities</th>
-                    <th className="r">Last</th>
+                    <th className="r">{t("Load")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -352,10 +353,10 @@ function PaperOverview({ s }: { s: ServerDetail }) {
           <Stat size="sm" label="Threads" value={n0(s.threads)} />
         </Card>
         <Card className="pad-s">
-          <Stat size="sm" label="Garbage Collection" value={n0(s.gcCount)} unit="Läufe" hint={s.gcTime ? `${duration(s.gcTime)} gesamt` : undefined} />
+          <Stat size="sm" label="Garbage Collection" value={n0(s.gcCount)} unit={t("runs")} hint={s.gcTime ? t("{d} total", { d: duration(s.gcTime) }) : undefined} />
         </Card>
         <Card className="pad-s">
-          <Stat size="sm" label="Prozess-CPU" value={s.cpu != null ? n1(s.cpu * 100) : "–"} unit="%" hint="der ganzen Maschine" />
+          <Stat size="sm" label={t("Process CPU")} value={s.cpu != null ? n1(s.cpu * 100) : "–"} unit="%" hint={t("of the whole machine")} />
         </Card>
         <Card className="pad-s">
           <Stat size="sm" label="Tile-Entities" value={n0(s.tiles)} />
@@ -373,36 +374,36 @@ function ProxyOverview({ s }: { s: ServerDetail }) {
     <div className="col" style={{ gap: 16 }}>
       <div className="grid g4">
         <Card>
-          <Stat icon={<Users />} label="Spieler im Netzwerk" value={s.players} unit={s.maxPlayers ? `/ ${s.maxPlayers}` : undefined} />
+          <Stat icon={<Users />} label={t("Players on the network")} value={s.players} unit={s.maxPlayers ? `/ ${s.maxPlayers}` : undefined} />
           <div style={{ marginTop: 6 }}>
             <Spark values={series[`${s.id}.players`] ?? []} height={26} color="var(--c1)" />
           </div>
         </Card>
         <Card>
-          <Stat icon={<Network />} label="Backends erreichbar" value={s.backends ? `${s.backends.filter((b) => b.reachable).length}/${s.backends.length}` : "–"} hint="Status-Ping alle 10 Sek." />
+          <Stat icon={<Network />} label={t("Backends reachable")} value={s.backends ? `${s.backends.filter((b) => b.reachable).length}/${s.backends.length}` : "–"} hint={t("Status ping every 10 s")} />
         </Card>
         <Card>
-          <Stat icon={<Cpu />} label="Heap" value={heap != null ? n0(heap * 100) : "–"} unit="%" hint={`${bytes(s.heapUsed)} von ${bytes(s.heapMax, 0)}`} />
+          <Stat icon={<Cpu />} label="Heap" value={heap != null ? n0(heap * 100) : "–"} unit="%" hint={t("{a} of {b}", { a: bytes(s.heapUsed), b: bytes(s.heapMax, 0) })} />
           <div style={{ marginTop: 10 }}>
             <Meter value={heap ?? 0} />
           </div>
         </Card>
         <Card>
-          <Stat icon={<Timer />} label="Laufzeit" value={short(s.uptime)} hint={`${n0(s.threads)} Threads · CPU ${pct(s.cpu, 1)}`} />
+          <Stat icon={<Timer />} label={t("Uptime")} value={short(s.uptime)} hint={t("{n} threads · CPU {c}", { n: n0(s.threads), c: pct(s.cpu, 1) })} />
         </Card>
       </div>
       <Backends s={s} />
       <h2 className="section">
-        Verlauf
+        {t("History")}
         <span style={{ marginLeft: "auto" }}>{picker}</span>
       </h2>
       <div className="grid g2">
         <Card>
-          <CardHead title="Spieler" icon={<Users />} />
-          <AreaChart data={data} height={190} series={[{ key: "players", label: "Spieler", color: "var(--c1)" }]} />
+          <CardHead title={t("Players")} icon={<Users />} />
+          <AreaChart data={data} height={190} series={[{ key: "players", label: t("Players"), color: "var(--c1)" }]} />
         </Card>
         <Card>
-          <CardHead title="Speicher" icon={<HardDrive />} />
+          <CardHead title={t("Memory")} icon={<HardDrive />} />
           <AreaChart data={data} height={190} yFormat={(v) => bytes(v, 0)} series={[{ key: "heap", label: "Heap", color: "var(--c2)", format: (v) => bytes(v) }]} />
         </Card>
       </div>
@@ -415,10 +416,10 @@ function Backends({ s }: { s: Server }) {
   return (
     <Card className="flush">
       <div style={{ padding: "18px 20px 4px" }}>
-        <CardHead title="Backends" icon={<Network />} sub="vom Proxy aus gesehen" />
+        <CardHead title="Backends" icon={<Network />} sub={t("as seen from the proxy")} />
       </div>
       {(s.backends ?? []).length === 0 ? (
-        <Empty icon={<Network />} title="Keine Daten" text="Der Proxy meldet seine Backends, sobald das Helm-Plugin dort läuft." />
+        <Empty icon={<Network />} title={t("No data")} text={t("The proxy reports its backends once the Helm plugin runs there.")} />
       ) : (
         <div className="table-wrap">
           <table className="table">
@@ -426,7 +427,7 @@ function Backends({ s }: { s: Server }) {
               <tr>
                 <th>Server</th>
                 <th>Status</th>
-                <th className="r">Spieler</th>
+                <th className="r">{t("Players")}</th>
                 <th className="r">Ping</th>
                 <th>Version</th>
               </tr>
@@ -436,9 +437,9 @@ function Backends({ s }: { s: Server }) {
                 <tr key={b.name} className="clickable" onClick={() => go("servers", b.id)}>
                   <td>
                     <div className="strong">{serverName(me, b.id)}</div>
-                    <div className="tiny faint">im Proxy: {b.name}</div>
+                    <div className="tiny faint">{t("in the proxy:")}{" "}{b.name}</div>
                   </td>
-                  <td>{b.reachable == null ? <Badge>prüfe …</Badge> : b.reachable ? <Badge tone="green">erreichbar</Badge> : <Badge tone="red">nicht erreichbar</Badge>}</td>
+                  <td>{b.reachable == null ? <Badge>{t("checking …")}</Badge> : b.reachable ? <Badge tone="green">erreichbar</Badge> : <Badge tone="red">{t("unreachable")}</Badge>}</td>
                   <td className="r num">{b.connected}</td>
                   <td className="r num" style={{ color: b.latency != null ? toneColor(pingTone(b.latency)) : undefined }}>{b.latency != null ? `${n1(b.latency)} ms` : "–"}</td>
                   <td className="small muted">{b.version ?? "–"}</td>
@@ -458,7 +459,7 @@ function ServerPlayers({ id }: { id: string }) {
   if (!here.length) {
     return (
       <Card>
-        <Empty icon={<Users />} title="Niemand online" text="Spieler auf diesem Server erscheinen hier live." />
+        <Empty icon={<Users />} title={t("No one online")} text={t("Players on this server show up here live.")} />
       </Card>
     );
   }
@@ -518,34 +519,34 @@ function LagRadar({ id, online }: { id: string; online: boolean }) {
             <Radar />
           </span>
           <div className="grow">
-            <div className="strong" style={{ fontSize: 16 }}>Lag-Radar</div>
-            <div className="small muted">Zählt Entities pro Typ und findet die vollsten Chunks. Ein Scan dauert eine Sekunde und kostet den Server kaum etwas.</div>
+            <div className="strong" style={{ fontSize: 16 }}>{t("Lag radar")}</div>
+            <div className="small muted">{t("Counts entities per type and finds the most crowded chunks. A scan takes a second and barely costs the server anything.")}</div>
           </div>
           <Button variant="primary" icon={<Search />} busy={busy} onClick={scan} disabled={!online}>
-            {data ? "Neu scannen" : "Jetzt scannen"}
+            {data ? t("Scan again") : t("Scan now")}
           </Button>
         </div>
-        {at && <div className="tiny faint mt-s">Stand {clockS(at)}</div>}
+        {at && <div className="tiny faint mt-s">{t("As of")}{" "}{clockS(at)}</div>}
       </Card>
       {data && (
         <div className="grid g-split">
           <Card className="flush">
             <div style={{ padding: "18px 20px 6px" }}>
-              <CardHead title="Volle Chunks" icon={<Boxes />} sub="ab 25 Entities oder Tile-Entities" />
+              <CardHead title={t("Crowded chunks")} icon={<Boxes />} sub={t("from 25 entities or tile entities")} />
             </div>
             {(data.hot ?? []).length === 0 ? (
-              <Empty title="Keine auffälligen Chunks" text="Nichts ist gerade übermäßig voll." />
+              <Empty title={t("No crowded chunks")} text={t("Nothing is overly crowded right now.")} />
             ) : (
               <div className="table-wrap">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Welt</th>
+                      <th>{t("World")}</th>
                       <th>Chunk</th>
-                      <th>Block-Koordinaten</th>
+                      <th>{t("Block coordinates")}</th>
                       <th className="r">Entities</th>
                       <th className="r">Tiles</th>
-                      <th>Meiste</th>
+                      <th>{t("Most")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -565,7 +566,7 @@ function LagRadar({ id, online }: { id: string; online: boolean }) {
             )}
           </Card>
           <Card>
-            <CardHead title="Entities nach Typ" icon={<Boxes />} />
+            <CardHead title={t("Entities by type")} icon={<Boxes />} />
             <div className="col" style={{ gap: 8 }}>
               {(data.types ?? []).map((t) => (
                 <div key={t.type} className="col" style={{ gap: 4 }}>
@@ -592,11 +593,11 @@ function Plugins({ s }: { s: ServerDetail }) {
       <div style={{ padding: 16 }} className="row">
         <div className="input-icon grow" style={{ maxWidth: 340 }}>
           <Search />
-          <input className="input" placeholder={`${s.info?.plugins?.length ?? 0} Plugins durchsuchen`} value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="input" placeholder={t("Search {n} plugins", { n: s.info?.plugins?.length ?? 0 })} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       </div>
       {list.length === 0 ? (
-        <Empty icon={<Puzzle />} title="Keine Plugins" text={s.info ? "Nichts gefunden." : "Kommt, sobald das Helm-Plugin verbunden ist."} />
+        <Empty icon={<Puzzle />} title={t("No plugins")} text={s.info ? t("Nothing found.") : t("Appears once the Helm plugin is connected.")} />
       ) : (
         <div className="list">
           {list.map((p) => (
@@ -624,29 +625,29 @@ function System({ s }: { s: ServerDetail }) {
             ["Software", i.software],
             ["Minecraft", i.mc],
             ["Java", i.java ? `${i.java} (${i.jvm ?? ""})` : undefined],
-            ["Helm-Plugin", s.agentVersion ?? (s.agent ? "verbunden" : "nicht verbunden")],
-            ["Online-Modus", i.onlineMode == null ? undefined : i.onlineMode ? "an" : "aus (Proxy)"],
+            ["Helm-Plugin", s.agentVersion ?? (s.agent ? "verbunden" : t("not connected"))],
+            [t("Online mode"), i.onlineMode == null ? undefined : i.onlineMode ? "an" : t("off (proxy)")],
             ...(s.kind === "paper"
               ? ([
-                  ["Sichtweite", i.viewDistance != null ? `${i.viewDistance} Chunks · Simulation ${i.simulationDistance}` : undefined],
+                  [t("View distance"), i.viewDistance != null ? t("{v} chunks · simulation {s}", { v: i.viewDistance ?? "", s: i.simulationDistance ?? "" }) : undefined],
                   ["Whitelist", i.whitelist == null ? undefined : i.whitelist ? "an" : "aus"],
                 ] as [string, React.ReactNode][])
-              : ([["Kompression ab", i.compressionThreshold != null ? `${i.compressionThreshold} Byte` : undefined]] as [string, React.ReactNode][])),
+              : ([[t("Compression from"), i.compressionThreshold != null ? t("{n} bytes", { n: i.compressionThreshold ?? "" }) : undefined]] as [string, React.ReactNode][])),
             ["MOTD", i.motd],
-            ["Gestartet", i.startedAt ? stamp(i.startedAt) : undefined],
+            [t("Started"), i.startedAt ? stamp(i.startedAt) : undefined],
           ]}
         />
       </Card>
       <Card>
-        <CardHead title="Prozess" icon={<Cpu />} />
+        <CardHead title={t("Process")} icon={<Cpu />} />
         <KV
           rows={[
             ["PID", s.pid ? <span className="mono">{s.pid}</span> : undefined],
             ["Port", s.port ? <span className="mono">{s.port}</span> : undefined],
             ["Max. Heap (Xmx)", s.xmx],
-            ["RAM (Prozess)", s.rss ? bytes(s.rss) : undefined],
-            ["CPU-Kerne sichtbar", i.cpus],
-            ["Belegt auf Platte", disk?.bytes ? bytes(disk.bytes) : undefined],
+            [t("RAM (process)"), s.rss ? bytes(s.rss) : undefined],
+            [t("CPU cores visible"), i.cpus],
+            [t("Used on disk"), disk?.bytes ? bytes(disk.bytes) : undefined],
           ]}
         />
         {disk?.worlds && (
@@ -676,9 +677,9 @@ function System({ s }: { s: ServerDetail }) {
         </Card>
       )}
       <Card>
-        <CardHead title="Watchdog" icon={<Power />} sub="startet abgestürzte Server neu" />
+        <CardHead title="Watchdog" icon={<Power />} sub={t("restarts crashed servers")} />
         {(s.watchdog ?? []).length === 0 ? (
-          <div className="small faint">Keine Einträge für diesen Server. Gut so.</div>
+          <div className="small faint">{t("No entries for this server. Good.")}</div>
         ) : (
           <div className="col mono small" style={{ gap: 4 }}>
             {s.watchdog!.slice(-12).reverse().map((l, k) => (
@@ -686,7 +687,7 @@ function System({ s }: { s: ServerDetail }) {
             ))}
           </div>
         )}
-        <div className="tiny faint mt-s">Stand {day(Date.now())}</div>
+        <div className="tiny faint mt-s">{t("As of")}{" "}{day(Date.now())}</div>
       </Card>
     </div>
   );

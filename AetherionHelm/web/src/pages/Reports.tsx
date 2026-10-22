@@ -11,8 +11,9 @@ import { onEvent } from "../lib/live";
 import { Sheet } from "../components/overlay";
 import { Avatar, Badge, Button, Card, Empty, Field, PageHead, Segmented, Skeleton, useTick } from "../components/ui";
 import { useEffect } from "react";
+import { t } from "../lib/i18n";
 
-const QUICK = ["Erledigt, ermahnt", "Gemutet", "Gebannt", "Kein Verstoß gefunden", "Doppelte Meldung"];
+const QUICK = [t("Resolved, warned"), t("Muted"), t("Banned"), t("No violation found"), t("Duplicate report")];
 
 export function Reports() {
   const me = useStore(session, (s) => s.me)!;
@@ -25,16 +26,16 @@ export function Reports() {
   return (
     <div className="page">
       <PageHead
-        title="Meldungen"
-        sub="Was Spieler mit /report oder /melden im Spiel einreichen."
+        title={t("Reports")}
+        sub={t("What players submit with /report or /melden in game.")}
         actions={
           <Segmented
             value={status}
             onChange={setStatus}
             options={[
-              { value: "open", label: "Offen" },
-              { value: "resolved", label: "Erledigt" },
-              { value: "all", label: "Alle" },
+              { value: "open", label: t("Open") },
+              { value: "resolved", label: t("Resolved") },
+              { value: "all", label: t("All") },
             ]}
           />
         }
@@ -43,7 +44,7 @@ export function Reports() {
         <Card><Skeleton h={160} /></Card>
       ) : !data?.length ? (
         <Card>
-          <Empty icon={status === "open" ? <CheckCircle2 /> : <Inbox />} title={status === "open" ? "Keine offenen Meldungen" : "Nichts hier"} text={status === "open" ? "Alles abgearbeitet. Neue Meldungen erscheinen hier sofort." : undefined} />
+          <Empty icon={status === "open" ? <CheckCircle2 /> : <Inbox />} title={status === "open" ? t("No open reports") : t("Nothing here")} text={status === "open" ? t("All caught up. New reports show up here instantly.") : undefined} />
         </Card>
       ) : (
         <div className="col" style={{ gap: 12 }}>
@@ -59,9 +60,9 @@ export function Reports() {
                         {r.targetName}
                       </a>
                     ) : (
-                      <b>{r.targetName ?? "Allgemein"}</b>
+                      <b>{r.targetName ?? t("General")}</b>
                     )}
-                    <span className="faint small">gemeldet von</span>
+                    <span className="faint small">{t("reported by")}</span>
                     {r.reporterUuid ? <a href={href("players", r.reporterUuid)} className="small strong">{r.reporterName}</a> : <span className="small">{r.reporterName}</span>}
                     <Badge outline>{serverName(me, r.server)}</Badge>
                     <span className="tiny faint" title={stamp(r.ts)}>{ago(r.ts)}</span>
@@ -69,14 +70,14 @@ export function Reports() {
                   <div style={{ fontSize: 14.5 }}>{r.reason}</div>
                   {r.status === "resolved" && (
                     <div className="small muted">
-                      Erledigt von <b>{r.resolvedBy}</b> {ago(r.resolvedAt)}
+                      {t("Resolved by")}{" "}<b>{r.resolvedBy}</b> {ago(r.resolvedAt)}
                       {r.resolution ? `: ${r.resolution}` : ""}
                     </div>
                   )}
                 </div>
                 {r.status === "open" && can(me, "reports.manage") && (
                   <Button size="sm" variant="tinted" tone="green" icon={<CheckCircle2 />} onClick={() => setResolve(r)}>
-                    Erledigen
+                    {t("Resolve")}
                   </Button>
                 )}
               </div>
@@ -94,31 +95,31 @@ function ResolveSheet({ r, onClose, onDone }: { r: Report; onClose: () => void; 
   const [busy, setBusy] = useState(false);
   return (
     <Sheet
-      title="Meldung erledigen"
-      sub={`${r.reporterName} über ${r.targetName ?? "allgemein"}: „${r.reason}“`}
+      title={t("Resolve report")}
+      sub={t("{from} about {target}: “{reason}”", { from: r.reporterName ?? "?", target: r.targetName ?? t("general"), reason: r.reason })}
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant="primary"
             busy={busy}
             onClick={async () => {
               setBusy(true);
-              if (await attempt(() => post(`/api/reports/${r.id}/resolve`, { resolution: text.trim() || undefined }), "Meldung erledigt")) {
+              if (await attempt(() => post(`/api/reports/${r.id}/resolve`, { resolution: text.trim() || undefined }), t("Report resolved"))) {
                 onDone();
                 close();
               }
               setBusy(false);
             }}
           >
-            Erledigt
+            {t("Resolved")}
           </Button>
         </>
       )}
     >
-      <Field label="Was wurde gemacht?" help="Optional. Steht danach bei der Meldung und im Protokoll.">
-        <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="z. B. Gemutet für 1 Std." autoFocus />
+      <Field label={t("What was done?")} help={t("Optional. Shown with the report and in the audit log.")}>
+        <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder={t("e.g. Muted for 1 h")} autoFocus />
         <div className="dur-presets">
           {QUICK.map((q) => (
             <button key={q} className={"chip" + (text === q ? " on" : "")} onClick={() => setText(q)}>{q}</button>

@@ -8,6 +8,7 @@ import { attempt, toast } from "../lib/toast";
 import type { TeamUser } from "../lib/types";
 import { Confirm, Sheet, useMenu } from "../components/overlay";
 import { Avatar, Badge, Banner, Button, Card, CardHead, Field, IconButton, IconTile, PageHead, Skeleton, useTick } from "../components/ui";
+import { t } from "../lib/i18n";
 
 interface TeamData {
   users: TeamUser[];
@@ -15,24 +16,24 @@ interface TeamData {
 }
 
 export const PERM_LABELS: Record<string, string> = {
-  view: "Übersicht und Server sehen",
-  "players.view": "Spieler und Akten sehen",
-  "players.inventory": "Inventare ansehen",
-  "players.kick": "Kicken und verwarnen",
-  "players.mute": "Muten",
-  "players.ban": "Bannen",
-  "players.message": "Spielern schreiben",
-  "players.send": "Spieler verschieben",
-  "notes.write": "Notizen schreiben",
-  "chat.send": "Broadcasts senden",
-  "console.view": "Konsole lesen",
-  "console.command": "Konsolenbefehle senden",
-  "server.power": "Server starten und stoppen",
-  "host.view": "Hetzner-Auslastung sehen",
-  "audit.view": "Protokoll sehen",
-  "reports.manage": "Meldungen erledigen",
-  "settings.manage": "Alerts und Discord einstellen",
-  "team.manage": "Team-Konten verwalten",
+  view: t("View overview and servers"),
+  "players.view": t("View players and records"),
+  "players.inventory": t("View inventories"),
+  "players.kick": t("Kick and warn"),
+  "players.mute": t("Mute"),
+  "players.ban": t("Ban"),
+  "players.message": t("Message players"),
+  "players.send": t("Move players"),
+  "notes.write": t("Write notes"),
+  "chat.send": t("Send broadcasts"),
+  "console.view": t("Read console"),
+  "console.command": t("Send console commands"),
+  "server.power": t("Start and stop servers"),
+  "host.view": t("See Hetzner load"),
+  "audit.view": t("View audit log"),
+  "reports.manage": t("Resolve reports"),
+  "settings.manage": t("Configure alerts and Discord"),
+  "team.manage": t("Manage team accounts"),
 };
 
 const ROLE_TONE: Record<string, string> = { owner: "accent", coowner: "accent", admin: "red", moderator: "green", supporter: "blue" };
@@ -49,8 +50,8 @@ export function Team() {
     <div className="page">
       <PageHead
         title="Team"
-        sub="Wer Zugang zum Panel hat. Jede Person hat ein eigenes Konto mit Zwei-Faktor-Anmeldung."
-        actions={manage ? <Button variant="primary" icon={<UserPlus />} onClick={() => setCreate(true)}>Neues Konto</Button> : undefined}
+        sub={t("Who has access to the panel. Everyone has their own account with two-factor sign-in.")}
+        actions={manage ? <Button variant="primary" icon={<UserPlus />} onClick={() => setCreate(true)}>{t("New account")}</Button> : undefined}
       />
       {!data ? (
         <div className="grid g-auto">{[0, 1].map((i) => <Card key={i}><Skeleton h={90} /></Card>)}</div>
@@ -102,43 +103,43 @@ function Member({ u, self, manage, roles, onChanged, onPassword }: {
           <div className="small faint">@{u.username}{u.mcName ? ` · ${u.mcName}` : ""}</div>
           <div className="row wrap mt-s" style={{ gap: 6 }}>
             <Badge tone={ROLE_TONE[u.role] ?? ""}>{u.roleLabel}</Badge>
-            {u.totp ? <Badge tone="green" icon={<ShieldCheck />}>2FA aktiv</Badge> : <Badge tone="orange" icon={<ShieldOff />}>2FA noch nicht eingerichtet</Badge>}
+            {u.totp ? <Badge tone="green" icon={<ShieldCheck />}>{t("2FA on")}</Badge> : <Badge tone="orange" icon={<ShieldOff />}>{t("2FA not set up yet")}</Badge>}
           </div>
         </div>
         {manage && (
           <>
-            <IconButton label="Mehr" onClick={menu.open}>
+            <IconButton label={t("More")} onClick={menu.open}>
               <MoreHorizontal />
             </IconButton>
             {menu.render([
-              { label: "Bearbeiten", icon: <Pencil />, onClick: () => setEdit(true) },
-              { label: "Passwort zurücksetzen", icon: <KeyRound />, onClick: () => setConfirm("pw") },
-              { label: "2FA zurücksetzen", icon: <ShieldOff />, onClick: () => setConfirm("2fa") },
+              { label: t("Edit"), icon: <Pencil />, onClick: () => setEdit(true) },
+              { label: t("Reset password"), icon: <KeyRound />, onClick: () => setConfirm("pw") },
+              { label: t("Reset 2FA"), icon: <ShieldOff />, onClick: () => setConfirm("2fa") },
               { sep: true, label: "", onClick: () => {} },
-              { label: "Konto entfernen", icon: <Trash2 />, danger: true, onClick: () => setConfirm("remove") },
+              { label: t("Remove account"), icon: <Trash2 />, danger: true, onClick: () => setConfirm("remove") },
             ])}
           </>
         )}
       </div>
       <div className="tiny faint mt">
-        {u.online ? <span className="green">gerade im Panel</span> : u.lastLogin ? `zuletzt angemeldet ${ago(u.lastLogin)}` : "noch nie angemeldet"}
+        {u.online ? <span className="green">{t("in the panel now")}</span> : u.lastLogin ? t("last signed in {when}", { when: ago(u.lastLogin) }) : t("never signed in")}
       </div>
       {edit && <EditSheet u={u} roles={roles.filter((r) => r.id !== "owner")} onClose={() => setEdit(false)} onDone={onChanged} />}
       {confirm === "2fa" && (
         <Confirm
-          title={`2FA für ${u.display} zurücksetzen?`}
-          text="Die Person wird abgemeldet und richtet beim nächsten Login die Authenticator-App neu ein."
-          confirm="Zurücksetzen"
+          title={t("Reset 2FA for {name}?", { name: u.display })}
+          text={t("They are signed out and set up their authenticator app again at the next login.")}
+          confirm={t("Reset")}
           danger
-          onConfirm={() => attempt(() => post(`/api/team/${u.id}/reset-2fa`), "2FA zurückgesetzt").then(onChanged)}
+          onConfirm={() => attempt(() => post(`/api/team/${u.id}/reset-2fa`), t("2FA reset")).then(onChanged)}
           onClose={() => setConfirm(null)}
         />
       )}
       {confirm === "pw" && (
         <Confirm
-          title={`Neues Passwort für ${u.display}?`}
-          text="Erzeugt ein einmaliges Passwort und meldet die Person überall ab. Du siehst es danach genau einmal."
-          confirm="Neues Passwort"
+          title={t("New password for {name}?", { name: u.display })}
+          text={t("Creates a one-time password and signs them out everywhere. You'll see it exactly once.")}
+          confirm={t("New password")}
           onConfirm={async () => {
             try {
               const r = await post<{ password: string }>(`/api/team/${u.id}/reset-password`);
@@ -152,11 +153,11 @@ function Member({ u, self, manage, roles, onChanged, onPassword }: {
       )}
       {confirm === "remove" && (
         <Confirm
-          title={`${u.display} entfernen?`}
-          text="Das Konto wird gesperrt und sofort überall abgemeldet. Einträge im Protokoll bleiben erhalten."
-          confirm="Entfernen"
+          title={t("Remove {name}?", { name: u.display })}
+          text={t("The account is locked and signed out everywhere right away. Its audit log entries stay.")}
+          confirm={t("Remove")}
           danger
-          onConfirm={() => attempt(() => del(`/api/team/${u.id}`), "Konto entfernt").then(onChanged)}
+          onConfirm={() => attempt(() => del(`/api/team/${u.id}`), t("Account removed")).then(onChanged)}
           onClose={() => setConfirm(null)}
         />
       )}
@@ -173,13 +174,13 @@ function CreateSheet({ roles, onClose, onCreated }: { roles: TeamData["roles"]; 
   const ok = /^[a-z0-9_.-]{2,24}$/.test(username) && display.trim().length >= 2;
   return (
     <Sheet
-      title="Neues Team-Konto"
-      sub="Du bekommst ein einmaliges Passwort. Beim ersten Login richtet die Person ihre Zwei-Faktor-Anmeldung ein."
+      title={t("New team account")}
+      sub={t("You get a one-time password. At their first login they set up two-factor sign-in.")}
       icon={<IconTile tone="accent"><UserPlus /></IconTile>}
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant="primary"
             busy={busy}
@@ -197,21 +198,21 @@ function CreateSheet({ roles, onClose, onCreated }: { roles: TeamData["roles"]; 
               }
             }}
           >
-            Konto anlegen
+            {t("Create account")}
           </Button>
         </>
       )}
     >
-      <Field label="Benutzername" help="Klein, ohne Leerzeichen. Damit meldet sich die Person an.">
-        <input className="input" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder="z. B. lena" autoFocus autoCapitalize="off" spellCheck={false} />
+      <Field label={t("Username")} help={t("Lowercase, no spaces. They sign in with this.")}>
+        <input className="input" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder={t("e.g. lena")} autoFocus autoCapitalize="off" spellCheck={false} />
       </Field>
-      <Field label="Anzeigename" help="Steht im Protokoll und im Spiel bei Team-Nachrichten.">
-        <input className="input" value={display} onChange={(e) => setDisplay(e.target.value)} placeholder="z. B. Lena" />
+      <Field label={t("Display name")} help={t("Shown in the audit log and on team messages in game.")}>
+        <input className="input" value={display} onChange={(e) => setDisplay(e.target.value)} placeholder={t("e.g. Lena")} />
       </Field>
-      <Field label="Minecraft-Name (optional)" help="Für den Kopf als Profilbild.">
-        <input className="input" value={mcName} onChange={(e) => setMcName(e.target.value)} placeholder="z. B. LenaMC" autoCapitalize="off" spellCheck={false} />
+      <Field label={t("Minecraft name (optional)")} help={t("Used for the head avatar.")}>
+        <input className="input" value={mcName} onChange={(e) => setMcName(e.target.value)} placeholder={t("e.g. LenaMC")} autoCapitalize="off" spellCheck={false} />
       </Field>
-      <Field label="Rolle">
+      <Field label={t("Role")}>
         <select className="select" value={role} onChange={(e) => setRole(e.target.value)}>
           {roles.map((r) => (
             <option key={r.id} value={r.id}>{r.label}</option>
@@ -229,35 +230,35 @@ function EditSheet({ u, roles, onClose, onDone }: { u: TeamUser; roles: TeamData
   const [busy, setBusy] = useState(false);
   return (
     <Sheet
-      title={`${u.display} bearbeiten`}
+      title={t("Edit {name}", { name: u.display })}
       onClose={onClose}
       foot={(close) => (
         <>
-          <Button variant="ghost" onClick={close}>Abbrechen</Button>
+          <Button variant="ghost" onClick={close}>{t("Cancel")}</Button>
           <Button
             variant="primary"
             busy={busy}
             onClick={async () => {
               setBusy(true);
-              if (await attempt(() => patch(`/api/team/${u.id}`, { display: display.trim(), role, mcName: mcName.trim() || undefined }), "Gespeichert")) {
+              if (await attempt(() => patch(`/api/team/${u.id}`, { display: display.trim(), role, mcName: mcName.trim() || undefined }), t("Saved"))) {
                 onDone();
                 close();
               }
               setBusy(false);
             }}
           >
-            Speichern
+            {t("Save")}
           </Button>
         </>
       )}
     >
-      <Field label="Anzeigename">
+      <Field label={t("Display name")}>
         <input className="input" value={display} onChange={(e) => setDisplay(e.target.value)} />
       </Field>
-      <Field label="Minecraft-Name">
+      <Field label={t("Minecraft name")}>
         <input className="input" value={mcName} onChange={(e) => setMcName(e.target.value)} />
       </Field>
-      <Field label="Rolle">
+      <Field label={t("Role")}>
         <select className="select" value={role} onChange={(e) => setRole(e.target.value)}>
           {roles.map((r) => (
             <option key={r.id} value={r.id}>{r.label}</option>
@@ -271,15 +272,15 @@ function EditSheet({ u, roles, onClose, onDone }: { u: TeamUser; roles: TeamData
 function PasswordSheet({ name, password, onClose }: { name: string; password: string; onClose: () => void }) {
   return (
     <Sheet
-      title={`Passwort für ${name}`}
-      sub="Wird nur jetzt angezeigt. Schick es der Person auf einem sicheren Weg; sie kann es danach unter Einstellungen ändern."
+      title={t("Password for {name}", { name })}
+      sub={t("Shown only now. Send it to them over a safe channel; they can change it later in Settings.")}
       icon={<IconTile tone="green"><KeyRound /></IconTile>}
       onClose={onClose}
-      foot={(close) => <Button variant="primary" icon={<Check />} onClick={close}>Fertig</Button>}
+      foot={(close) => <Button variant="primary" icon={<Check />} onClick={close}>{t("Done")}</Button>}
     >
       <div className="secret" style={{ fontSize: 18, padding: 16 }}>{password}</div>
-      <Button icon={<Copy />} onClick={() => attempt(() => navigator.clipboard.writeText(password), "Kopiert")}>Kopieren</Button>
-      <Banner tone="accent">Anmeldung unter derselben Adresse wie du. Beim ersten Login führt das Panel durch die 2FA-Einrichtung.</Banner>
+      <Button icon={<Copy />} onClick={() => attempt(() => navigator.clipboard.writeText(password), t("Copied"))}>{t("Copy")}</Button>
+      <Banner tone="accent">{t("They sign in at the same address as you. On first login the panel walks them through setting up 2FA.")}</Banner>
     </Sheet>
   );
 }
@@ -288,16 +289,16 @@ function RoleMatrix({ roles }: { roles: TeamData["roles"] }) {
   const perms = Object.keys(PERM_LABELS);
   return (
     <>
-      <h2 className="section">Was darf wer?</h2>
+      <h2 className="section">{t("Who can do what?")}</h2>
       <Card className="flush">
         <div style={{ padding: "18px 20px 4px" }}>
-          <CardHead title="Rollen" icon={<Users />} sub="Owner und Co-Owner dürfen fast alles; nur Team-Konten verwaltet allein der Owner." />
+          <CardHead title={t("Roles")} icon={<Users />} sub={t("Owner and Co-Owner can do almost everything; only the owner manages team accounts.")} />
         </div>
         <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
-                <th>Berechtigung</th>
+                <th>{t("Permission")}</th>
                 {roles.map((r) => (
                   <th key={r.id} className="r" style={{ textAlign: "center" }}>{r.label}</th>
                 ))}

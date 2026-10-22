@@ -11,7 +11,7 @@
   --aurora-2: #12b5d6;
   --aurora-3: #d946ef;
   --aurora-4: #1e40af;
-  --aurora-opacity: 0.55;
+  --aurora-opacity: 0.68;
   --grain-opacity: 0.06;
 
   /* text: Apple's label ladder */
@@ -21,14 +21,21 @@
   --text-4: rgba(235, 238, 255, 0.2);
 
   /* glass */
-  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.032));
-  --glass-solid: rgba(20, 22, 34, 0.72);
-  --glass-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
-  --glass-tint: rgba(14, 16, 28, 0.42);
-  --glass-blur: blur(30px) saturate(175%);
-  --glass-border: rgba(255, 255, 255, 0.085);
-  --glass-rim: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.06) 30%, rgba(255, 255, 255, 0) 55%, rgba(255, 255, 255, 0.08));
-  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 -1px 0 rgba(0, 0, 0, 0.25) inset, 0 24px 60px -24px rgba(0, 0, 0, 0.65), 0 2px 6px -2px rgba(0, 0, 0, 0.35);
+  /* glass: a clear body, a specular rim that catches light on two opposite corners, an inner glow along the
+     bottom like light travelling through a thick pane. --lq is the refraction filter from lib/liquid.ts. */
+  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.03));
+  --glass-solid: rgba(18, 20, 32, 0.74);
+  --glass-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  --glass-tint: rgba(12, 14, 26, 0.34);
+  --glass-chrome: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)), rgba(14, 16, 28, 0.5);
+  --glass-blur: blur(26px) saturate(185%);
+  --glass-blur-clear: blur(14px) saturate(210%) brightness(1.05);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-rim: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.16) 16%, rgba(255, 255, 255, 0.03) 38%, rgba(255, 255, 255, 0) 58%, rgba(255, 255, 255, 0.1) 82%, rgba(255, 255, 255, 0.34));
+  --glass-sheen: radial-gradient(140% 70% at 6% -10%, rgba(255, 255, 255, 0.1), transparent 52%);
+  --glass-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.14), inset 0 -1px 1px rgba(255, 255, 255, 0.04), inset 0 16px 30px -26px rgba(255, 255, 255, 0.22), inset 0 -22px 36px -30px rgba(150, 165, 255, 0.2), 0 24px 60px -24px rgba(0, 0, 0, 0.65), 0 2px 6px -2px rgba(0, 0, 0, 0.35);
+  --bubble: linear-gradient(180deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.06));
+  --bubble-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.28), inset 0 -1px 1px rgba(255, 255, 255, 0.07), 0 6px 18px -8px rgba(0, 0, 0, 0.6);
   --well: rgba(255, 255, 255, 0.045);
   --well-2: rgba(255, 255, 255, 0.075);
   --hover: rgba(255, 255, 255, 0.06);
@@ -99,13 +106,18 @@
   --text-3: rgba(40, 44, 66, 0.42);
   --text-4: rgba(40, 44, 66, 0.22);
 
-  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.5));
+  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.42));
   --glass-solid: rgba(255, 255, 255, 0.86);
   --glass-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
-  --glass-tint: rgba(255, 255, 255, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.7);
-  --glass-rim: linear-gradient(160deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.5) 30%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0.6));
-  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 20px 50px -24px rgba(40, 44, 90, 0.28), 0 2px 6px -2px rgba(40, 44, 90, 0.12);
+  --glass-tint: rgba(255, 255, 255, 0.32);
+  --glass-chrome: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
+  --glass-blur-clear: blur(14px) saturate(180%) brightness(1.03);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-rim: linear-gradient(135deg, #fff, rgba(255, 255, 255, 0.75) 18%, rgba(255, 255, 255, 0.25) 42%, rgba(255, 255, 255, 0.2) 60%, rgba(255, 255, 255, 0.8) 85%, #fff);
+  --glass-sheen: radial-gradient(140% 70% at 6% -10%, rgba(255, 255, 255, 0.65), transparent 55%);
+  --glass-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(255, 255, 255, 0.55), inset 0 -22px 34px -30px rgba(106, 82, 255, 0.16), 0 20px 50px -24px rgba(40, 44, 90, 0.28), 0 2px 6px -2px rgba(40, 44, 90, 0.12);
+  --bubble: linear-gradient(180deg, #fff, rgba(255, 255, 255, 0.82));
+  --bubble-shadow: inset 0 1px 1px #fff, inset 0 -1px 1px rgba(40, 44, 90, 0.06), 0 6px 16px -6px rgba(40, 44, 90, 0.28);
   --well: rgba(30, 36, 80, 0.045);
   --well-2: rgba(30, 36, 80, 0.075);
   --hover: rgba(30, 36, 80, 0.05);

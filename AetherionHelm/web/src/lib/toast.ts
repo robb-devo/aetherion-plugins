@@ -1,4 +1,5 @@
 import { createStore } from "./store";
+import { t } from "./i18n";
 
 export type ToastKind = "ok" | "err" | "info";
 export interface Toast {
@@ -25,7 +26,7 @@ export async function attempt(fn: () => Promise<unknown>, ok?: string): Promise<
     if (ok) toast(ok, "ok");
     return true;
   } catch (e) {
-    toast((e as Error).message || "Das hat nicht geklappt.", "err");
+    toast((e as Error).message || t("Something went wrong."), "err");
     return false;
   }
 }

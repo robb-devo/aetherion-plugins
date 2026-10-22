@@ -11,14 +11,15 @@ import { AreaChart, PALETTE, Ring, Spark } from "../components/charts";
 import { openSheet } from "../components/nav";
 import { Avatar, Badge, Button, Card, CardHead, Count, Empty, IconTile, Meter, Segmented, Skeleton, StateChip, Stat, cx, useTick } from "../components/ui";
 import { EventRow } from "./Activity";
+import { t } from "../lib/i18n";
 
 function greeting() {
   const h = new Date().getHours();
-  if (h < 5) return "Gute Nacht";
-  if (h < 11) return "Guten Morgen";
-  if (h < 17) return "Hallo";
-  if (h < 22) return "Guten Abend";
-  return "Gute Nacht";
+  if (h < 5) return t("Good night");
+  if (h < 11) return t("Good morning");
+  if (h < 17) return t("Hello");
+  if (h < 22) return t("Good evening");
+  return t("Good night");
 }
 
 export const toneColor = (t: string) => (t ? `var(--${t})` : "var(--text-3)");
@@ -37,10 +38,10 @@ export function Overview() {
   const worst = paper.filter((s) => s.state === "online" && s.tps).sort((a, b) => (a.tps![0] ?? 20) - (b.tps![0] ?? 20) || (b.mspt ?? 0) - (a.mspt ?? 0))[0];
   const crit = snap.alerts.filter((a) => a.level === "crit");
   const summary = crit.length
-    ? `${crit.length === 1 ? "Ein Problem braucht" : crit.length + " Probleme brauchen"} Aufmerksamkeit.`
+    ? crit.length === 1 ? t("One problem needs attention.") : t("{n} problems need attention.", { n: crit.length })
     : up === snap.servers.length
-      ? `Alles läuft. ${up} von ${snap.servers.length} Servern online, ${snap.network.online} ${snap.network.online === 1 ? "Spieler" : "Spieler"} im Netzwerk.`
-      : `${up} von ${snap.servers.length} Servern online, ${snap.network.online} Spieler im Netzwerk.`;
+      ? t("All good. {up} of {all} servers online, {p} on the network.", { up, all: snap.servers.length, p: snap.network.online === 1 ? t("1 player") : t("{n} players", { n: snap.network.online }) })
+      : t("{up} of {all} servers online, {p} on the network.", { up, all: snap.servers.length, p: snap.network.online === 1 ? t("1 player") : t("{n} players", { n: snap.network.online }) });
 
   return (
     <div className="page">
@@ -68,11 +69,11 @@ export function Overview() {
       <div className="grid g4 mt">
         <MiniStat
           icon={<Gauge />}
-          label="Schwächster Server"
+          label={t("Weakest server")}
           value={worst ? n1(worst.tps![0]) : "–"}
           unit="TPS"
           tone={worst ? tpsTone(worst.tps![0]) : ""}
-          hint={worst ? `${worst.name} · ${n1(worst.mspt)} ms pro Tick` : "keine Daten"}
+          hint={worst ? t("{name} · {ms} ms per tick", { name: worst.name, ms: n1(worst.mspt) }) : t("no data")}
           spark={worst ? series[`${worst.id}.tps`] : undefined}
           sparkMax={20}
           onClick={worst ? () => go("servers", worst.id) : undefined}
@@ -90,21 +91,21 @@ export function Overview() {
         />
         <MiniStat
           icon={<MemoryStick />}
-          label="Arbeitsspeicher"
+          label={t("Memory")}
           value={snap.host.memTotal ? bytes(snap.host.memUsed).split(" ")[0] : "–"}
-          unit={snap.host.memTotal ? `${bytes(snap.host.memUsed).split(" ")[1]} von ${bytes(snap.host.memTotal, 0)}` : ""}
+          unit={snap.host.memTotal ? t("{a} of {b}", { a: bytes(snap.host.memUsed).split(" ")[1], b: bytes(snap.host.memTotal, 0) }) : ""}
           tone={loadTone(snap.host.memTotal ? (snap.host.memUsed ?? 0) / snap.host.memTotal : undefined)}
-          hint={snap.host.memCached ? `${bytes(snap.host.memCached)} Cache` : undefined}
+          hint={snap.host.memCached ? t("{c} cache", { c: bytes(snap.host.memCached) }) : undefined}
           spark={series["host.mem"]?.map((v) => v * 100)}
           sparkMax={100}
           onClick={can(me, "host.view") ? () => go("host") : undefined}
         />
         <MiniStat
           icon={<Network />}
-          label="Netzwerk"
+          label={t("Network")}
           value={rate(snap.host.tx).split(" ")[0]}
           unit={rate(snap.host.tx).split(" ")[1] + " raus"}
-          hint={`${rate(snap.host.rx)} rein`}
+          hint={t("{r} in", { r: rate(snap.host.rx) })}
           spark={series["host.tx"]}
           onClick={can(me, "host.view") ? () => go("host") : undefined}
         />
@@ -116,7 +117,7 @@ export function Overview() {
           {up}/{snap.servers.length} online
         </span>
         <a href={href("servers")} className="btn ghost sm" style={{ marginLeft: "auto" }}>
-          Alle <ChevronRight />
+          {t("All")}{" "}<ChevronRight />
         </a>
       </h2>
       <div className="grid g-auto">
@@ -205,7 +206,7 @@ function NetworkHero() {
       <div className="col" style={{ gap: 18, justifyContent: "space-between" }}>
         <div>
           <div className="eyebrow row" style={{ gap: 8 }}>
-            <Users size={13} /> Gerade online
+            <Users size={13} /> {t("Online now")}
           </div>
           <div className="row" style={{ alignItems: "baseline", gap: 12, marginTop: 6 }}>
             <span className="stat lg">
@@ -217,16 +218,16 @@ function NetworkHero() {
             {trend !== 0 && (
               <Badge tone={trend > 0 ? "green" : "orange"} icon={trend > 0 ? <ArrowUpRight /> : <ArrowDownRight />}>
                 {trend > 0 ? "+" : ""}
-                {Math.round(trend)} in 1 Min.
+                {Math.round(trend)} {t("in 1 min")}
               </Badge>
             )}
           </div>
           <div className="row wrap" style={{ gap: 18, marginTop: 10 }}>
             <span className="small muted">
-              Peak heute <b className="num" style={{ color: "var(--text)" }}>{snap.network.peakToday}</b>
+              {t("Peak today")}{" "}<b className="num" style={{ color: "var(--text)" }}>{snap.network.peakToday}</b>
             </span>
             <span className="small muted">
-              Verschiedene Spieler heute <b className="num" style={{ color: "var(--text)" }}>{snap.network.uniqueToday}</b>
+              {t("Unique players today")}{" "}<b className="num" style={{ color: "var(--text)" }}>{snap.network.uniqueToday}</b>
             </span>
           </div>
         </div>
@@ -249,16 +250,16 @@ function NetworkHero() {
       </div>
       <div className="col" style={{ gap: 10, minWidth: 0 }}>
         <div className="row between">
-          <span className="eyebrow">Spieler im Verlauf</span>
+          <span className="eyebrow">{t("Players over time")}</span>
           <Segmented
             value={range}
             onChange={setRange}
             options={[
               { value: "live", label: "Live" },
-              { value: "1h", label: "1 Std." },
-              { value: "24h", label: "24 Std." },
-              { value: "7d", label: "7 T." },
-              { value: "30d", label: "30 T." },
+              { value: "1h", label: t("1 h") },
+              { value: "24h", label: t("24 h") },
+              { value: "7d", label: t("7 d") },
+              { value: "30d", label: t("30 d") },
             ]}
           />
         </div>
@@ -266,10 +267,10 @@ function NetworkHero() {
           data={chart}
           height={210}
           series={[
-            { key: "players", label: "Spieler", color: "var(--c1)" },
-            ...(range !== "live" && range !== "1h" ? [{ key: "peak", label: "Spitze", color: "var(--c2)", area: false, dashed: true }] : []),
+            { key: "players", label: t("Players"), color: "var(--c1)" },
+            ...(range !== "live" && range !== "1h" ? [{ key: "peak", label: t("Peak"), color: "var(--c2)", area: false, dashed: true }] : []),
           ]}
-          empty={range === "live" ? "Sammle Live-Daten …" : "Der Verlauf füllt sich, sobald das Panel ein paar Minuten läuft."}
+          empty={range === "live" ? t("Collecting live data …") : t("History fills in once the panel has been running for a few minutes.")}
         />
       </div>
     </div>
@@ -302,7 +303,7 @@ export function ServerTile({ s, spark }: { s: Server; spark?: number[] }) {
       <div className="srv-metrics">
         <div className="m">
           <b>{s.players ?? 0}</b>
-          <span>Spieler</span>
+          <span>{t("Players")}</span>
         </div>
         {isProxy ? (
           <div className="m">
@@ -317,7 +318,7 @@ export function ServerTile({ s, spark }: { s: Server; spark?: number[] }) {
         )}
         <div className="m">
           <b>{s.uptime ? short(s.uptime) : "–"}</b>
-          <span>Laufzeit</span>
+          <span>{t("Uptime")}</span>
         </div>
       </div>
       <div className="col" style={{ gap: 6 }}>
@@ -342,17 +343,17 @@ function LiveFeed() {
     <Card className="flush">
       <div style={{ padding: "18px 20px 6px" }}>
         <CardHead
-          title="Live-Aktivität"
+          title={t("Live activity")}
           icon={<ActivityIcon />}
           right={
             <a href={href("activity")} className="btn ghost sm">
-              Alles <ChevronRight />
+              {t("All")}{" "}<ChevronRight />
             </a>
           }
         />
       </div>
       {shown.length === 0 ? (
-        <Empty icon={<ActivityIcon />} title="Noch ruhig" text="Joins, Chat, Tode und Strafen erscheinen hier in Echtzeit." />
+        <Empty icon={<ActivityIcon />} title={t("Quiet so far")} text={t("Joins, chat, deaths and punishments appear here in real time.")} />
       ) : (
         <div style={{ paddingBottom: 8 }}>
           {shown.map((e) => (
@@ -371,7 +372,7 @@ function AlertsCard() {
   return (
     <Card>
       <CardHead
-        title="Lage"
+        title={t("Situation")}
         icon={<AlertTriangle />}
         right={
           <a href={href("alerts")} className="btn ghost sm">
@@ -386,8 +387,8 @@ function AlertsCard() {
               <CheckCircle2 />
             </IconTile>
             <div>
-              <div className="strong">Alles im grünen Bereich</div>
-              <div className="small faint">Keine Warnungen. TPS, Speicher und Platten sind ok.</div>
+              <div className="strong">{t("All good")}</div>
+              <div className="small faint">{t("No alerts. TPS, memory and disks are fine.")}</div>
             </div>
           </div>
         )}
@@ -409,8 +410,8 @@ function AlertsCard() {
             <Flag />
           </IconTile>
           <div className="grow">
-            <div className="strong small">{reports ? `${reports} offene Meldung${reports === 1 ? "" : "en"}` : "Keine offenen Meldungen"}</div>
-            <div className="tiny faint">Aus /report im Spiel</div>
+            <div className="strong small">{reports ? reports === 1 ? t("1 open report") : t("{n} open reports", { n: reports }) : t("No open reports")}</div>
+            <div className="tiny faint">{t("From /report in game")}</div>
           </div>
           <ChevronRight size={16} className="faint" />
         </a>
@@ -428,7 +429,7 @@ function HostMini() {
     <a href={href("host")} className="col" style={{ gap: 8, padding: "12px", borderRadius: 14, background: "var(--well)" }}>
       <div className="row between small">
         <span className="row" style={{ gap: 6 }}>
-          <HardDrive size={14} className="faint" /> Platte
+          <HardDrive size={14} className="faint" /> {t("Disk")}
         </span>
         <span className="num faint">
           {bytes(h.diskUsed)} / {bytes(h.diskTotal, 0)}
@@ -436,7 +437,7 @@ function HostMini() {
       </div>
       <Meter value={disk} tone={disk > 0.9 ? "red" : disk > 0.8 ? "orange" : ""} />
       <div className="row between tiny faint">
-        <span>Online seit {short(h.uptime)}</span>
+        <span>{t("Online since")}{" "}{short(h.uptime)}</span>
         <span>{pct(h.iowait, 1)} IO-Wait</span>
       </div>
     </a>
@@ -454,12 +455,12 @@ function OnlineCard() {
         sub={players.length ? `${players.length}` : undefined}
         right={
           <a href={href("players")} className="btn ghost sm">
-            Alle <ChevronRight />
+            {t("All")}{" "}<ChevronRight />
           </a>
         }
       />
       {players.length === 0 ? (
-        <div className="small faint">Gerade ist niemand online.</div>
+        <div className="small faint">{t("No one is online right now.")}</div>
       ) : (
         <div className="row wrap" style={{ gap: 8 }}>
           {players.slice(0, 30).map((p) => (

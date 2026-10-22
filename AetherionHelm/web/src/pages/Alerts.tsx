@@ -6,6 +6,7 @@ import { serverName, session } from "../lib/session";
 import { ago, duration, stamp } from "../lib/format";
 import { attempt } from "../lib/toast";
 import { Badge, Button, Card, Empty, IconTile, PageHead, useTick } from "../components/ui";
+import { t } from "../lib/i18n";
 
 interface HistoryRow {
   id: number;
@@ -19,9 +20,9 @@ interface HistoryRow {
 }
 
 const LV = {
-  crit: { tone: "red", icon: <AlertOctagon />, label: "Kritisch" },
-  warn: { tone: "orange", icon: <AlertTriangle />, label: "Warnung" },
-  info: { tone: "accent", icon: <Info />, label: "Hinweis" },
+  crit: { tone: "red", icon: <AlertOctagon />, label: t("Critical") },
+  warn: { tone: "orange", icon: <AlertTriangle />, label: t("Warning") },
+  info: { tone: "accent", icon: <Info />, label: t("Info") },
 } as Record<string, { tone: string; icon: React.ReactNode; label: string }>;
 
 export function Alerts() {
@@ -31,14 +32,14 @@ export function Alerts() {
   useTick(15000);
   return (
     <div className="page">
-      <PageHead title="Warnungen" sub="Helm prüft alle 5 Sekunden Server, TPS, Speicher, Platten und das RAID. Was länger als ein paar Sekunden schief ist, landet hier." />
+      <PageHead title={t("Alerts")} sub={t("Every 5 seconds Helm checks servers, TPS, memory, disks and the RAID. Anything wrong for more than a few seconds lands here.")} />
       {active.length === 0 ? (
         <Card strong>
           <div className="row" style={{ gap: 16 }}>
             <IconTile tone="green"><CheckCircle2 /></IconTile>
             <div>
-              <div className="strong" style={{ fontSize: 16 }}>Alles im grünen Bereich</div>
-              <div className="small muted">Gerade gibt es nichts zu tun.</div>
+              <div className="strong" style={{ fontSize: 16 }}>{t("All good")}</div>
+              <div className="small muted">{t("Nothing to do right now.")}</div>
             </div>
           </div>
         </Card>
@@ -59,12 +60,12 @@ export function Alerts() {
                     {a.detail && <div className="small muted" style={{ marginTop: 3 }}>{a.detail}</div>}
                     <div className="tiny faint" style={{ marginTop: 4 }}>
                       seit {duration(Date.now() - a.since, 2)}
-                      {a.ackedBy ? ` · gesehen von ${a.ackedBy}` : ""}
+                      {a.ackedBy ? t(" · seen by {name}", { name: a.ackedBy }) : ""}
                     </div>
                   </div>
                   {!a.ackedBy && (
-                    <Button size="sm" icon={<Check />} onClick={() => attempt(() => post(`/api/alerts/${encodeURIComponent(a.key)}/ack`), "Als gesehen markiert")}>
-                      Gesehen
+                    <Button size="sm" icon={<Check />} onClick={() => attempt(() => post(`/api/alerts/${encodeURIComponent(a.key)}/ack`), t("Marked as seen"))}>
+                      {t("Seen")}
                     </Button>
                   )}
                 </div>
@@ -73,10 +74,10 @@ export function Alerts() {
           })}
         </div>
       )}
-      <h2 className="section">Verlauf</h2>
+      <h2 className="section">{t("History")}</h2>
       <Card className="flush">
         {!(data?.history ?? []).length ? (
-          <Empty icon={<BellRing />} title="Noch keine Warnungen" text="Hier steht später, was wann schiefging und wie lange." />
+          <Empty icon={<BellRing />} title={t("No alerts yet")} text={t("This will show what went wrong, when, and for how long.")} />
         ) : (
           <div className="list">
             {data!.history.map((h) => {
@@ -88,7 +89,7 @@ export function Alerts() {
                     <div className="title">{h.title}</div>
                     <div className="sub">
                       {stamp(h.since)}
-                      {h.resolved ? ` · ${duration(h.resolved - h.since, 2)} lang` : " · läuft noch"}
+                      {h.resolved ? t(" · lasted {d}", { d: duration(h.resolved - h.since, 2) }) : t(" · still active")}
                       {h.server ? ` · ${serverName(me, h.server)}` : ""}
                     </div>
                   </div>
