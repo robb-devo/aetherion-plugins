@@ -446,6 +446,7 @@ public final class AetherionQuests extends JavaPlugin {
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (!isDungeonBackend()) {
                 islandCast.autoSeed();
+                new de.aetherion.quests.isle.StraySwordSweep(this).start();
             }
         }, 260L);
         Bukkit.getScheduler().runTaskLater(this, () -> {
