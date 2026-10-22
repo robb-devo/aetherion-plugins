@@ -4,6 +4,7 @@
   Run it from any folder:
       powershell -ExecutionPolicy Bypass -File .\deploy-helm.ps1
       powershell -ExecutionPolicy Bypass -File .\deploy-helm.ps1 -CloudflareToken <token>
+      powershell -ExecutionPolicy Bypass -File .\deploy-helm.ps1 -Yes -PasswordFile <file>    (unattended)
 
   What it does, in order. It asks before anything that players would notice.
     1. Checks ssh (aetherion-hetzner), scp and ae.ps1.
@@ -12,8 +13,9 @@
     3. Creates passwords for Robb and Shuminite (only used if the accounts do not exist yet).
     4. Uploads everything to a staging folder and runs install.sh there: panel service, web app, agent plugins
        on all six servers (one jar each), accounts, and the Cloudflare tunnel for panel.donnernet.de
-       (with -CloudflareToken, or after a yes it prints a Cloudflare login link). The main site is not touched.
-    5. Shows the passwords once (they are not written to the log).        -- asks: restart now? --
+       (with -CloudflareToken, or after a yes a browser window opens: pick donnernet.de, Authorize).
+       The main site is not touched; a tunnel the server already runs is left alone.
+    5. Shows the passwords once, or writes them to -PasswordFile (never to the log).  -- asks: restart now? --
     6. One graceful restart of every server so the agents load, the proxy last.
   The log is in IdeaProjects\_deploy\helm-<time>\deploy.log.
 
@@ -23,9 +25,12 @@ param(
     [string]$CloudflareToken = '',
     [string]$AssetsDir = '',
     [string]$PanelHost = 'panel.donnernet.de',
-    [switch]$NoRestart
+    [switch]$NoRestart,
+    [switch]$Yes,                 # answer every question with yes (tunnel, restart)
+    [string]$PasswordFile = ''    # write new passwords here instead of showing them
 )
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Repo    = 'robb-devo/aetherion-plugins'
@@ -58,6 +63,7 @@ function Die([string]$t) {
 }
 function Check([string]$what) { if ($LASTEXITCODE -ne 0) { Die "$what failed (exit $LASTEXITCODE)" } }
 function Ask([string]$q) {
+    if ($Yes) { Write-Host "$q -> yes"; return $true }
     $a = Read-Host "$q [y/N]"
     return ($a -match '^(y|yes|j|ja)$')
 }
@@ -81,6 +87,18 @@ function NewPassword() {
     $chars = for ($i = 0; $i -lt 16; $i++) { $abc[$bytes[$i] % $abc.Length] }
     $s = -join $chars
     return '{0}-{1}-{2}-{3}' -f $s.Substring(0, 4), $s.Substring(4, 4), $s.Substring(8, 4), $s.Substring(12, 4)
+}
+function Get-Cloudflared() {
+    # cloudflared on this PC only signs in to Cloudflare (browser window); the tunnel itself runs on the server
+    $c = Get-Command cloudflared -ErrorAction SilentlyContinue
+    if ($c) { return $c.Source }
+    $exe = Join-Path $Work 'tools\cloudflared.exe'
+    if (-not (Test-Path $exe)) {
+        New-Item -ItemType Directory -Force -Path (Split-Path $exe) | Out-Null
+        Write-Host 'downloading cloudflared (official build from github.com/cloudflare/cloudflared)...'
+        Invoke-WebRequest -UseBasicParsing 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile $exe
+    }
+    return $exe
 }
 function WriteLf([string]$path, [string[]]$lines) {
     # LF and no BOM, the server reads these with bash
@@ -165,14 +183,25 @@ WriteLf $accountsFile $lines
 Write-Host "robb (Owner) and shuminite (Co-Owner); existing accounts keep their password"
 
 $installArgs = "--host $PanelHost"
+$certLocal = Join-Path $env:USERPROFILE '.cloudflared\cert.pem'
+$certUpload = $false
 if ($CloudflareToken) {
     WriteLf (Join-Path $Files 'cf.token') @($CloudflareToken.Trim())
     $installArgs += " --cf-token-file $Stage/cf.token"
 } else {
     Write-Host ''
-    Write-Host "Cloudflare: the panel needs $PanelHost. The installer can set that up now: it prints a login link," -ForegroundColor Yellow
-    Write-Host 'you open it, log in at Cloudflare and pick donnernet.de. Only that one subdomain is created.' -ForegroundColor Yellow
-    if (Ask 'Set up the Cloudflare tunnel now?') { $installArgs += ' --tunnel' }
+    Write-Host "Cloudflare: the panel needs $PanelHost. Only that one subdomain is created, donnernet.de stays as it is." -ForegroundColor Yellow
+    if (Ask 'Set up the Cloudflare tunnel now?') {
+        if (-not (Test-Path $certLocal)) {
+            $cf = Get-Cloudflared
+            Write-Host 'A browser window opens: log in at Cloudflare, click donnernet.de, then Authorize.' -ForegroundColor Yellow
+            NoStderrStop { & $cf tunnel login 2>&1 | Out-Host }
+            if (-not (Test-Path $certLocal)) { Die 'the Cloudflare login did not finish (no cert.pem); run the script again' }
+        }
+        Copy-Item $certLocal (Join-Path $Files 'cert.pem')
+        $certUpload = $true
+        $installArgs += ' --tunnel'
+    }
 }
 
 # ------------------------------------------------------------------------------------------------ 4. upload + install
@@ -185,11 +214,16 @@ $scpExit = $LASTEXITCODE
 # local copies of secrets go right away, uploaded or not
 Remove-Item $accountsFile -Force -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $Files 'cf.token') -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $Files 'cert.pem') -Force -ErrorAction SilentlyContinue
 if ($scpExit -ne 0) { Die "upload failed (exit $scpExit)" }
 
-& ssh -t $Ssh "sed -i 's/\r`$//' $Stage/install.sh $Stage/helm-ctl && bash $Stage/install.sh $installArgs"
+$prep = "sed -i 's/\r`$//' $Stage/install.sh $Stage/helm-ctl"
+# the Cloudflare login from this PC, unless the server already has one
+if ($certUpload) { $prep += " && { [ -f /root/.cloudflared/cert.pem ] || install -D -m 600 $Stage/cert.pem /root/.cloudflared/cert.pem; }; rm -f $Stage/cert.pem" }
+$tty = if ($Yes) { '-T' } else { '-t' }
+& ssh $tty $Ssh "$prep && bash $Stage/install.sh $installArgs"
 $installExit = $LASTEXITCODE
-$result = NoStderrStop { & ssh $Ssh "cat $Stage/result.txt 2>/dev/null; rm -f $Stage/accounts.txt $Stage/cf.token" }
+$result = NoStderrStop { & ssh $Ssh "cat $Stage/result.txt 2>/dev/null; rm -f $Stage/accounts.txt $Stage/cf.token $Stage/cert.pem" }
 if ($installExit -ne 0) { Die "install.sh failed (exit $installExit), see the output above" }
 if (-not ($result -match '^HEALTH ok')) { Die 'the panel service did not answer after the install' }
 
@@ -198,7 +232,14 @@ Step '5/6  Logins'
 $created = @($result | Where-Object { $_ -match '^ACCOUNT created ' } | ForEach-Object { ($_ -split ' ')[2] })
 $failed = @($result | Where-Object { $_ -match '^ACCOUNT failed ' } | ForEach-Object { ($_ -split ' ')[2] })
 foreach ($u in $failed) { Write-Host "account $u could not be created, see the installer output" -ForegroundColor Red }
-if ($created.Count -gt 0) {
+if ($created.Count -gt 0 -and $PasswordFile) {
+    $pwLines = @("Aetherion Helm  https://$PanelHost", '')
+    foreach ($u in $created) { $pwLines += ('{0,-10} {1}' -f $u, $passwords[$u]) }
+    $pwLines += @('', 'Both set up 2FA at the first login (any authenticator app). Delete this file once noted.')
+    [IO.File]::WriteAllLines($PasswordFile, $pwLines)
+    Write-Host "passwords for $($created -join ', ') written to $PasswordFile"
+    try { Start-Process notepad.exe $PasswordFile } catch { }
+} elseif ($created.Count -gt 0) {
     # not in the log: the transcript pauses while the passwords are on screen
     Stop-Transcript | Out-Null
     Write-Host ''
