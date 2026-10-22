@@ -1916,7 +1916,8 @@ public class DialogManager implements Listener {
             return new String[] {
                     "The road beyond this gate is closed. The Pathwarden stands on it, and nobody gets past him.",
                     "He's slow, he's patient, and he's ended a lot of brave careers.",
-                    "If you think you're strong enough, go and move him. If not, there's no shame in waiting a while longer."
+                    "If you think you're strong enough, go and move him. If not, there's no shame in waiting a while longer.",
+                    "He doesn't walk the road in the open any more. Bring a Crypt Spirit from the Crypt's dead to the Colosseum, and the Proctor there will call him into the ring."
             };
         }
 

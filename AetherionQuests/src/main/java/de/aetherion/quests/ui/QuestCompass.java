@@ -377,7 +377,56 @@ public class QuestCompass {
         if (api == null) {
             return null;
         }
+        // A live boss first; then where it is summoned now (Pathwarden: the Colosseum, T1: the Borderlands altar).
+        // The template's old spawner home pointed the Closed Road hunt at the hub.
+        Location live = liveBoss(api, bossId, player.getLocation());
+        if (live != null) {
+            return live;
+        }
+        Location summon = summonSpot(bossId);
+        if (summon != null) {
+            return summon;
+        }
         return api.locate(bossId, player.getLocation());
+    }
+
+    private static Location liveBoss(BossEngineAPI api, String bossId, Location from) {
+        Location best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (de.aetherion.bossengine.instance.BossInstance instance : api.getActiveBosses()) {
+            if (instance == null || instance.getTemplate() == null
+                    || !bossId.equalsIgnoreCase(instance.getTemplate().getId())) {
+                continue;
+            }
+            org.bukkit.entity.LivingEntity body = instance.getEntity();
+            if (body == null || !body.isValid() || body.isDead()) {
+                continue;
+            }
+            Location at = body.getLocation();
+            double distance = from != null && from.getWorld() != null && from.getWorld().equals(at.getWorld())
+                    ? from.distanceSquared(at)
+                    : Double.MAX_VALUE / 2.0d;
+            if (best == null || distance < bestDistance) {
+                best = at;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static Location summonSpot(String bossId) {
+        try {
+            if (de.aetherion.items.world.BorderlandsRiteService.isCryptBoss(bossId)) {
+                org.bukkit.World world = Bukkit.getWorld(de.aetherion.items.world.ColosseumArena.WORLD);
+                return world == null ? null : de.aetherion.items.world.ColosseumArena.pad(world);
+            }
+            if (de.aetherion.items.world.BorderlandsRiteService.isRiteBoss(bossId)) {
+                return borderlandsAltarLocation();
+            }
+        } catch (Throwable ignored) {
+            // Items missing or older: fall back to BossEngine's own idea of home.
+        }
+        return null;
     }
 
 

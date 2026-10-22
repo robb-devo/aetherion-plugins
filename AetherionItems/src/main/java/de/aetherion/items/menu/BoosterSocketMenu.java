@@ -400,9 +400,9 @@ public final class BoosterSocketMenu implements Listener {
     private ItemStack info(ItemStack gear, BoosterType[] slots) {
         int filled = BoosterSockets.filled(slots);
         ItemStack item = named(Material.BOOK, "§dBooster Sockets",
-                "§c§lNICHT ANPASSEN §c§lim Vanilla-Amboss",
-                "§cCustom Items / Stats / Sockets kaputt,",
-                "§cwenn du sie dort umbenennst.",
+                "§c§lDO NOT EDIT §c§lin a vanilla anvil",
+                "§cRenaming custom items there breaks",
+                "§ctheir stats and sockets.",
                 "",
                 "§7Place a tool, weapon, or armor.",
                 "§7" + filled + "§8/§f" + BoosterSockets.COUNT + " §7socketed.",
@@ -455,14 +455,14 @@ public final class BoosterSocketMenu implements Listener {
 
     private ItemStack vanillaAnvil() {
         return named(Material.ANVIL, "§fVanilla Anvil",
-                "§c§lNICHT ANPASSEN",
-                "§c§lCustom Items / Stats / Sockets",
-                "§c§lhier NICHT umbenennen oder",
-                "§c§l„anpassen“ — die gehen kaputt.",
+                "§c§lDO NOT EDIT",
+                "§c§lDon't rename or modify custom",
+                "§c§litems, stats or sockets here —",
+                "§c§lit breaks them.",
                 "",
-                "§7Nur: Dungeon Cores, Repair,",
+                "§7Only for: dungeon cores, repair,",
                 "§7vanilla rename of plain items.",
-                "§8Boosters bleiben in den Sockets.");
+                "§8Boosters stay in their sockets.");
     }
 
     private ItemStack named(Material material, String name, String... lore) {

@@ -49,6 +49,8 @@ COPY = (
     # Rank and level badges (gen_rank_badges.py); minecraft:default references them, see add_badge_reference.
     'assets/aetherion/font/badges.json',
     'assets/aetherion/textures/font/badges',
+    # The live Oak (Crit Damage) Booster texture is fully transparent; this is the repo's art without its frame.
+    'assets/minecraft/textures/item/oak_booster.png',
 )
 # Every menu page of gen_gui_chrome.THEMES: copied, and registered in minecraft:default by add_page_glyphs.
 PAGE_TEXTURES = tuple(

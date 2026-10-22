@@ -174,8 +174,11 @@ public class CraftingListener implements Listener {
 
         if (event.getWhoClicked() instanceof Player player) {
             if (recipeUnlocks != null) {
-                recipeUnlocks.markCrafted(player, matched.getId());
+                boolean first = recipeUnlocks.markCrafted(player, matched.getId());
                 recipeUnlocks.noteObtained(player, result);
+                if (first) {
+                    showNextTier(player);
+                }
             }
             de.aetherion.items.util.QuestProgressHook.noteCrafted(player, matched.getId(), 1);
             String itemId = itemManager.getItemId(result);
@@ -219,8 +222,11 @@ public class CraftingListener implements Listener {
             }
         }
         if (recipeUnlocks != null) {
-            recipeUnlocks.markCrafted(player, recipe.getId());
+            boolean first = recipeUnlocks.markCrafted(player, recipe.getId());
             recipeUnlocks.noteObtained(player, result);
+            if (first) {
+                showNextTier(player);
+            }
         }
         de.aetherion.items.util.QuestProgressHook.noteCrafted(player, recipe.getId(), 1);
         String itemId = itemManager.getItemId(result);
@@ -231,6 +237,19 @@ public class CraftingListener implements Listener {
             storageInventory.grantHubAccess(player);
         }
         player.updateInventory();
+    }
+
+    /**
+     * The first craft of a recipe unlocks its next tier (Grudge Marble → Grudge Marble II), but the vanilla recipe
+     * book only learned it on the next join. Refresh it right after the craft.
+     */
+    private void showNextTier(Player player) {
+        org.bukkit.Bukkit.getScheduler().runTask(
+                de.aetherion.items.AetherionItems.getInstance(), () -> {
+                    if (player.isOnline()) {
+                        recipeService.discoverFor(player);
+                    }
+                });
     }
 
     private ItemStack buildCraftResult(RecipeDefinition recipe, ItemStack[] matrix) {

@@ -49,7 +49,8 @@ public class AetherionManagerGUI {
     public static final int ISLAND_SLOT = 42;
     public static final int GUILD_SLOT = 44;
 
-    /** Ops only, between the bottom captions. */
+    /** Staff only (op or aetherion.dev), between the bottom captions. */
+    public static final int DEV_SLOT = 52;
 
     private static final String SKILLS_QUEST_ID = "lesson_manager";
     private static final String PETS_QUEST_ID = "pocket_zoo";
@@ -246,6 +247,16 @@ public class AetherionManagerGUI {
             inventory.setItem(RECIPE_SLOT, recipeQuestButton(true));
         }
 
+        if (de.aetherion.items.menu.dev.DevMenu.canUse(player)) {
+            inventory.setItem(DEV_SLOT, button(
+                    Material.COMMAND_BLOCK,
+                    "§cDEV Menu",
+                    "§7Sets, items, bosses, animals,",
+                    "§7pets and NPCs. One click.",
+                    "§8Also: /devmenu"
+            ));
+        }
+
         Inventory page = Bukkit.createInventory(new Holder(), 54, ManagerCaptions.title(captions(german)));
         page.setContents(inventory.getContents());
         player.openInventory(page);
@@ -363,6 +374,9 @@ public class AetherionManagerGUI {
 
     /** True for slots the hub actually reacts to — everything else is filler glass. */
     public static boolean isActionSlot(int slot) {
+        if (slot == DEV_SLOT) {
+            return true;
+        }
         for (int tab : TAB_SLOTS) {
             if (tab == slot) {
                 return true;
