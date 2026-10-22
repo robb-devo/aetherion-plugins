@@ -104,14 +104,30 @@ server already runs them, AetherMobs on mmo-r only, one restart per backend, bac
 ## Exile, ferry, islands, routing (2026-10-22, cloud session, PR #99)
 
 Deployed with `deploy-exile-isles.ps1` (Core, BossEngine, Hub jar on mmo-r; islands moved by `ae-islands-migrate.py`).
-- Veil Quay: `/exile turnquay [apply]` turned the islet 180° (`exile.quay.facing: east`, origin x - 58); the ferry casts
-  off east, away from the main island. Anchors, causeway entry (`ENTRY_TURNED`) and `repairquay` follow the facing.
+- Veil Quay: the PR #99 turn was refused live (the recorded origin 600 51 322 was wrong); the turn really ran on
+  2026-10-22 23:07 with PR #103's locator, see below.
 - Exile void: the trim deletes every terrain chunk (bedrock or half-generated), also right beside the island; island
   chunks were generated void by the Runde 7 paste, so they never carry bedrock. Backup `<world>.void-backup-<time>`.
 - Islands live on mmo-i only: mmo-r's Guilds jar parked, data moved; `/island` `/insel` `/guild` `/friend` on mmo-r, mmo-c,
   mmo-d cross to mmo-i (IslandLink), from the hub via mmo-r.
 - Routing: `network.routed-commands.everywhere: true` arms travel commands on every backend but mmo-r; built-in labels
   always count, `/harbor` `/hafen` replay as `/harbour`; hub hops to mmo-r only for labels it does not answer itself.
+
+## Harbour and ferry (2026-10-22, cloud session, PR #103 + #104)
+
+Deployed with `deploy-harbour-ferry.ps1` (Core, Quests, Items, BossEngine, Hub; one restart of all five) and
+`deploy-harbour-ferry-2.ps1` (Hub on mmo-r, quay turn, underside fill; one mmo-r restart).
+- Veil Quay: `/exile turnquay [apply]` (ExileQuayTurn) finds the islet by voting on the schematic's rare blocks around the
+  recorded origin, then turns it around the deck's middle. Live: found at 620 51 322 (97 % in place), now origin
+  562 51 322, `exile.quay.facing: east`, bell in place, no causeway recorded. The jump pad reaches the quay once the
+  gangway is solid at the recorded origin.
+- Ferry: fog from the first step on deck, gantry and cable with slings (CABLE_TAG displays, purged by UUID), the
+  Ferryman walks each passenger aboard (ExileFerryEscort: a per-player FancyNpcs copy, the real one hidden for them).
+- Anker Harbour: displays are tracked by UUID and swept (stale ones survived in resting chunks); the boatmen and the crane's
+  lighterman are FancyNpcs (OriginHand) rowing with oar displays; the Halcyon berths at a sky pier (`courier.sky-pier: auto`).
+  `/origin dev underside [apply]` fills thin seabed over open air (9466 blocks placed live).
+- mmo-r's `latest.log` is not cut at a restart and holds most lines twice: deploy scripts must find answers by content
+  (lines after the last start line), never by counting lines.
 
 ## Content state (verified against live 2026-10-19)
 
