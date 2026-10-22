@@ -510,10 +510,11 @@ public final class BorderlandsRiteService implements Listener {
 
     private void startRitual(Player player, SpiritBoss boss, Location spawnAt) {
         ritualBusyUntil.put(player.getUniqueId(), System.currentTimeMillis() + (RITUAL_SECONDS + 2) * 1000L);
-        World world = spawnAt.getWorld();
         // Clear trash mobs as soon as the vial is placed — fight focus starts here.
         clearTrashMobs(spawnAt, BOSS_CLEAR_RADIUS);
-        igniteRitual(player, spawnAt, boss);
+        // Each boss has its own rite; the show runs the bossbar's ten seconds and hands into the boss's arrival.
+        RiteSummonShow show = RiteSummonShow.start(plugin, boss.id(), spawnAt, RITUAL_SECONDS * 20);
+        player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 0.7f, 0.6f);
         QuestProgressHook.noteUsed(player, "BORDERLANDS_RITE");
 
         player.sendMessage("§cRite §8» §fCalling §c" + boss.display() + "§f… stand ready.");
@@ -531,6 +532,8 @@ public final class BorderlandsRiteService implements Listener {
         Bukkit.getScheduler().runTaskTimer(plugin, task -> {
             if (!player.isOnline()) {
                 player.hideBossBar(bar);
+                show.stop();
+                ritualBusyUntil.remove(player.getUniqueId());
                 task.cancel();
                 return;
             }
@@ -547,41 +550,8 @@ public final class BorderlandsRiteService implements Listener {
                     NamedTextColor.RED,
                     TextDecoration.BOLD
             ));
-            if (world != null) {
-                de.aetherion.core.api.Vfx.puff(spawnAt, Particle.SOUL_FIRE_FLAME, 10, Math.max(0.45, 0.45), null);
-                de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 0.4, 0), Particle.SMOKE, 8, Math.max(0.35, 0.35), null);
-                if (left[0] % 2 == 0) {
-                    world.playSound(spawnAt, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.35f, 0.75f);
-                }
-            }
             left[0]--;
         }, 0L, 20L);
-    }
-
-    /** Soft thunder + spark column — readable, not ear-bleed. */
-    private void igniteRitual(Player player, Location spawnAt, SpiritBoss boss) {
-        World world = spawnAt.getWorld();
-        if (world == null) {
-            return;
-        }
-        // Quiet distant thunder — volume low, pitch slightly high so it doesn't boom.
-        world.playSound(spawnAt, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.28f, 1.35f);
-        world.playSound(spawnAt, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.22f, 1.15f);
-        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.85f, 0.55f);
-        player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 0.7f, 0.8f);
-
-        de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 1.2, 0), Particle.FLASH, 1, 0.3, null);
-        de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 0.6, 0), Particle.EXPLOSION, 1, 0.3, null);
-        de.aetherion.core.api.Vfx.puff(spawnAt, Particle.SOUL_FIRE_FLAME, 55, Math.max(0.7, 0.7), null);
-        de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 1, 0), Particle.SOUL, 35, Math.max(0.5, 0.5), null);
-        de.aetherion.core.api.Vfx.puff(spawnAt, Particle.LAVA, 12, Math.max(0.4, 0.4), null);
-        for (int y = 0; y < 18; y++) {
-            Location column = spawnAt.clone().add(0, y * 0.55, 0);
-            de.aetherion.core.api.Vfx.puff(column, Particle.END_ROD, 2, Math.max(0.05, 0.05), null);
-            de.aetherion.core.api.Vfx.puff(column, Particle.ELECTRIC_SPARK, 3, Math.max(0.12, 0.12), null);
-        }
-        // Tiny fake strike for the caster only (no real lightning entity / fire).
-        player.spawnParticle(Particle.FIREWORK, spawnAt.clone().add(0, 1.5, 0), 25, 0.3, 0.6, 0.3, 0.05);
     }
 
     private void spawnBoss(Player player, SpiritBoss boss, Location at) {
@@ -596,16 +566,9 @@ public final class BorderlandsRiteService implements Listener {
         if (!ok) {
             ok = bosses.spawnSandbox(boss.id(), at, player);
         }
-        World world = at.getWorld();
         if (ok) {
+            // the boss's own arrival takes it from here
             player.sendMessage("§cRite §8» §f§c" + boss.display() + " §frises. It can walk. Make it stop.");
-            if (world != null) {
-                world.playSound(at, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.32f, 1.25f);
-                world.playSound(at, Sound.ENTITY_WITHER_SPAWN, 0.4f, 1.15f);
-                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1, 0), Particle.EXPLOSION_EMITTER, 1, 0.3, null);
-                de.aetherion.core.api.Vfx.puff(at, Particle.SOUL_FIRE_FLAME, 60, Math.max(0.8, 0.8), null);
-                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.5, 0), Particle.FLASH, 1, 0.3, null);
-            }
             // Next tick: latch onto the spawned boss entity and hold the clear bubble.
             plugin.getServer().getScheduler().runTask(plugin, () -> openBossBubble(at));
         } else {

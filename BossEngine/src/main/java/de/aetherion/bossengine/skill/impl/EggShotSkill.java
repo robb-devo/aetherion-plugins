@@ -69,6 +69,11 @@ public class EggShotSkill extends AbstractBossSkill {
         egg.getPersistentDataContainer().set(keys.eggKnockbackKey(), PersistentDataType.DOUBLE, knockback);
 
         from.getWorld().playSound(from, Sound.ENTITY_EGG_THROW, 1.1f, 0.85f);
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(context.getInstance());
+        if (kit != null) {
+            kit.shot(from, direction, egg);
+            return;
+        }
         de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.CLOUD, 4, 0.1);
     }
 

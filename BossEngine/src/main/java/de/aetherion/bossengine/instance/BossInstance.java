@@ -319,6 +319,7 @@ public class BossInstance {
             eggDirector.onBind();
             unbrokenDirector.onBind();
             worldEaterDirector.onBind();
+            riteDirector.onBind(true);
             if (script != null) {
                 script.onBind();
             }
@@ -367,6 +368,7 @@ public class BossInstance {
             eggDirector.onBind();
             unbrokenDirector.onBind();
             worldEaterDirector.onBind();
+            riteDirector.onBind(false);
             if (script != null) {
                 script.onBind();
             }
@@ -488,6 +490,7 @@ public class BossInstance {
         eggDirector.abort();
         unbrokenDirector.abort();
         worldEaterDirector.abort();
+        de.aetherion.bossengine.instance.rite.RiteKit.drop(this);
         if (script != null) {
             script.abort();
         }
@@ -583,6 +586,7 @@ public class BossInstance {
                 || worldEaterDirector.blocksDamage()
                 || sandboxDirector.blocksDamage()
                 || (script != null && (script.isDying() || script.blocksDamage()))
+                || riteDirector.isArriving()
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this);
     }
 
@@ -1014,6 +1018,7 @@ public class BossInstance {
                 }
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_HOGLIN_ANGRY, 1.1f, 0.55f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ILLUSIONER_PREPARE_BLINDNESS, 1.1f, 0.55f);
+                de.aetherion.bossengine.fx.CombatTheatrics.transitionStart(this, entity.getLocation());
             } else if (transition.getShape() == TransitionShape.INK_SPIN) {
                 entity.setVelocity(new Vector(0, 0, 0));
                 entity.setFallDistance(0);
@@ -1063,7 +1068,7 @@ public class BossInstance {
             sovereignDirector.tickTransition(transitionTick, transition.getDurationTicks());
         } else if (transition.getShape() == TransitionShape.HOVER_STORM) {
             tickHoverStorm(transition, progress);
-            if (entity != null && de.aetherion.bossengine.fx.TierPhaseShow.owns(this)) {
+            if (entity != null && de.aetherion.bossengine.instance.rite.RiteKit.owns(this)) {
                 de.aetherion.bossengine.fx.CombatTheatrics.transitionPulse(this, entity.getLocation(), transitionTick, transition.getDurationTicks());
             }
         } else if (transition.getShape() == TransitionShape.INK_SPIN) {
@@ -1093,7 +1098,7 @@ public class BossInstance {
             spectacles.tickBeamSpin(transition, transitionTick, transition.getDurationTicks());
         } else {
             tickPhaseReturn(progress);
-            if (!de.aetherion.bossengine.fx.TierPhaseShow.owns(this)) {
+            if (!de.aetherion.bossengine.instance.rite.RiteKit.owns(this)) {
                 drawTransition(transition, progress);
             }
             if (entity != null) {
@@ -1107,7 +1112,6 @@ public class BossInstance {
             if (entity != null) {
                 de.aetherion.bossengine.fx.CombatTheatrics.transitionEnd(this, entity.getLocation());
             }
-            de.aetherion.bossengine.fx.TierPhaseShow.clear(this);
             spectacles.finish();
             ashenSheathDirector.clearLeafTornado();
             hollowSunDirector.finishTransition();
@@ -1256,30 +1260,35 @@ public class BossInstance {
             return;
         }
         boolean blossoms = transition.getShape() == TransitionShape.CHERRY_TORNADO;
-        world.playSound(center, blossoms ? Sound.ITEM_TRIDENT_THUNDER : Sound.ENTITY_GENERIC_EXPLODE, 1.05f, blossoms ? 1.35f : 0.7f);
-        world.playSound(center, blossoms ? Sound.BLOCK_CHERRY_LEAVES_BREAK : Sound.BLOCK_ANVIL_LAND, 1.15f, blossoms ? 0.5f : 0.65f);
-        world.playSound(center, blossoms ? Sound.ENTITY_PLAYER_ATTACK_SWEEP : Sound.ITEM_FIRECHARGE_USE, 1.2f, blossoms ? 0.45f : 0.55f);
-        boolean quiet = de.aetherion.bossengine.fx.TierPhaseShow.owns(this);
-        if (de.aetherion.core.api.Vfx.burst(center, blossoms ? org.bukkit.Color.fromRGB(0xFFB7D9) : org.bukkit.Color.fromRGB(0xFFC070), 4.2, 12)) {
-            if (!quiet && !blossoms) {
-                de.aetherion.core.api.Vfx.wave(entity.getLocation().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF7A2A), transition.getExplodeRadius(), 14);
-            }
-            if (blossoms) {
-                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.CHERRY_LEAVES, 30, Math.max(1.3, 1.3), null);
-            }
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(this);
+        boolean quiet = kit != null;
+        if (kit != null) {
+            kit.transitionBlast(entity.getLocation(), transition.getExplodeRadius());
         } else {
-            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
-        }
-        if (de.aetherion.core.api.Vfx.active()) {
-            // drawn above
-        } else if (blossoms) {
-            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.CHERRY_LEAVES, 80, Math.max(1.3, 1.3), null);
-            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 1.6, 0), Particle.CHERRY_LEAVES, 36, Math.max(0.6, 0.6), null);
-            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.FLASH, 1, Math.max(0, 0), null);
-        } else if (!quiet) {
-            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.FLAME, 90, Math.max(1.1, 1.1), null);
-            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.LAVA, 28, Math.max(0.9, 0.9), null);
-            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.ELECTRIC_SPARK, 40, Math.max(1.4, 1.4), null);
+            world.playSound(center, blossoms ? Sound.ITEM_TRIDENT_THUNDER : Sound.ENTITY_GENERIC_EXPLODE, 1.05f, blossoms ? 1.35f : 0.7f);
+            world.playSound(center, blossoms ? Sound.BLOCK_CHERRY_LEAVES_BREAK : Sound.BLOCK_ANVIL_LAND, 1.15f, blossoms ? 0.5f : 0.65f);
+            world.playSound(center, blossoms ? Sound.ENTITY_PLAYER_ATTACK_SWEEP : Sound.ITEM_FIRECHARGE_USE, 1.2f, blossoms ? 0.45f : 0.55f);
+            if (de.aetherion.core.api.Vfx.burst(center, blossoms ? org.bukkit.Color.fromRGB(0xFFB7D9) : org.bukkit.Color.fromRGB(0xFFC070), 4.2, 12)) {
+                if (!quiet && !blossoms) {
+                    de.aetherion.core.api.Vfx.wave(entity.getLocation().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF7A2A), transition.getExplodeRadius(), 14);
+                }
+                if (blossoms) {
+                    de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.CHERRY_LEAVES, 30, Math.max(1.3, 1.3), null);
+                }
+            } else {
+                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
+            }
+            if (de.aetherion.core.api.Vfx.active()) {
+                // drawn above
+            } else if (blossoms) {
+                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.CHERRY_LEAVES, 80, Math.max(1.3, 1.3), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 1.6, 0), Particle.CHERRY_LEAVES, 36, Math.max(0.6, 0.6), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.FLASH, 1, Math.max(0, 0), null);
+            } else if (!quiet) {
+                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.FLAME, 90, Math.max(1.1, 1.1), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.LAVA, 28, Math.max(0.9, 0.9), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.ELECTRIC_SPARK, 40, Math.max(1.4, 1.4), null);
+            }
         }
 
         double radius = transition.getExplodeRadius();
@@ -1339,7 +1348,10 @@ public class BossInstance {
                 entity.setVelocity(step);
             }
             Location feet = entity.getLocation();
-            if (de.aetherion.core.api.Vfx.active()) {
+            de.aetherion.bossengine.instance.rite.RiteKit walker = de.aetherion.bossengine.instance.rite.RiteKit.of(this);
+            if (walker != null) {
+                walker.stormWalk(feet, transitionTick);
+            } else if (de.aetherion.core.api.Vfx.active()) {
                 if (transitionTick % 3 == 0) {
                     de.aetherion.core.api.Vfx.wave(feet.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.PALE, 1.2, 8);
                 }
@@ -1376,7 +1388,7 @@ public class BossInstance {
             entity.setFallDistance(0);
 
             Location aura = dest.clone().add(0, entity.getHeight() * 0.55, 0);
-            if (!de.aetherion.bossengine.fx.TierPhaseShow.owns(this)) {
+            if (!de.aetherion.bossengine.instance.rite.RiteKit.owns(this)) {
                 if (de.aetherion.core.api.Vfx.active()) {
                     // storm halo: the ground ring under him stays lit, arcs crackle off his body
                     de.aetherion.bossengine.fx.ShapeFx.ring(center.clone().add(0, 0.1, 0), de.aetherion.bossengine.fx.ShapeFx.SOUL, Math.max(2.0, transition.getUnderRadius()));
@@ -1439,6 +1451,12 @@ public class BossInstance {
             return;
         }
         Location bolt = dest.clone().add(0, entity.getHeight() * 0.2, 0);
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(this);
+        if (kit != null) {
+            kit.stormStrike(bolt);
+            entity.setFireTicks(0);
+            return;
+        }
         world.strikeLightningEffect(bolt);
         world.playSound(bolt, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.15f, 0.85f);
         world.playSound(bolt, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.05f, 0.7f);
@@ -1543,7 +1561,12 @@ public class BossInstance {
             return;
         }
 
-        de.aetherion.bossengine.fx.CombatTheatrics.slam(this, center);
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(this);
+        if (kit != null) {
+            kit.slam(center, slamRadius);
+        } else {
+            de.aetherion.bossengine.fx.CombatTheatrics.slam(this, center);
+        }
         double radiusSq = slamRadius * slamRadius;
         for (Player player : world.getPlayers()) {
             if (!isVulnerablePlayer(player)) {
@@ -1569,6 +1592,11 @@ public class BossInstance {
 
     private void drawSlamTelegraph(Location center) {
         if (center == null || center.getWorld() == null || slamRadius <= 0) {
+            return;
+        }
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(this);
+        if (kit != null) {
+            kit.slamTell(center, slamRadius);
             return;
         }
         long nowTick = org.bukkit.Bukkit.getCurrentTick();
