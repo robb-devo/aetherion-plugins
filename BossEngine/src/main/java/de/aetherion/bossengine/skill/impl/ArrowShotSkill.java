@@ -71,6 +71,11 @@ public class ArrowShotSkill extends AbstractBossSkill {
         }
 
         world.playSound(from, Sound.ENTITY_SKELETON_SHOOT, 1.15f, 1.15f);
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(context.getInstance());
+        if (kit != null) {
+            kit.shot(from, direction, arrow);
+            return;
+        }
         if (!de.aetherion.core.api.Vfx.spark(from, de.aetherion.bossengine.fx.ShapeFx.tint(particle), 0.8)) {
             world.spawnParticle(particle, from, 6, 0.12, 0.12, 0.12, 0.01);
         }

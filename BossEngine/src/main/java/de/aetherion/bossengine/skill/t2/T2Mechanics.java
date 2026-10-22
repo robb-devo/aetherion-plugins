@@ -656,7 +656,10 @@ public final class T2Mechanics {
         de.aetherion.bossengine.fx.CombatTheatrics.ringAnnounce(instance, pinned);
         World announceWorld = pinned.getWorld();
         org.bukkit.Color tone = de.aetherion.bossengine.fx.ShapeFx.tint(used);
-        if (de.aetherion.core.api.Vfx.active()) {
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(instance);
+        if (kit != null) {
+            kit.ringPreview(pinned, safeStep, safeWaves, (int) RING_WINDUP_TICKS);
+        } else if (de.aetherion.core.api.Vfx.active()) {
             for (int preview = 1; preview <= safeWaves; preview++) {
                 de.aetherion.core.api.Vfx.ring(pinned.clone().add(0, 0.12, 0), tone, preview * safeStep,
                         (int) RING_WINDUP_TICKS + (preview - 1) * 6);
@@ -686,7 +689,10 @@ public final class T2Mechanics {
                 }
                 double radius = index * safeStep;
                 int points = Math.max(18, (int) (radius * 8));
-                if (de.aetherion.core.api.Vfx.wave(center.clone().add(0, 0.2, 0), tone, radius, 10)) {
+                if (kit != null) {
+                    kit.ringWave(center, radius, index, index == safeWaves);
+                    points = 0;
+                } else if (de.aetherion.core.api.Vfx.wave(center.clone().add(0, 0.2, 0), tone, radius, 10)) {
                     points = 0;
                 }
                 for (int i = 0; i < points; i++) {
@@ -697,7 +703,9 @@ public final class T2Mechanics {
                         de.aetherion.bossengine.fx.ShapeFx.puff(rim.clone().add(0, 0.4, 0), Particle.CRIT, 1, Math.max(0, 0), null);
                     }
                 }
-                world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 0.35f, 0.55f + index * 0.12f);
+                if (kit == null) {
+                    world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 0.35f, 0.55f + index * 0.12f);
+                }
                 if (index == safeWaves) {
                     de.aetherion.bossengine.fx.CombatTheatrics.ringClimax(instance, center, radius);
                 }

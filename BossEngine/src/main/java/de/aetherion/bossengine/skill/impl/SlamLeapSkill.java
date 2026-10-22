@@ -61,6 +61,11 @@ public class SlamLeapSkill extends AbstractBossSkill {
         entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_HOGLIN_ATTACK, 1.05f, 0.55f);
         entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.8f, 0.5f);
         org.bukkit.Location land = entity.getLocation().add(0, 0.05, 0);
+        de.aetherion.bossengine.instance.rite.RiteKit kit = de.aetherion.bossengine.instance.rite.RiteKit.of(instance);
+        if (kit != null) {
+            kit.leapOff(land);
+            return;
+        }
         if (de.aetherion.core.api.Vfx.wave(land, de.aetherion.bossengine.fx.ShapeFx.PALE, 3.0, 12)) {
             de.aetherion.core.api.Vfx.chips(land, land.clone().add(0, -1, 0).getBlock().getBlockData(), 8, 1.2);
             return;
