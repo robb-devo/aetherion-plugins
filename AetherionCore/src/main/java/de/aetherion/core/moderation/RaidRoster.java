@@ -31,8 +31,8 @@ import java.util.UUID;
 /**
  * Who is online on the whole network, for the raid menu. Each backend writes its players (name, IP, join time,
  * skin, staff flag) to {@code <shared>/moderation/online/<port>.yml} every two seconds; the menu reads all of
- * those files that are fresh. The join time is when the player came onto this backend, kept across reloads of
- * the file; a raid shows up as a block of new names at the end of the list.
+ * those files that are fresh. The join time is when the player came onto the network: a server switch keeps the
+ * time the previous backend had, so a raid shows up as a block of new names at the end of the list.
  */
 public final class RaidRoster implements Listener {
 
@@ -48,6 +48,8 @@ public final class RaidRoster implements Listener {
     private final File onlineDir;
     private final File mine;
     private final Map<UUID, Long> joined = new HashMap<>();
+    /** Join times the other backends published (refreshed with every write), for players switching over. */
+    private Map<UUID, Long> elsewhere = new HashMap<>();
     private BukkitTask task;
 
     public RaidRoster(JavaPlugin plugin, File moderationRoot) {
@@ -78,7 +80,9 @@ public final class RaidRoster implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        joined.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        Long before = elsewhere.get(event.getPlayer().getUniqueId());
+        joined.put(event.getPlayer().getUniqueId(), before != null && before < now ? before : now);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -92,6 +96,17 @@ public final class RaidRoster implements Listener {
 
     /** Everyone online on the network, oldest join first. Players on this backend are always live. */
     public List<Seat> network() {
+        Map<UUID, Seat> all = others();
+        for (Seat seat : local()) {
+            all.put(seat.uuid(), seat);
+        }
+        List<Seat> out = new ArrayList<>(all.values());
+        out.sort(Comparator.comparingLong(Seat::joined).thenComparing(Seat::name, String.CASE_INSENSITIVE_ORDER));
+        return out;
+    }
+
+    /** Players the other backends published in the last few seconds. */
+    private Map<UUID, Seat> others() {
         Map<UUID, Seat> all = new HashMap<>();
         long now = System.currentTimeMillis();
         File[] files = onlineDir.listFiles((d, name) -> name.endsWith(".yml"));
@@ -121,12 +136,7 @@ public final class RaidRoster implements Listener {
                 }
             }
         }
-        for (Seat seat : local()) {
-            all.put(seat.uuid(), seat);
-        }
-        List<Seat> out = new ArrayList<>(all.values());
-        out.sort(Comparator.comparingLong(Seat::joined).thenComparing(Seat::name, String.CASE_INSENSITIVE_ORDER));
-        return out;
+        return all;
     }
 
     private List<Seat> local() {
@@ -168,6 +178,11 @@ public final class RaidRoster implements Listener {
         } catch (IOException ex) {
             plugin.getLogger().fine("raid roster not written: " + ex.getMessage());
         }
+        Map<UUID, Long> times = new HashMap<>();
+        for (Seat seat : others().values()) {
+            times.merge(seat.uuid(), seat.joined(), Math::min);
+        }
+        elsewhere = times;
     }
 
     static String serverName() {

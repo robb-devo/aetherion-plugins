@@ -64,6 +64,12 @@ public final class PersonalIslandService {
     private final Map<UUID, Map<Integer, Integer>> fileVotes = new ConcurrentHashMap<>();
     /** personal_islands.yml existed but could not be read: never save over it (that would erase every island). */
     private boolean loadFailed;
+    private boolean restoredUnsaved;
+    /**
+     * Starter id of a record restored from its factory save: the island is someone's own build (often an authored
+     * starter), so it never gets the classic pad stamped on by a tier upgrade.
+     */
+    public static final String RESTORED = "restored";
     private String backedUp = "";
 
     public PersonalIslandService(JavaPlugin plugin) {
@@ -169,6 +175,10 @@ public final class PersonalIslandService {
 
     /** Owners with a factory save and blocks on its plot but no record: their record comes back (built, no paste). */
     private void recoverOrphans() {
+        if (loadFailed) {
+            // Every record looks missing when the file could not be read: restore nothing, touch nothing.
+            return;
+        }
         int restored = 0;
         for (Map.Entry<UUID, Integer> entry : filePlots.entrySet()) {
             UUID owner = entry.getKey();
@@ -178,6 +188,7 @@ public final class PersonalIslandService {
             }
             PersonalIsland island = new PersonalIsland(owner, plot, IslandBiome.PLAINS);
             island.setIslandBuilt(true);
+            island.setStarter(RESTORED);
             island.parcels().addAll(LandService.initialParcels());
             islands.put(owner, island);
             restored++;
@@ -186,7 +197,8 @@ public final class PersonalIslandService {
                     + " pasted. Bought land beyond the first 3x3 parcels has to be re-granted by hand.");
         }
         if (restored > 0) {
-            save();
+            // Saved once the unlock state is attached (setExtraSave), or that save would drop the unlock.* sections.
+            restoredUnsaved = true;
         }
     }
 
@@ -219,6 +231,10 @@ public final class PersonalIslandService {
     /** Extra top-level sections written into personal_islands.yml (unlock state). */
     public void setExtraSave(Consumer<YamlConfiguration> extraSave) {
         this.extraSave = extraSave;
+        if (restoredUnsaved) {
+            restoredUnsaved = false;
+            save();
+        }
     }
 
     /** Called before an island's data is dropped (wipe): structures, belts. */
@@ -301,7 +317,7 @@ public final class PersonalIslandService {
         }
         int x = originX(island);
         int z = originZ(island) - 4;
-        if (island.starter() == null && world.getBlockAt(x, 64, z).getType().isAir()
+        if ((island.starter() == null || RESTORED.equals(island.starter())) && world.getBlockAt(x, 64, z).getType().isAir()
                 && world.getHighestBlockYAt(x, z) > world.getMinHeight()) {
             // restored record without its starter: stand on top of whatever is there instead of the classic pad spot
             return new Location(world, x + 0.5, world.getHighestBlockYAt(x, z) + 1, z + 0.5, 0, 0);
@@ -548,8 +564,8 @@ public final class PersonalIslandService {
             return;
         }
         island.setIslandLevel(from + 1);
-        if (StarterLayout.byId(island.starter()) == null) {
-            // classic pads grow their platform; authored starters grow through bought land instead
+        if (StarterLayout.byId(island.starter()) == null && !RESTORED.equals(island.starter())) {
+            // classic pads grow their platform; authored starters (and restored islands) grow through bought land
             IslandBuilder.upgrade(world, originX(island), originZ(island), from, island.islandLevel(), island.biome());
         }
         save();

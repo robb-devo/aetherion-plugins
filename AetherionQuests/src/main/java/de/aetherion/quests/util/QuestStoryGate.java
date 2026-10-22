@@ -97,12 +97,14 @@ public final class QuestStoryGate {
 
     private static final Set<String> TUTORIAL_QUESTS = Set.of(SPINE);
 
-    /** Filed when these are done; Miss Ledger stamps it shut. */
+    /**
+     * Filed when these are done; Miss Ledger stamps it shut. Lark's pet is on the arrow path (Act II) but not
+     * required here, so players who reached Vex before the pet step joined are not sent back.
+     */
     private static final String[] TUTORIAL_DONE_QUESTS = {
             "gather_wood",
             "lesson_manager",
             "lesson_boost",
-            "pocket_zoo",
             CombatTeach.QUEST_ID
     };
 
@@ -252,7 +254,7 @@ public final class QuestStoryGate {
         if (!questCompleted(player, qm, "lesson_boost")) {
             return TEMPER;
         }
-        if (!questCompleted(player, qm, "pocket_zoo")) {
+        if (!questCompleted(player, qm, "pocket_zoo") && !questCompleted(player, qm, CombatTeach.QUEST_ID)) {
             return LARK;
         }
         if (!questCompleted(player, qm, CombatTeach.QUEST_ID)) {

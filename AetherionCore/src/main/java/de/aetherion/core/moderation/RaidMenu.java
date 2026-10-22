@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,9 +59,15 @@ public final class RaidMenu implements TabExecutor, Listener {
     private final RaidBans bans;
     private final Map<UUID, Session> sessions = new HashMap<>();
 
+    /**
+     * One moderator's open menu. {@code order} only grows while the menu is open: a head keeps its slot when others
+     * join or leave, so a click always lands on the player that was drawn there. Players who left stay pickable.
+     */
     private static final class Session {
         final Set<UUID> picked = new LinkedHashSet<>();
         final Map<UUID, RaidRoster.Seat> seen = new HashMap<>();
+        final List<UUID> order = new ArrayList<>();
+        final Set<UUID> online = new HashSet<>();
         int page;
         BukkitTask refresh;
     }
@@ -106,6 +113,11 @@ public final class RaidMenu implements TabExecutor, Listener {
             sender.sendMessage("Usage: /raidban [list | pardon <name|ip>] (the menu needs a player)");
             return true;
         }
+        // A fresh command starts a fresh list (the confirm screen's Back keeps the current one).
+        Session old = sessions.remove(player.getUniqueId());
+        if (old != null && old.refresh != null) {
+            old.refresh.cancel();
+        }
         open(player);
         return true;
     }
@@ -140,19 +152,22 @@ public final class RaidMenu implements TabExecutor, Listener {
 
     private void fill(Player viewer, Session s, Inventory inv) {
         List<RaidRoster.Seat> all = roster.network();
-        s.seen.clear();
+        s.online.clear();
         for (RaidRoster.Seat seat : all) {
             s.seen.put(seat.uuid(), seat);
+            s.online.add(seat.uuid());
+            if (!s.order.contains(seat.uuid())) {
+                s.order.add(seat.uuid());
+            }
         }
-        s.picked.retainAll(s.seen.keySet());
-        int pages = Math.max(1, (all.size() + PER_PAGE - 1) / PER_PAGE);
+        int pages = Math.max(1, (s.order.size() + PER_PAGE - 1) / PER_PAGE);
         s.page = Math.max(0, Math.min(s.page, pages - 1));
         inv.clear();
         int from = s.page * PER_PAGE;
-        for (int i = 0; i < PER_PAGE && from + i < all.size(); i++) {
+        for (int i = 0; i < PER_PAGE && from + i < s.order.size(); i++) {
             int index = from + i;
-            RaidRoster.Seat seat = all.get(index);
-            inv.setItem(i, card(viewer, seat, index + 1, s.picked.contains(seat.uuid())));
+            RaidRoster.Seat seat = s.seen.get(s.order.get(index));
+            inv.setItem(i, card(viewer, seat, index + 1, s.picked.contains(seat.uuid()), s.online.contains(seat.uuid())));
         }
         ItemStack bar = named(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of());
         for (int slot = 45; slot < 54; slot++) {
@@ -164,7 +179,9 @@ public final class RaidMenu implements TabExecutor, Listener {
         inv.setItem(46, named(Material.LIME_DYE, Component.text("Pick everyone on this page", SOFT),
                 List.of(Component.text("Staff and you stay out.", MUTED))));
         inv.setItem(47, named(Material.GRAY_DYE, Component.text("Clear picks", SOFT), List.of()));
-        inv.setItem(49, named(Material.CLOCK, Component.text(all.size() + " online", GOLD),
+        int left = s.order.size() - s.online.size();
+        inv.setItem(49, named(Material.CLOCK, Component.text(s.online.size() + " online"
+                        + (left > 0 ? " · " + left + " left" : ""), GOLD),
                 List.of(Component.text(s.picked.size() + " picked", s.picked.isEmpty() ? MUTED : ROSE),
                         Component.text("Page " + (s.page + 1) + " / " + pages, MUTED),
                         Component.text("Oldest join first, newest last.", MUTED))));
@@ -177,11 +194,11 @@ public final class RaidMenu implements TabExecutor, Listener {
                         List.of(Component.text("Asks once more before banning.", MUTED))));
     }
 
-    private ItemStack card(Player viewer, RaidRoster.Seat seat, int number, boolean picked) {
+    private ItemStack card(Player viewer, RaidRoster.Seat seat, int number, boolean picked, boolean online) {
         boolean locked = seat.staff() || seat.uuid().equals(viewer.getUniqueId());
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("#" + number + " · joined " + CLOCK.format(new Date(seat.joined())), MUTED));
-        lore.add(Component.text("on " + seat.server(), MUTED));
+        lore.add(Component.text(online ? "on " + seat.server() : "left the network (still pickable)", MUTED));
         if (locked) {
             lore.add(Component.text(seat.uuid().equals(viewer.getUniqueId()) ? "That's you." : "Staff · protected", GOLD));
         } else if (picked) {
@@ -268,14 +285,12 @@ public final class RaidMenu implements TabExecutor, Listener {
             return;
         }
         Inventory inv = event.getView().getTopInventory();
-        List<RaidRoster.Seat> all = new ArrayList<>(s.seen.values());
-        all.sort((a, b) -> a.joined() != b.joined() ? Long.compare(a.joined(), b.joined()) : a.name().compareToIgnoreCase(b.name()));
         if (slot < PER_PAGE) {
             int index = s.page * PER_PAGE + slot;
-            if (index >= all.size()) {
+            if (index >= s.order.size()) {
                 return;
             }
-            RaidRoster.Seat seat = all.get(index);
+            RaidRoster.Seat seat = s.seen.get(s.order.get(index));
             if (seat.staff() || seat.uuid().equals(viewer.getUniqueId())) {
                 viewer.playSound(viewer.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.6f);
                 return;
@@ -290,8 +305,8 @@ public final class RaidMenu implements TabExecutor, Listener {
             s.page++;
         } else if (slot == 46) {
             int from = s.page * PER_PAGE;
-            for (int i = from; i < Math.min(all.size(), from + PER_PAGE); i++) {
-                RaidRoster.Seat seat = all.get(i);
+            for (int i = from; i < Math.min(s.order.size(), from + PER_PAGE); i++) {
+                RaidRoster.Seat seat = s.seen.get(s.order.get(i));
                 if (!seat.staff() && !seat.uuid().equals(viewer.getUniqueId())) {
                     s.picked.add(seat.uuid());
                 }
@@ -343,15 +358,27 @@ public final class RaidMenu implements TabExecutor, Listener {
             }
             entries.add(new RaidBans.Entry(seat.ip(), seat.name(), seat.uuid().toString(), viewer.getName(), 0L));
         }
-        // Never ban the moderator's own IP, even when a picked account shares it.
+        // Never ban an IP that staff or the moderator use, even when a picked account shares it, and never a
+        // loopback or LAN address (that is the proxy's address when forwarding is off: banning it bans everyone).
+        Set<String> protectedIps = new HashSet<>();
         if (viewer.getAddress() != null && viewer.getAddress().getAddress() != null) {
-            String own = viewer.getAddress().getAddress().getHostAddress();
-            entries.removeIf(e -> e.ip().equals(own));
+            protectedIps.add(viewer.getAddress().getAddress().getHostAddress());
         }
+        for (RaidRoster.Seat seat : s.seen.values()) {
+            if (seat.staff() && !seat.ip().isBlank()) {
+                protectedIps.add(seat.ip());
+            }
+        }
+        for (RaidRoster.Seat seat : roster.network()) {
+            if (seat.staff() && !seat.ip().isBlank()) {
+                protectedIps.add(seat.ip());
+            }
+        }
+        entries.removeIf(e -> protectedIps.contains(e.ip()) || localAddress(e.ip()));
         viewer.closeInventory();
         s.picked.clear();
         if (entries.isEmpty()) {
-            viewer.sendMessage(Component.text("Nobody left to ban (staff, you and your own IP are skipped).", MUTED));
+            viewer.sendMessage(Component.text("Nobody left to ban (staff, you, IPs staff use and LAN/proxy addresses are skipped).", MUTED));
             return;
         }
         bans.ban(entries, viewer.getName());
@@ -364,6 +391,19 @@ public final class RaidMenu implements TabExecutor, Listener {
                 staff.sendMessage(Component.text("[Raid] " + viewer.getName() + " IP-banned " + entries.size() + " player"
                         + (entries.size() == 1 ? "" : "s") + ".", MUTED));
             }
+        }
+    }
+
+    private static boolean localAddress(String ip) {
+        if (ip == null || ip.isBlank() || !ip.matches("[0-9a-fA-F:.%]+")) {
+            return true;
+        }
+        try {
+            // A literal never triggers a DNS lookup.
+            java.net.InetAddress a = java.net.InetAddress.getByName(ip);
+            return a.isLoopbackAddress() || a.isSiteLocalAddress() || a.isLinkLocalAddress() || a.isAnyLocalAddress();
+        } catch (java.net.UnknownHostException ex) {
+            return true;
         }
     }
 }

@@ -32,6 +32,9 @@ public final class StageSweep {
     /** A vote center needs this many distinctive blocks in place, and this many stage blocks in all. */
     private static final int MIN_VOTES = 12;
     private static final int MIN_STANDING = 40;
+    /** A marked center (the stage's own chunk marker) needs this many of its blocks still in place. */
+    private static final int MIN_MARKED = 12;
+    private static final int MAX_VOTED = 12;
 
     private record Hit(int x, int y, int z, int votes, boolean marked) {
     }
@@ -96,22 +99,31 @@ public final class StageSweep {
                 }
             }
             List<Hit> hits = new ArrayList<>(marked);
-            votes.entrySet().stream()
+            List<Map.Entry<Long, Integer>> ranked = votes.entrySet().stream()
                     .filter(e -> e.getValue() >= MIN_VOTES)
                     .sorted((a, b) -> b.getValue() - a.getValue())
-                    .limit(12)
-                    .forEach(e -> {
-                        int[] c = centers.get(e.getKey());
-                        boolean near = hits.stream().anyMatch(h -> Math.abs(h.x() - c[0]) <= 8
-                                && Math.abs(h.y() - c[1]) <= 8 && Math.abs(h.z() - c[2]) <= 8);
-                        if (!near) {
-                            hits.add(new Hit(c[0], c[1], c[2], e.getValue(), false));
-                        }
-                    });
+                    .toList();
+            int voted = 0;
+            for (Map.Entry<Long, Integer> e : ranked) {
+                if (voted >= MAX_VOTED) {
+                    break;
+                }
+                int[] c = centers.get(e.getKey());
+                boolean near = hits.stream().anyMatch(h -> Math.abs(h.x() - c[0]) <= 8
+                        && Math.abs(h.y() - c[1]) <= 8 && Math.abs(h.z() - c[2]) <= 8);
+                if (!near) {
+                    hits.add(new Hit(c[0], c[1], c[2], e.getValue(), false));
+                    voted++;
+                }
+            }
             List<String> lines = new ArrayList<>();
             List<Location> strike = new ArrayList<>();
+            // A block belongs to the first stage taken that matches it: a shifted copy of a stage (the layout
+            // repeats) only counts blocks no better center already explains, so it never gets struck.
+            java.util.Set<Long> claimed = new java.util.HashSet<>();
             for (Hit h : hits) {
                 Map<String, Integer> mats = new TreeMap<>();
+                List<Long> mine = new ArrayList<>();
                 int standing = 0;
                 int below = 0;
                 for (SaintStage.Cell c : layout) {
@@ -123,7 +135,9 @@ public final class StageSweep {
                         continue;
                     }
                     Material m = c.data().getMaterial();
-                    if (s.getBlockType(wx & 15, wy, wz & 15) == m) {
+                    long at = pack(wx, wy, wz);
+                    if (s.getBlockType(wx & 15, wy, wz & 15) == m && !claimed.contains(at)) {
+                        mine.add(at);
                         standing++;
                         if (c.y() < -2) {
                             below++;
@@ -131,7 +145,10 @@ public final class StageSweep {
                         mats.merge(m.name().toLowerCase(java.util.Locale.ROOT), 1, Integer::sum);
                     }
                 }
-                boolean take = h.marked() ? standing > 0 : standing >= MIN_STANDING;
+                boolean take = h.marked() ? standing >= MIN_MARKED : standing >= MIN_STANDING;
+                if (take) {
+                    claimed.addAll(mine);
+                }
                 lines.add((take ? "§a" : "§8") + "stage at " + h.x() + " " + h.y() + " " + h.z()
                         + (h.marked() ? " (marker)" : " (" + h.votes() + " votes)") + ": " + standing
                         + " blocks standing, " + below + " in the rock under it §7" + mats);

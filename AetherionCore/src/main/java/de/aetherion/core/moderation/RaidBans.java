@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -99,7 +100,7 @@ public final class RaidBans implements Listener {
             yml.set(key + ".name", e.name());
             yml.set(key + ".uuid", e.uuid());
         }
-        File file = new File(bansDir, now + "-" + Bukkit.getPort() + ".yml");
+        File file = new File(bansDir, now + "-" + Bukkit.getPort() + "-" + UUID.randomUUID().toString().substring(0, 8) + ".yml");
         try {
             AtomicYaml.save(yml, file, plugin.getLogger());
         } catch (IOException ex) {
@@ -128,7 +129,7 @@ public final class RaidBans implements Listener {
         yml.set("by", by);
         yml.set("at", now);
         yml.set("ips", hits.stream().map(Entry::ip).toList());
-        File file = new File(pardonsDir, now + "-" + Bukkit.getPort() + ".yml");
+        File file = new File(pardonsDir, now + "-" + Bukkit.getPort() + "-" + UUID.randomUUID().toString().substring(0, 8) + ".yml");
         try {
             AtomicYaml.save(yml, file, plugin.getLogger());
         } catch (IOException ex) {
@@ -211,7 +212,12 @@ public final class RaidBans implements Listener {
         banned.remove(ip);
         try {
             IpBanList list = Bukkit.getBanList(BanList.Type.IP);
-            list.pardon(InetAddress.getByName(ip));
+            InetAddress address = InetAddress.getByName(ip);
+            // Only our own vanilla ban: a /ban-ip someone set by hand stays (also when old pardons replay at start).
+            org.bukkit.BanEntry<InetAddress> entry = list.getBanEntry(address);
+            if (entry != null && entry.getSource() != null && entry.getSource().startsWith(SOURCE)) {
+                list.pardon(address);
+            }
         } catch (UnknownHostException | RuntimeException ex) {
             plugin.getLogger().warning("Vanilla IP pardon failed for " + ip + ": " + ex.getMessage());
         }
