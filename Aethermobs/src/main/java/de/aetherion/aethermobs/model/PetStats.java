@@ -71,17 +71,18 @@ public class PetStats {
         return total;
     }
 
+    /** The roll is soft-capped first, then grows with level, so every pet still roughly doubles from L1 to L100. */
     public double getScaledCoreValue(
             int level
     ) {
-        return PetBalance.dampen(coreStat, coreValue * PetBalance.levelMultiplier(level));
+        return PetBalance.dampen(coreStat, coreValue) * PetBalance.levelMultiplier(level);
     }
 
     public double getScaledBonusStat(
             ItemCapability capability,
             int level
     ) {
-        return PetBalance.dampen(capability, getBonusStat(capability) * PetBalance.levelMultiplier(level));
+        return PetBalance.dampen(capability, getBonusStat(capability)) * PetBalance.levelMultiplier(level);
     }
 
     public double getScaledTotalStat(

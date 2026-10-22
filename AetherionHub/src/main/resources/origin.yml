@@ -303,6 +303,8 @@ flights:
   southeast_skyway:
     name: "Southeast Skyway"
     to: "The Capital"
+    # The pad stands in the Borderlands: it flies to the ferry grounds (Veil Quay gangway) once the quay is placed.
+    ferry: true
     trigger: pad
     min: "428 54 299"
     max: "431 54 302"

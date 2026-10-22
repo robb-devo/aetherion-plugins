@@ -39,6 +39,13 @@ public class QuestObjectiveListener implements Listener {
 
     private final QuestManager questManager;
 
+    /**
+     * "player:boss" → when that boss kill was credited. A boss can report its death twice (the vanilla death and
+     * BossEngine's death event), and one kill must count once.
+     */
+    private final java.util.Map<String, Long> bossCredits = new java.util.HashMap<>();
+    private static final long BOSS_CREDIT_WINDOW_MS = 15_000L;
+
 
     public QuestObjectiveListener(
             QuestManager questManager
@@ -350,6 +357,11 @@ public class QuestObjectiveListener implements Listener {
 
         String bossId = bossId(entity);
 
+        // A boss whose vanilla death BossEngine cancelled (virtual HP, phase change) has not died.
+        if (bossId != null && event.isCancelled()) {
+            return;
+        }
+
         java.util.Set<Player> candidates = new java.util.HashSet<>();
         if (killer != null) {
             candidates.add(killer);
@@ -375,14 +387,18 @@ public class QuestObjectiveListener implements Listener {
 
         for (Player player : candidates) {
 
+        if (bossId != null && !firstBossCredit(player, bossId)) {
+            continue;
+        }
+
         for (Quest quest :
                 questManager.getQuests()) {
 
 
-            if (!isActive(
-                    player,
-                    quest
-            )) {
+            // Boss kills count for every running quest that wants the boss, not only the tracked one.
+            if (bossId != null
+                    ? questManager.getQuestState(player, quest) != QuestState.ACTIVE
+                    : !isActive(player, quest)) {
 
                 continue;
 
@@ -1011,6 +1027,40 @@ public class QuestObjectiveListener implements Listener {
 
     }
 
+
+    /**
+     * A boss died (BossEngine's death event, which also covers bosses whose body is removed instead of killed):
+     * every running quest of {@code player} with a KILL objective for {@code bossId} moves on.
+     */
+    public void creditBossKill(Player player, String bossId) {
+        if (player == null || bossId == null || bossId.isBlank() || !firstBossCredit(player, bossId)) {
+            return;
+        }
+        for (Quest quest : questManager.getQuests()) {
+            if (questManager.getQuestState(player, quest) != QuestState.ACTIVE) {
+                continue;
+            }
+            for (Objective objective : quest.getObjectives()) {
+                if (objective == null || objective.getType() != ObjectiveType.KILL) {
+                    continue;
+                }
+                String target = objective.getTarget();
+                if (target != null && (target.equalsIgnoreCase("ANY")
+                        || bossId.equalsIgnoreCase(target)
+                        || ("boss_" + bossId).equalsIgnoreCase(target)
+                        || ("boss:" + bossId).equalsIgnoreCase(target))) {
+                    addProgress(player, quest, objective);
+                }
+            }
+        }
+    }
+
+    private boolean firstBossCredit(Player player, String bossId) {
+        long now = System.currentTimeMillis();
+        bossCredits.values().removeIf(at -> now - at > BOSS_CREDIT_WINDOW_MS);
+        String key = player.getUniqueId() + ":" + bossId.toLowerCase(java.util.Locale.ROOT);
+        return bossCredits.putIfAbsent(key, now) == null;
+    }
 
     private boolean matchesKillTarget(Entity entity, EntityType entityType, String target) {
         if (target == null || target.isBlank()) {

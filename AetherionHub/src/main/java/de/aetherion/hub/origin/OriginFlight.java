@@ -104,11 +104,14 @@ public final class OriginFlight implements Listener {
         if (world == null || !world.equals(player.getWorld())) {
             return false;
         }
-        List<Vector> raw = new ArrayList<>();
-        raw.add(player.getLocation().toVector().add(new Vector(0, 0.3, 0)));
-        for (int i = 1; i < flight.path().size(); i++) {
-            double[] p = flight.path().get(i);
-            raw.add(new Vector(p[0], p[1], p[2]));
+        List<Vector> raw = flight.ferry() ? ferryPath(player.getLocation()) : null;
+        if (raw == null) {
+            raw = new ArrayList<>();
+            raw.add(player.getLocation().toVector().add(new Vector(0, 0.3, 0)));
+            for (int i = 1; i < flight.path().size(); i++) {
+                double[] p = flight.path().get(i);
+                raw.add(new Vector(p[0], p[1], p[2]));
+            }
         }
         Active flying = new Active();
         flying.flight = flight;
@@ -126,8 +129,37 @@ public final class OriginFlight implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_SLIME_JUMP_SMALL, SoundCategory.PLAYERS, 1f, 0.55f);
         player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, SoundCategory.PLAYERS, 0.5f, 1.1f);
         player.playSound(player.getLocation(), Sound.ITEM_ELYTRA_FLYING, SoundCategory.PLAYERS, 0.35f, 1.3f);
-        OriginText.card(player, "§b⇗ §f" + flight.name(), flight.to().isBlank() ? "§7hold on" : "§7to §f" + flight.to(), 30);
+        String to = flight.destination();
+        OriginText.card(player, "§b⇗ §f" + flight.name(), to.isBlank() ? "§7hold on" : "§7to §f" + to, 30);
         return true;
+    }
+
+    /**
+     * The Borderlands skyway to the ferry grounds: straight up, high over the cliffs and down onto the Veil Quay's
+     * gangway. Null (fly the configured path instead) while the quay is not placed or its gangway has no floor.
+     */
+    private static List<Vector> ferryPath(Location from) {
+        Location quay = de.aetherion.core.api.ExilePlaces.quayBoard();
+        if (quay == null || quay.getWorld() == null || !quay.getWorld().equals(from.getWorld())) {
+            return null;
+        }
+        Block floor = quay.getBlock().getRelative(0, -1, 0);
+        if (!floor.getType().isSolid() || !quay.getBlock().isPassable()) {
+            return null;
+        }
+        Vector start = from.toVector().add(new Vector(0, 0.3, 0));
+        Vector end = new Vector(quay.getX(), quay.getBlockY() + 0.2d, quay.getZ());
+        double cruise = Math.max(start.getY(), end.getY()) + 45.0d;
+        Vector across = end.clone().subtract(start).setY(0);
+        List<Vector> raw = new ArrayList<>();
+        raw.add(start);
+        raw.add(start.clone().setY(start.getY() + 6.0d));
+        raw.add(start.clone().add(across.clone().multiply(0.2d)).setY(cruise));
+        raw.add(start.clone().add(across.clone().multiply(0.8d)).setY(cruise));
+        raw.add(end.clone().setY(end.getY() + 14.0d));
+        raw.add(end.clone().setY(end.getY() + 2.0d));
+        raw.add(end);
+        return raw;
     }
 
     /** Every tick. */
@@ -315,8 +347,10 @@ public final class OriginFlight implements Listener {
         }
         player.setFallDistance(0f);
         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 20 * 30, 0, false, false, true));
-        Location land = isle.config().location(a.flight.end());
-        if (land != null && land.getWorld() == player.getWorld()) {
+        // The path actually flown (a ferry flight ends on the quay, not at the configured end).
+        Vector last = a.points.get(a.points.size() - 1);
+        Location land = new Location(player.getWorld(), last.getX(), last.getY(), last.getZ());
+        if (land.getWorld() != null) {
             land.setYaw(player.getLocation().getYaw());
             player.teleport(land);
         }

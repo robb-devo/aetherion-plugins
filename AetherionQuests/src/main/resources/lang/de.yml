@@ -688,8 +688,9 @@ dialogs:
     - "Bevor ich jemanden da runterbringe, brauch ich zehn Knochen. Sieh's als Hausaufgabe: Wer hier oben nicht mit Skeletten klarkommt, schafft es da unten auch nicht."
     - "Bring mir die Knochen, und ich erzähl dir alles, was ich übers Überleben im Dungeon weiß."
   gate_warden_intro:
-    - "Die Straße hinter diesem Tor ist gesperrt. Der Pfadwächter steht darauf, und keiner kommt an ihm vorbei."
+    - "Ich hab jahrelang das Tor zu den Borderlands gehalten. Die Straße dahinter ist gesperrt: Der Pfadwächter stand darauf, und keiner kam an ihm vorbei."
     - "Er ist langsam, er ist geduldig, und er hat schon viele mutige Laufbahnen beendet."
+    - "Er läuft nicht mehr offen über die Straße. Bring einen Krypta-Geist von den Toten der Krypta, dann ruft ihn der Proctor hier in den Ring."
     - "Wenn du glaubst, du bist stark genug, dann geh und bring ihn weg. Wenn nicht, ist es keine Schande, noch etwas zu warten."
   bench_cynic_intro:
     - "Bitte setz dich nicht. Das ist meine Bank, und da bin ich sehr eigen."

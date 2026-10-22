@@ -136,3 +136,5 @@ particles:
   max-per-burst: 10
   budget-per-tick: 60
   long-range: false
+  # Vanilla sprays one dark heart per two health a melee hit takes; capped per hit (0 = vanilla). Always on with ProtocolLib.
+  damage-hearts-max: 3

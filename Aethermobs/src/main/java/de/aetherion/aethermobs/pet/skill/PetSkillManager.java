@@ -1208,8 +1208,7 @@ public class PetSkillManager implements Listener {
                 continue;
             }
 
-            if (!(living instanceof Enemy)
-                    && !(living instanceof Mob)) {
+            if (!hostile(living)) {
                 continue;
             }
 
@@ -1263,8 +1262,7 @@ public class PetSkillManager implements Listener {
                 continue;
             }
 
-            if (!(living instanceof Enemy)
-                    && !(living instanceof Mob)) {
+            if (!hostile(living)) {
                 continue;
             }
 
@@ -2440,7 +2438,7 @@ public class PetSkillManager implements Listener {
                     || !living.isValid()) {
                 continue;
             }
-            if (!(living instanceof Enemy) && !(living instanceof Mob)) {
+            if (!hostile(living)) {
                 continue;
             }
             double dist = living.getLocation().distanceSquared(origin);
@@ -2590,10 +2588,22 @@ public class PetSkillManager implements Listener {
             return false;
         }
 
-        return living instanceof Enemy
-                || living instanceof Mob
+        return hostile(living);
+    }
+
+    /**
+     * What pets fight: monsters, bosses, dungeon mobs and anything hunting a player. Cows, sheep, villagers and other
+     * passive mobs are left alone (pets killed farm animals and flooded their owner's inventory with the drops).
+     */
+    private static boolean hostile(LivingEntity living) {
+        if (living instanceof Enemy
                 || living instanceof Boss
-                || AetherEntities.isBoss(living);
+                || AetherEntities.isBoss(living)
+                || AetherEntities.isBossMinion(living)
+                || AetherEntities.isDungeonMob(living)) {
+            return true;
+        }
+        return living instanceof Mob mob && mob.getTarget() instanceof Player;
     }
 
     private boolean chargeReady(

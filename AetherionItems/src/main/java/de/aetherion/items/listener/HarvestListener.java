@@ -650,6 +650,11 @@ public class HarvestListener implements Listener {
         if (HarvestRules.log(block)) {
             return bareOrNonTool || axe;
         }
+        if (!HarvestRules.tracked(block)) {
+            // Building blocks (planks, leaves, glass, dirt, ...): any tool at vanilla speed, so an axe stays fast on
+            // planks. Before, everything but a pickaxe was refused here and the block popped back.
+            return true;
+        }
         if (HarvestRules.requiresPickaxe(block)) {
             return pick;
         }

@@ -163,14 +163,13 @@ public final class AetherionCore extends JavaPlugin {
         }
 
         de.aetherion.core.api.BarChrome.enabled(getConfig().getBoolean("bars.pack-glyphs", true));
-        if (getConfig().getBoolean("particles.diet", false)) {
-            // After every plugin is up: ProtocolLib may enable after Core.
-            Bukkit.getScheduler().runTask(this, () -> {
-                if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
-                    de.aetherion.core.api.ParticleDiet.install(this, getConfig().getConfigurationSection("particles"));
-                }
-            });
-        }
+        // After every plugin is up: ProtocolLib may enable after Core. The damage-heart cap is always on; the diet is opt-in.
+        Bukkit.getScheduler().runTask(this, () -> {
+            if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
+                de.aetherion.core.api.ParticleDiet.install(this, getConfig().getConfigurationSection("particles"),
+                        getConfig().getBoolean("particles.diet", false));
+            }
+        });
         Bukkit.getPluginManager().registerEvents(new ShutdownCountdown(this), this);
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
         getLogger().info("ShutdownCountdown armed (10→8→6→4→2). Bypass: stop now|force.");

@@ -123,6 +123,7 @@ public final class AetherionGuilds extends JavaPlugin {
         hosts = new HostService(personal, guilds, islands);
         voidScrubber = new VoidScrubber(this, hosts);
         getServer().getPluginManager().registerEvents(voidScrubber, this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.guilds.world.LeafDecay(this, hosts), this);
         land = new LandService(this, hosts);
         islandFiles = new de.aetherion.guilds.island.IslandFiles(this);
         islandFiles.load();

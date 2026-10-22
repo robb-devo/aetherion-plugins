@@ -154,6 +154,7 @@ public final class IsleCast {
             return "§7Not the Origin map here — nothing seeded.";
         }
         relocateMoved(world, storage);
+        joinAnchors(world, storage);
         List<Seat> todo = new ArrayList<>();
         for (Seat seat : SEATS) {
             if (QuestNPCRegistry.getNPC(seat.npcId()) == null || storage.hasSavedNPC(seat.npcId())) {
@@ -227,6 +228,58 @@ public final class IsleCast {
                 });
             }
         }
+    }
+
+    /**
+     * Seeded NPCs whose seat turned out wrong for their job (beta list): one still on that old seat walks over to
+     * stand beside the NPC its quest belongs with, wherever staff placed that one. Gate Warden's Pathwarden is now
+     * summoned at the Colosseum (Proctor); Rook prepares players for the dungeons (Threshold).
+     */
+    private static final Object[][] JOIN = {
+            {"gate_warden", "arena_proctor", 168.5, 87.5},
+            {"rook", "dungeon_gate", -151.5, 27.5}
+    };
+
+    private void joinAnchors(World world, NPCDataStorage storage) {
+        for (Object[] j : JOIN) {
+            String id = (String) j[0];
+            String anchorId = (String) j[1];
+            Location saved = storage.getSavedLocation(id);
+            Location anchor = storage.getSavedLocation(anchorId);
+            if (saved == null || saved.getWorld() == null || !saved.getWorld().equals(world)
+                    || Math.abs(saved.getX() - (double) j[2]) > 2.0d || Math.abs(saved.getZ() - (double) j[3]) > 2.0d) {
+                continue;
+            }
+            if (anchor == null || anchor.getWorld() == null || !anchor.getWorld().equals(world)) {
+                plugin.getLogger().info("Island cast: " + id + " stays — " + anchorId + " is not placed on this map.");
+                continue;
+            }
+            world.getChunkAtAsync(anchor.getBlockX() >> 4, anchor.getBlockZ() >> 4).thenAccept(chunk -> {
+                Location spot = besideAnchor(world, anchor);
+                if (spot == null) {
+                    plugin.getLogger().warning("Island cast: no free ground beside " + anchorId + " for " + id + ".");
+                    return;
+                }
+                new QuestNPCSpawnService().spawnNPC(id, spot);
+                plugin.getLogger().info("Island cast: " + id + " moved beside " + anchorId + " ("
+                        + spot.getBlockX() + " " + spot.getBlockY() + " " + spot.getBlockZ() + ").");
+            });
+        }
+    }
+
+    /** Standable ground 3–4 blocks from the anchor (same height ±1), clear of other NPCs, facing the anchor. */
+    private Location besideAnchor(World world, Location anchor) {
+        int[][] offsets = {{3, 0}, {-3, 0}, {0, 3}, {0, -3}, {3, 2}, {-3, 2}, {3, -2}, {-3, -2}, {4, 0}, {-4, 0}, {0, 4}, {0, -4}};
+        for (int[] o : offsets) {
+            Seat probe = new Seat("", anchor.getBlockX() + o[0] + 0.5d, anchor.getBlockY(), anchor.getBlockZ() + o[1] + 0.5d, 0f, "");
+            double y = groundNear(world, probe);
+            if (Double.isNaN(y) || crowded(probe)) {
+                continue;
+            }
+            float yaw = (float) Math.toDegrees(Math.atan2(-(anchor.getX() - probe.x()), anchor.getZ() - probe.z()));
+            return new Location(world, probe.x(), y, probe.z(), yaw, 0.0f);
+        }
+        return null;
     }
 
     private void finish(List<String> placed, List<String> skipped) {

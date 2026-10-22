@@ -1914,8 +1914,9 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("gate_warden_intro")) {
             return new String[] {
-                    "The road beyond this gate is closed. The Pathwarden stands on it, and nobody gets past him.",
+                    "I kept the Borderlands gate for years. The road past it is closed: the Pathwarden stood on it, and nobody got past him.",
                     "He's slow, he's patient, and he's ended a lot of brave careers.",
+                    "He doesn't walk the road in the open any more. Bring a Crypt Spirit from the Crypt's dead, and the Proctor here will call him into the ring.",
                     "If you think you're strong enough, go and move him. If not, there's no shame in waiting a while longer."
             };
         }

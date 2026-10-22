@@ -5,12 +5,13 @@ import de.aetherion.items.model.Rarity;
 
 /**
  * Wave 3: pet contribution is 12% of the comfortable full-stack band.
- * Core rolls at L1 sit near {@link #levelOneTarget}; L100 (~×1.99) then
- * {@link #dampen} so a good pet fills the slice instead of a second set.
+ * Core rolls at L1 sit near {@link #levelOneTarget}. The roll is {@link #dampen}ed, then grows with level
+ * (L100 ~×1.99): dampening the leveled value meant a pet whose roll was already past the cap barely grew
+ * (beta: crit 10% at L1 was 13% at L100), so levels felt pointless on the best pets.
  */
 public final class PetBalance {
 
-    /** Growth past the 12% slice — whales still tick up, they do not double. */
+    /** Weight of a roll past its soft cap (the level multiplier applies on top). */
     public static final double OVER_CAP = 0.18d;
 
     /** Matches {@link de.aetherion.aethermobs.model.PetStats} per-level. */
