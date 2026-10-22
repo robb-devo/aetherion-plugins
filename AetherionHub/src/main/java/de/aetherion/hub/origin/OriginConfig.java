@@ -328,7 +328,8 @@ public final class OriginConfig {
                 flights.put(id, new Flight(id, s.getString("name", OriginText.pretty(id)), s.getString("to", ""), trigger,
                         ints(s.getString("min")), ints(s.getString("max")), nums(s.getString("at")), s.getDouble("radius", 1.4d),
                         Math.max(0.6d, Math.min(3.4d, s.getDouble("speed", 2.4d))), Collections.unmodifiableList(path),
-                        s.getBoolean("ferry", false)));
+                        // No fallback argument: a live file that predates the key reads the jar's value on this load.
+                        s.getBoolean("ferry")));
             }
         }
 
