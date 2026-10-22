@@ -57,10 +57,10 @@ public final class CodexDetailGUI {
                 return de.aetherion.items.util.ManagerChrome.CODEX;
             }
             if (card.ledger() == CodexBook.Ledger.COLLECTION) {
-                return de.aetherion.items.util.ManagerChrome.COLLECTION;
+                return de.aetherion.items.util.ManagerChrome.COLLECTION_ENTRY;
             }
             return card.ledger() == CodexBook.Ledger.BESTIARY
-                    ? de.aetherion.items.util.ManagerChrome.BESTIARY
+                    ? de.aetherion.items.util.ManagerChrome.BESTIARY_ENTRY
                     : de.aetherion.items.util.ManagerChrome.CODEX;
         }
 
@@ -122,11 +122,13 @@ public final class CodexDetailGUI {
 
         private ItemStack neighbour(CodexService service, Player player, String neighbourKey, String label) {
             CodexBook.Card card = CodexBook.card(neighbourKey);
+            int icon = label.contains("◄") ? de.aetherion.items.util.GuiIcons.PREV : de.aetherion.items.util.GuiIcons.NEXT;
             if (card == null) {
-                return GuiItems.named(Material.ARROW, label);
+                return de.aetherion.items.util.GuiIcons.icon(GuiItems.named(Material.ARROW, label), icon);
             }
             boolean found = service.count(player, neighbourKey) > 0L;
-            return GuiItems.named(Material.ARROW, label, "§7" + (found ? card.name() : "???"));
+            return de.aetherion.items.util.GuiIcons.icon(
+                    GuiItems.named(Material.ARROW, label, "§7" + (found ? card.name() : "???")), icon);
         }
 
         private ItemStack header(CodexService service, Player player, CodexBook.State state) {

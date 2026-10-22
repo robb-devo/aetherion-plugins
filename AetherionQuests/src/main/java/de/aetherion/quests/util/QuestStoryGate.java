@@ -25,10 +25,10 @@ import java.util.Set;
  * Orientation spine + soft story order gates (not skill gates).
  * <pre>
  *   Act I   · Anker Harbour   Egon (welcome_aboard) → Forager (gather_wood: the Fell) → Egon's kit + Capital teleport
- *   Act II  · The Capital     Miss Ledger (lesson_manager: loadout + Codex) → Temper (lesson_boost)
+ *   Act II  · The Capital     Miss Ledger (lesson_manager: loadout + Codex) → Temper (lesson_boost) → Lark (pocket_zoo: a pet)
  *   Act III · The Roads       Sergeant Vex (lesson_combat — combat drill) → Miss Ledger's stamp → the pads
  * </pre>
- * Act map: {@code docs/ONBOARDING_ACT_MAP.md}. Quartermaster, Foreman, Farmer, Lark and Tackle are side roads
+ * Act map: {@code docs/ONBOARDING_ACT_MAP.md}. Quartermaster, Foreman, Farmer and Tackle are side roads
  * after the stamp now; their quests still run for anyone who already holds them.
  */
 public final class QuestStoryGate {
@@ -51,6 +51,8 @@ public final class QuestStoryGate {
             "tip.tutorial_ledger_loadout", "Act II · Miss Ledger · Capital · Nether Star → Teleports", NamedTextColor.LIGHT_PURPLE);
     private static final Stop TEMPER = new Stop("booster_tutor", "Temper", "Boosters",
             "tip.tutorial_temper_boost", "Act II · Temper · south road · boosters", NamedTextColor.GOLD);
+    private static final Stop LARK = new Stop("lark", "Lark", "the Fields",
+            "tip.tutorial_lark", "Act II · Lark · the Fields fence · catch a pet", NamedTextColor.AQUA);
     private static final Stop VEX = new Stop(CombatTeach.NPC_ID, "Sergeant Vex", "Borderlands gate",
             "tip.tutorial_vex_gate", "Act III · Sergeant Vex · Borderlands gate", NamedTextColor.RED);
     private static final Stop STAMP = new Stop("ledger", "Miss Ledger", "/capital",
@@ -65,6 +67,7 @@ public final class QuestStoryGate {
             "lumberjack",
             "ledger",
             "booster_tutor",
+            "lark",
             CombatTeach.NPC_ID,
             "craftsman",
             "fishmonger",
@@ -88,12 +91,16 @@ public final class QuestStoryGate {
             "gather_wood",
             "lesson_manager",
             "lesson_boost",
+            "pocket_zoo",
             CombatTeach.QUEST_ID
     };
 
     private static final Set<String> TUTORIAL_QUESTS = Set.of(SPINE);
 
-    /** Filed when these are done; Miss Ledger stamps it shut. */
+    /**
+     * Filed when these are done; Miss Ledger stamps it shut. Lark's pet is on the arrow path (Act II) but not
+     * required here, so players who reached Vex before the pet step joined are not sent back.
+     */
     private static final String[] TUTORIAL_DONE_QUESTS = {
             "gather_wood",
             "lesson_manager",
@@ -247,6 +254,9 @@ public final class QuestStoryGate {
         if (!questCompleted(player, qm, "lesson_boost")) {
             return TEMPER;
         }
+        if (!questCompleted(player, qm, "pocket_zoo") && !questCompleted(player, qm, CombatTeach.QUEST_ID)) {
+            return LARK;
+        }
         if (!questCompleted(player, qm, CombatTeach.QUEST_ID)) {
             return VEX;
         }
@@ -268,7 +278,7 @@ public final class QuestStoryGate {
         if (stop == EGON || stop == FORAGER || stop == EGON_OAK) {
             return 1;
         }
-        if (stop == LEDGER || stop == TEMPER) {
+        if (stop == LEDGER || stop == TEMPER || stop == LARK) {
             return 2;
         }
         return 3;
@@ -310,7 +320,8 @@ public final class QuestStoryGate {
         if ("lesson_manager".equalsIgnoreCase(questId)) {
             return ledgerFailReason(player, qm);
         }
-        if (("lesson_boost".equalsIgnoreCase(questId) || CombatTeach.QUEST_ID.equalsIgnoreCase(questId))
+        if (("lesson_boost".equalsIgnoreCase(questId) || "pocket_zoo".equalsIgnoreCase(questId)
+                || CombatTeach.QUEST_ID.equalsIgnoreCase(questId))
                 && !questCompleted(player, qm, "gather_wood")) {
             return LangPack.say(player, "gate.kit_first", "§eEgon's kit first. §7Ten oak on the harbour pier.");
         }
@@ -342,7 +353,7 @@ public final class QuestStoryGate {
         }
         int act = act(player, qm);
         tips.add(actLine(player, 1, act, guide(player, "act1", "Act I · Anker Harbour — Egon, the Fell, your kit")));
-        tips.add(actLine(player, 2, act, guide(player, "act2", "Act II · The Capital — your loadout & Codex, then boosters")));
+        tips.add(actLine(player, 2, act, guide(player, "act2", "Act II · The Capital — your loadout & Codex, boosters, then a pet")));
         tips.add(actLine(player, 3, act, guide(player, "act3", "Act III · The Roads — Sergeant Vex, then the stamp")));
 
         Quest active = qm.findActiveOrReadyQuest(player);
@@ -365,6 +376,8 @@ public final class QuestStoryGate {
             tips.add(guide(player, "ledger_capital", "Next: §dMiss Ledger §7at the Capital — Nether Star → Teleports → Capital, or §f/capital§7."));
         } else if (stop == TEMPER) {
             tips.add(guide(player, "temper_south", "Next: §eTemper §7on the south road toward the Mines — fuse one booster."));
+        } else if (stop == LARK) {
+            tips.add(guide(player, "lark", "Next: §dLark §7at the Fields fence — catch a pet."));
         } else if (stop == VEX) {
             tips.add(guide(player, "vex_gate", "Next: §cSergeant Vex §7at the Borderlands gate — a short combat drill on his golem."));
         } else {
@@ -452,6 +465,9 @@ public final class QuestStoryGate {
         }
         if (stop == TEMPER) {
             return LangPack.say(player, "redirect.temper_south", "§eTemper§f, south road toward the Mines. Boosters.");
+        }
+        if (stop == LARK) {
+            return LangPack.say(player, "redirect.lark", "§dLark §fat the Fields fence. One catch for his collection.");
         }
         if (stop == VEX) {
             return LangPack.say(player, "redirect.vex_gate", "§cSergeant Vex§f, Borderlands gate. He drills rookies.");

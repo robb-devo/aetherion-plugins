@@ -194,9 +194,9 @@ final class LuckPermsSilent {
         group.data().clear(NodeType.WEIGHT.predicate(node -> true));
         group.data().clear(NodeType.PREFIX.predicate(node -> true));
         group.data().add(WeightNode.builder(rank.weight()).build());
-        // Admin text is painted by RankBadgeService for Robb only. A LuckPerms prefix
-        // on the admin group would show [Admin] for anyone who has the permission group.
-        if (!"admin".equalsIgnoreCase(rank.group())) {
+        // Owner (admin) and Co-Owner are painted by RankBadgeService for Robb and Shuminite only. A LuckPerms
+        // prefix on those groups would show the rank for anyone who has the permission group.
+        if (!"admin".equalsIgnoreCase(rank.group()) && !"coowner".equalsIgnoreCase(rank.group())) {
             group.data().add(PrefixNode.builder(rank.prefix(), rank.weight()).build());
         }
     }

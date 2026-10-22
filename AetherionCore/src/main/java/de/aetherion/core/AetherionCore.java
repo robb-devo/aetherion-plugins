@@ -4,6 +4,9 @@ import de.aetherion.core.command.ExileCommand;
 import de.aetherion.core.command.NetworkRestartCommand;
 import de.aetherion.core.command.WipeCommand;
 import de.aetherion.core.command.TransferCommand;
+import de.aetherion.core.moderation.RaidBans;
+import de.aetherion.core.moderation.RaidMenu;
+import de.aetherion.core.moderation.RaidRoster;
 import de.aetherion.core.network.CharacterHost;
 import de.aetherion.core.network.ExileHost;
 import de.aetherion.core.network.ExileLink;
@@ -53,6 +56,8 @@ public final class AetherionCore extends JavaPlugin {
     private IslandLink islandLink;
     private IslandsHost islandsHost;
     private de.aetherion.core.exile.ExileQuay exileQuay;
+    private RaidRoster raidRoster;
+    private RaidBans raidBans;
 
     public static AetherionCore get() {
         return instance;
@@ -67,6 +72,25 @@ public final class AetherionCore extends JavaPlugin {
         if (betaWipe.isPending()) {
             betaWipe.run();
             betaWipe.clearPending();
+        }
+        trimExileOnce();
+    }
+
+    /** Before any world loads: cut the old overworld out of the exile world when an op armed it (see ExileVoidTrim). */
+    private void trimExileOnce() {
+        java.io.File armed = new java.io.File(getDataFolder(), "exile-void-trim.armed");
+        if (!armed.isFile()) {
+            return;
+        }
+        java.io.File world = new java.io.File(getServer().getWorldContainer(), getConfig().getString("exile.world", "aetherion_exile"));
+        String result = world.isDirectory()
+                ? de.aetherion.core.exile.ExileVoidTrim.run(world, (int) Math.floor(getConfig().getDouble("exile.spawn.x", 162.5)),
+                        (int) Math.floor(getConfig().getDouble("exile.spawn.z", 6.5)), getLogger())
+                : "skipped: no world folder " + world.getName();
+        getLogger().info("[ExileVoid] " + world.getName() + ": " + result);
+        java.io.File done = new java.io.File(getDataFolder(), "exile-void-trim." + (result.startsWith("aborted") ? "aborted" : "done"));
+        if (!armed.renameTo(done)) {
+            armed.delete();
         }
     }
 
@@ -122,6 +146,20 @@ public final class AetherionCore extends JavaPlugin {
         if (transferCmd != null) {
             transferCmd.setExecutor(transferCommand);
             transferCmd.setTabCompleter(transferCommand);
+        }
+
+        // Raid menu: rosters and IP bans shared by every backend through <shared>/moderation.
+        java.io.File shared = betaWipe.layout().sharedRoot(true);
+        java.io.File moderation = new java.io.File(shared != null ? shared : getDataFolder(), "moderation");
+        raidRoster = new RaidRoster(this, moderation);
+        raidBans = new RaidBans(this, moderation);
+        raidRoster.start();
+        raidBans.start();
+        RaidMenu raidMenu = new RaidMenu(this, raidRoster, raidBans);
+        PluginCommand raidCmd = getCommand("raidban");
+        if (raidCmd != null) {
+            raidCmd.setExecutor(raidMenu);
+            raidCmd.setTabCompleter(raidMenu);
         }
 
         de.aetherion.core.api.BarChrome.enabled(getConfig().getBoolean("bars.pack-glyphs", true));
@@ -195,6 +233,12 @@ public final class AetherionCore extends JavaPlugin {
         }
         if (networkWipeWatch != null) {
             networkWipeWatch.stop();
+        }
+        if (raidRoster != null) {
+            raidRoster.stop();
+        }
+        if (raidBans != null) {
+            raidBans.stop();
         }
         if (instance == this) {
             instance = null;

@@ -22,8 +22,13 @@ commands:
     usage: /wipe beta confirm
   exile:
     description: Cross to the exile island (mmo-c) or return
-    usage: /exile [go|return|replay|stop|where|causeway|paste|placequay|clearsaint|quayundo]
+    usage: /exile [go|return|replay|stop|where|causeway|paste|placequay|clearsaint|quayundo|repairquay]
     aliases: [exil]
+  raidban:
+    description: Anti bot-raid menu - pick players by join order and IP-ban them on every server
+    usage: /raidban [list | pardon <name|ip>]
+    permission: aetherion.mod.raidban
+    aliases: [antiraid, raidmenu]
   aetransfer:
     description: Network transfer state of a player, or hop yourself (admin)
     usage: /aetransfer [player] | /aetransfer go <mmo-r|mmo-d|mmo-c|mmo-i>
@@ -35,6 +40,9 @@ permissions:
     default: op
   aetherion.wipe:
     description: Run a full beta player-data wipe
+    default: op
+  aetherion.mod.raidban:
+    description: Open the raid menu and IP-ban raiders network-wide
     default: op
   aetherion.exile:
     description: Use /exile go and return

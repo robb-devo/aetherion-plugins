@@ -1,0 +1,1576 @@
+{
+ "providers": [
+  {
+   "type": "space",
+   "advances": {
+    "\uea00": -1
+   }
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/rank_owner.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea10"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/rank_coowner.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea11"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/rank_mvpplusplus.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea12"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/rank_monkey.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea13"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/rank_citrus.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea14"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/rank_beta.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea15"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea20"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea21"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea22"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea23"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea24"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea25"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea26"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea27"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea28"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea29"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea2a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_00_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea2b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea30"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea31"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea32"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea33"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea34"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea35"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea36"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea37"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea38"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea39"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea3a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_01_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea3b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea40"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea41"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea42"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea43"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea44"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea45"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea46"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea47"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea48"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea49"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea4a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_02_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea4b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea50"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea51"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea52"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea53"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea54"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea55"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea56"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea57"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea58"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea59"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea5a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_03_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea5b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea60"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea61"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea62"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea63"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea64"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea65"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea66"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea67"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea68"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea69"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea6a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_04_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea6b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea70"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea71"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea72"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea73"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea74"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea75"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea76"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea77"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea78"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea79"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea7a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_05_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea7b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea80"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea81"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea82"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea83"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea84"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea85"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea86"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea87"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea88"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea89"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea8a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_06_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea8b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea90"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea91"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea92"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea93"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea94"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea95"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea96"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea97"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea98"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea99"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea9a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_07_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uea9b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa0"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa2"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa3"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa4"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa5"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa6"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa7"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa8"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaa9"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaaa"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_08_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaab"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab0"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab2"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab3"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab4"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab5"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab6"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab7"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab8"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueab9"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaba"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_09_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueabb"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac0"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac2"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac3"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac4"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac5"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac6"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac7"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac8"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueac9"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaca"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_10_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueacb"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead0"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead2"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead3"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead4"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead5"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead6"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead7"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead8"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\uead9"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueada"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_11_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueadb"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae0"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae2"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae3"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae4"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae5"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae6"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae7"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae8"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueae9"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaea"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_12_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaeb"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_00.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf0"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_01.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_02.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf2"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_03.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf3"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_04.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf4"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_05.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf5"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_06.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf6"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_07.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf7"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_08.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf8"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_09.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueaf9"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_10.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueafa"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/badges/level_13_11.png",
+   "ascent": 8,
+   "height": 9,
+   "chars": [
+    "\ueafb"
+   ]
+  }
+ ]
+}

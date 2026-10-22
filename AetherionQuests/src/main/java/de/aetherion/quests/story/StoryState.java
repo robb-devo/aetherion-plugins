@@ -205,6 +205,11 @@ public final class StoryState implements StoryAccess {
     /** The Ferryman's answer before he casts off (null = aboard). */
     @Override
     public String ferryBlock(Player player) {
+        return crossingBlock(player);
+    }
+
+    /** Same as {@link #ferryBlock(Player)}, for the Ferryman's own desk. */
+    public static String crossingBlock(Player player) {
         AetherionQuests plugin = AetherionQuests.getInstance();
         QuestManager qm = plugin == null ? null : plugin.getQuestManager();
         if (player == null || qm == null) {

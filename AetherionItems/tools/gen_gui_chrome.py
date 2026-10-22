@@ -148,6 +148,7 @@ SIGILS = {
     'chest': [".#####.", "#.....#", "#######", "#..#..#", "#.....#", "#.....#", "#######"],
     'armor': ["##...##", "###.###", "#######", ".#####.", ".#####.", ".#####.", ".##.##."],
     'compass': ["...#...", "..#.#..", ".#...#.", "#..#..#", ".#...#.", "..#.#..", "...#..."],
+    'anvil': ["######.", "#######", "..###..", "..###..", ".#####.", ".#####.", "......."],
     'scroll': [".######", "#.#...#", ".##.#.#", "..#...#", "..#.#.#", "..#...#", "..#####"],
 }
 
@@ -488,18 +489,88 @@ def draw_plate(cv, th):
     return x0, x1
 
 
-# Manager hub: a book page. Fifteen tiles, five a row on rows 0, 2 and 4 (AetherionManagerGUI), each in a round ink
-# seal with a caption band under it; the captions themselves are vanilla-font text in the title (ManagerCaptions,
-# fonts aetherion:mgr_caption_1..3). Slot = 9 * row + column.
-MANAGER_TILES = [(r, c) for r in (0, 2, 4) for c in (0, 2, 4, 6, 8)]
-# Pages in the Manager's book language: their tiles get a seal and a caption band (the captions are in the title,
-# de.aetherion.core.api.BookPage). Keep these in step with the slots the menus use.
-BOOK_TILES = {
-    'manager': MANAGER_TILES,
-    # StatsOverviewGUI: 14 stats, rows 0, 2, 4
-    'stats': [(r, c) for r in (0, 2, 4) for c in (0, 2, 4, 6, 8) if (r, c) != (4, 8)],
+# Every Manager page is a book page: parchment in the menu frame, ruled in ink. What sits on it follows the menu's
+# own slots (slot = 9 * row + column), so keep these in step with the Java menus:
+#   seals    round ink seals for a hub's tiles (20 px, wider than a slot, so they never sit side by side)
+#   buttons  small seals for buttons and tabs (one slot each, neighbours touch)
+#   cells    ledger pockets for lists, grids and anything the player puts items into
+#   captions slots with a caption band under them; the captions are vanilla-font text in the title
+#            (de.aetherion.core.api.BookPage, fonts aetherion:mgr_caption_1..3), so only rows 0, 2 and 4
+#   ribbon   x of a bookmark in the page's accent, hanging into a gap of the top row
+def R(rows, cols):
+    return [(r, c) for r in rows for c in cols]
+
+
+# Manager hub: fifteen tiles, five a row on rows 0, 2 and 4 (AetherionManagerGUI).
+MANAGER_TILES = R((0, 2, 4), (0, 2, 4, 6, 8))
+# Codex pages (CodexChrome): the tab strip with the header in the middle, the 21-slot body, the nav row.
+CODEX_TABS = R([0], range(7))
+CODEX_BODY = R(range(2, 5), range(1, 8))
+CODEX_NAV = [(5, 0), (5, 2), (5, 3), (5, 4), (5, 5), (5, 6)]
+SHOP_TILES = [(0, 4), (2, 1), (2, 4), (2, 7)]
+STATS_TILES = R((0, 2), (0, 2, 4, 6, 8)) + R([4], (2, 4, 6, 8))
+ENTRY_NAV = [(5, 0), (5, 2), (5, 4), (5, 6)]
+LOADOUT_COLS = (1, 2, 3, 5, 6, 7)
+
+PAGES = {
+    'manager': dict(seals=MANAGER_TILES, captions=MANAGER_TILES),
+    # StatsOverviewGUI: 14 stats, rows 0, 2, 4; the last row sits right so no caption runs over Back (45)
+    'stats': dict(seals=STATS_TILES, captions=STATS_TILES, buttons=[(5, 0)], ribbon=139),
     # Hub SpawnMenu: short names four to a row, long names three to a row, the help compass on the nav row
-    'spawns': [(0, 1), (0, 3), (0, 5), (0, 7), (2, 1), (2, 4), (2, 7), (4, 1), (4, 4), (4, 7), (5, 4)],
+    'spawns': dict(seals=[(0, 1), (0, 3), (0, 5), (0, 7), (2, 1), (2, 4), (2, 7), (4, 1), (4, 4), (4, 7), (5, 4)],
+                   captions=[(0, 1), (0, 3), (0, 5), (0, 7), (2, 1), (2, 4), (2, 7), (4, 1), (4, 4), (4, 7)],
+                   ribbon=158),
+    # ShardShopMenu: the balance on top, three shelves (four for materials) with the price under each
+    'shop': dict(seals=SHOP_TILES, captions=SHOP_TILES, buttons=[(4, 0)], ribbon=158),
+    'shop_boosts': dict(seals=SHOP_TILES, captions=SHOP_TILES, buttons=[(4, 0), (4, 4)], ribbon=158),
+    'shop_exclusive': dict(seals=SHOP_TILES, captions=SHOP_TILES, buttons=[(4, 0), (4, 4)], ribbon=158),
+    'shop_materials': dict(seals=[(0, 4), (2, 1), (2, 3), (2, 5), (2, 7)],
+                           captions=[(0, 4), (2, 1), (2, 3), (2, 5), (2, 7)], buttons=[(4, 0), (4, 4)], ribbon=158),
+    # MarketService: 45 listings, the nav row (52 stays empty)
+    'bazaar': dict(cells=R(range(5), range(9)), buttons=R([5], (0, 1, 2, 3, 4, 5, 6, 8))),
+    'auction': dict(cells=R(range(5), range(9)), buttons=R([5], (0, 1, 2, 3, 4, 5, 6, 8))),
+    'market_list': dict(buttons=R([0], range(9))),
+    'market_confirm': dict(seals=[(1, 4)], buttons=[(1, 2), (1, 6)]),
+    # SkillMenu: the tool row, seven loadout slots, the rarity strip, seven categories, the 14-skill pool
+    'skills': dict(buttons=R([0], range(9)) + R([3], range(1, 8)) + [(5, 0)],
+                   cells=R((1, 2, 4, 5), range(1, 8))),
+    # SkillOverviewGUI: Codex tabs, 36 skills, the nav row and the seal claim
+    'skills_overview': dict(buttons=R([0], range(9)) + CODEX_NAV + [(5, 8)], cells=R(range(1, 5), range(9))),
+    # SkillPresetsGUI: three presets and the current loadout
+    'skills_presets': dict(seals=[(1, 1), (1, 3), (1, 5), (1, 7)], buttons=[(0, 4), (2, 0), (2, 4)]),
+    # RecipeBookGUI: the index (ten categories, ready, the book, sources), a list, one recipe
+    'recipes_index': dict(seals=R((0, 2), (0, 2, 4, 6, 8)) + [(4, 2), (4, 4), (4, 6)],
+                          captions=R((0, 2), (0, 2, 4, 6, 8)) + [(4, 2), (4, 4), (4, 6)], buttons=[(5, 0)],
+                          ribbon=None),
+    'recipes': dict(cells=R(range(1, 5), range(1, 8)), buttons=[(0, 4), (5, 0), (5, 4), (5, 7), (5, 8)]),
+    'recipes_craft': dict(cells=R(range(1, 4), range(3, 6)), seals=[(2, 7)], buttons=[(0, 4), (5, 0)], arrow=(2, 6)),
+    # CodexBrowser: tabs, nine category tabs, 21 entries, nav
+    'bestiary': dict(buttons=R([0], range(9)) + R([1], range(9)) + CODEX_NAV, cells=CODEX_BODY),
+    'collection': dict(buttons=R([0], range(9)) + R([1], range(9)) + CODEX_NAV, cells=CODEX_BODY),
+    # CodexDetailGUI: tabs, the nine tier rungs, record / leaderboard / notes / rewards, nav
+    'collection_entry': dict(buttons=CODEX_TABS + [(3, 2), (3, 4), (3, 6), (4, 4)] + ENTRY_NAV, cells=R([2], range(9))),
+    'bestiary_entry': dict(buttons=CODEX_TABS + [(3, 2), (3, 4), (3, 6), (4, 4)] + ENTRY_NAV, cells=R([2], range(9))),
+    # CodexHubGUI: the five books with their level, next-up entries with the tier they reach, claim all; no Close,
+    # the next-up captions run over its slot
+    'codex': dict(buttons=CODEX_TABS + [(4, 0), (5, 0)], seals=R([2], (0, 2, 4, 6, 8)) + [(4, 8)],
+                  cells=R([4], range(2, 7)), captions=R([2], (0, 2, 4, 6, 8)) + R([4], range(2, 7)) + [(4, 8)]),
+    # CodexMilestonesGUI: two roads with a label and a perk at the ends, the rarity seals and their claim
+    'milestones': dict(buttons=CODEX_TABS + [(2, 0), (2, 8), (3, 0), (3, 8), (4, 0), (4, 8), (5, 0), (5, 4)],
+                       cells=R((2, 3), range(1, 8)) + R([4], range(2, 7))),
+    # DungeonJournalGUI: tabs and the chronicle, three filters, 21 bosses, nav
+    'journal': dict(buttons=CODEX_TABS + [(0, 8), (1, 2), (1, 4), (1, 6), (5, 0), (5, 2), (5, 4), (5, 6)],
+                    cells=CODEX_BODY),
+    'chronicle': dict(buttons=[(0, 4), (5, 0), (5, 4)], cells=CODEX_BODY),
+    'journal_hub': dict(seals=[(1, 2), (1, 6)], buttons=[(2, 0), (2, 4)]),
+    # StorageGUI: 45 stored items, back / pages / slots
+    'storage': dict(cells=R(range(5), range(9)), buttons=[(5, 0), (5, 1), (5, 4), (5, 6), (5, 8)]),
+    # LoadoutGUI: six sets of four pieces, clear above and equip below each
+    'loadouts': dict(cells=R(range(1, 5), LOADOUT_COLS), buttons=R([0], LOADOUT_COLS) + [(5, 0)]
+                     + R([5], LOADOUT_COLS), ribbon=85),
+    # Aethermobs PetMenu: 44 pets, the nav row
+    'pets': dict(cells=R(range(5), range(9)), buttons=R([5], range(9))),
+    # BoosterSocketMenu: the gear on its seal, fourteen sockets, info / vanilla anvil / close
+    'anvil': dict(seals=[(1, 4)], cells=R((2, 3), range(1, 8)), buttons=[(0, 8), (5, 4)], ribbon=17),
 }
 PAGE = hx('#e3d1a4')
 PAGE_DARK = hx('#cdb787')
@@ -514,18 +585,20 @@ def _grain(x, y):
     return ((v >> 8) & 0xFF) / 127.5 - 1.0
 
 
-def draw_book(cv, th, g, tiles):
+def _paper(base, x, y, amount=5):
+    n = _grain(x, y) * amount
+    return tuple(max(0, min(255, round(v + n))) for v in base)
+
+
+def draw_page(cv, g):
+    """Parchment with grain, a warm vignette toward the edges, a soft gutter down the middle, a double ink rule."""
     x0, y0, x1, y1 = 3, 16, 172, g['cont_bot'] + 3
-    # parchment with grain, a warm vignette toward the edges and a soft gutter shadow down the middle
     for y in range(y0, y1 + 1):
         for x in range(x0, x1 + 1):
             edge = min(x - x0, x1 - x, y - y0, y1 - y)
             t = 0.0 if edge >= 8 else (8 - edge) / 8.0 * 0.55
             gutter = max(0.0, 1.0 - abs(x - 87.5) / 5.0) * 0.18
-            c = mix(PAGE, PAGE_DARK, min(1.0, t + gutter))
-            n = _grain(x, y) * 5
-            cv.put(x, y, tuple(max(0, min(255, round(v + n))) for v in c))
-    # inked double rule around the page
+            cv.put(x, y, _paper(mix(PAGE, PAGE_DARK, min(1.0, t + gutter)), x, y))
     for k, c in ((0, INK), (2, INK_SOFT)):
         cv.hline(x0 + k, x1 - k, y0 + k, c)
         cv.hline(x0 + k, x1 - k, y1 - k, c)
@@ -533,45 +606,76 @@ def draw_book(cv, th, g, tiles):
         cv.vline(x1 - k, y0 + k, y1 - k, c)
     for (cx, cy) in ((x0 + 4, y0 + 4), (x1 - 4, y0 + 4), (x0 + 4, y1 - 4), (x1 - 4, y1 - 4)):
         draw_diamond(cv, cx, cy, 1, INK_SOFT)
+    return x0, x1
+
+
+def draw_cells(cv, cells):
+    """Ledger pockets: every slot pressed into the page, a fine groove between neighbours, ink round the block."""
+    cellset = set(cells)
+    fill = mix(PAGE, PAGE_DARK, 0.42)
+    groove = mix(PAGE_DARK, INK_SOFT, 0.55)
+    shade = mix(fill, INK_SOFT, 0.22)
+    lit = mix(PAGE, (255, 255, 255), 0.30)
+    for r, c in cells:
+        x, y = 7 + 18 * c, 17 + 18 * r
+        for yy in range(y, y + 18):
+            for xx in range(x, x + 18):
+                cv.put(xx, yy, _paper(fill, xx, yy, 4))
+        cv.hline(x, x + 17, y, groove)
+        cv.vline(x, y, y + 17, groove)
+        cv.hline(x + 1, x + 16, y + 1, shade)
+        cv.vline(x + 1, y + 1, y + 16, shade)
+        cv.hline(x + 1, x + 17, y + 17, lit)
+        cv.vline(x + 17, y + 1, y + 17, lit)
+    for r, c in cells:
+        x, y = 7 + 18 * c, 17 + 18 * r
+        if (r - 1, c) not in cellset:
+            cv.hline(x - 1, x + 18, y - 1, INK_SOFT)
+        if (r + 1, c) not in cellset:
+            cv.hline(x - 1, x + 18, y + 18, INK_SOFT)
+        if (r, c - 1) not in cellset:
+            cv.vline(x - 1, y - 1, y + 18, INK_SOFT)
+        if (r, c + 1) not in cellset:
+            cv.vline(x + 18, y - 1, y + 18, INK_SOFT)
+
+
+def draw_seal(cv, r, c, inner, ring, outer):
+    """An ink seal round slot (r, c): a pressed disc, a ring, and a rough ink edge."""
     seal = mix(PAGE_DARK, INK_SOFT, 0.18)
     seal_in = mix(PAGE, PAGE_DARK, 0.65)
+    cx, cy = 15.5 + 18 * c, 25.5 + 18 * r
+    reach = int(outer) + 2
+    for y in range(int(cy) - reach, int(cy) + reach + 1):
+        for x in range(int(cx) - reach, int(cx) + reach + 1):
+            d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+            if d <= inner:
+                cv.put(x, y, mix(seal_in, PAGE_DARK, max(0.0, (y - cy) / (inner + 4))))
+            elif d <= ring:
+                cv.put(x, y, seal)
+            elif d <= outer:
+                cv.put(x, y, INK_SOFT if (x + y) % 7 else INK)
+
+
+def draw_bands(cv, captions, x0, x1):
+    """A caption band under each captioned slot (the text is drawn by the title, GUI y 37 + 36k), as wide as the gap
+    to the next captioned slot in its row allows."""
     band = mix(PAGE, PAGE_DARK, 0.45)
-    for r, c in tiles:
-        # item area is (8 + 18c, 18 + 18r) .. +15; the seal is a 20 px disc around it
-        cx, cy = 15.5 + 18 * c, 25.5 + 18 * r
-        for y in range(int(cy) - 11, int(cy) + 13):
-            for x in range(int(cx) - 11, int(cx) + 13):
-                d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-                if d <= 8.2:
-                    cv.put(x, y, mix(seal_in, PAGE_DARK, max(0.0, (y - cy) / 12.0)))
-                elif d <= 9.1:
-                    cv.put(x, y, seal)
-                elif d <= 9.9:
-                    cv.put(x, y, INK_SOFT if (x + y) % 7 else INK)
+    for r, c in captions:
         if r % 2 or r > 4:
-            continue                                   # no caption row under this one
-        # caption band under the seal (the text is drawn by the title, GUI y 37 + 36k), as wide as the gap allows
-        gap = min([abs(c2 - c) for r2, c2 in tiles if r2 == r and c2 != c] or [3])
+            continue
+        gap = min([abs(c2 - c) for r2, c2 in captions if r2 == r and c2 != c] or [3])
+        cx = int(15.5 + 18 * c)
         by = 18 + 18 * r + 18
-        bx0, bx1 = int(cx) - (9 * gap + 1), int(cx) + (9 * gap + 2)
+        bx0, bx1 = cx - (9 * gap + 1), cx + (9 * gap + 2)
         for x in range(max(x0 + 3, bx0), min(x1 - 3, bx1) + 1):
-            fade = min(x - bx0, bx1 - x)
-            if fade < 3:
+            if min(x - bx0, bx1 - x) < 3:
                 continue
             for y in range(by, by + 10):
                 cv.put(x, y, mix(band, PAGE, 0.35 if y in (by, by + 9) else 0.0))
-    # a pin at image column 255 (1 alpha, invisible): the client then measures the glyph 256 wide, advance 257,
-    # which ManagerCaptions counts on to place the captions after it.
-    cv.put(255 - OX, 120, INK, 1)
 
 
-# where each page's bookmark hangs: in a gap between the top row's seals
-RIBBON_X = {'stats': 139, 'spawns': 158}
-
-
-def draw_ribbon(cv, th):
+def draw_ribbon(cv, th, x0):
     """A bookmark in the page's accent hanging from the top edge: which book of the Manager you are in."""
-    x0 = RIBBON_X.get(th.key, 158)
     x1 = x0 + 5
     for y in range(16, 33):
         for x in range(x0, x1 + 1):
@@ -581,16 +685,39 @@ def draw_ribbon(cv, th):
             cv.put(x, y, mix(th.acc, INK, shade))
 
 
+def draw_arrow(cv, r, c):
+    """An inked arrow across slot (r, c), pointing right: craft grid to result."""
+    x, y = 8 + 18 * c, 18 + 18 * r + 7
+    cv.hline(x + 1, x + 12, y, INK)
+    cv.hline(x + 1, x + 11, y + 1, INK_SOFT)
+    for k in range(1, 5):
+        cv.put(x + 13 - k, y - k, INK)
+        cv.put(x + 13 - k, y + k, INK)
+        cv.put(x + 12 - k, y + k + 1, INK_SOFT)
+
+
+def draw_book(cv, th, g, spec):
+    x0, x1 = draw_page(cv, g)
+    draw_cells(cv, spec.get('cells', ()))
+    draw_bands(cv, spec.get('captions', ()), x0, x1)
+    for r, c in spec.get('seals', ()):
+        draw_seal(cv, r, c, 8.2, 9.1, 9.9)
+    for r, c in spec.get('buttons', ()):
+        draw_seal(cv, r, c, 7.4, 8.2, 8.95)
+    if spec.get('arrow'):
+        draw_arrow(cv, *spec['arrow'])
+    if spec.get('ribbon') is not None:
+        draw_ribbon(cv, th, spec['ribbon'])
+    # a pin at image column 255 (1 alpha, invisible): the client then measures the glyph 256 wide, advance 257,
+    # which BookPage counts on to place the captions after it.
+    cv.put(255 - OX, 120, INK, 1)
+
+
 def render(th, rows):
     g = geometry(rows)
     cv = Canvas()
     draw_panel(cv, th, g)
-    if th.key in BOOK_TILES:
-        draw_book(cv, th, g, BOOK_TILES[th.key])
-        if th.key != 'manager':
-            draw_ribbon(cv, th)
-    else:
-        draw_wells(cv, th, 7, g['cont_top'], 9, rows)
+    draw_book(cv, th, g, PAGES.get(th.key, dict(cells=R(range(rows), range(9)))))
     draw_wells(cv, th, 7, g['inv_top'], 9, 3, brackets=(True, True, False, False))
     draw_wells(cv, th, 7, g['bar_top'], 9, 1, brackets=(False, False, True, True))
     draw_divider(cv, th, g)
@@ -629,6 +756,11 @@ THEMES = [
     ('pets',             'PETS',              '#e083b3', 'paw',      6, ''),
     ('chronicle',        'CHRONICLE',         '#c9ad7e', 'book',     6, ''),
     ('journal_hub',      'JOURNAL',           '#c9ad7e', 'skull',    3, ''),
+    ('recipes_index',    'RECIPE BOOK',       '#c99560', 'book',     6, ''),
+    ('recipes_craft',    'RECIPE',            '#c99560', 'book',     6, ''),
+    ('collection_entry', 'COLLECTION',        '#62c08a', 'leaf',     6, ''),
+    ('bestiary_entry',   'BESTIARY',          '#cc5c66', 'claw',     6, ''),
+    ('anvil',            'BOOSTER SOCKETS',   '#e0a35c', 'anvil',    6, ''),
 ]
 
 PARCHMENT = {'journal', 'chronicle', 'journal_hub'}

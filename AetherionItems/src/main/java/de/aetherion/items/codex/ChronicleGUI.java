@@ -86,7 +86,8 @@ public final class ChronicleGUI {
                         : GuiItems.named(Material.GRAY_DYE, "§8???", "§7Not found yet."));
             }
             inventory.setItem(CodexChrome.BACK, CodexChrome.back("the Boss Journal"));
-            inventory.setItem(CodexChrome.CLOSE, GuiItems.named(Material.BARRIER, "§cClose", "§8Esc works too."));
+            inventory.setItem(CodexChrome.CLOSE, de.aetherion.items.util.GuiIcons.icon(
+                    GuiItems.named(Material.BARRIER, "§cClose", "§8Esc works too."), de.aetherion.items.util.GuiIcons.CLOSE));
         }
 
         private static ItemStack page(StoryLore lore) {

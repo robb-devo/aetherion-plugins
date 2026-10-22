@@ -72,6 +72,19 @@ public final class StoryFlow {
             return true;
         }
 
+        if ("ferryman".equals(id) && !onExile(player)) {
+            // This side of the Veil he is the ferry: the writ when it's due, otherwise his desk, which either
+            // casts off or says exactly what is still missing. Later beats he gives (the Captain) wait for the far shore.
+            LullabyQuests.Step next = nextOpen(qm, player);
+            if (next != null && LullabyQuests.FERRY.equals(next.id()) && gateOk(qm, player, next)) {
+                speak(player, npc, dm, "story_ferryman.offer_ferry", next.id());
+                return true;
+            }
+            if (ExileStory.desk(player, npc, qm)) {
+                return true;
+            }
+        }
+
         for (LullabyQuests.Step step : LullabyQuests.STEPS) {
             if (id.equals(step.talk()) && state(qm, player, step) == QuestState.ACTIVE) {
                 if (LullabyQuests.FERRY.equals(step.id()) && !onExile(player)) {

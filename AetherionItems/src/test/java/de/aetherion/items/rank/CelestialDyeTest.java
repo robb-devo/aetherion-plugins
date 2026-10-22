@@ -180,14 +180,14 @@ class CelestialDyeTest {
     void sidebarIdentityMatchesChatOrder() {
         String levelTag = "§c[42]";
         String line = RankBadgeService.composePrefix("admin", levelTag, false) + "A3therion";
-        assertTrue(line.startsWith("§c[Admin] "), line);
-        int rankAt = line.indexOf("[Admin]");
+        assertTrue(line.startsWith("§4[§6§lOwner§4] "), line);
+        int rankAt = line.indexOf("Owner");
         int levelAt = line.indexOf("[42]");
         int nameAt = line.lastIndexOf("A3therion");
         assertTrue(rankAt >= 0 && rankAt < levelAt && levelAt < nameAt, line);
         String monkey = RankBadgeService.composePrefix("monkey", levelTag, false) + "Friend";
         assertTrue(monkey.indexOf("[42]") < monkey.lastIndexOf("Friend"), monkey);
-        assertFalse(monkey.contains("[Admin]"), monkey);
+        assertFalse(monkey.contains("Owner"), monkey);
     }
 
     @Test

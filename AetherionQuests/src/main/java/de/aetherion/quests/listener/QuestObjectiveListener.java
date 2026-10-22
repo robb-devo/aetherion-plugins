@@ -356,8 +356,9 @@ public class QuestObjectiveListener implements Listener {
         }
 
         if (bossId != null && entity.getWorld() != null) {
+            // Big arenas (Helios, the Last Seed): everyone in the fight counts, not only who stood close.
             for (Player nearby : entity.getWorld().getPlayers()) {
-                if (nearby.getLocation().distanceSquared(entity.getLocation()) <= 48 * 48) {
+                if (nearby.getLocation().distanceSquared(entity.getLocation()) <= 128 * 128) {
                     candidates.add(nearby);
                 }
             }

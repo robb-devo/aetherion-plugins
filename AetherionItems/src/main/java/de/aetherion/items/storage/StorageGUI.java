@@ -181,14 +181,7 @@ public class StorageGUI {
          * =====================================================
          */
 
-        inventory.setItem(
-                45,
-                createButton(
-                        Material.ARROW,
-                        ChatColor.YELLOW + "Back",
-                        ChatColor.GRAY + "Return to the Aetherion Manager."
-                )
-        );
+        inventory.setItem(45, de.aetherion.items.util.ManagerNav.button());
 
 
         /*
@@ -426,10 +419,20 @@ public class StorageGUI {
             String... lore
     ) {
 
+        // Page arrows wear the shared pack icons; a dark-grey name is the dimmed one (on a grey pane).
+        boolean arrow = material == Material.ARROW;
+        boolean off = arrow && name.startsWith(ChatColor.DARK_GRAY.toString());
+        boolean previous = name.contains("Previous");
+
         ItemStack item =
                 new ItemStack(
-                        material
+                        off ? Material.GRAY_STAINED_GLASS_PANE : material
                 );
+        if (arrow) {
+            GuiIcons.icon(item, previous
+                    ? (off ? GuiIcons.PREV_OFF : GuiIcons.PREV)
+                    : (off ? GuiIcons.NEXT_OFF : GuiIcons.NEXT));
+        }
 
 
         ItemMeta meta =

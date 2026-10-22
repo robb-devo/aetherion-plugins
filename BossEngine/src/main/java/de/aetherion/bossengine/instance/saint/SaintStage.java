@@ -234,6 +234,16 @@ public final class SaintStage {
         }
     }
 
+    /** The stage center marked in this chunk, or null (used by {@link StageSweep}). */
+    static Location markerIn(Plugin plugin, Chunk chunk) {
+        return readMarker(plugin, new Location(chunk.getWorld(), (chunk.getX() << 4) + 8, 64, (chunk.getZ() << 4) + 8));
+    }
+
+    /** The full stage layout relative to its center (used by {@link StageSweep}). */
+    static List<Cell> layoutCells() {
+        return layout();
+    }
+
     private static boolean readPermanent(Plugin plugin, Location at) {
         String raw = rawMarker(plugin, at);
         return raw != null && raw.endsWith(",1");

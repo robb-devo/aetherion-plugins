@@ -3,6 +3,7 @@ package de.aetherion.items.skill;
 import de.aetherion.items.item.ItemLore;
 import de.aetherion.items.model.ItemCapability;
 import de.aetherion.items.model.Rarity;
+import de.aetherion.items.util.GuiIcons;
 import de.aetherion.items.util.GuiItems;
 
 import org.bukkit.Bukkit;
@@ -58,7 +59,6 @@ public final class SkillMenu implements Listener {
     /** Categories stay here permanently — never swapped for skills. */
     private static final int[] CATEGORY_SLOTS = {28, 29, 30, 31, 32, 33, 34};
     /** Side panes tinted in the selected category's color — frames the pool. */
-    private static final int[] FRAME_SLOTS = {27, 35, 36, 44, 53};
     /**
      * Skill pool rows — left-aligned, last column stays glass (44 / 53).
      * Back stays at 45.
@@ -607,11 +607,11 @@ public final class SkillMenu implements Listener {
 
     private ItemStack stripPane(Player player, int index, int unlocked) {
         if (index >= unlocked) {
-            return named(Material.BLACK_STAINED_GLASS_PANE, " ");
+            return GuiIcons.spacer();
         }
         AetherSkill skill = skills.inSlot(player, index);
         if (skill == null) {
-            return named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§8Empty slot");
+            return GuiIcons.icon(named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§8Empty slot"), GuiIcons.SPACER);
         }
         int level = skills.level(player, skill);
         Rarity rarity = SkillProgression.rarity(level);
@@ -1060,30 +1060,11 @@ public final class SkillMenu implements Listener {
         return String.format(Locale.US, "%,d", amount);
     }
 
-    private static Material categoryPane(AetherSkill.Category category) {
-        if (category == null) {
-            return Material.GRAY_STAINED_GLASS_PANE;
-        }
-        return switch (category) {
-            case COMBAT -> Material.RED_STAINED_GLASS_PANE;
-            case MINING -> Material.BLUE_STAINED_GLASS_PANE;
-            case FORAGING -> Material.GREEN_STAINED_GLASS_PANE;
-            case FARMING -> Material.ORANGE_STAINED_GLASS_PANE;
-            case FISHING -> Material.CYAN_STAINED_GLASS_PANE;
-            case UTILITY -> Material.YELLOW_STAINED_GLASS_PANE;
-            case DUNGEON -> Material.PURPLE_STAINED_GLASS_PANE;
-        };
-    }
-
+    /** Every slot an invisible spacer: the book page (tools/gen_gui_chrome.py PAGES['skills']) draws the rest. */
     private static void fill(Inventory inventory, AetherSkill.Category category) {
-        ItemStack header = named(Material.BLACK_STAINED_GLASS_PANE, " ");
-        ItemStack body = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack spacer = GuiIcons.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, (slot < 9 ? header : body).clone());
-        }
-        ItemStack frame = named(categoryPane(category), " ");
-        for (int slot : FRAME_SLOTS) {
-            inventory.setItem(slot, frame.clone());
+            inventory.setItem(slot, spacer.clone());
         }
     }
 

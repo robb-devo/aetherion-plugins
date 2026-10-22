@@ -2383,8 +2383,8 @@ public class DialogManager implements Listener {
             case "farmer" -> farmerCompletedLines(player);
             case "ledger" -> de.aetherion.quests.lang.LangPack.completed(player, "ledger_spine", new String[] {
                     "Loadout's set. Good. Filed.",
-                    "Next: §eTemper§f on the south road, then §cSergeant Vex§f at the Borderlands gate.",
-                    "Come back after both, {player}. I close orientation — and I keep a help desk."
+                    "Next: §eTemper§f on the south road, §dLark§f at the Fields fence, then §cSergeant Vex§f at the Borderlands gate.",
+                    "Come back after all three, {player}. I close orientation — and I keep a help desk."
             });
             case "lark" -> QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "lark.graduate", new String[] {
@@ -2393,7 +2393,7 @@ public class DialogManager implements Listener {
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "lark.default", new String[] {
                             "Catch done. Your pet likes you. Probably.",
-                            "§eMiss Ledger§f closes orientation — §e/capital§f if you're lazy. Questions go to her."
+                            "§cSergeant Vex§f at the Borderlands gate next, then §eMiss Ledger§f's stamp."
                     });
             case "craftsman", "blacksmith" -> QuestStoryGate.questCompleted(player, questManager, "first_shift")
                     ? de.aetherion.quests.lang.LangPack.completed(player, "craftsman.after_shift", new String[] {
@@ -2431,7 +2431,7 @@ public class DialogManager implements Listener {
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "booster_tutor.default", new String[] {
                             "Booster fused. Recipes stay in the §eRecipe Book§f anytime.",
-                            "Next: §eMiss Ledger§f at Capital — your loadout. Then §cSergeant Vex§f."
+                            "Next: §eMiss Ledger§f at Capital — your loadout. Then §dLark§f and §cSergeant Vex§f."
                     });
             case "surveyor" -> new String[] {
                     "Desk stays open. Collection up top, stamp a blueprint into its tool below.",

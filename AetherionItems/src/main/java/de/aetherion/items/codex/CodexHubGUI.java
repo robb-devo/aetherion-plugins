@@ -1,10 +1,13 @@
 package de.aetherion.items.codex;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.BookPage;
 import de.aetherion.items.skill.AetherSkill;
 import de.aetherion.items.skill.AetherionLevel;
 import de.aetherion.items.skill.SkillProgression;
 import de.aetherion.items.skill.SkillSeals;
 import de.aetherion.items.skill.SkillService;
+import de.aetherion.items.util.GuiIcons;
 import de.aetherion.items.util.GuiItems;
 
 import org.bukkit.Material;
@@ -18,24 +21,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * /codex — the front page. Three ledgers side by side, the journal and milestones under them,
- * one Claim All, and the five entries closest to their next tier.
+ * /codex — the front page, a book page like the Manager's: the five books with where you stand written under
+ * each, the five entries closest to their next tier with that tier under them, and one Claim All. No Close here:
+ * the next-up captions run over its slot (Esc and Back both work).
  *
  * <pre>
  * row 0  tabs · profile
- * row 2  [Collection]  [Bestiary]  [Skills]
- * row 3  [Journal]     [Milestones] [Claim All]
- * row 4  Next up: five nearest tier-ups
+ * row 2  [Collection] [Bestiary] [Skills] [Journal] [Milestones]      level / average / slain / perks
+ * row 4  [Next up →]  five nearest tier-ups              [Claim All]  next tier / rewards ready
  * </pre>
  */
 public final class CodexHubGUI {
 
-    private static final int COLLECTION = 20;
-    private static final int BESTIARY = 22;
-    private static final int SKILLS = 24;
-    private static final int JOURNAL = 29;
-    private static final int MILESTONES = 31;
-    private static final int CLAIM_ALL = 33;
+    private static final int COLLECTION = 18;
+    private static final int BESTIARY = 20;
+    private static final int SKILLS = 22;
+    private static final int JOURNAL = 24;
+    private static final int MILESTONES = 26;
+    private static final int NEXT_UP_LABEL = 36;
+    private static final int CLAIM_ALL = 44;
     private static final int[] NEXT_UP = {38, 39, 40, 41, 42};
 
     private CodexHubGUI() {
@@ -68,6 +72,58 @@ public final class CodexHubGUI {
         }
 
         @Override
+        protected net.kyori.adventure.text.Component chrome(Player player) {
+            CodexService service = CodexRewards.service();
+            SkillService skills = CodexRewards.skills();
+            if (service == null || player == null) {
+                return chrome();
+            }
+            boolean german = AetherServices.german(player);
+            List<BookPage.Caption> captions = new ArrayList<>();
+            for (CodexBook.Ledger ledger : List.of(CodexBook.Ledger.COLLECTION, CodexBook.Ledger.BESTIARY)) {
+                int slot = ledger == CodexBook.Ledger.COLLECTION ? COLLECTION : BESTIARY;
+                CodexChrome.Tab tab = ledger == CodexBook.Ledger.COLLECTION ? CodexChrome.Tab.COLLECTION : CodexChrome.Tab.BESTIARY;
+                if (CodexChrome.gate(player, tab) != null) {
+                    captions.add(new BookPage.Caption(slot, german ? "Gesperrt" : "Locked", BookPage.State.LOCKED));
+                    continue;
+                }
+                CodexBook.Summary summary = CodexBook.summary(service, player, ledger);
+                captions.add(new BookPage.Caption(slot, "Lv " + summary.level(),
+                        summary.claimableTiers() > 0 ? BookPage.State.NEXT : BookPage.State.OPEN));
+            }
+            if (skills != null && CodexChrome.gate(player, CodexChrome.Tab.SKILLS) == null) {
+                int total = 0;
+                for (AetherSkill skill : AetherSkill.values()) {
+                    total += skills.level(player, skill);
+                }
+                captions.add(new BookPage.Caption(SKILLS, String.format(java.util.Locale.US, "%.1f",
+                        total / (double) AetherSkill.values().length),
+                        SkillSeals.readyTiers(skills, service, player) > 0 ? BookPage.State.NEXT : BookPage.State.OPEN));
+            } else {
+                captions.add(new BookPage.Caption(SKILLS, german ? "Gesperrt" : "Locked", BookPage.State.LOCKED));
+            }
+            if (CodexChrome.gate(player, CodexChrome.Tab.JOURNAL) == null) {
+                int[] slain = slain(service, player);
+                captions.add(new BookPage.Caption(JOURNAL, slain[0] + "/" + slain[1], BookPage.State.OPEN));
+            } else {
+                captions.add(new BookPage.Caption(JOURNAL, german ? "Gesperrt" : "Locked", BookPage.State.LOCKED));
+            }
+            int perks = CodexBook.summary(service, player, CodexBook.Ledger.COLLECTION).milestone()
+                    + CodexBook.summary(service, player, CodexBook.Ledger.BESTIARY).milestone();
+            captions.add(new BookPage.Caption(MILESTONES, perks + " Perk" + (perks == 1 ? "" : "s"),
+                    perks > 0 ? BookPage.State.OPEN : BookPage.State.LOCKED));
+            List<CodexBook.State> goals = CodexBook.nextUp(service, player, NEXT_UP.length);
+            for (int i = 0; i < goals.size() && i < NEXT_UP.length; i++) {
+                captions.add(new BookPage.Caption(NEXT_UP[i], CodexTiers.roman(goals.get(i).tier() + 1), BookPage.State.OPEN));
+            }
+            int ready = CodexRewards.claimableTotal(player);
+            captions.add(ready > 0
+                    ? new BookPage.Caption(CLAIM_ALL, ready + (german ? " bereit" : " ready"), BookPage.State.NEXT)
+                    : new BookPage.Caption(CLAIM_ALL, german ? "nichts" : "none", BookPage.State.LOCKED));
+            return BookPage.title(de.aetherion.items.util.ManagerChrome.CODEX_GLYPH, captions);
+        }
+
+        @Override
         protected String title() {
             return "§8Aetherion Codex";
         }
@@ -78,10 +134,10 @@ public final class CodexHubGUI {
             SkillService skills = CodexRewards.skills();
             Inventory inv = inventory;
             CodexChrome.frame(inv, player, CodexChrome.Tab.HUB);
+            inv.setItem(CodexChrome.CLOSE, GuiIcons.spacer());
             if (service == null) {
                 return;
             }
-            CodexChrome.row(inv, 1, Material.MAGENTA_STAINED_GLASS_PANE);
             inv.setItem(CodexChrome.HEADER, profile(player, skills));
             inv.setItem(COLLECTION, ledgerTile(service, player, CodexBook.Ledger.COLLECTION));
             inv.setItem(BESTIARY, ledgerTile(service, player, CodexBook.Ledger.BESTIARY));
@@ -94,8 +150,8 @@ public final class CodexHubGUI {
             List<String> keys = new ArrayList<>();
             for (int i = 0; i < NEXT_UP.length; i++) {
                 if (i >= goals.size()) {
-                    inv.setItem(NEXT_UP[i], GuiItems.named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§8Next up",
-                            "§8Find more entries to fill this row."));
+                    inv.setItem(NEXT_UP[i], GuiIcons.icon(GuiItems.named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§8Next up",
+                            "§8Find more entries to fill this row."), GuiIcons.SPACER));
                     continue;
                 }
                 CodexBook.State state = goals.get(i);
@@ -103,7 +159,7 @@ public final class CodexHubGUI {
                 inv.setItem(NEXT_UP[i], goal(state));
             }
             nextUp = keys;
-            inv.setItem(36, GuiItems.named(Material.COMPASS, "§eNext up §8→",
+            inv.setItem(NEXT_UP_LABEL, GuiItems.named(Material.COMPASS, "§eNext up §8→",
                     "§7The five entries closest", "§7to their next tier."));
             inv.setItem(CodexChrome.BACK, de.aetherion.items.util.ManagerNav.button());
         }
@@ -211,6 +267,19 @@ public final class CodexHubGUI {
             if (locked != null) {
                 return GuiItems.named(Material.GRAY_DYE, "§8Boss Journal §7· Locked", locked);
             }
+            int[] count = slain(service, player);
+            int slain = count[0];
+            int total = count[1];
+            return GuiItems.named(Material.WRITABLE_BOOK, "§5Boss Journal §8· §f" + slain + "§8/§7" + total,
+                    "§8Bosses and what they drop.",
+                    "",
+                    CodexText.bar(total == 0 ? 0.0d : slain / (double) total, "§5"),
+                    "",
+                    "§eClick to open");
+        }
+
+        /** {slain, total} bosses. */
+        private static int[] slain(CodexService service, Player player) {
             int slain = 0;
             int total = 0;
             for (CodexCatalog.Boss boss : CodexCatalog.bosses()) {
@@ -219,12 +288,7 @@ public final class CodexHubGUI {
                     slain++;
                 }
             }
-            return GuiItems.named(Material.WRITABLE_BOOK, "§5Boss Journal §8· §f" + slain + "§8/§7" + total,
-                    "§8Bosses and what they drop.",
-                    "",
-                    CodexText.bar(total == 0 ? 0.0d : slain / (double) total, "§5"),
-                    "",
-                    "§eClick to open");
+            return new int[] {slain, total};
         }
 
         private ItemStack milestonesTile(CodexService service, Player player) {
@@ -294,7 +358,7 @@ public final class CodexHubGUI {
                 }
                 case CLAIM_ALL -> {
                     if (CodexRewards.claimAll(player) > 0) {
-                        render(player);
+                        open(player);                       // the captions are in the title: open again
                     }
                 }
                 default -> {

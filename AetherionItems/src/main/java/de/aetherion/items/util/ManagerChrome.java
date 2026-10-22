@@ -7,7 +7,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
  * Aetherion Manager GUI chrome — inventory titles that draw a full-panel overlay from the
  * resource pack font ({@code assets/minecraft/font/default.json}).
  *
- * <p>Each title is {@code \uE005} (space, advance -48) followed by one 256x256 bitmap glyph.
+ * <p>Each title is {@code \uE005} (space, advance -48) followed by one 256x256 bitmap glyph: a book page in the
+ * Manager's language (tools/gen_gui_chrome.py, {@code PAGES}), drawn for the menu's own slots.
  * Glyphs use {@code ascent 23, height 256}. Colour must stay WHITE.
  *
  * <p>Titles are display-only. Route by {@code InventoryHolder}, not title text.
@@ -48,4 +49,16 @@ public final class ManagerChrome {
     public static final Component PETS = overlay('\uE025');
     public static final Component CHRONICLE = overlay('\uE026');
     public static final Component JOURNAL_HUB = overlay('\uE027');  // 27
+    public static final Component RECIPES_CRAFT = overlay('\uE029');
+    public static final Component COLLECTION_ENTRY = overlay('\uE02A');
+    public static final Component BESTIARY_ENTRY = overlay('\uE02B');
+    public static final Component ANVIL = overlay('\uE02C');
+
+    /** Book pages with captions under their tiles go through {@code BookPage.title(glyph, captions)}. */
+    public static final char SHOP_GLYPH = '\uE010';
+    public static final char SHOP_BOOSTS_GLYPH = '\uE011';
+    public static final char SHOP_MATERIALS_GLYPH = '\uE012';
+    public static final char SHOP_EXCLUSIVE_GLYPH = '\uE013';
+    public static final char CODEX_GLYPH = '\uE01E';
+    public static final char RECIPES_INDEX_GLYPH = '\uE028';
 }

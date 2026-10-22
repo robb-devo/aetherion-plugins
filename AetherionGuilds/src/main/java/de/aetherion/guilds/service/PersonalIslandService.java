@@ -1,5 +1,8 @@
 package de.aetherion.guilds.service;
 
+import de.aetherion.core.persist.AtomicYaml;
+import de.aetherion.guilds.island.IslandFiles;
+import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.island.LandService;
 import de.aetherion.guilds.island.StarterLayout;
 import de.aetherion.guilds.model.IslandBiome;
@@ -21,14 +24,19 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +58,19 @@ public final class PersonalIslandService {
     private Consumer<YamlConfiguration> extraSave;
     private Consumer<PersonalIsland> removalHook;
     private final Map<UUID, List<Runnable>> waiting = new ConcurrentHashMap<>();
+    /** Plot of every personal island that has factory data in islands/p_<uuid>.yml (structures, belts). */
+    private final Map<UUID, Integer> filePlots = new ConcurrentHashMap<>();
+    /** Per owner: plot -> structures standing there, from the factory save (admin recovery). */
+    private final Map<UUID, Map<Integer, Integer>> fileVotes = new ConcurrentHashMap<>();
+    /** personal_islands.yml existed but could not be read: never save over it (that would erase every island). */
+    private boolean loadFailed;
+    private boolean restoredUnsaved;
+    /**
+     * Starter id of a record restored from its factory save: the island is someone's own build (often an authored
+     * starter), so it never gets the classic pad stamped on by a tier upgrade.
+     */
+    public static final String RESTORED = "restored";
+    private String backedUp = "";
 
     public PersonalIslandService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -70,9 +91,150 @@ public final class PersonalIslandService {
         this.templates = templates;
     }
 
+    /**
+     * Reads which plot each island's factory save points at, then gives an island back to every owner whose
+     * record is missing from personal_islands.yml while their island still stands on its plot. Without this, a
+     * lost record made /island hand out a fresh claim (a starter pasted on a new or the same plot) and the void
+     * scrubber treated the old island as nobody's land.
+     */
+    public void attachFiles(IslandFiles files) {
+        filePlots.clear();
+        fileVotes.clear();
+        if (files == null) {
+            return;
+        }
+        for (String key : files.keys()) {
+            IslandHost host = IslandHost.parse(key);
+            YamlConfiguration doc = files.existing(key);
+            if (host == null || !key.startsWith("p:") || doc == null) {
+                continue;
+            }
+            Map<Integer, Integer> votes = plotVotes(doc);
+            if (!votes.isEmpty()) {
+                fileVotes.put(host.id(), votes);
+                filePlots.put(host.id(), votes.entrySet().stream().max(Map.Entry.comparingByValue()).get().getKey());
+            }
+        }
+        recoverOrphans();
+    }
+
+    private Map<Integer, Integer> plotVotes(YamlConfiguration doc) {
+        ConfigurationSection structures = doc.getConfigurationSection("structures");
+        if (structures == null) {
+            return Map.of();
+        }
+        Map<Integer, Integer> votes = new HashMap<>();
+        for (String id : structures.getKeys(false)) {
+            ConfigurationSection c = structures.getConfigurationSection(id);
+            if (c == null || !c.contains("x")) {
+                continue;
+            }
+            String w = c.getString("world", "");
+            if (world != null && !w.isBlank() && !w.equals(world.getName())) {
+                continue;
+            }
+            int plot = Math.max(0, (int) Math.round(c.getInt("x") / (double) spacing()));
+            votes.merge(plot, 1, Integer::sum);
+        }
+        return votes;
+    }
+
+    /** Some island's factory save has structures on this plot (whether or not a record points at it). */
+    public boolean hasSavedIsland(int plot) {
+        return filePlots.containsValue(plot);
+    }
+
+    /** Admin recovery: plots this owner's factory save has structures on (plot -> count). */
+    public Map<Integer, Integer> savedPlots(UUID owner) {
+        return fileVotes.getOrDefault(owner, Map.of());
+    }
+
+    /**
+     * Admin recovery: points the owner's record at {@code plot} (built, nothing pasted). Creates the record when it
+     * is missing. Refuses a plot another island is recorded on.
+     */
+    public String movePlot(UUID owner, int plot) {
+        PersonalIsland other = byPlot(plot);
+        if (other != null && !other.ownerId().equals(owner)) {
+            return "§cPlot " + plot + " belongs to " + other.ownerId() + ".";
+        }
+        PersonalIsland island = islands.get(owner);
+        if (island == null) {
+            island = new PersonalIsland(owner, plot, IslandBiome.PLAINS);
+            island.parcels().addAll(LandService.initialParcels());
+            islands.put(owner, island);
+        }
+        int from = island.plot();
+        island.setPlot(plot);
+        island.setIslandBuilt(true);
+        save();
+        plugin.getLogger().warning("Admin moved the island record of " + owner + " from plot " + from + " to plot " + plot + ".");
+        return "§aIsland record of §f" + owner + " §anow points at plot §f" + plot + " §7(was " + from
+                + (plotHasBlocks(plot) ? "" : "; §cthat plot looks empty") + "§7).";
+    }
+
+    /** Owners with a factory save and blocks on its plot but no record: their record comes back (built, no paste). */
+    private void recoverOrphans() {
+        if (loadFailed) {
+            // Every record looks missing when the file could not be read: restore nothing, touch nothing.
+            return;
+        }
+        int restored = 0;
+        for (Map.Entry<UUID, Integer> entry : filePlots.entrySet()) {
+            UUID owner = entry.getKey();
+            int plot = entry.getValue();
+            if (islands.containsKey(owner) || byPlot(plot) != null || !plotHasBlocks(plot)) {
+                continue;
+            }
+            PersonalIsland island = new PersonalIsland(owner, plot, IslandBiome.PLAINS);
+            island.setIslandBuilt(true);
+            island.setStarter(RESTORED);
+            island.parcels().addAll(LandService.initialParcels());
+            islands.put(owner, island);
+            restored++;
+            plugin.getLogger().severe("Personal island of " + owner + " had no record in personal_islands.yml but still"
+                    + " stands on plot " + plot + " (factory save islands/p_" + owner + ".yml): record restored, nothing"
+                    + " pasted. Bought land beyond the first 3x3 parcels has to be re-granted by hand.");
+        }
+        if (restored > 0) {
+            // Saved once the unlock state is attached (setExtraSave), or that save would drop the unlock.* sections.
+            restoredUnsaved = true;
+        }
+    }
+
+    /** True when the plot already has an island: blocks at or around its origin (chunks are loaded for the check). */
+    public boolean plotHasBlocks(int plot) {
+        if (world == null) {
+            return false;
+        }
+        int ox = plot * spacing();
+        int min = world.getMinHeight();
+        for (int dx = -24; dx <= 24; dx += 12) {
+            for (int dz = -24; dz <= 24; dz += 12) {
+                int x = ox + dx;
+                if (!world.isChunkGenerated(x >> 4, dz >> 4)) {
+                    continue;
+                }
+                if (world.getHighestBlockYAt(x, dz) > min) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** A plot nobody may get as a fresh claim: recorded, referenced by a factory save, or not empty. */
+    private boolean plotTaken(int plot) {
+        return byPlot(plot) != null || filePlots.containsValue(plot) || plotHasBlocks(plot);
+    }
+
     /** Extra top-level sections written into personal_islands.yml (unlock state). */
     public void setExtraSave(Consumer<YamlConfiguration> extraSave) {
         this.extraSave = extraSave;
+        if (restoredUnsaved) {
+            restoredUnsaved = false;
+            save();
+        }
     }
 
     /** Called before an island's data is dropped (wipe): structures, belts. */
@@ -153,6 +315,13 @@ public final class PersonalIslandService {
             return new Location(world, originX(island) + starter.spawnX() + 0.5, 64 + starter.spawnY(),
                     originZ(island) + starter.spawnZ() + 0.5, starter.yaw(), 0);
         }
+        int x = originX(island);
+        int z = originZ(island) - 4;
+        if ((island.starter() == null || RESTORED.equals(island.starter())) && world.getBlockAt(x, 64, z).getType().isAir()
+                && world.getHighestBlockYAt(x, z) > world.getMinHeight()) {
+            // restored record without its starter: stand on top of whatever is there instead of the classic pad spot
+            return new Location(world, x + 0.5, world.getHighestBlockYAt(x, z) + 1, z + 0.5, 0, 0);
+        }
         return new Location(world, originX(island) + 0.5, 65, originZ(island) - 3.5, 0, 0);
     }
 
@@ -169,6 +338,19 @@ public final class PersonalIslandService {
             return;
         }
         if (island.islandBuilt()) {
+            if (then != null) {
+                then.run();
+            }
+            return;
+        }
+        Integer lived = filePlots.get(island.ownerId());
+        if (lived != null && lived == island.plot() && plotHasBlocks(island.plot())) {
+            // The record lost its island-built flag, but the island has a factory save and stands there: never
+            // paste a starter over it.
+            plugin.getLogger().warning("Island of " + island.ownerId() + " on plot " + island.plot()
+                    + " was marked unbuilt but is there: marked built, nothing pasted.");
+            island.setIslandBuilt(true);
+            save();
             if (then != null) {
                 then.run();
             }
@@ -382,8 +564,8 @@ public final class PersonalIslandService {
             return;
         }
         island.setIslandLevel(from + 1);
-        if (StarterLayout.byId(island.starter()) == null) {
-            // classic pads grow their platform; authored starters grow through bought land instead
+        if (StarterLayout.byId(island.starter()) == null && !RESTORED.equals(island.starter())) {
+            // classic pads grow their platform; authored starters (and restored islands) grow through bought land
             IslandBuilder.upgrade(world, originX(island), originZ(island), from, island.islandLevel(), island.biome());
         }
         save();
@@ -512,22 +694,69 @@ public final class PersonalIslandService {
         if (extraSave != null) {
             extraSave.accept(config);
         }
+        if (loadFailed) {
+            plugin.getLogger().severe("personal_islands.yml could not be read at start: not saving over it (that would"
+                    + " erase every island record). Fix the file, then restart.");
+            return;
+        }
         try {
             File folder = file.getParentFile();
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            dailyBackup();
+            AtomicYaml.save(config, file, plugin.getLogger());
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save personal_islands.yml: " + exception.getMessage());
         }
     }
 
+    /** First save of each day keeps yesterday's file as personal_islands.yml.bak-<date> (the last 7 are kept). */
+    private void dailyBackup() {
+        String today = LocalDate.now().toString();
+        if (today.equals(backedUp) || !file.isFile() || file.length() == 0L) {
+            return;
+        }
+        backedUp = today;
+        File folder = file.getParentFile();
+        try {
+            Files.copy(file.toPath(), new File(folder, file.getName() + ".bak-" + today).toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            plugin.getLogger().warning("Could not back up personal_islands.yml: " + exception.getMessage());
+            return;
+        }
+        File[] old = folder.listFiles((dir, name) -> name.startsWith(file.getName() + ".bak-"));
+        if (old != null && old.length > 7) {
+            java.util.Arrays.sort(old, java.util.Comparator.comparing(File::getName));
+            for (int i = 0; i < old.length - 7; i++) {
+                if (!old[i].delete()) {
+                    plugin.getLogger().fine("old island backup not removed: " + old[i].getName());
+                }
+            }
+        }
+    }
+
     private void load() {
+        AtomicYaml.recoverTemp(file, plugin.getLogger());
         if (!file.exists()) {
             return;
         }
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration config = new YamlConfiguration();
+        try {
+            config.load(file);
+        } catch (IOException | InvalidConfigurationException exception) {
+            loadFailed = true;
+            plugin.getLogger().severe("personal_islands.yml is unreadable (" + exception.getMessage() + "). Island"
+                    + " records are NOT saved until it is fixed; a copy is kept next to it.");
+            try {
+                Files.copy(file.toPath(), new File(file.getParentFile(), file.getName() + ".unreadable-"
+                        + System.currentTimeMillis()).toPath(), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ignored) {
+                // the original stays where it is anyway
+            }
+            return;
+        }
         ConfigurationSection root = config.getConfigurationSection("islands");
         if (root == null) {
             return;
@@ -594,7 +823,14 @@ public final class PersonalIslandService {
         for (PersonalIsland island : islands.values()) {
             max = Math.max(max, island.plot());
         }
-        return max + 1;
+        for (int plot : filePlots.values()) {
+            max = Math.max(max, plot);
+        }
+        int plot = max + 1;
+        while (plotTaken(plot)) {
+            plot++;
+        }
+        return plot;
     }
 
     private World loadWorld() {

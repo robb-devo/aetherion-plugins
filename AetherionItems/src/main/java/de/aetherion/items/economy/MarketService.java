@@ -791,13 +791,13 @@ public final class MarketService implements Listener {
                 "§7Your listings there: §f" + countOwn(me, other) + "/" + MAX_LISTINGS
         ));
         inventory.setItem(BACK_SLOT, de.aetherion.items.util.ManagerNav.button());
-        inventory.setItem(COLLECT_SLOT, button(
-                waiting > 0 ? Material.HOPPER : Material.GRAY_STAINED_GLASS_PANE,
-                waiting > 0 ? "§eCollect returns" : "§8Collect returns",
-                waiting > 0 ? "§a" + waiting + " expired listing" + (waiting == 1 ? "" : "s") + " waiting."
-                        : "§8Nothing waiting.",
-                waiting > 0 ? "§eClick to take them back." : "§8Unsold listings come back here."
-        ));
+        // Nothing waiting: an empty seal on the page (invisible pane), the tooltip still says what goes here.
+        inventory.setItem(COLLECT_SLOT, waiting > 0
+                ? button(Material.HOPPER, "§eCollect returns",
+                        "§a" + waiting + " expired listing" + (waiting == 1 ? "" : "s") + " waiting.",
+                        "§eClick to take them back.")
+                : GuiIcons.icon(button(Material.GRAY_STAINED_GLASS_PANE, "§8Collect returns",
+                        "§8Nothing waiting.", "§8Unsold listings come back here."), GuiIcons.SPACER));
         player.openInventory(inventory);
     }
 

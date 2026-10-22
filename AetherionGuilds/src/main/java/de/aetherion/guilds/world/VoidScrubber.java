@@ -269,6 +269,12 @@ public final class VoidScrubber implements Listener {
             int wx = baseX + x;
             IslandHost host = byX.computeIfAbsent(wx, ignored -> hosts.at(world, wx, baseZ));
             if (host == null) {
+                if (orphanPlot(world, wx)) {
+                    // an island with a factory save but no record: keep all of it until an admin sorts it out
+                    for (int z = 0; z < 16; z++) {
+                        out[x + (z << 4)] = true;
+                    }
+                }
                 continue;
             }
             for (int z = 0; z < 16; z++) {
@@ -277,6 +283,15 @@ public final class VoidScrubber implements Listener {
             }
         }
         return out;
+    }
+
+    private boolean orphanPlot(World world, int x) {
+        var personal = hosts.personalService();
+        if (!personal.isPersonalWorld(world)) {
+            return false;
+        }
+        int plot = Math.max(0, (int) Math.round(x / (double) personal.spacing()));
+        return personal.hasSavedIsland(plot);
     }
 
     private boolean owned(IslandHost host, int x, int z) {

@@ -98,20 +98,9 @@ public class LoadoutGUI {
 
     /*
      * =========================================================
-     * GLASS COLORS
+     * SET COLOURS (the equip buttons)
      * =========================================================
      */
-
-    private static final Material[] GLASS_COLORS = {
-
-            Material.BLUE_STAINED_GLASS_PANE,
-            Material.LIME_STAINED_GLASS_PANE,
-            Material.YELLOW_STAINED_GLASS_PANE,
-            Material.RED_STAINED_GLASS_PANE,
-            Material.PURPLE_STAINED_GLASS_PANE,
-            Material.CYAN_STAINED_GLASS_PANE
-    };
-
 
     private static final Material[] GLASS_BLOCK_COLORS = {
 
@@ -249,10 +238,6 @@ public class LoadoutGUI {
                 LOADOUT_SLOTS[index];
 
 
-        Material paneMaterial =
-                GLASS_COLORS[index];
-
-
         Material buttonMaterial =
                 GLASS_BLOCK_COLORS[index];
 
@@ -337,7 +322,6 @@ public class LoadoutGUI {
                 inventory.setItem(
                         slots[armorSlot],
                         createArmorPlaceholder(
-                                paneMaterial,
                                 getArmorName(
                                         armorSlot
                                 ),
@@ -378,7 +362,8 @@ public class LoadoutGUI {
      */
 
     private ItemStack createClearButton(int loadout, boolean hasArmor) {
-        ItemStack item = new ItemStack(hasArmor ? Material.BARRIER : Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack item = hasArmor ? new ItemStack(Material.BARRIER)
+                : GuiIcons.icon(new ItemStack(Material.GRAY_STAINED_GLASS_PANE), GuiIcons.SPACER);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
             return item;
@@ -405,17 +390,14 @@ public class LoadoutGUI {
      */
 
     private ItemStack createArmorPlaceholder(
-            Material material,
             String armorName,
             int loadout,
             boolean equipped,
             boolean canCapture
     ) {
 
-        ItemStack item =
-                new ItemStack(
-                        material
-                );
+        // An empty pocket on the book page (an invisible pane, CMD 7700); the set's colour stays on its buttons.
+        ItemStack item = GuiIcons.icon(new ItemStack(Material.GRAY_STAINED_GLASS_PANE), GuiIcons.SPACER);
 
 
         ItemMeta meta =
@@ -585,16 +567,7 @@ public class LoadoutGUI {
 
 
     private ItemStack createBackButton() {
-        ItemStack item = new ItemStack(Material.ARROW);
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta != null) {
-            meta.setDisplayName(ChatColor.YELLOW + "Back");
-            meta.setLore(List.of(ChatColor.GRAY + "Return to the Aetherion Manager."));
-            item.setItemMeta(meta);
-        }
-
-        return item;
+        return de.aetherion.items.util.ManagerNav.button();
     }
 
 

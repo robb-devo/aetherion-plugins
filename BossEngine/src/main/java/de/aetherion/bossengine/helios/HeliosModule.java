@@ -290,6 +290,13 @@ public final class HeliosModule {
         if (l != null) {
             return l;
         }
+        // On the exile backend: back out beside Orrin's Star Ring, not the backend's default world.
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        de.aetherion.core.network.ExileHost host = core == null ? null : core.exileHost();
+        Location ring = host == null || host.doors() == null ? null : host.doors().returnPoint("helios_requiem");
+        if (ring != null) {
+            return ring;
+        }
         World main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
         return main == null ? null : main.getSpawnLocation();
     }
