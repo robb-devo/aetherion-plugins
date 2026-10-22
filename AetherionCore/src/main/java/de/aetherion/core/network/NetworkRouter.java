@@ -43,6 +43,7 @@ public final class NetworkRouter implements Listener {
     private final RouteBook routes;
     private final CharacterHost host;
     private final java.util.Set<String> routedOn = new java.util.HashSet<>();
+    private final boolean routedEverywhere;
 
     public NetworkRouter(AetherionCore plugin, MainWorldLink link, RouteBook routes, CharacterHost host) {
         this.plugin = plugin;
@@ -50,6 +51,7 @@ public final class NetworkRouter implements Listener {
         this.routes = routes;
         this.host = host;
         var cfg = plugin.getConfig();
+        this.routedEverywhere = cfg.getBoolean("network.routed-commands.everywhere", true);
         for (String name : cfg.isSet("network.routed-commands.on")
                 ? cfg.getStringList("network.routed-commands.on")
                 : java.util.List.of(ServerNames.EXILE, ServerNames.ISLANDS)) {
@@ -86,9 +88,16 @@ public final class NetworkRouter implements Listener {
         return transport() != null;
     }
 
-    /** {@code network.routed-commands.on} lists this backend (default mmo-c, mmo-i). */
+    /**
+     * Every backend but the main world routes ({@code network.routed-commands.everywhere}, default true); switched
+     * off, only the backends in {@code network.routed-commands.on}.
+     */
     public boolean routesCommandsHere() {
-        return routedOn.contains(here().toLowerCase(Locale.ROOT));
+        String name = here();
+        if (ServerNames.isMain(name)) {
+            return false;
+        }
+        return routedEverywhere || routedOn.contains(name.toLowerCase(Locale.ROOT));
     }
 
     /**
@@ -157,7 +166,7 @@ public final class NetworkRouter implements Listener {
         }
         CharacterTransport transport = transport();
         if (transport == null) {
-            return false;
+            return ServerNames.isHub(here()) && hopFromHub(player, target, kind, value, departLine);
         }
         UUID id = player.getUniqueId();
         if (transport.isHeld(id)) {
@@ -176,6 +185,24 @@ public final class NetworkRouter implements Listener {
         if (sent) {
             plugin.getLogger().info("[Route] " + player.getName() + " " + here() + " → " + target
                     + " " + (route == null ? "(no route)" : route.kind() + (route.value().isBlank() ? "" : " '" + route.value() + "'")));
+        }
+        return sent;
+    }
+
+    /**
+     * The hub never holds a character (gear doesn't travel from the lobby), so a road from there is a plain Velocity
+     * connect plus the route; the target applies its own copy of the character, as on the Pit's way in.
+     */
+    private boolean hopFromHub(Player player, String target, RouteBook.Kind kind, String value, String departLine) {
+        RouteBook.Route route = routes.put(player, target, here(), kind, value);
+        player.sendMessage(departLine == null ? departLineFor(target) : departLine);
+        boolean sent = link.connect(player, target);
+        if (!sent && route != null) {
+            routes.drop(player.getUniqueId(), route.id());
+        }
+        if (sent) {
+            plugin.getLogger().info("[Route] " + player.getName() + " " + here() + " → " + target + " (connect)"
+                    + (route == null ? "" : " " + route.kind() + (route.value().isBlank() ? "" : " '" + route.value() + "'")));
         }
         return sent;
     }

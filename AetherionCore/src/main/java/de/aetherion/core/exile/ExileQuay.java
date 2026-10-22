@@ -53,6 +53,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * the crossing: the lens leaves the player's eyes, the very barge they stood on lifts out of its berth and
  * glides into the Veil until the screen is white; the hop to mmo-c happens inside that white and the
  * crossing on the exile side opens in it.
+ *
+ * <p>The anchors are authored with the ferry pointing west. {@code exile.quay.facing: east} means the islet was
+ * pasted turned 180° around the origin block (the ferry points east, away from the main island); every anchor
+ * goes through {@link #at}, {@link #block}, {@link #wx} / {@link #wz} so both layouts work.
  */
 public final class ExileQuay implements Listener {
 
@@ -92,6 +96,8 @@ public final class ExileQuay implements Listener {
     private final Set<UUID> driving = ConcurrentHashMap.newKeySet();
     private World world;
     private int[] origin;
+    /** True when the islet was pasted turned 180° ({@code exile.quay.facing: east}). */
+    private boolean turned;
     private VeilFog curtain;
     private BukkitTask ambience;
 
@@ -115,11 +121,17 @@ public final class ExileQuay implements Listener {
         }
         World w = Bukkit.getWorld(worldName);
         int[] o = parse(raw);
+        turned = turnedIn(plugin);
         if (w == null || o == null) {
             plugin.getLogger().warning("Veil Quay: world '" + worldName + "' not loaded or origin '" + raw + "' unreadable.");
             return;
         }
         place(w, o);
+    }
+
+    /** {@code exile.quay.facing: east} = the islet sits turned 180° (ferry sails east, away from the main island). */
+    public static boolean turnedIn(AetherionCore plugin) {
+        return "east".equalsIgnoreCase(plugin.getConfig().getString("exile.quay.facing", "west").trim());
     }
 
     private static int[] parse(String raw) {
@@ -139,6 +151,7 @@ public final class ExileQuay implements Listener {
         if (w == null || o == null || o.length < 3) {
             return;
         }
+        turned = turnedIn(plugin);
         place(w, o);
     }
 
@@ -162,7 +175,9 @@ public final class ExileQuay implements Listener {
         ExilePlaces.setQuayBoard(at(GANGWAY));
         ExilePlaces.setQuayFerryman(at(FERRYMAN));
         // chunks of the islet + the curtain, then the persistent Veil curtain (purged and rebuilt each boot)
-        for (int cx = (o[0] - 130) >> 4; cx <= (o[0] + 12) >> 4; cx++) {
+        int cxA = bx(-130) >> 4;
+        int cxB = bx(12) >> 4;
+        for (int cx = Math.min(cxA, cxB); cx <= Math.max(cxA, cxB); cx++) {
             for (int cz = (o[2] - 40) >> 4; cz <= (o[2] + 40) >> 4; cz++) {
                 w.getChunkAt(cx, cz).load();
             }
@@ -171,8 +186,8 @@ public final class ExileQuay implements Listener {
             curtain.remove();
         }
         purgeCurtainNear();
-        curtain = VeilFog.corridor(plugin, w, null, true, o[0] - 74, o[0] - 104, 6.0, o[2] + 0.5,
-                o[1] - 7.0, 78, 50, 0x26, 0x4C, 0x5E11L);
+        curtain = VeilFog.corridor(plugin, w, null, true, Math.max(wx(-74), wx(-104)), Math.min(wx(-74), wx(-104)),
+                6.0, wz(0.5), o[1] - 7.0, 78, 50, 0x26, 0x4C, 0x5E11L);
         if (ambience != null) {
             ambience.cancel();
         }
@@ -205,13 +220,43 @@ public final class ExileQuay implements Listener {
         return origin == null ? null : origin.clone();
     }
 
+    /** True when the islet sits turned 180° (the ferry sails east). */
+    public boolean turned() {
+        return turned;
+    }
+
+    /*
+     * Authored frame → world. Turned 180° around the origin block, a block offset d lands at -d, and a point inside a
+     * block mirrors with it: x → origin + 1 - x (same for z).
+     */
+    private double wx(double rel) {
+        return turned ? origin[0] + 1.0 - rel : origin[0] + rel;
+    }
+
+    private double wz(double rel) {
+        return turned ? origin[2] + 1.0 - rel : origin[2] + rel;
+    }
+
+    private int bx(int rel) {
+        return turned ? origin[0] - rel : origin[0] + rel;
+    }
+
+    private int bz(int rel) {
+        return turned ? origin[2] - rel : origin[2] + rel;
+    }
+
+    /** An authored direction (no position) in world terms. */
+    private Vector dir(Vector rel) {
+        return turned ? new Vector(-rel.getX(), rel.getY(), -rel.getZ()) : rel.clone();
+    }
+
     private Location at(double[] rel) {
         if (!placed()) {
             return null;
         }
-        Location l = new Location(world, origin[0] + rel[0], origin[1] + rel[1], origin[2] + rel[2]);
+        Location l = new Location(world, wx(rel[0]), origin[1] + rel[1], wz(rel[2]));
         if (rel.length > 3) {
-            l.setYaw((float) rel[3]);
+            l.setYaw((float) (rel[3] + (turned ? 180.0 : 0.0)));
         }
         return l;
     }
@@ -220,7 +265,7 @@ public final class ExileQuay implements Listener {
         if (!placed()) {
             return null;
         }
-        return world.getBlockAt(origin[0] + rel[0], origin[1] + rel[1], origin[2] + rel[2]);
+        return world.getBlockAt(bx(rel[0]), origin[1] + rel[1], bz(rel[2]));
     }
 
     /** Within {@code r} blocks of the quay (same world). */
@@ -233,9 +278,9 @@ public final class ExileQuay implements Listener {
         if (!placed() || !l.getWorld().equals(world)) {
             return false;
         }
-        int x = l.getBlockX() - origin[0];
+        int x = turned ? origin[0] - l.getBlockX() : l.getBlockX() - origin[0];
         int y = l.getBlockY() - origin[1];
-        int z = l.getBlockZ() - origin[2];
+        int z = turned ? origin[2] - l.getBlockZ() : l.getBlockZ() - origin[2];
         return x >= DECK[0] && x <= DECK[3] && y >= DECK[1] && y <= DECK[4] && z >= DECK[2] && z <= DECK[5];
     }
 
@@ -410,14 +455,16 @@ public final class ExileQuay implements Listener {
             d.fromEye = p.getEyeLocation();
             Location root = at(ROOT);
             d.rig = BlockRig.spawn(plugin, root, 3, List.of(p));
-            d.rig.copy(world, origin[0] + BARGE[0], origin[1] + BARGE[1], origin[2] + BARGE[2],
-                    origin[0] + BARGE[3], origin[1] + BARGE[4], origin[2] + BARGE[5], ExileQuay::isBarge, true, root);
+            d.rig.copy(world, bx(BARGE[0]), origin[1] + BARGE[1], bz(BARGE[2]),
+                    bx(BARGE[3]), origin[1] + BARGE[4], bz(BARGE[5]), ExileQuay::isBarge, true, root);
             d.rig.hideStatic(p);
             driving.add(d.id);
             d.cam = CineCam.start(plugin, p, d.fromEye, 3);
             driving.remove(d.id);
-            d.fog = VeilFog.corridor(plugin, world, List.of(p), false, origin[0] - 66, origin[0] - 122, 5.0, origin[2] + 0.5,
-                    x -> origin[1] + 2.0 + ((x - origin[0]) + 66.0) * (20.0 / 56.0),
+            // the sheets sink with the ferry line: authored x = -66 at the deck, 20 blocks lower at -122
+            d.fog = VeilFog.corridor(plugin, world, List.of(p), false, Math.max(wx(-66), wx(-122)),
+                    Math.min(wx(-66), wx(-122)), 5.0, wz(0.5),
+                    x -> origin[1] + 2.0 + ((turned ? origin[0] + 1.0 - x : x - origin[0]) + 66.0) * (20.0 / 56.0),
                     70, 50, 0x34, 0x5C, d.id.getLeastSignificantBits());
         } catch (RuntimeException ex) {
             plugin.getLogger().warning("Veil Quay departure failed to start for " + p.getName() + ": " + ex.getMessage());
@@ -457,11 +504,11 @@ public final class ExileQuay implements Listener {
         int k = d.tick++;
         double t = k / 20.0;
         Vector rel = path.at(t);
-        Location root = new Location(world, origin[0] + rel.getX(), origin[1] + rel.getY(), origin[2] + rel.getZ());
+        Location root = new Location(world, wx(rel.getX()), origin[1] + rel.getY(), wz(rel.getZ()));
         d.rig.moveTo(root);
 
-        Vector eye = root.toVector().add(STERN_EYE);
-        Vector look = root.toVector().add(LOOK_AHEAD);
+        Vector eye = root.toVector().add(dir(STERN_EYE));
+        Vector look = root.toVector().add(dir(LOOK_AHEAD));
         double blend = Math.min(1.0, t / 1.6);
         blend = blend * blend * (3 - 2 * blend);
         Vector fromEye = d.fromEye.toVector();
@@ -613,17 +660,23 @@ public final class ExileQuay implements Listener {
             return;
         }
         boolean causeway = ExileCauseway.laid(plugin);
-        g.setYaw(causeway ? 90f : -90f);
+        // Turned, both the landing and the causeway lie west of the gangway; as authored the causeway leaves the
+        // pier head (west) and the landing is east.
+        g.setYaw(turned || causeway ? 90f : -90f);
         p.teleport(g);
         p.setFallDistance(0f);
         p.playSound(g, Sound.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 0.7f, 0.55f);
         p.playSound(g, Sound.BLOCK_CHAIN_STEP, SoundCategory.BLOCKS, 0.6f, 0.5f);
-        de.aetherion.core.api.Vfx.puff(g.clone().add(-6, 1, 0), Particle.WHITE_ASH, 30, Math.max(4, 3), null);
-        p.sendActionBar(Component.text(causeway
+        de.aetherion.core.api.Vfx.puff(g.clone().add(turned ? 6 : -6, 1, 0), Particle.WHITE_ASH, 30, Math.max(4, 3), null);
+        String home = turned
+                ? Say.t(p, "The Veil Quay. The way home runs west, past the King's Arch.",
+                        "Der Schleierkai. Der Weg nach Hause führt nach Westen, durch den Königsbogen.")
+                : causeway
                 ? Say.t(p, "The Veil Quay. The causeway home leaves past the Veil lamp, west.",
                         "Der Schleierkai. Der Damm nach Hause beginnt an der Schleierlampe, im Westen.")
                 : Say.t(p, "The Veil Quay. /spawn takes you home.",
-                        "Der Schleierkai. /spawn bringt dich nach Hause."), NamedTextColor.GRAY));
+                        "Der Schleierkai. /spawn bringt dich nach Hause.");
+        p.sendActionBar(Component.text(home, NamedTextColor.GRAY));
     }
 
     public boolean isDeparting(Player p) {
@@ -645,6 +698,6 @@ public final class ExileQuay implements Listener {
             return "§7Veil Quay: §cnot placed §8(paste veil_quay.schem, stand on the origin, /exile setquay)";
         }
         return "§7Veil Quay: §f" + world.getName() + " " + origin[0] + " " + origin[1] + " " + origin[2]
-                + " §8· §7departing §f" + departing.size();
+                + " §8· §7ferry sails §f" + (turned ? "east" : "west") + " §8· §7departing §f" + departing.size();
     }
 }

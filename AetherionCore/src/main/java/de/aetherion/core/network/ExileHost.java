@@ -225,6 +225,46 @@ public final class ExileHost implements Listener {
             }, 1L);
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> arrive(player), 8L);
+        settleLater(player);
+    }
+
+    /**
+     * The character can land after {@link #arrive} ran (late file, outbox recovery) and bring the game mode the
+     * player had when the ferry left: spectator, because the departure shot films them. Once the transport is done
+     * and no crossing is playing, nobody stays a spectator over the void: adventure on the shore.
+     */
+    private void settleLater(Player player) {
+        UUID id = player.getUniqueId();
+        long deadline = System.currentTimeMillis() + 20_000L;
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                NetworkRouter router = plugin.router();
+                de.aetherion.core.api.CharacterTransport transport = router == null ? null : router.transport();
+                boolean landing = (transport != null && transport.isArriving(id)) || arrival.isPlaying(player);
+                if (landing && System.currentTimeMillis() < deadline) {
+                    return;
+                }
+                cancel();
+                if (arrival.isPlaying(player) || player.getGameMode() != GameMode.SPECTATOR
+                        || player.getSpectatorTarget() != null) {
+                    return;
+                }
+                Location spawn = spawnLocation();
+                World world = exileWorld();
+                if (spawn != null && (world == null || !player.getWorld().equals(world)
+                        || player.getLocation().getY() < world.getMinHeight() + 8)) {
+                    player.teleport(spawn);
+                }
+                player.setGameMode(GameMode.ADVENTURE);
+                plugin.getLogger().info("[Exile] " + player.getName() + " arrived as a spectator after the crossing"
+                        + " — set to adventure on the shore.");
+            }
+        }.runTaskTimer(plugin, 40L, 10L);
     }
 
     private boolean cameByFerry(Player player) {

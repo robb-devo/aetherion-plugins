@@ -35,8 +35,17 @@ public final class StageSweep {
     /** A marked center (the stage's own chunk marker) needs this many of its blocks still in place. */
     private static final int MIN_MARKED = 12;
     private static final int MAX_VOTED = 12;
+    /**
+     * A voted center (no marker) is taken on its distinctive blocks alone: twelve gold / froglight / quartz / red wool /
+     * shroomlight blocks exactly on the stage pattern do not happen by chance. Only the blocks that matched go, never
+     * the foundation rows inside the rock.
+     */
+    private static final int MIN_DISTINCT = 12;
 
     private record Hit(int x, int y, int z, int votes, boolean marked) {
+    }
+
+    private record Cut(int x, int y, int z, Material material) {
     }
 
     private StageSweep() {
@@ -118,14 +127,17 @@ public final class StageSweep {
             }
             List<String> lines = new ArrayList<>();
             List<Location> strike = new ArrayList<>();
+            List<Cut> cuts = new ArrayList<>();
             // A block belongs to the first stage taken that matches it: a shifted copy of a stage (the layout
             // repeats) only counts blocks no better center already explains, so it never gets struck.
             java.util.Set<Long> claimed = new java.util.HashSet<>();
             for (Hit h : hits) {
                 Map<String, Integer> mats = new TreeMap<>();
                 List<Long> mine = new ArrayList<>();
+                List<Cut> above = new ArrayList<>();
                 int standing = 0;
                 int below = 0;
+                int distinct = 0;
                 for (SaintStage.Cell c : layout) {
                     int wx = h.x() + c.x();
                     int wy = h.y() + c.y();
@@ -141,19 +153,28 @@ public final class StageSweep {
                         standing++;
                         if (c.y() < -2) {
                             below++;
+                        } else {
+                            above.add(new Cut(wx, wy, wz, m));
+                        }
+                        if (DISTINCT.contains(m)) {
+                            distinct++;
                         }
                         mats.merge(m.name().toLowerCase(java.util.Locale.ROOT), 1, Integer::sum);
                     }
                 }
-                boolean take = h.marked() ? standing >= MIN_MARKED : standing >= MIN_STANDING;
+                boolean take = h.marked() ? standing >= MIN_MARKED
+                        : standing >= MIN_STANDING || distinct >= MIN_DISTINCT;
                 if (take) {
                     claimed.addAll(mine);
                 }
                 lines.add((take ? "§a" : "§8") + "stage at " + h.x() + " " + h.y() + " " + h.z()
                         + (h.marked() ? " (marker)" : " (" + h.votes() + " votes)") + ": " + standing
                         + " blocks standing, " + below + " in the rock under it §7" + mats);
-                if (take) {
+                if (take && h.marked()) {
                     strike.add(new Location(world, h.x() + 0.5, h.y(), h.z() + 0.5));
+                } else if (take) {
+                    // no marker: the layout strike could hit whatever the pattern overlaps; take exactly what matched
+                    cuts.addAll(above);
                 }
             }
             Bukkit.getScheduler().runTask(plugin, () -> {
@@ -168,14 +189,25 @@ public final class StageSweep {
                 }
                 if (!apply) {
                     sender.sendMessage("§7Dry run. Add §fapply §7to strike the §agreen §7ones.");
-                    plugin.getLogger().info("[StageSweep] done: " + strike.size() + " to strike (dry run)");
+                    plugin.getLogger().info("[StageSweep] done: " + strike.size() + " marked stage(s) and " + cuts.size()
+                            + " leftover blocks to strike (dry run)");
                     return;
                 }
                 for (Location at : strike) {
                     SaintStage.strikePermanent(plugin, at);
                 }
-                sender.sendMessage("§aStruck " + strike.size() + " stage(s) by layout.");
-                plugin.getLogger().info("[StageSweep] done: struck " + strike.size() + " stage(s)");
+                int cut = 0;
+                for (Cut c : cuts) {
+                    org.bukkit.block.Block b = world.getBlockAt(c.x(), c.y(), c.z());
+                    if (b.getType() == c.material()) {
+                        b.setType(Material.AIR, false);
+                        cut++;
+                    }
+                }
+                sender.sendMessage("§aStruck " + strike.size() + " marked stage(s) by layout, removed " + cut
+                        + " leftover stage blocks.");
+                plugin.getLogger().info("[StageSweep] done: struck " + strike.size() + " stage(s), removed " + cut
+                        + " leftover stage blocks");
             });
         });
     }

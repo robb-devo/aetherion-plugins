@@ -12,8 +12,10 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockTypes;
 
 import org.bukkit.Bukkit;
@@ -158,6 +160,7 @@ public final class ExileQuayPaste {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     plugin.getConfig().set("exile.quay.world", w.getName());
                     plugin.getConfig().set("exile.quay.origin", ox + " " + oy + " " + oz);
+                    plugin.getConfig().set("exile.quay.facing", "west");
                     plugin.saveConfig();
                     ExileQuay quay = plugin.exileQuay();
                     if (quay != null) {
@@ -175,6 +178,188 @@ public final class ExileQuayPaste {
                 fail(plugin, sender, t.getMessage() == null ? "paste failed" : t.getMessage());
             }
         });
+    }
+
+    /**
+     * The old placement had the ferry pointing back at the Borderlands and the main island. Turned 180° the landing
+     * stub (authored x +6) faces the cliff where the pier head used to be, and the barge casts off east into the
+     * open Veil.
+     */
+    public static final int TURN_SHIFT_X = -58;
+
+    /**
+     * {@code /exile turnquay [apply]}: turn the placed Veil Quay 180°. Takes the old islet out block by block (only
+     * where the world still holds exactly the schematic's block, so nothing around it goes), lifts the causeway,
+     * pastes the islet turned around the new origin (its own box aired first, never west of the Borderlands safe
+     * line), records {@code exile.quay.facing: east} and lays the causeway again from its saved cliff start to the
+     * landing. Without {@code apply} it only reports.
+     */
+    public static void turn(AetherionCore plugin, CommandSender sender, boolean apply) {
+        String worldName = plugin.getConfig().getString("exile.quay.world", "");
+        int[] o = parseOrigin(plugin.getConfig().getString("exile.quay.origin", ""));
+        World w = worldName == null || worldName.isBlank() ? null : Bukkit.getWorld(worldName);
+        if (w == null || o == null) {
+            report(plugin, sender, "§cNo Veil Quay recorded (exile.quay.world / origin). Nothing changed.");
+            return;
+        }
+        if (ExileQuay.turnedIn(plugin)) {
+            report(plugin, sender, "§7Veil Quay already turned (ferry sails east) at " + o[0] + " " + o[1] + " " + o[2] + ".");
+            return;
+        }
+        File schem = resolve(plugin, "veil_quay.schem");
+        if (schem == null || (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") == null
+                && Bukkit.getPluginManager().getPlugin("WorldEdit") == null)) {
+            report(plugin, sender, "§cNeeds FastAsyncWorldEdit/WorldEdit and veil_quay.schem. Nothing changed.");
+            return;
+        }
+        int[] n = {o[0] + TURN_SHIFT_X, o[1], o[2]};
+        if (!RUNNING.compareAndSet(false, true)) {
+            report(plugin, sender, "§cVeil Quay paste already running.");
+            return;
+        }
+        String causeway = plugin.getConfig().getString("exile.quay.causeway", "");
+        if (apply) {
+            // lift the causeway first (its record has to match the world); it is laid again to the new landing
+            ExileCauseway.undo(plugin, null);
+        }
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            Clipboard read;
+            try {
+                ClipboardFormat format = ClipboardFormats.findByFile(schem);
+                if (format == null) {
+                    throw new IllegalStateException("unknown schematic format");
+                }
+                try (ClipboardReader reader = format.getReader(new FileInputStream(schem))) {
+                    read = reader.read();
+                }
+            } catch (Throwable t) {
+                turnFailed(plugin, sender, apply, causeway, t);
+                return;
+            }
+            Clipboard clipboard = read;
+            // reads and the take-out on the main thread through Bukkit: plain block lookups in a few loaded chunks
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                try {
+                    takeOutAndPaste(plugin, sender, w, o, n, clipboard, apply, causeway);
+                } catch (Throwable t) {
+                    turnFailed(plugin, sender, apply, causeway, t);
+                }
+            });
+        });
+    }
+
+    private static void takeOutAndPaste(AetherionCore plugin, CommandSender sender, World w, int[] o, int[] n,
+                                        Clipboard clipboard, boolean apply, String causeway) {
+        long start = System.currentTimeMillis();
+        BlockVector3 co = clipboard.getOrigin();
+        // offsets from the paste origin; turned, they mirror in x and z around the new origin
+        BlockVector3 min = clipboard.getMinimumPoint().subtract(co);
+        BlockVector3 max = clipboard.getMaximumPoint().subtract(co);
+        int westX = n[0] - max.x();
+        if (westX <= ExileSaintClear.BL_SAFE_WEST) {
+            throw new IllegalStateException("the turned islet would reach x=" + westX + " (Borderlands safe line "
+                    + ExileSaintClear.BL_SAFE_WEST + ")");
+        }
+        int removed = 0;
+        int moved = 0;
+        java.util.Map<com.sk89q.worldedit.world.block.BlockType, org.bukkit.Material> materials = new java.util.HashMap<>();
+        for (BlockVector3 p : clipboard.getRegion()) {
+            BaseBlock block = clipboard.getFullBlock(p);
+            if (block.getBlockType().getMaterial().isAir()) {
+                continue;
+            }
+            org.bukkit.Material want = materials.computeIfAbsent(block.getBlockType(), BukkitAdapter::adapt);
+            BlockVector3 rel = p.subtract(co);
+            org.bukkit.block.Block at = w.getBlockAt(o[0] + rel.x(), o[1] + rel.y(), o[2] + rel.z());
+            if (want == null || at.getType() != want) {
+                moved++;
+                continue;
+            }
+            removed++;
+            if (apply) {
+                at.setType(org.bukkit.Material.AIR, false);
+            }
+        }
+        String head = "[QuayTurn] old islet at " + o[0] + " " + o[1] + " " + o[2] + ": " + removed + " blocks "
+                + (apply ? "taken out" : "to take out") + " (" + moved + " already gone or changed); new origin "
+                + n[0] + " " + n[1] + " " + n[2] + ", box x " + (n[0] - max.x()) + ".." + (n[0] - min.x());
+        report(plugin, sender, "§a" + head);
+        if (!apply) {
+            RUNNING.set(false);
+            report(plugin, sender, "§7[QuayTurn] dry run done. §f/exile turnquay apply §7does it.");
+            return;
+        }
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            int pasted;
+            try (EditSession edit = WorldEdit.getInstance().newEditSessionBuilder()
+                    .world(BukkitAdapter.adapt(w)).maxBlocks(-1).build()) {
+                try {
+                    edit.setFastMode(true);
+                } catch (Throwable ignored) {
+                }
+                // the turned islet's own box goes to air first (it never reaches the Borderlands, checked above)
+                edit.setBlocks(new CuboidRegion(
+                        BlockVector3.at(n[0] - max.x(), n[1] + min.y(), n[2] - max.z()),
+                        BlockVector3.at(n[0] - min.x(), n[1] + max.y(), n[2] - min.z())
+                ), BlockTypes.AIR.getDefaultState());
+                ClipboardHolder holder = new ClipboardHolder(clipboard);
+                holder.setTransform(new AffineTransform().rotateY(180));
+                Operations.complete(holder.createPaste(edit)
+                        .to(BlockVector3.at(n[0], n[1], n[2]))
+                        .ignoreAirBlocks(true)
+                        .copyEntities(false)
+                        .copyBiomes(false)
+                        .build());
+                pasted = edit.getBlockChangeCount();
+            } catch (Throwable t) {
+                Bukkit.getScheduler().runTask(plugin, () -> turnFailed(plugin, sender, true, causeway, t));
+                return;
+            }
+            long ms = System.currentTimeMillis() - start;
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                RUNNING.set(false);
+                plugin.getConfig().set("exile.quay.origin", n[0] + " " + n[1] + " " + n[2]);
+                plugin.getConfig().set("exile.quay.facing", "east");
+                plugin.getConfig().set("exile.quay.causeway", causeway == null ? "" : causeway);
+                plugin.saveConfig();
+                ExileQuay quay = plugin.exileQuay();
+                if (quay != null) {
+                    quay.setOrigin(w, n);
+                }
+                if (causeway != null && !causeway.isBlank()) {
+                    ExileCauseway.relay(plugin, sender);
+                }
+                report(plugin, sender, "§a[QuayTurn] done: islet pasted turned (" + pasted + " block changes, " + ms
+                        + " ms), the ferry casts off east" + (causeway == null || causeway.isBlank()
+                        ? " (no causeway recorded)" : "; causeway laid to the landing"));
+            });
+        });
+    }
+
+    private static void turnFailed(AetherionCore plugin, CommandSender sender, boolean apply, String causeway, Throwable t) {
+        plugin.getLogger().log(Level.SEVERE, "[QuayTurn] failed", t);
+        Runnable back = () -> {
+            RUNNING.set(false);
+            if (apply && causeway != null && !causeway.isBlank()
+                    && plugin.getConfig().getString("exile.quay.causeway", "").isBlank()) {
+                // the islet was not turned: the causeway goes back where it was
+                plugin.getConfig().set("exile.quay.causeway", causeway);
+                plugin.saveConfig();
+                ExileCauseway.relay(plugin, sender);
+            }
+            report(plugin, sender, "§c[QuayTurn] failed: §7" + t);
+        };
+        if (Bukkit.isPrimaryThread()) {
+            back.run();
+        } else {
+            Bukkit.getScheduler().runTask(plugin, back);
+        }
+    }
+
+    /** Chat for the sender, and the log too (RCON loses async replies). */
+    private static void report(AetherionCore plugin, CommandSender sender, String line) {
+        tell(sender, line);
+        plugin.getLogger().info(line.replaceAll("§.", ""));
     }
 
     private static void fail(AetherionCore plugin, CommandSender sender, String why) {
