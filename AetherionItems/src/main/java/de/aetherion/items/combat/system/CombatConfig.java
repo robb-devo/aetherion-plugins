@@ -79,6 +79,8 @@ public final class CombatConfig {
     final double finisherMult;
     final double maxMult;
     final double bossBonusScale;
+    /** Charged hits on a boss during an opening it announced (BossEngine metadata) take this on top. */
+    final double openingMult;
     final List<String> exemptItems;
     final boolean tempo;
     /** Swings per second by weapon class (see {@link WeaponTempo#kind}). */
@@ -163,6 +165,7 @@ public final class CombatConfig {
         finisherMult = Math.max(1.0, m.getDouble("finisher-mult", 1.35));
         maxMult = Math.max(1.0, m.getDouble("max-mult", 2.4));
         bossBonusScale = clamp(m.getDouble("boss-bonus-scale", 0.5), 0.0, 1.0);
+        openingMult = clamp(m.getDouble("opening-mult", 1.5), 1.0, 3.0);
         exemptItems = m.getStringList("exempt-items").stream()
                 .map(id -> id.toLowerCase(Locale.ROOT)).filter(id -> !id.isBlank()).toList();
         ConfigurationSection t = m.getConfigurationSection("attack-speed");

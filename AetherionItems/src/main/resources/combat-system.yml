@@ -107,6 +107,9 @@ melee:
   max-mult: 2.4
   # Bonus part only, against bosses (0.5 = half the bonus). Early-swing penalty applies in full.
   boss-bonus-scale: 0.5
+  # Bosses open up after their big moves (Pathwarden after the cyclone and the judgment line, the Tier 1 bosses
+  # after their signature). Timed hits during an opening deal this much more, on top of everything else.
+  opening-mult: 1.5
   # Item ids (prefix match) the cadence never touches. Blossom Blade and Gravwell Cleaver are LOCKED.
   exempt-items:
     - ashen_katana

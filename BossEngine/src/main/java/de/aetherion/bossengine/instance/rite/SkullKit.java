@@ -52,6 +52,12 @@ final class SkullKit extends RiteKit {
         super(instance);
     }
 
+    /** An archer without a bow goal: he keeps his distance and circles while his volleys do the work. */
+    @Override
+    protected double holdRange() {
+        return 9.0;
+    }
+
     /* ================================================================== look */
 
     @Override
@@ -107,7 +113,7 @@ final class SkullKit extends RiteKit {
 
     @Override
     protected void ambient(LivingEntity boss, int age) {
-        Location feet = boss.getLocation();
+        Location feet = bodyFeet(boss);
         double h = boss.getHeight();
         if (age % 3 == 0) {
             Location tip = bodyPoint(feet, 0.08, h * 0.78, -0.3);
