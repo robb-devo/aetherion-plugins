@@ -829,6 +829,10 @@ public class StorageInventory {
                 UUID uuid : storageContents.keySet()
         ) {
 
+            if (plugin.getServer().getPlayer(uuid) == null) {
+                continue;
+            }
+
             saveStorage(
                     uuid
             );
