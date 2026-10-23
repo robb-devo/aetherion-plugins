@@ -32,7 +32,8 @@ import java.util.UUID;
  *       hits from the same swing take the same penalty, nothing else.</li>
  *   <li>Timed swings ({@code charge >= timed-charge}) build a combo on one target; the Nth is a finisher.
  *       Aerial (jump-crit), riposte, dash strike and vulnerable (staggered) stack, capped at max-mult.</li>
- *   <li>Against bosses only part of the bonus applies; the early-swing penalty applies in full.</li>
+ *   <li>Against bosses only part of the bonus applies; the early-swing penalty applies in full. A timed hit
+ *       during an opening the boss announced takes {@code opening-mult} on top.</li>
  * </ul>
  * The number is set at HIGH; combo, riposte and dash-strike are spent, and the strike cue plays, only at
  * MONITOR once the hit stood (a boss that blocks or gates the hit does not eat the riposte). Samurai's
@@ -152,6 +153,9 @@ final class MeleeCadence {
         bonus = Math.min(cfg.maxMult, bonus);
         if (boss) {
             bonus = 1.0 + (bonus - 1.0) * cfg.bossBonusScale;
+            if (timed && system.bossOpening(victim)) {
+                bonus *= cfg.openingMult;
+            }
         }
         double mult = penalty * bonus;
         if (Math.abs(mult - 1.0) > 1.0E-3) {

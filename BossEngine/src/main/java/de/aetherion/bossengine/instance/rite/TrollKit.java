@@ -63,6 +63,12 @@ final class TrollKit extends RiteKit {
         super(instance);
     }
 
+    /** He fights on a bridge: a stuck-hop could carry him over the rail. */
+    @Override
+    protected boolean hops() {
+        return false;
+    }
+
     /* ================================================================== look */
 
     @Override
@@ -129,7 +135,7 @@ final class TrollKit extends RiteKit {
             return;
         }
         Location floor = Stage.ground(boss.getLocation());
-        Location hip = bodyPoint(boss.getLocation(), 0.2, 0, -0.4);
+        Location hip = bodyPoint(bodyFeet(boss), 0.2, 0, -0.4);
         Vector3f start = Stage.offset(floor, hip).add(0, (float) (boss.getHeight() * 0.45), 0);
         ItemDisplay d = stage.item(floor, Material.GOLD_NUGGET, null, null, 15);
         coinsOnFloor.add(d);

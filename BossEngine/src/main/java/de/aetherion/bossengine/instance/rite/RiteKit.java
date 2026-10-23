@@ -1,6 +1,7 @@
 package de.aetherion.bossengine.instance.rite;
 
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.combat.Openings;
 import de.aetherion.bossengine.instance.BossInstance;
 import de.aetherion.bossengine.model.BossPhase;
 import de.aetherion.bossengine.skill.t2.T2Mechanics;
@@ -9,8 +10,13 @@ import de.aetherion.core.api.AetherServices;
 
 import net.kyori.adventure.title.Title;
 
+import com.destroystokyo.paper.entity.ai.Goal;
+import com.destroystokyo.paper.entity.ai.MobGoals;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.LivingEntity;
@@ -41,6 +47,8 @@ public abstract class RiteKit {
     protected static final Color WHITE = Color.fromRGB(0xFFFFFF);
     protected static final int FLASH = 8;
     protected static final double REACH = 28.0;
+    /** Ticks a rite boss stays open (combat-system opening bonus) after its signature lands. */
+    private static final int OPENING_TICKS = 30;
 
     private static final Map<UUID, RiteKit> LIVE = new ConcurrentHashMap<>();
 
@@ -92,6 +100,11 @@ public abstract class RiteKit {
     private int cooldown = 120;
     private int windup = -1;
     private boolean dying;
+    private boolean calmed;
+    private Location lastSpot;
+    private int stuckTicks;
+    private int hopCd;
+    private int contactCd;
 
     protected RiteKit(BossInstance instance) {
         this.instance = instance;
@@ -159,9 +172,11 @@ public abstract class RiteKit {
             if (windup-- == 0) {
                 windup = -1;
                 strike(boss, late());
+                Openings.open(boss, OPENING_TICKS);
             }
             return;
         }
+        think(boss);
         if (--cooldown <= 0) {
             List<Player> near = T2Mechanics.nearby(boss, REACH);
             if (near.isEmpty() || instance.isSlamPending()) {
@@ -357,6 +372,13 @@ public abstract class RiteKit {
         return Math.toRadians(at.getYaw());
     }
 
+    /** The feet with the yaw of the body the client draws (a mob's own yaw is where it walks, not where it faces). */
+    protected static Location bodyFeet(LivingEntity boss) {
+        Location feet = boss.getLocation();
+        feet.setYaw((float) boss.getBodyYaw());
+        return feet;
+    }
+
     /** Body-space point: +X left, +Y up, +Z forward, measured from the feet. */
     protected static Location bodyPoint(Location feet, double left, double up, double forward) {
         double yaw = yawRad(feet);
@@ -414,7 +436,7 @@ public abstract class RiteKit {
         if (follows.isEmpty()) {
             return;
         }
-        Location feet = boss.getLocation();
+        Location feet = bodyFeet(boss);
         float s = (float) scale(boss);
         Quaternionf body = new Quaternionf().rotateY((float) -yawRad(feet));
         Location anchor = feet.clone();
@@ -432,6 +454,112 @@ public abstract class RiteKit {
                     : Stage.model(at, r, f.size * s);
             Stage.move(f.display, anchor, 2);
             Stage.push(f.display, m, 2);
+        }
+    }
+
+    /* ------------------------------------------------------------------ brain */
+
+    /** 0 for a melee boss; a ranged one holds about this far from its target and circles it. */
+    protected double holdRange() {
+        return 0.0;
+    }
+
+    /** False for a boss that must never leave the ground on its own (the troll fights on a bridge). */
+    protected boolean hops() {
+        return true;
+    }
+
+    /** Reach of {@link #contact}, for a body whose vanilla AI cannot hit (0 = none). */
+    protected double contactReach() {
+        return 0.0;
+    }
+
+    /** A hit from the body itself, at most every 25 ticks, when the target is within {@link #contactReach}. */
+    protected void contact(LivingEntity boss, Player target) {
+    }
+
+    /**
+     * Between signatures: stick to one target, path to it (or circle it at {@link #holdRange}), and hop when the
+     * body has not moved for 1.5 s while it should. Vanilla left them wandering: the chicken panicked, the skeleton
+     * had no attack goal at all once its bow AI was taken away.
+     */
+    private void think(LivingEntity boss) {
+        if (!(boss instanceof Mob mob) || !mob.hasAI() || age % 5 != 0 || instance.isSlamPending()) {
+            return;
+        }
+        if (!calmed) {
+            calmed = true;
+            calm(mob);
+        }
+        List<Player> near = near(boss, REACH);
+        if (near.isEmpty()) {
+            return;
+        }
+        Location at = boss.getLocation();
+        Player target = mob.getTarget() instanceof Player current && near.contains(current) ? current : null;
+        if (target == null) {
+            double best = Double.MAX_VALUE;
+            for (Player p : near) {
+                double d = p.getLocation().distanceSquared(at);
+                if (d < best) {
+                    best = d;
+                    target = p;
+                }
+            }
+            mob.setTarget(target);
+        }
+        Location to = target.getLocation();
+        double dx = to.getX() - at.getX();
+        double dz = to.getZ() - at.getZ();
+        double d = Math.sqrt(dx * dx + dz * dz);
+        double hold = holdRange();
+        if (hold <= 0) {
+            if (d > 1.8) {
+                mob.getPathfinder().moveTo(target, 1.0);
+            }
+        } else if (d > hold + 4) {
+            mob.getPathfinder().moveTo(target, 1.0);
+        } else {
+            // circle at range, switching sides every 4 s; too close and he backs out to it
+            double away = Math.atan2(-dz, -dx) + ((age / 80) % 2 == 0 ? 0.55 : -0.55);
+            double r = Math.max(hold - 1.0, Math.min(hold + 1.0, d < hold - 3.0 ? hold : d));
+            mob.getPathfinder().moveTo(to.clone().add(Math.cos(away) * r, 0, Math.sin(away) * r), 1.0);
+        }
+        if (contactCd > 0) {
+            contactCd -= 5;
+        }
+        if (contactCd <= 0 && contactReach() > 0 && d <= contactReach() && Math.abs(to.getY() - at.getY()) < 2.0) {
+            contactCd = 25;
+            contact(boss, target);
+        }
+        if (hopCd > 0) {
+            hopCd -= 5;
+        }
+        boolean wantsToMove = hold <= 0 ? d > 3.5 : d > hold + 4;
+        boolean still = lastSpot != null && lastSpot.getWorld() == at.getWorld() && lastSpot.distanceSquared(at) < 0.09;
+        stuckTicks = still && wantsToMove ? stuckTicks + 5 : 0;
+        lastSpot = at.clone();
+        if (stuckTicks >= 30 && hopCd <= 0 && hops() && boss.isOnGround() && d > 0.01) {
+            stuckTicks = 0;
+            hopCd = 60;
+            boss.setVelocity(new Vector(dx / d * 0.55, 0.52, dz / d * 0.55));
+            at.getWorld().playSound(at, Sound.ENTITY_GOAT_LONG_JUMP, 0.9f, 0.7f);
+        }
+    }
+
+    /** Drops the wander, panic and livestock goals; the targeting and attack goals stay. */
+    private static void calm(Mob mob) {
+        try {
+            MobGoals goals = Bukkit.getMobGoals();
+            for (Goal<Mob> goal : new ArrayList<>(goals.getAllGoals(mob))) {
+                String key = goal.getKey().getNamespacedKey().getKey();
+                if (key.contains("panic") || key.contains("stroll") || key.contains("tempt") || key.contains("breed")
+                        || key.contains("follow_parent") || key.contains("avoid") || key.contains("look_around")) {
+                    goals.removeGoal(mob, goal);
+                }
+            }
+        } catch (RuntimeException ignored) {
+            // goal keys differ between versions; a boss that keeps its wander goal still works
         }
     }
 

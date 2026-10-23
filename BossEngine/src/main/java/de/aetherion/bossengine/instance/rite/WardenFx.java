@@ -37,6 +37,8 @@ public final class WardenFx {
     private BlockDisplay lanceShell;
     private BlockDisplay lanceCore;
     private Location lanceAnchor;
+    private BlockDisplay sky;
+    private Location skyAnchor;
     private final Map<String, Halo> halos = new HashMap<>();
 
     public WardenFx(BossInstance instance) {
@@ -54,6 +56,8 @@ public final class WardenFx {
         lanceShell = null;
         lanceCore = null;
         lanceAnchor = null;
+        sky = null;
+        skyAnchor = null;
         halos.clear();
     }
 
@@ -85,11 +89,15 @@ public final class WardenFx {
     }
 
     private final class Cyclone implements Stage.Anim {
-        static final int LAYERS = 7;
-        static final int PANELS = 7;
-        static final int DEBRIS = 14;
+        static final int LAYERS = 9;
+        static final int PANELS = 8;
+        static final int CAP = 10;
+        static final int SKIRT = 12;
+        static final int DEBRIS = 22;
         final Location anchor;
         final List<BlockDisplay> panels = new ArrayList<>();
+        final List<BlockDisplay> cap = new ArrayList<>();
+        final List<BlockDisplay> skirt = new ArrayList<>();
         final List<BlockDisplay> debris = new ArrayList<>();
         final List<BlockDisplay> blades = new ArrayList<>();
         final double[] phase = new double[DEBRIS];
@@ -106,6 +114,11 @@ public final class WardenFx {
             this.feet = feet.clone();
         }
 
+        /** Layer radius: the funnel flares from 1.1 at his feet to almost 8 at the top. */
+        double radius(int layer) {
+            return 1.1 + layer * 0.55 + 0.035 * layer * layer;
+        }
+
         @Override
         public boolean tick(int t) {
             if (dead) {
@@ -120,23 +133,45 @@ public final class WardenFx {
             }
             Vector3f base = Stage.offset(anchor, Stage.ground(feet));
             double b = Math.max(0.05, build);
-            double turn = t * (0.18 + b * 0.32);
+            double turn = t * (0.2 + b * 0.38);
+            double top = 0.3 + LAYERS * 1.45 * b;
             for (int i = 0; i < LAYERS; i++) {
-                double y = 0.3 + i * 1.35 * b;
-                double r = (1.3 + i * 0.62) * (0.4 + 0.6 * b);
-                float w = (float) (Math.PI * 2 * r / PANELS * 0.82);
+                double y = 0.3 + i * 1.45 * b;
+                double r = radius(i) * (0.4 + 0.6 * b);
+                // the funnel's axis wanders, more the higher it gets
+                double sx = Math.sin(t * 0.13 + i * 0.42) * 0.12 * i * b;
+                double sz = Math.cos(t * 0.11 + i * 0.37) * 0.12 * i * b;
+                float w = (float) (Math.PI * 2 * r / PANELS * 0.85);
                 for (int j = 0; j < PANELS; j++) {
-                    double a = j * Math.PI * 2 / PANELS + i * 0.45 + turn * (1.0 + i * 0.12);
-                    Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * r), (float) y, (float) (Math.sin(a) * r));
+                    double a = j * Math.PI * 2 / PANELS + i * 0.45 + turn * (1.0 + i * 0.1);
+                    Vector3f c = new Vector3f(base).add((float) (sx + Math.cos(a) * r), (float) y, (float) (sz + Math.sin(a) * r));
                     Quaternionf q = Stage.yaw(-a - Math.PI / 2).rotateX(-0.43f).rotateZ(0.35f);
-                    Stage.push(panels.get(i * PANELS + j), Stage.cube(c, q, w, (float) (1.5 * b), 0.06f), 2);
+                    Stage.push(panels.get(i * PANELS + j), Stage.cube(c, q, w, (float) (1.7 * b), 0.06f), 2);
                 }
             }
+            if (t % 2 == 0) {
+                double r = 8.2 * b;
+                float chord = (float) (Math.PI * 2 * r / CAP * 0.95);
+                for (int k = 0; k < cap.size(); k++) {
+                    double a = k * Math.PI * 2 / CAP + t * 0.05;
+                    double y = top + 0.6 + Math.sin(t * 0.08 + k) * 0.35;
+                    Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * r), (float) y, (float) (Math.sin(a) * r));
+                    Quaternionf q = Stage.yaw(-(a + Math.PI / 2)).rotateX((float) (0.18 * Math.sin(t * 0.06 + k)));
+                    Stage.push(cap.get(k), Stage.cube(c, q, chord, (float) (0.8 * b), (float) (2.6 * b)), 3);
+                }
+            }
+            for (int k = 0; k < skirt.size(); k++) {
+                double r = (2.4 + (k % 3) * 1.5) * (0.5 + 0.5 * b);
+                double a = k * Math.PI * 2 / SKIRT + t * (0.55 - (k % 3) * 0.1);
+                Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * r), (float) (0.2 + 0.15 * Math.sin(t * 0.4 + k)), (float) (Math.sin(a) * r));
+                Quaternionf q = Stage.yaw(-a).rotateZ((float) (0.4 * Math.sin(t * 0.3 + k)));
+                Stage.push(skirt.get(k), Stage.cube(c, q, 0.9f, 0.28f, 0.9f), 2);
+            }
             for (int k = 0; k < debris.size(); k++) {
-                double h = (phase[k] * 9.0 + t * 0.12) % 9.0 * b;
-                double r = (1.5 + h * 0.46) * (0.5 + 0.5 * b);
-                double a = phase[k] * Math.PI * 2 + t * 0.35 + h * 0.3;
-                float s = (float) (0.32 + (k % 3) * 0.12);
+                double h = (phase[k] * 11.0 + t * 0.14) % 11.0 * b;
+                double r = (1.4 + h * 0.55) * (0.5 + 0.5 * b);
+                double a = phase[k] * Math.PI * 2 + t * 0.4 + h * 0.3;
+                float s = (float) (0.35 + (k % 4) * 0.15);
                 Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * r), (float) (0.4 + h), (float) (Math.sin(a) * r));
                 Quaternionf q = new Quaternionf().rotateXYZ((float) (t * 0.3 + k), (float) (t * 0.21), (float) (k * 0.7));
                 Stage.push(debris.get(k), Stage.cube(c, q, s, s, s), 2);
@@ -144,7 +179,7 @@ public final class WardenFx {
             for (int k = 0; k < blades.size(); k++) {
                 boolean azure = k < 4;
                 int trail = k % 4;
-                double a = spin * (azure ? 1 : 1) + (azure ? 0 : Math.PI) - trail * 0.2;
+                double a = spin + (azure ? 0 : Math.PI) - trail * 0.2;
                 double y = azure ? 5.2 : 4.2;
                 double r = 5.4 * b;
                 Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * r), (float) y, (float) (Math.sin(a) * r));
@@ -154,13 +189,11 @@ public final class WardenFx {
                 Stage.push(blades.get(k), Stage.cube(c, q, thick, thick, len), 1);
             }
             Location floor = Stage.ground(feet);
-            if (t % 4 == 0) {
-                double a = ThreadLocalRandom.current().nextDouble(Math.PI * 2);
-                double r = 1.4 + 2.4 * b;
-                Stage.fx(floor.clone().add(Math.cos(a) * r, 0.15, Math.sin(a) * r), Particle.DUST_PILLAR, 2, 0.2, 0.05, 0.2, 0, Stage.floor(floor));
+            if (t % 10 == 0) {
+                Stage.sound(floor, Sound.ITEM_ELYTRA_FLYING, 1.0f + (float) b * 1.5f, 0.55f);
             }
-            if (t % 14 == 0) {
-                Stage.sound(floor, Sound.ITEM_ELYTRA_FLYING, 0.5f + (float) b * 0.6f, 0.6f);
+            if (t % 20 == 0 && b > 0.5) {
+                Stage.sound(floor, Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.5f);
             }
             return false;
         }
@@ -169,17 +202,26 @@ public final class WardenFx {
             for (int i = 0; i < LAYERS; i++) {
                 for (int j = 0; j < PANELS; j++) {
                     Material glass;
-                    if (i >= LAYERS - 2 && j % 3 == 0) {
+                    if (i >= LAYERS - 3 && j % 3 == 0) {
                         glass = j % 2 == 0 ? Material.LIGHT_BLUE_STAINED_GLASS : Material.RED_STAINED_GLASS;
+                    } else if (i < 2) {
+                        glass = (i + j) % 2 == 0 ? Material.GRAY_STAINED_GLASS : Material.LIGHT_GRAY_STAINED_GLASS;
                     } else {
                         glass = (i + j) % 3 == 0 ? Material.LIGHT_GRAY_STAINED_GLASS : Material.WHITE_STAINED_GLASS;
                     }
                     panels.add(stage.block(anchor, glass, null, null, 13));
                 }
             }
-            Material[] junk = {Material.COBBLESTONE, Material.GRAVEL, Material.IRON_BARS, Material.DIRT,
-                    Material.MOSSY_COBBLESTONE, Material.OAK_PLANKS};
+            for (int k = 0; k < CAP; k++) {
+                cap.add(stage.block(anchor, k % 2 == 0 ? Material.GRAY_STAINED_GLASS : Material.LIGHT_GRAY_STAINED_GLASS,
+                        null, null, -1));
+            }
             BlockData under = Stage.floor(anchor);
+            for (int k = 0; k < SKIRT; k++) {
+                skirt.add(stage.block(anchor, k % 3 == 1 ? Material.COARSE_DIRT.createBlockData() : under, null, null, -1));
+            }
+            Material[] junk = {Material.COBBLESTONE, Material.GRAVEL, Material.IRON_BARS, Material.DIRT,
+                    Material.MOSSY_COBBLESTONE, Material.OAK_PLANKS, Material.STONE_BRICKS};
             ThreadLocalRandom rng = ThreadLocalRandom.current();
             for (int k = 0; k < DEBRIS; k++) {
                 phase[k] = rng.nextDouble();
@@ -195,39 +237,51 @@ public final class WardenFx {
             }
         }
 
-        /** The funnel bursts: sheets fly outward and thin out, the debris is thrown clear. */
+        /** The funnel bursts: sheets and the storm cap are blown outward, debris and floor are thrown clear. */
         void release() {
             released = true;
             Vector3f base = Stage.offset(anchor, Stage.ground(feet));
             for (int i = 0; i < panels.size(); i++) {
                 int layer = i / PANELS;
                 double a = (i % PANELS) * Math.PI * 2 / PANELS + layer * 0.45 + spin;
-                double r = (1.3 + layer * 0.62) * 2.2;
-                Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * r), (float) (0.3 + layer * 1.6), (float) (Math.sin(a) * r));
-                Stage.push(panels.get(i), Stage.cube(c, Stage.yaw(-a).rotateX(-0.9f), 0.05f, 0.05f, 0.05f), 9);
+                double r = radius(layer) * 3.2;
+                Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * r), (float) (3.0 + layer * 2.0), (float) (Math.sin(a) * r));
+                Stage.push(panels.get(i), Stage.cube(c, Stage.yaw(-a).rotateX(-0.9f), 0.05f, 0.05f, 0.05f), 12);
+            }
+            for (int k = 0; k < cap.size(); k++) {
+                double a = k * Math.PI * 2 / CAP;
+                Vector3f c = new Vector3f(base).add((float) (Math.cos(a) * 15), 17f, (float) (Math.sin(a) * 15));
+                Stage.push(cap.get(k), Stage.cube(c, Stage.yaw(-a), 0.1f, 0.1f, 0.1f), 14);
             }
             ThreadLocalRandom rng = ThreadLocalRandom.current();
-            for (int k = 0; k < debris.size(); k++) {
-                BlockDisplay d = debris.get(k);
+            List<BlockDisplay> thrown = new ArrayList<>(debris);
+            thrown.addAll(skirt);
+            for (BlockDisplay d : thrown) {
                 double a = rng.nextDouble(Math.PI * 2);
-                Vector3f from = new Vector3f(base).add((float) (Math.cos(a) * 2), (float) rng.nextDouble(1, 6), (float) (Math.sin(a) * 2));
-                Stage.Toss toss = stage.toss(d, true, 0.4f, from, Stage.v(Math.cos(a) * 0.45, 0.3, Math.sin(a) * 0.45));
+                Vector3f from = new Vector3f(base).add((float) (Math.cos(a) * 2), (float) rng.nextDouble(0.5, 6), (float) (Math.sin(a) * 2));
+                double v = rng.nextDouble(0.55, 0.9);
+                Stage.Toss toss = stage.toss(d, true, 0.45f, from, Stage.v(Math.cos(a) * v, rng.nextDouble(0.3, 0.6), Math.sin(a) * v));
                 toss.floor = base.y;
                 toss.rest = 16;
             }
             debris.clear();
+            skirt.clear();
             for (BlockDisplay d : blades) {
                 Stage.push(d, Stage.gone(base), 4);
             }
             stage.play(t -> {
-                if (t >= 10) {
+                if (t >= 16) {
                     for (BlockDisplay d : panels) {
+                        stage.remove(d);
+                    }
+                    for (BlockDisplay d : cap) {
                         stage.remove(d);
                     }
                     for (BlockDisplay d : blades) {
                         stage.remove(d);
                     }
                     panels.clear();
+                    cap.clear();
                     blades.clear();
                     dead = true;
                     return true;
@@ -235,24 +289,21 @@ public final class WardenFx {
                 return false;
             });
             Location floor = Stage.ground(feet);
-            Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 16, 3.0, 0.1, 3.0, 0, Stage.floor(floor));
-            Stage.sound(floor, Sound.ENTITY_BREEZE_WIND_BURST, 1.4f, 0.6f);
+            shockwave(floor, 7.0, 6, CRIMSON_TONE);
+            shockwave(floor, 11.0, 10, IRON_TONE);
+            Stage.sound(floor, Sound.ENTITY_BREEZE_WIND_BURST, 3.0f, 0.5f);
+            Stage.sound(floor, Sound.ENTITY_GENERIC_EXPLODE, 3.0f, 0.6f);
+            Stage.sound(floor, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.5f, 0.55f);
         }
 
         @Override
         public void end() {
-            for (BlockDisplay d : panels) {
-                stage.remove(d);
+            for (List<BlockDisplay> group : List.of(panels, cap, skirt, debris, blades)) {
+                for (BlockDisplay d : group) {
+                    stage.remove(d);
+                }
+                group.clear();
             }
-            for (BlockDisplay d : debris) {
-                stage.remove(d);
-            }
-            for (BlockDisplay d : blades) {
-                stage.remove(d);
-            }
-            panels.clear();
-            debris.clear();
-            blades.clear();
         }
     }
 
@@ -324,7 +375,7 @@ public final class WardenFx {
                 Stage.sound(floor, Sound.BLOCK_ANVIL_LAND, 1.5f, 0.5f);
                 Stage.sound(floor, Sound.BLOCK_IRON_DOOR_CLOSE, 1.5f, 0.5f);
                 Stage.sound(floor, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.2f, 0.6f);
-                Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 14, 1.8, 0.1, 1.8, 0, Stage.floor(floor));
+                chips(floor, 8, 0.45, Stage.floor(floor));
                 if (onLand != null) {
                     onLand.run();
                 }
@@ -390,7 +441,26 @@ public final class WardenFx {
                 return false;
             });
         }
-        Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 14, radius * 0.5, 0.1, radius * 0.5, 0, Stage.floor(floor));
+        chips(floor, 8, 0.5, Stage.floor(floor));
+    }
+
+    /** Floor chips (and a few iron ones) thrown out of an impact; displays, not particles. */
+    private void chips(Location floor, int count, double speed, BlockData data) {
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        BlockData iron = Material.IRON_BLOCK.createBlockData();
+        for (int i = 0; i < count; i++) {
+            BlockDisplay d = stage.block(floor, i % 4 == 0 ? iron : data, null, null, -1);
+            if (d == null) {
+                continue;
+            }
+            double a = rng.nextDouble(Math.PI * 2);
+            double v = speed * rng.nextDouble(0.6, 1.0);
+            Stage.Toss toss = stage.toss(d, true, (float) rng.nextDouble(0.25, 0.55),
+                    Stage.v(Math.cos(a) * 0.6, 0.2, Math.sin(a) * 0.6),
+                    Stage.v(Math.cos(a) * v, rng.nextDouble(0.35, 0.7), Math.sin(a) * v));
+            toss.floor = 0f;
+            toss.rest = 14;
+        }
     }
 
     private static Matrix4f crack(Quaternionf q, float len, float width) {
@@ -400,27 +470,114 @@ public final class WardenFx {
     /* ================================================================== judgment pillar */
 
     public void judgment(Location focus, double radius) {
+        skyOff();
         Location floor = Stage.ground(focus);
-        BlockDisplay shell = stage.block(floor, Material.WHITE_STAINED_GLASS, Stage.post(Stage.v(0, 0, 0), new Quaternionf(), 0.2f, 26f, 0.2f), AZURE, 15);
-        BlockDisplay core = stage.block(floor, Material.WHITE_CONCRETE, Stage.post(Stage.v(0, 0, 0), new Quaternionf(), 0.08f, 26f, 0.08f), WHITE, 15);
+        Vector3f o = Stage.v(0, 0, 0);
+        BlockDisplay shell = stage.block(floor, Material.WHITE_STAINED_GLASS, Stage.post(o, new Quaternionf(), 0.3f, 40f, 0.3f), AZURE, 15);
+        BlockDisplay core = stage.block(floor, Material.WHITE_CONCRETE, Stage.post(o, new Quaternionf(), 0.12f, 40f, 0.12f), WHITE, 15);
+        // the bloom: three thin white squares turned 30 degrees apart read as a disc of light on the floor
+        List<BlockDisplay> bloom = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            bloom.add(stage.block(floor, Material.WHITE_CONCRETE, Stage.cube(Stage.v(0, 0.06, 0), Stage.yaw(i * Math.PI / 6), 0.5f, 0.06f, 0.5f), WHITE, 15));
+        }
+        float wide = (float) (radius * 2.2);
         stage.play(t -> {
             if (t == 1) {
-                Stage.push(shell, Stage.post(Stage.v(0, 0, 0), Stage.yaw(0.6), 2.8f, 26f, 2.8f), 3);
-                Stage.push(core, Stage.post(Stage.v(0, 0, 0), Stage.yaw(0.2), 1.0f, 26f, 1.0f), 3);
-            } else if (t == 6) {
+                Stage.push(shell, Stage.post(o, Stage.yaw(0.6), 4.6f, 40f, 4.6f), 2);
+                Stage.push(core, Stage.post(o, Stage.yaw(0.2), 2.0f, 40f, 2.0f), 2);
+                for (int i = 0; i < bloom.size(); i++) {
+                    Stage.push(bloom.get(i), Stage.cube(Stage.v(0, 0.06, 0), Stage.yaw(i * Math.PI / 6 + 0.3), wide, 0.06f, wide), 3);
+                }
+            } else if (t == 5) {
+                if (Stage.alive(shell)) {
+                    shell.setBlock(Material.RED_STAINED_GLASS.createBlockData());
+                }
                 Stage.glow(shell, CRIMSON);
-                Stage.push(shell, Stage.post(Stage.v(0, 0, 0), Stage.yaw(1.4), 0.05f, 26f, 0.05f), 10);
-                Stage.push(core, Stage.post(Stage.v(0, 0, 0), Stage.yaw(1.0), 0.02f, 26f, 0.02f), 8);
-            } else if (t >= 17) {
+                Stage.push(shell, Stage.post(o, Stage.yaw(1.4), 3.2f, 40f, 3.2f), 4);
+            } else if (t == 9) {
+                Stage.push(shell, Stage.post(o, Stage.yaw(2.2), 0.05f, 40f, 0.05f), 10);
+                Stage.push(core, Stage.post(o, Stage.yaw(1.0), 0.02f, 40f, 0.02f), 8);
+                for (int i = 0; i < bloom.size(); i++) {
+                    Stage.push(bloom.get(i), Stage.cube(Stage.v(0, 0.06, 0), Stage.yaw(i * Math.PI / 6 + 0.6), wide * 1.4f, 0.01f, wide * 1.4f), 10);
+                }
+            } else if (t >= 20) {
                 stage.remove(shell);
                 stage.remove(core);
+                for (BlockDisplay d : bloom) {
+                    stage.remove(d);
+                }
                 return true;
             }
             return false;
         });
-        shockwave(floor, radius + 3.0, 8, CRIMSON_TONE);
+        shockwave(floor, radius + 4.0, 7, CRIMSON_TONE);
+        shockwave(floor, radius + 10.0, 14, IRON_TONE);
         smash(floor, radius);
+        chips(floor, 12, 0.8, Stage.floor(floor));
+        if (floor.getWorld() != null) {
+            floor.getWorld().strikeLightningEffect(floor);
+        }
         Stage.fx(floor.clone().add(0, 1.0, 0), Particle.FLASH, 1, 0, 0);
+        Stage.sound(floor, Sound.ENTITY_GENERIC_EXPLODE, 4.0f, 0.5f);
+        Stage.sound(floor, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 4.0f, 0.8f);
+        Stage.sound(floor, Sound.ITEM_TRIDENT_THUNDER, 3.0f, 0.6f);
+        Stage.sound(floor, Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 3.0f, 0.5f);
+    }
+
+    /* ================================================================== sky charge: the beam from above */
+
+    /** A white column falls onto the locked zone and thickens with {@code charge} 0..1; the judgment replaces it. */
+    public void skyCharge(Location focus, double charge) {
+        Location floor = Stage.ground(focus);
+        if (!Stage.alive(sky) || skyAnchor == null || skyAnchor.getWorld() != floor.getWorld()
+                || skyAnchor.distanceSquared(floor) > 64) {
+            skyOff();
+            skyAnchor = floor.clone();
+            skyAnchor.setYaw(0f);
+            skyAnchor.setPitch(0f);
+            sky = stage.block(skyAnchor, Material.WHITE_STAINED_GLASS, Stage.gone(Stage.v(0, 40, 0)), WHITE, 15);
+            if (sky == null) {
+                return;
+            }
+        }
+        float w = (float) (0.15 + 1.2 * charge * charge);
+        Stage.push(sky, Stage.post(Stage.offset(skyAnchor, floor), Stage.yaw(charge * 3.0), w, 42f, w), 1);
+    }
+
+    public void skyOff() {
+        stage.remove(sky);
+        sky = null;
+        skyAnchor = null;
+    }
+
+    /* ================================================================== dazed: stars over his helm */
+
+    /** Five glowing shards circle above {@code head} for {@code ticks}: the opening after a big move. */
+    public void dazed(Location head, int ticks) {
+        Location anchor = head.clone();
+        anchor.setYaw(0f);
+        anchor.setPitch(0f);
+        List<BlockDisplay> stars = new ArrayList<>();
+        for (int k = 0; k < 5; k++) {
+            Material m = k % 3 == 0 ? Material.WHITE_CONCRETE : k % 3 == 1 ? Material.LIGHT_BLUE_CONCRETE : Material.RED_CONCRETE;
+            stars.add(stage.block(anchor, m, Stage.gone(Stage.v(0, 0, 0)), k % 3 == 2 ? CRIMSON : k % 3 == 1 ? AZURE : WHITE, 15));
+        }
+        stage.play(t -> {
+            if (t > ticks) {
+                for (BlockDisplay d : stars) {
+                    stage.remove(d);
+                }
+                return true;
+            }
+            for (int k = 0; k < stars.size(); k++) {
+                double a = t * 0.3 + k * Math.PI * 2 / stars.size();
+                Vector3f c = Stage.v(Math.cos(a) * 1.8, 0.3 * Math.sin(t * 0.25 + k), Math.sin(a) * 1.8);
+                Quaternionf q = new Quaternionf().rotateXYZ((float) (t * 0.4), (float) (k + t * 0.2), 0.78f);
+                Stage.push(stars.get(k), Stage.cube(c, q, 0.4f, 0.4f, 0.4f), 1);
+            }
+            return false;
+        });
+        Stage.sound(head, Sound.BLOCK_BELL_RESONATE, 1.5f, 1.4f);
     }
 
     /* ================================================================== halos: telegraph rings */
@@ -469,7 +626,6 @@ public final class WardenFx {
             ring.set(floor, r, height, tone, 1);
             return false;
         });
-        Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 12, 1.2, 0.1, 1.2, 0, Stage.floor(floor));
     }
 
     /** A ring of short glowing slabs on the floor. */

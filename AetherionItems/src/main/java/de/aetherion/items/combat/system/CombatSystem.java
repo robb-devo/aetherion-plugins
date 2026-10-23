@@ -362,6 +362,35 @@ public final class CombatSystem {
         return entity != null && (AetherEntities.isBoss(entity) || AetherEntities.isBossMinion(entity) || samuraiHitbox(entity));
     }
 
+    /** BossEngine marks a boss open (metadata, tick until) after its big moves; see opening-mult. */
+    boolean bossOpening(Entity entity) {
+        Entity root = AetherEntities.root(entity);
+        for (org.bukkit.metadata.MetadataValue value : root.getMetadata("aetherion_opening")) {
+            if (value.asLong() > Bukkit.getCurrentTick()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The tooltip's tempo line ({@code ⚡ Tempo: Fast (1.6/s)}) for a melee item the weapon tempo drives, or null
+     * when the system is off or the item keeps its own swing speed.
+     */
+    public static String tempoLine(ItemStack item, String itemId) {
+        CombatSystem system = instance;
+        if (system == null || item == null || itemId == null || itemId.isBlank()) {
+            return null;
+        }
+        double speed = system.tempo.speedOf(item, itemId);
+        if (Double.isNaN(speed)) {
+            return null;
+        }
+        String word = speed >= 1.9 ? "Very fast" : speed >= 1.5 ? "Fast" : speed >= 1.1 ? "Medium"
+                : speed >= 0.85 ? "Slow" : "Very slow";
+        return "§7⚡ Tempo: §f" + word + " §8(" + String.format(Locale.US, "%.1f", speed) + "/s)";
+    }
+
     boolean samuraiHitbox(Entity entity) {
         if (entity == null) {
             return false;

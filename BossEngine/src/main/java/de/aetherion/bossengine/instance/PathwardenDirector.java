@@ -1,6 +1,7 @@
 package de.aetherion.bossengine.instance;
 
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.combat.Openings;
 import de.aetherion.bossengine.instance.rite.WardenFx;
 import de.aetherion.bossengine.music.FightMusic;
 import de.aetherion.bossengine.music.NbsSong;
@@ -79,6 +80,9 @@ final class PathwardenDirector {
     private static final int REBUKE_TELL = 10;
     private static final int REBUKE_WAVE = 8;
     private static final double REBUKE_RADIUS = 7.5;
+    /** He reels after the cyclone and after a judgment line: openings for the combat system's charged hits. */
+    private static final int DAZE_AFTER_SPIN = 40;
+    private static final int DAZE_AFTER_BEAM = 30;
 
     private static final double MUSIC_RANGE = 48.0;
 
@@ -111,6 +115,7 @@ final class PathwardenDirector {
     private int rebukeTick = -1;
     private Location rebukeAt;
     private final Set<UUID> rebukeHit = new HashSet<>();
+    private int dazedTicks;
     private FightMusic music;
 
     PathwardenDirector(BossInstance instance) {
@@ -144,6 +149,7 @@ final class PathwardenDirector {
         rebukeCd = 100;
         crowdTicks = 0;
         rebukeTick = -1;
+        dazedTicks = 0;
         tracks.clear();
         spinPhase = -1;
         beamPhase = -1;
@@ -292,6 +298,10 @@ final class PathwardenDirector {
         }
         if (rebukeTick >= 0) {
             tickRebuke(entity);
+            return false;
+        }
+        if (dazedTicks > 0) {
+            dazedTicks--;
             return false;
         }
         maybeStartBeam(entity);
@@ -589,6 +599,7 @@ final class PathwardenDirector {
                 world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.9f, 0.6f);
                 fx.cycloneRelease();
                 fx.haloOff("spin");
+                blowOut(at, SPIN_RADIUS + 4.0, 1.3, 0.55);
             }
             if (active % 5 == 0) {
                 hitAround(entity, SPIN_RADIUS, 280);
@@ -600,6 +611,31 @@ final class PathwardenDirector {
         spinCd = SPIN_COOLDOWN;
         if (entity instanceof Mob mob) {
             mob.setAI(true);
+        }
+        daze(entity, DAZE_AFTER_SPIN);
+    }
+
+    /** Reeling: he stands, stars circle his helm, and charged hits get the opening bonus. */
+    private void daze(LivingEntity entity, int ticks) {
+        dazedTicks = ticks;
+        Openings.open(entity, ticks);
+        fx.dazed(entity.getLocation().add(0, entity.getHeight() + 0.6, 0), ticks);
+    }
+
+    /** No damage: the blast throws everyone near him outward and off their feet. */
+    private void blowOut(Location centre, double radius, double push, double lift) {
+        for (Player player : centre.getWorld().getPlayers()) {
+            if (!vulnerable(player)) {
+                continue;
+            }
+            Vector away = player.getLocation().toVector().subtract(centre.toVector()).setY(0);
+            double d = away.length();
+            if (d > radius || Math.abs(player.getLocation().getY() - centre.getY()) > 4.0) {
+                continue;
+            }
+            away = d < 0.01 ? new Vector(1, 0, 0) : away.multiply(1.0 / d);
+            double fall = 1.0 - 0.5 * d / radius;
+            player.setVelocity(away.multiply(push * fall).setY(lift * fall));
         }
     }
 
@@ -676,11 +712,13 @@ final class PathwardenDirector {
             boolean firing = BEAM_LOCK - beamTick < 6;
             drawSeekBeam(from, beamFocus.clone().add(0, 0.2, 0), mix);
             drawDangerZone(beamFocus, firing && beamTick % 2 == 0 ? WardenFx.WHITE_TONE : WardenFx.CRIMSON_TONE);
+            fx.skyCharge(beamFocus, t);
             if (beamTick % 3 == 0) {
                 world.playSound(beamFocus, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, (float) (0.7 + t));
             }
             if (beamTick == BEAM_LOCK - 6) {
-                world.playSound(beamFocus, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.6f);
+                world.playSound(beamFocus, Sound.BLOCK_BEACON_POWER_SELECT, 2.0f, 1.6f);
+                world.playSound(beamFocus, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 2.0f, 0.6f);
             }
             if (beamTick >= BEAM_LOCK) {
                 beamPhase = 2;
@@ -693,7 +731,9 @@ final class PathwardenDirector {
             return;
         }
         if (beamPhase == 2) {
-            drawFireBeam(from, beamFocus.clone().add(0, 0.2, 0));
+            // the firing lance hits at full width and burns down to a thread
+            float width = (float) (2.6 - 2.1 * beamTick / (double) BEAM_FIRE);
+            fx.lance(from, beamFocus.clone().add(0, 0.2, 0), CRIMSON, width, true);
             if (beamTick == 1) {
                 fireNuke(entity);
             }
@@ -704,6 +744,7 @@ final class PathwardenDirector {
                 if (entity instanceof Mob mob) {
                     mob.setAI(true);
                 }
+                daze(entity, DAZE_AFTER_BEAM);
             }
         }
     }
@@ -732,6 +773,20 @@ final class PathwardenDirector {
             player.setVelocity(away);
             player.addPotionEffect(new PotionEffect(slowness(), 55, 2, false, true, true));
             world.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.95f, 0.55f);
+        }
+        // the shock rolls on past the blast: no damage, but nobody near keeps their footing
+        for (Player player : world.getPlayers()) {
+            if (!vulnerable(player)) {
+                continue;
+            }
+            double d = player.getLocation().distance(beamFocus);
+            if (d <= BEAM_BLAST || d > BEAM_BLAST + 9.0) {
+                continue;
+            }
+            Vector away = player.getLocation().toVector().subtract(beamFocus.toVector()).setY(0);
+            if (away.lengthSquared() > 0.01) {
+                player.setVelocity(away.normalize().multiply(0.75).setY(0.35));
+            }
         }
         if (!hitAnyone) {
             world.playSound(beamFocus, Sound.BLOCK_FIRE_EXTINGUISH, 1.1f, 0.7f);
@@ -1181,10 +1236,6 @@ final class PathwardenDirector {
         fx.lance(from, to, color, 0.32f, false);
     }
 
-    private void drawFireBeam(Location from, Location to) {
-        fx.lance(from, to, CRIMSON, 1.1f, true);
-    }
-
     private void hitAround(LivingEntity entity, double radius, double power) {
         World world = entity.getWorld();
         double r2 = radius * radius;
@@ -1311,6 +1362,7 @@ final class PathwardenDirector {
         beamPhase = -1;
         spinPhase = -1;
         rebukeTick = -1;
+        dazedTicks = 0;
         fx.clear();
     }
 

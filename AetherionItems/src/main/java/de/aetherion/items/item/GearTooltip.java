@@ -108,7 +108,9 @@ public final class GearTooltip implements Listener {
         full.removeIf(GearTooltip::isHintLine);
         DungeonArmor.applyDungeonStatPreview(full, item, items);
         String itemId = items.getItemId(item);
+        full.removeIf(GearTooltip::isTempoLine);
         full = LoreLayout.normalize(full, itemId, items.getRarity(item));
+        addTempo(full, item, itemId);
         store(meta, full);
         List<String> shown = shouldCompact(item, items, full) ? compact(item, items, full) : full;
         meta.setLore(LoreLocale.present(meta, itemId, shown));
@@ -127,6 +129,32 @@ public final class GearTooltip implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> refresh(player), 20L);
+    }
+
+    /** Weapon tempo under the stat block of a melee item ({@code ⚡ Tempo: Slow (0.8/s)}), rebuilt every refresh. */
+    private static void addTempo(List<String> lore, ItemStack item, String itemId) {
+        String tempo = de.aetherion.items.combat.system.CombatSystem.tempoLine(item, itemId);
+        if (tempo == null) {
+            return;
+        }
+        int at = -1;
+        for (int i = 0; i < lore.size(); i++) {
+            if (lore.get(i) != null && ChatColor.stripColor(lore.get(i)).toLowerCase(Locale.ROOT).contains("damage:")) {
+                at = i;
+                break;
+            }
+        }
+        if (at < 0) {
+            return;
+        }
+        while (at + 1 < lore.size() && lore.get(at + 1) != null && isStatLine(lore.get(at + 1))) {
+            at++;
+        }
+        lore.add(at + 1, tempo);
+    }
+
+    private static boolean isTempoLine(String line) {
+        return line != null && ChatColor.stripColor(line).startsWith("⚡ Tempo:");
     }
 
     private static boolean shouldCompact(ItemStack item, ItemManager items, List<String> full) {
@@ -265,6 +293,7 @@ public final class GearTooltip implements Listener {
     private static boolean isStatLine(String line) {
         String plain = ChatColor.stripColor(line).toLowerCase(Locale.ROOT);
         return plain.contains("damage:")
+                || plain.contains("tempo:")
                 || plain.contains("defense:")
                 || plain.contains("health:")
                 || plain.contains("spread:")

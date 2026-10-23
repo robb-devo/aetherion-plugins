@@ -77,23 +77,32 @@ final class WeaponTempo {
     /** Swings per second for the held item, or NaN to leave the attribute alone. */
     private double target(Player player) {
         CombatConfig cfg = system.config();
-        if (!cfg.enabled || !cfg.melee || !cfg.tempo || cfg.worldDisabled(player.getWorld().getName())) {
+        if (cfg.worldDisabled(player.getWorld().getName())) {
             return Double.NaN;
         }
         ItemStack hand = player.getInventory().getItemInMainHand();
         String id = hand.getType().isAir() ? null : system.heldItemId(player);
-        if (id == null || id.isBlank() || system.isRangedOrWand(hand) || cfg.exempt(id)) {
+        return id == null ? Double.NaN : speedOf(hand, id);
+    }
+
+    /** Class speed of an Aetherion item, or NaN when the tempo leaves it alone (also drives the tooltip line). */
+    double speedOf(ItemStack item, String id) {
+        CombatConfig cfg = system.config();
+        if (!cfg.enabled || !cfg.melee || !cfg.tempo) {
             return Double.NaN;
         }
-        ItemMeta meta = hand.getItemMeta();
+        if (id == null || id.isBlank() || system.isRangedOrWand(item) || cfg.exempt(id)) {
+            return Double.NaN;
+        }
+        ItemMeta meta = item.getItemMeta();
         if (meta != null && meta.hasAttributeModifiers()) {
             Collection<AttributeModifier> own = meta.getAttributeModifiers(Attribute.GENERIC_ATTACK_SPEED);
             if (own != null && !own.isEmpty()) {
                 return Double.NaN;
             }
         }
-        String kind = kind(hand.getType(), id.toLowerCase(Locale.ROOT));
-        if (kind.equals("other") && !system.isWeapon(hand)) {
+        String kind = kind(item.getType(), id.toLowerCase(Locale.ROOT));
+        if (kind.equals("other") && !system.isWeapon(item)) {
             return Double.NaN;
         }
         Double speed = cfg.tempoSpeeds.get(kind);

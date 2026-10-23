@@ -45,6 +45,25 @@ final class NuggetKit extends RiteKit {
         super(instance);
     }
 
+    /* ================================================================== brain */
+
+    @Override
+    protected double contactReach() {
+        return 2.4;
+    }
+
+    /** A chicken body has no melee goal: he lunges and pecks with the template's attack damage. */
+    @Override
+    protected void contact(LivingEntity boss, Player target) {
+        Vector to = target.getLocation().toVector().subtract(boss.getLocation().toVector()).setY(0);
+        if (to.lengthSquared() > 0.01) {
+            boss.setVelocity(to.normalize().multiply(0.35).setY(0.18));
+        }
+        de.aetherion.bossengine.combat.BossHits.hurt(target, boss, instance.getAttackDamage());
+        boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_CHICKEN_HURT, 1.1f, 0.5f);
+        boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.8f, 0.7f);
+    }
+
     /* ================================================================== look */
 
     @Override
