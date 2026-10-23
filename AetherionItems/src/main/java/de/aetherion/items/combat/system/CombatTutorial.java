@@ -14,7 +14,7 @@ import org.bukkit.persistence.PersistentDataType;
  */
 final class CombatTutorial {
 
-    private static final byte VERSION = 2;
+    private static final byte VERSION = 3;
     private static final TextColor ACCENT = TextColor.color(0xFFC94A);
 
     private final CombatSystem system;

@@ -297,6 +297,8 @@ public final class CombatTeach {
         } else {
             lines.add(LangPack.say(player, "vex.combat_pass", "Adequate. That's a pass — for today."));
         }
+        lines.add(LangPack.say(player, "vex.combat_tempo",
+                "Every blade has its §e⚡ Tempo§f, it's on the item. Daggers swing fast, hammers slow. Strike when the crosshair is full."));
         lines.add(LangPack.say(player, "vex.combat_kit", "Before the waste: a combat skill in your loadout, damage boosters on the blade."));
         lines.add(LangPack.say(player, "vex.combat_stamp", "Now §dMiss Ledger§f's stamp. §e/capital§f — you've got the teleport."));
         return lines.toArray(new String[0]);
