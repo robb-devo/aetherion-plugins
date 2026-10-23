@@ -318,10 +318,14 @@ public final class NetworkPlayerDataSync {
                 String merged = StorageFileMerge.merge(existing, text);
                 int existingSlots = StorageFileMerge.countSlots(existing);
                 int incomingSlots = StorageFileMerge.countSlots(text);
-                if (incomingSlots < existingSlots || StorageFileMerge.unlockedPages(text) < StorageFileMerge.unlockedPages(existing)) {
+                if (!merged.equals(text)) {
                     plugin.getLogger().warning("Transfer storage for " + file.getName()
                             + " was smaller than disk (incoming slots " + incomingSlots
                             + ", disk slots " + existingSlots + "). Missing pages were kept.");
+                } else if (incomingSlots < existingSlots) {
+                    plugin.getLogger().info("Transfer storage for " + file.getName()
+                            + " replaced the disk copy (disk slots " + existingSlots
+                            + ", snapshot slots " + incomingSlots + ").");
                 }
                 if (!merged.equals(existing)) {
                     writeString(file, merged);

@@ -4,9 +4,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
  * Personal storage is one YAML file per player ({@code pages.N.slot-bytes}).
- * A transfer rewrite must not drop a page that the shared file already has.
- * Incoming slots still win when both sides stored that slot, so a real deposit
- * is kept. Slots only the disk file has are copied back.
+ * The snapshot's file is the player's storage, like the inventory: a slot emptied or moved on the
+ * sending backend stays empty here. The disk copy is older: what this backend wrote when the player
+ * last left, or a copy another backend rewrote from its cache since.
+ * <p>
+ * Only an export that cannot be the player's storage keeps the disk slots (incoming slots still win
+ * where both have one): fewer unlocked pages than disk (pages are bought, never lost), or no item at
+ * all over a filled disk (StorageInventory never writes an emptied storage over a filled file, so that
+ * is a fresh file from a backend that never had this storage).
  */
 public final class StorageFileMerge {
 
@@ -29,7 +34,7 @@ public final class StorageFileMerge {
         int incomingSlots = countSlots(incoming);
         int existingPages = Math.max(1, existing.getInt("unlocked-pages", 1));
         int incomingPages = Math.max(1, incoming.getInt("unlocked-pages", 1));
-        if (incomingSlots >= existingSlots && incomingPages >= existingPages) {
+        if (incomingPages >= existingPages && (incomingSlots > 0 || existingSlots == 0)) {
             return incomingRaw;
         }
         YamlConfiguration merged = load(incomingRaw);
