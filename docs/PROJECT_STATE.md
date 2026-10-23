@@ -106,12 +106,28 @@ server already runs them, AetherMobs on mmo-r only, one restart per backend, bac
 Deployed with `deploy-exile-isles.ps1` (Core, BossEngine, Hub jar on mmo-r; islands moved by `ae-islands-migrate.py`).
 - Veil Quay: the PR #99 turn was refused live (the recorded origin 600 51 322 was wrong); the turn really ran on
   2026-10-22 23:07 with PR #103's locator, see below.
-- Exile void: the trim deletes every terrain chunk (bedrock or half-generated), also right beside the island; island
-  chunks were generated void by the Runde 7 paste, so they never carry bedrock. Backup `<world>.void-backup-<time>`.
+- Exile void: the trim deletes every terrain chunk (bedrock or half-generated). Its premise was WRONG: the map's core
+  stands on old terrain chunks, so the 10-23 run cut it out (repaired the same night, see below). Never re-arm
+  `exile-void-trim.armed` as the code stands.
 - Islands live on mmo-i only: mmo-r's Guilds jar parked, data moved; `/island` `/insel` `/guild` `/friend` on mmo-r, mmo-c,
   mmo-d cross to mmo-i (IslandLink), from the hub via mmo-r.
 - Routing: `network.routed-commands.everywhere: true` arms travel commands on every backend but mmo-r; built-in labels
   always count, `/harbor` `/hafen` replay as `/harbour`; hub hops to mmo-r only for labels it does not answer itself.
+
+## Exile void, islands on mmo-i, /exile from anywhere (2026-10-23, cloud session, PR #106 + #107)
+
+Deployed 03:08 server time with `deploy-exile-void-isles.ps1` (main `6ed0008`: Core everywhere, Items, BossEngine,
+Quests, Guilds on mmo-i; one restart of all five). The tutorial on mmo-r and mmo-i was already the newest code.
+- Islands: mmo-r's data won. mmo-i's old island data is in `<mmo-i>/_retired/pre-island-move-<time>` (6 islands that
+  only existed there, incl. david679964, can be restored one by one). Guilds jars on mmo-r and mmo-d are parked in
+  `plugins/_disabled-network`; the old island worlds there bounce players to spawn (`network.islands.old-worlds`).
+- `/exile go` crosses from the main world when the story gate passes (at the quay it boards the ferry); the hub routes
+  it through mmo-r. The arrival barge hangs on a per-rider cable; the white screen holds until the line chunks are loaded.
+- Exile void: the plugin trim cut the map's core (229 built chunks). At 03:24 a one-off script restored the 21 region
+  files from `aetherion_exile.void-backup-20261023-030928`, then deleted only the 2998 terrain chunks outside the box
+  around the map (blocks x -272..351, z -368..463, built chunks + 2). Inside the box the old terrain stays. Also gone:
+  a small wooden hut (chunks 26..28 / 11..12) and cocoa far out. Copies: `aetherion_exile.trimmed-20261023-032447`
+  (after the first trim) and `aetherion_exile.retrim-20261023-032447` (before the second).
 
 ## Harbour and ferry (2026-10-22, cloud session, PR #103 + #104)
 
