@@ -75,7 +75,7 @@ public final class ExileDoors implements Listener {
 
     private static final List<Gate> GATES = List.of(
             new Gate("crater", new int[] {71, 117, -72, 75, 121, -72},
-                    new double[] {73.5, 120.0, -69.5, 0}, new double[] {73.5, 115.0, -73.5, 180},
+                    new double[] {73.5, 117.0, -69.5, 0}, new double[] {73.5, 115.0, -73.5, 180},
                     "The Iron Ring", "Der Eisenring",
                     "The crater of the fallen captain. The Hollow Sun.", "Der Krater des gefallenen Hauptmanns. Die Hollow Sun.",
                     null, null, null),
@@ -294,12 +294,20 @@ public final class ExileDoors implements Listener {
         e.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
     }
 
-    /** One bilingual label: two text displays, each shown only to readers of its language. */
     private void label(Location at, String en, String de) {
+        label(plugin, at, en, de, this::mark);
+    }
+
+    /**
+     * One bilingual label: two text displays, each shown only to readers of its language ({@link #refreshLabels}
+     * keeps that right for every label made here). {@code mark} tags them for the caller's own cleanup.
+     */
+    static void label(org.bukkit.plugin.Plugin plugin, Location at, String en, String de,
+                      java.util.function.Consumer<Entity> mark) {
         for (int lang = 0; lang < 2; lang++) {
             final boolean german = lang == 1;
             TextDisplay t = at.getWorld().spawn(at, TextDisplay.class, d -> {
-                mark(d);
+                mark.accept(d);
                 d.text(Component.text(german ? de : en));
                 d.setBillboard(Display.Billboard.CENTER);
                 d.setSeeThrough(false);
@@ -406,7 +414,7 @@ public final class ExileDoors implements Listener {
         Location out = loc(g.outside());
         Location in = loc(g.inside());
         boolean goingIn = p.getLocation().distanceSquared(out) <= p.getLocation().distanceSquared(in);
-        Location to = goingIn ? in : out;
+        Location to = standable(goingIn ? in : out);
         if (!goingIn) {
             to.setYaw(to.getYaw() + 180f);
         }
@@ -628,12 +636,18 @@ public final class ExileDoors implements Listener {
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             busyRituals.remove(r.id());
+            de.aetherion.core.network.ExileHost.unpeaceful(plugin, world);
             boolean ok;
             try {
                 ok = bosses.spawn(template, spawn, p.isOnline() ? p : null);
             } catch (RuntimeException ex) {
                 ok = false;
                 plugin.getLogger().warning("Exile ritual " + r.id() + " could not spawn " + template + ": " + ex.getMessage());
+            }
+            if (!ok) {
+                plugin.getLogger().warning("Exile ritual " + r.id() + ": BossEngine refused " + template + " at "
+                        + spawn.getBlockX() + " " + spawn.getBlockY() + " " + spawn.getBlockZ() + " (awake "
+                        + bosses.alive(template) + ", difficulty " + world.getDifficulty() + ")");
             }
             if (!ok && p.isOnline()) {
                 p.sendMessage(Say.t(p, "§8» §7Nothing answers. (The boss could not wake — ask staff.)",
@@ -817,6 +831,23 @@ public final class ExileDoors implements Listener {
         } catch (RuntimeException ex) {
             return false;
         }
+    }
+
+    /** The nearest feet cell (feet and head free, solid below) in the column, a few blocks up or down. */
+    private static Location standable(Location at) {
+        World w = at.getWorld();
+        int x = at.getBlockX();
+        int z = at.getBlockZ();
+        for (int dy : new int[] {0, 1, -1, 2, -2, 3, 4, 5, 6}) {
+            int y = at.getBlockY() + dy;
+            if (w.getBlockAt(x, y, z).isPassable() && w.getBlockAt(x, y + 1, z).isPassable()
+                    && !w.getBlockAt(x, y - 1, z).isPassable()) {
+                Location l = at.clone();
+                l.setY(y);
+                return l;
+            }
+        }
+        return at;
     }
 
     private Location loc(double[] a) {

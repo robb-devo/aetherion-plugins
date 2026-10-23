@@ -167,7 +167,7 @@ public final class LullabyQuests {
                         + "and put it out. The Sentry at the Ring wants to know.",
                 List.of(new Objective(ObjectiveType.KILL, "hollow_sun", 1)),
                 2500, 3000);
-        captain.setWaypoint(EXILE_WORLD, 73.5, 120.0, -69.5);
+        captain.setWaypoint(EXILE_WORLD, 73.5, 117.0, -69.5);
 
         Quest heart = quest(questManager, HEART, "A Heart in a Machine",
                 "Orrin keeps a dying star beating in the Observatory. Step through his ring, "

@@ -233,7 +233,7 @@ public final class StoryLines {
         en("story_ferryman.ferry_done",
                 "Told you. Always on this side, somehow.",
                 "The King's Quay. Nobody's tied up here since the Silent Year.",
-                "The lift on the quay wall goes up to the court. Pull the lever. It bites.");
+                "The lift in the big arch on the quay wall goes up to the court. Knock, and it takes you.");
         en("story_ferryman.captain_hook",
                 "Up past the court there's a crater, ringed in iron. Something fell in, burning.",
                 "A sentry still stands at the ring. He'll want to hear it's out.");

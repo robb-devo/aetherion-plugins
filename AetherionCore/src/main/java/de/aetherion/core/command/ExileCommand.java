@@ -101,6 +101,21 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
             de.aetherion.core.exile.ExileQuayPaste.turn(plugin, sender, args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
             return true;
         }
+        // Exile host: dig the Iron Ring's approach out of the crater debris (runs once on its own). "undo" puts it back.
+        if ("gatecut".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            ExileHost host = plugin.exileHost();
+            org.bukkit.World exile = host == null ? null : host.world();
+            if (args.length >= 2 && "undo".equalsIgnoreCase(args[1])) {
+                de.aetherion.core.exile.ExileGateCut.undo(plugin, sender);
+            } else {
+                de.aetherion.core.exile.ExileGateCut.run(plugin, sender, exile);
+            }
+            return true;
+        }
         // Walk from the Borderlands cliff to the pier head: stand where it should leave the cliff. "undo" takes it back.
         if ("causeway".equals(sub)) {
             if (!admin) {
@@ -288,7 +303,8 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                 || sender instanceof org.bukkit.command.ConsoleCommandSender;
         for (String s : admin
                 ? List.of("go", "return", "replay", "stop", "where", "setquay", "causeway", "paste",
-                        "placequay", "quayundo", "clearsaint", "restoremap", "cleararena", "repairquay", "turnquay")
+                        "placequay", "quayundo", "clearsaint", "restoremap", "cleararena", "repairquay", "turnquay",
+                        "gatecut")
                 : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);

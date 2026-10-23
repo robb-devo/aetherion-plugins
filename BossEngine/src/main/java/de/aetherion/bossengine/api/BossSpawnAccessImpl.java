@@ -118,20 +118,17 @@ public final class BossSpawnAccessImpl implements BossSpawnAccess {
         }
     }
 
+    /**
+     * Same test as the spawn cap: an encounter holds its slot while it is ALIVE, also in the seconds its body is
+     * gone (chunk unload, a removal the manager is still replacing). Asking only for a living body said "not awake"
+     * while {@link #spawn} refused for the held slot, and the exile ritual told the player to ask staff.
+     */
     @Override
     public boolean alive(String templateId) {
-        BossEngineAPI api = BossEngine.getAPI();
-        if (api == null || templateId == null) {
+        if (plugin.getBossManager() == null || templateId == null) {
             return false;
         }
-        for (BossInstance instance : api.getActiveBosses()) {
-            if (instance != null && instance.getTemplate() != null
-                    && templateId.equalsIgnoreCase(instance.getTemplate().getId())
-                    && instance.getState() == de.aetherion.bossengine.instance.BossState.ALIVE) {
-                return true;
-            }
-        }
-        return false;
+        return !plugin.getBossManager().getByTemplate(templateId).isEmpty();
     }
 
     @Override
