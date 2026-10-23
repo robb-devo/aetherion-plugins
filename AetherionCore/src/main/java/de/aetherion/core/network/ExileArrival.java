@@ -79,7 +79,13 @@ public final class ExileArrival implements Listener {
     /** Legacy tag of the old armor-stand camera (purged on boot). */
     public static final String TAG = "aetherion_exile_arrival";
 
-    private static final int TP_TICKS = 3;
+    /**
+     * Client-side smoothing of every moving part (camera, barge, slings). Rotations travel as bytes (1.4 degree
+     * steps) and packets arrive in bursts over the internet; at 3 ticks both showed as a stutter.
+     */
+    private static final int TP_TICKS = 6;
+    /** The white holds until every chunk this close to the lens has reached the client (meshing happens in the white). */
+    private static final int SENT_RADIUS = 9;
 
     // ------------------------------------------------------------------ authored against Runde 7 anchors
     /** Barge origin when docked: deck surface centre of the berth barge (ferry_box 156..170 / 70..77 / 11..17). */
@@ -130,7 +136,7 @@ public final class ExileArrival implements Listener {
     private static final double FADE_FERRYMAN_AT = 45.2;
     private static final int RIDE_TICKS = (int) Math.round(47.5 * 20);
     private static final int PREROLL_MIN = 30;
-    private static final int PREROLL_MAX = 220;
+    private static final int PREROLL_MAX = 300;
 
     /** The ferry cable runs this high over the barge's deck, along its line (sampled once a second). */
     private static final double CABLE_UP = 8.0;
@@ -867,8 +873,12 @@ public final class ExileArrival implements Listener {
         try {
             int cx = player.getLocation().getBlockX() >> 4;
             int cz = player.getLocation().getBlockZ() >> 4;
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
+            int r = Math.max(1, Math.min(SENT_RADIUS, Math.min(player.getClientViewDistance(), player.getSendViewDistance()) - 1));
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (dx * dx + dz * dz > r * r) {
+                        continue;
+                    }
                     long key = ((long) (cx + dx) & 0xffffffffL) | (((long) (cz + dz) & 0xffffffffL) << 32);
                     if (!player.isChunkSent(key)) {
                         return false;

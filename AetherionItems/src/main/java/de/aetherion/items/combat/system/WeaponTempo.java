@@ -2,6 +2,7 @@ package de.aetherion.items.combat.system;
 
 import de.aetherion.items.core.ItemKeys;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -12,7 +13,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Attack speed per weapon class.
@@ -30,6 +35,8 @@ final class WeaponTempo {
 
     private final CombatSystem system;
     private final NamespacedKey key = ItemKeys.key("weapon_tempo");
+    /** Last tempo named in the action bar per player, so a switch only speaks up when the class changes. */
+    private final Map<UUID, Double> named = new HashMap<>();
 
     WeaponTempo(CombatSystem system) {
         this.system = system;
@@ -56,8 +63,45 @@ final class WeaponTempo {
         }
     }
 
+    /**
+     * After a hotbar switch: an old copy of the held weapon gets its {@code ⚡ Tempo} line (items from before the
+     * tempo only got it on the next join), and the action bar names the tempo whenever the weapon class changes.
+     */
+    void announce(Player player) {
+        if (!player.isOnline()) {
+            return;
+        }
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        String id = hand.getType().isAir() ? null : system.heldItemId(player);
+        String line = id == null ? null : CombatSystem.tempoLine(hand, id);
+        if (line == null) {
+            return;
+        }
+        ItemMeta meta = hand.getItemMeta();
+        List<String> lore = meta == null ? null : meta.getLore();
+        if (lore != null && lore.stream().anyMatch(WeaponTempo::damageLine)
+                && lore.stream().noneMatch(l -> l != null && ChatColor.stripColor(l).contains("Tempo:"))) {
+            system.items().refreshPlayerItems(player);
+            player.updateInventory();
+        }
+        double speed = speedOf(hand, id);
+        Double last = named.put(player.getUniqueId(), speed);
+        if (last == null || Math.abs(last - speed) > 1.0E-4) {
+            String plain = ChatColor.stripColor(line);
+            system.feedback().plain(player, plain + " · strike when the crosshair is full",
+                    plain + " · zuschlagen, wenn das Fadenkreuz voll ist", 50);
+        }
+    }
+
+    /** The tooltip puts the tempo under the damage line; without one it never shows, so there is nothing to fix. */
+    private static boolean damageLine(String line) {
+        String plain = line == null ? "" : ChatColor.stripColor(line).toLowerCase(Locale.ROOT);
+        return plain.contains("damage:") || plain.contains("schaden:");
+    }
+
     /** Quit or kit off: the modifier is saved with the player, so take it off. */
     void clear(Player player) {
+        named.remove(player.getUniqueId());
         AttributeInstance attack = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
         AttributeModifier current = attack == null ? null : find(attack);
         if (current != null) {
