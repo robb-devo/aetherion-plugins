@@ -9,8 +9,30 @@ export function useNetworkStatus() {
   return { status: data, loading }
 }
 
+/** Standalone vanilla Java server (not on Velocity). */
+export function useVanillaStatus() {
+  const { data, loading } = usePolling(() => api.vanilla(), { interval: 30000 })
+  return { status: data, loading }
+}
+
 const RELEASES = `https://github.com/${SITE.launcherRepo}/releases/latest`
 let launcherCache = null
+let launcherLookup = null
+
+/** One GitHub lookup per page load, however many launcher buttons are on screen. */
+function lookupLauncher() {
+  if (!launcherLookup) {
+    launcherLookup = fetch(`https://api.github.com/repos/${SITE.launcherRepo}/releases/latest`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((release) => {
+        const asset = release?.assets?.find((item) => /\.exe$/i.test(item.name) && !/blockmap/i.test(item.name))
+        launcherCache = asset?.browser_download_url ?? null
+        return launcherCache
+      })
+      .catch(() => null)
+  }
+  return launcherLookup
+}
 
 /** Direct link to the newest launcher installer, falling back to the releases page. */
 export function useLauncherDownload() {
@@ -18,18 +40,13 @@ export function useLauncherDownload() {
 
   useEffect(() => {
     if (launcherCache) return undefined
-    const controller = new AbortController()
-    fetch(`https://api.github.com/repos/${SITE.launcherRepo}/releases/latest`, { signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((release) => {
-        const asset = release?.assets?.find((item) => /\.exe$/i.test(item.name) && !/blockmap/i.test(item.name))
-        if (asset?.browser_download_url) {
-          launcherCache = asset.browser_download_url
-          setHref(asset.browser_download_url)
-        }
-      })
-      .catch(() => {})
-    return () => controller.abort()
+    let live = true
+    lookupLauncher().then((url) => {
+      if (live && url) setHref(url)
+    })
+    return () => {
+      live = false
+    }
   }, [])
 
   return href

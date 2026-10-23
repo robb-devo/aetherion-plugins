@@ -93,13 +93,11 @@ function DangerZone({ server }) {
   const showToast = useToast()
   const { navigate } = useRouter()
   const [open, setOpen] = useState(false)
-  const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const matches = typed.trim() === server.name
 
   async function remove() {
-    if (!matches || busy) return
+    if (busy) return
     setBusy(true)
     setError(null)
     try {
@@ -128,7 +126,6 @@ function DangerZone({ server }) {
         onClose={() => {
           if (busy) return
           setOpen(false)
-          setTyped('')
           setError(null)
         }}
         title={interpolate(t.confirmTitle, { name: server.name })}
@@ -137,7 +134,7 @@ function DangerZone({ server }) {
             <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)} disabled={busy}>
               {copy.ui.cancel}
             </button>
-            <button type="button" className="btn btn-danger notch" onClick={remove} disabled={!matches || busy}>
+            <button type="button" className="btn btn-danger notch" onClick={remove} disabled={busy}>
               {busy ? <Spinner /> : null}
               {busy ? t.deleting : t.confirm}
             </button>
@@ -145,14 +142,6 @@ function DangerZone({ server }) {
         }
       >
         <p>{t.confirmBody}</p>
-        <input
-          className="field mt-4"
-          value={typed}
-          placeholder={server.name}
-          aria-label={t.confirmTitle}
-          onChange={(event) => setTyped(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && remove()}
-        />
         {error ? (
           <div className="mt-3">
             <Notice tone="error">{errorMessage(error, copy)}</Notice>
@@ -344,7 +333,18 @@ export default function ServerDashboard({ id }) {
             value={server.usage?.memoryMb != null ? formatRam(server.usage.memoryMb) : t.stats.offline}
             sub={interpolate(t.stats.allocated, { ram: formatRam(server.ramMb) })}
           />
-          <Stat label={t.stats.cpu} value={server.usage?.cpuPercent != null ? `${server.usage.cpuPercent} %` : t.stats.offline} />
+          <Stat
+            label={t.stats.cpu}
+            value={server.usage?.cpuPercent != null ? `${server.usage.cpuPercent} %` : t.stats.offline}
+            sub={
+              server.usage?.cpuPercent != null
+                ? interpolate(t.stats.cpuOfCores, {
+                    n: server.usage.cpuCores ?? server.cpuCores ?? 1,
+                    host: server.usage.cpuHostPercent != null ? `${server.usage.cpuHostPercent}` : '—',
+                  })
+                : null
+            }
+          />
           <Stat label={t.stats.uptime} value={server.startedAt ? formatDuration(server.startedAt, now) : t.stats.offline} />
           <Stat label={t.stats.version} value={server.version} sub={SOFTWARE_LABEL[server.software] ?? server.software} />
         </div>

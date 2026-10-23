@@ -44,11 +44,17 @@ export default function Playground() {
               </li>
             ))}
           </ul>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link to={signedIn ? '/servers' : '/register'} className="btn btn-primary btn-lg notch">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link to={signedIn ? '/servers/new' : '/register'} className="btn btn-primary btn-lg notch">
               {signedIn ? copy.playground.ctaAuthed : copy.playground.cta}
             </Link>
-            {signedIn ? null : <span className="text-xs text-ash">{copy.playground.note}</span>}
+            {signedIn ? (
+              <Link to="/servers" className="btn btn-secondary btn-lg notch">
+                {copy.playground.ctaManage}
+              </Link>
+            ) : (
+              <span className="w-full text-xs text-ash">{copy.playground.note}</span>
+            )}
           </div>
         </Reveal>
         <Reveal delay={100}>
