@@ -199,9 +199,15 @@ public final class IslandLink implements Listener {
             }
             String replay = canonical + (args.length == 0 ? "" : " " + String.join(" ", args));
             String target = islandsServer();
-            if (!router.travel(player, target, RouteBook.Kind.COMMAND, replay, NetworkRouter.DEPART_ISLANDS, canonical)) {
-                player.sendMessage("§7The isles are out of reach right now — try again in a moment.");
-            }
+            // Success has to reach the client before Connect drops this backend, or the line stays red.
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                if (!router.travel(player, target, RouteBook.Kind.COMMAND, replay, NetworkRouter.DEPART_ISLANDS, canonical)) {
+                    player.sendMessage("§7The isles are out of reach right now — try again in a moment.");
+                }
+            });
             return true;
         }
 
