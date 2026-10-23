@@ -23,7 +23,7 @@
 param([switch]$Yes, [Parameter(Mandatory = $true)][string]$Ssh, [Parameter(Mandatory = $true)][string]$RemoteOps)
 $ErrorActionPreference = 'Stop'
 
-$Expect   = 'EXPECT_SHA'                                                                # merge of the exile void PR
+$Expect   = '8f44510903c4739993ad769e3ed36d217a67ef0a'                                  # exile void commit; GitHub main must contain it
 $RepoUrl  = 'https://github.com/robb-devo/aetherion-plugins.git'
 $Ops      = Join-Path $env:USERPROFILE 'IdeaProjects\aetherion-ops'
 $AePs1    = Join-Path $Ops 'bin\ae.ps1'
