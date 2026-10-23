@@ -10,18 +10,23 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.server.ServerLoadEvent;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -35,6 +40,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Registered at server load, only for labels nobody else took. Never on mmo-i (Guilds answers there)
  * and never on the hub. The Items manager buttons call the same commands.
+ *
+ * <p>Island worlds left on disk from before the move ({@code network.islands.old-worlds}) are closed: whoever logged
+ * off there wakes at spawn, and nothing teleports into them; both get the way to the isles instead.
  */
 public final class IslandLink implements Listener {
 
@@ -46,6 +54,7 @@ public final class IslandLink implements Listener {
     private final Set<UUID> nudged = ConcurrentHashMap.newKeySet();
     private final File nudgeFile;
     private boolean nudgeDirty;
+    private final Set<String> oldWorlds = new HashSet<>();
 
     public IslandLink(AetherionCore plugin, NetworkRouter router) {
         this.plugin = plugin;
@@ -89,6 +98,15 @@ public final class IslandLink implements Listener {
         register(map, new Shim("friend", "Friends and island visits (crosses to the Isles)", List.of("friends", "freund", "freunde"),
                 List.of("add", "accept", "deny", "remove", "visit", "list")));
         remote = !registered.isEmpty();
+        if (remote) {
+            List<String> old = plugin.getConfig().isSet("network.islands.old-worlds")
+                    ? plugin.getConfig().getStringList("network.islands.old-worlds") : List.of("aether_islands", "aether_guilds");
+            for (String name : old) {
+                if (name != null && !name.isBlank()) {
+                    oldWorlds.add(name.trim().toLowerCase(Locale.ROOT));
+                }
+            }
+        }
         plugin.getLogger().info("[Isles] " + here + " routes /island /guild /friend → " + islandsServer()
                 + " (" + registered.size() + " command(s)).");
         if (remote && ServerNames.isMain(here) && plugin.getConfig().getBoolean("network.islands.nudge", true)) {
@@ -202,6 +220,49 @@ public final class IslandLink implements Listener {
             }
             return List.of();
         }
+    }
+
+    // ------------------------------------------------------------------ old island worlds (closed)
+
+    private boolean oldWorld(World world) {
+        return remote && world != null && oldWorlds.contains(world.getName().toLowerCase(Locale.ROOT));
+    }
+
+    private void pointToIsles(Player player) {
+        player.sendMessage(LegacyComponentSerializer.legacySection()
+                .deserialize("§a✦ §7Islands live on the Isles now. §a§n[Sail to your island]")
+                .clickEvent(ClickEvent.runCommand("/island"))
+                .hoverEvent(HoverEvent.showText(Component.text("/island"))));
+    }
+
+    /** Logged off on an island back when the isles lived here: wake at spawn (after the character has landed). */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        if (oldWorlds.isEmpty() || !remote) {
+            return;
+        }
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline() || !oldWorld(player.getWorld())) {
+                return;
+            }
+            World main = Bukkit.getWorlds().get(0);
+            player.teleport(main.getSpawnLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN);
+            player.setFallDistance(0f);
+            pointToIsles(player);
+            plugin.getLogger().info("[Isles] " + player.getName() + " woke in old island world here, sent to spawn.");
+        }, 40L);
+    }
+
+    /** Homes and warps that still point into an old island world lead nowhere. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onTeleport(PlayerTeleportEvent event) {
+        if (event.getTo() == null || !oldWorld(event.getTo().getWorld()) || oldWorld(event.getFrom().getWorld())
+                || event.getPlayer().hasPermission("aetherion.guild.admin")) {
+            return;
+        }
+        event.setCancelled(true);
+        pointToIsles(event.getPlayer());
     }
 
     // ------------------------------------------------------------------ one-time nudge (main world)

@@ -12,8 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,8 +35,8 @@ import java.util.zip.InflaterInputStream;
  * A chunk that holds island blocks was generated (void) by the paste itself, so it can never carry natural bedrock.
  * Every chunk that does (bedrock at the bottom, or not fully generated) is therefore pure overworld and is deleted from
  * region/, entities/ and poi/, also where it touches the island; with {@code generator: AetherionCore} for the world
- * it comes back empty. Built chunks are never touched. Aborts without changing anything when nothing is built near
- * the spawn, or on a format it can't read. Changed region files are copied (whole ones moved) to
+ * it comes back empty. Built chunks are never touched. Aborts without changing anything when no patch of built chunks
+ * is big enough to be the island, or on a format it can't read. Changed region files are copied (whole ones moved) to
  * {@code <world>.void-backup-<time>} next to the world first.
  */
 public final class ExileVoidTrim {
@@ -42,6 +44,8 @@ public final class ExileVoidTrim {
     private static final Pattern REGION = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
     private static final Set<String> AIR = Set.of("minecraft:air", "minecraft:cave_air", "minecraft:void_air");
     private static final String[] DIRS = {"region", "entities", "poi"};
+    /** Fewer built chunks together than this is no island (the paste spans about 90). */
+    private static final int MIN_ISLAND_CHUNKS = 12;
 
     private enum Kind { EMPTY, BUILT, TERRAIN }
 
@@ -84,15 +88,16 @@ public final class ExileVoidTrim {
                 }
             }
         }
-        boolean nearSpawn = false;
-        for (int dx = -3; dx <= 3 && !nearSpawn; dx++) {
-            for (int dz = -3; dz <= 3 && !nearSpawn; dz++) {
-                nearSpawn = chunks.get(key(spawnCx + dx, spawnCz + dz)) == Kind.BUILT;
-            }
+        // The island is the biggest patch of built chunks. The configured spawn need not sit on it (the arrival point
+        // is the ferry's landing), so it is only reported; built chunks are never touched either way.
+        int[] island = biggestPatch(chunks);
+        if (island == null || island[0] < MIN_ISLAND_CHUNKS) {
+            return "aborted, nothing changed: no island found (" + built + " built chunks, biggest patch "
+                    + (island == null ? 0 : island[0]) + ")";
         }
-        if (!nearSpawn || built < 4) {
-            return "aborted, nothing changed: no island near the spawn (" + built + " built chunks)";
-        }
+        log.info("[ExileVoid] island: " + island[0] + " chunks, blocks x " + (island[1] << 4) + ".." + ((island[2] << 4) + 15)
+                + " z " + (island[3] << 4) + ".." + ((island[4] << 4) + 15) + "; spawn chunk " + spawnCx + "," + spawnCz
+                + (chunks.get(key(spawnCx, spawnCz)) == Kind.BUILT ? " is on it" : " is not built"));
         if (terrain == 0) {
             return "nothing to trim: " + built + " built chunks, no terrain left";
         }
@@ -120,6 +125,41 @@ public final class ExileVoidTrim {
         }
         return "trimmed " + terrain + " terrain chunks (" + files + " region files, " + edge.size()
                 + " of them beside the island), kept " + built + " built chunks";
+    }
+
+    /** Size and chunk bounds {size, minX, maxX, minZ, maxZ} of the biggest 8-connected patch of built chunks. */
+    private static int[] biggestPatch(Map<Long, Kind> chunks) {
+        Set<Long> seen = new HashSet<>();
+        int[] best = null;
+        for (Map.Entry<Long, Kind> e : chunks.entrySet()) {
+            if (e.getValue() != Kind.BUILT || !seen.add(e.getKey())) {
+                continue;
+            }
+            int[] patch = {0, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE};
+            ArrayDeque<Long> open = new ArrayDeque<>(List.of(e.getKey()));
+            while (!open.isEmpty()) {
+                long k = open.poll();
+                int cx = (int) (k >> 32);
+                int cz = (int) k;
+                patch[0]++;
+                patch[1] = Math.min(patch[1], cx);
+                patch[2] = Math.max(patch[2], cx);
+                patch[3] = Math.min(patch[3], cz);
+                patch[4] = Math.max(patch[4], cz);
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        long n = key(cx + dx, cz + dz);
+                        if (chunks.get(n) == Kind.BUILT && seen.add(n)) {
+                            open.add(n);
+                        }
+                    }
+                }
+            }
+            if (best == null || patch[0] > best[0]) {
+                best = patch;
+            }
+        }
+        return best;
     }
 
     private static boolean touchesBuilt(Map<Long, Kind> chunks, int cx, int cz) {
