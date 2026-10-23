@@ -92,6 +92,9 @@ public class QuestCompass {
         if (quest == null) {
             return "";
         }
+        if (QuestHint.routedViaLift(player, questTarget(player))) {
+            return de.aetherion.quests.lang.LangPack.say(player, "exile.door.lift", "The King's Lift");
+        }
 
         QuestState state = questManager.getQuestState(player, quest);
         if (state == QuestState.ACTIVE) {
@@ -154,7 +157,12 @@ public class QuestCompass {
     }
 
 
+    /** Where the arrow points: the quest's target, or the lift's arch while that target is above the exile quay. */
     public Location targetLocation(Player player) {
+        return QuestHint.viaLift(player, questTarget(player));
+    }
+
+    private Location questTarget(Player player) {
         if (player == null) {
             return null;
         }

@@ -23,6 +23,7 @@ ui:
   act2_subtitle: "dein Loadout · dein Codex · Booster"
   act2_title: "AKT II · DIE CAPITAL"
   hint: "Hinweis"
+  via_lift: "über den Königslift"
   quest_offer: "§8Quest-Angebot"
   quest_accepted: "Quest angenommen: {0}"
   quest_accepted_plain: "Quest angenommen"
@@ -963,7 +964,7 @@ dialogs:
     ferry_done:
       - "Hab ich doch gesagt. Irgendwie immer auf dieser Seite."
       - "Der Königskai. Seit dem Jahr des Schweigens hat hier keiner mehr festgemacht."
-      - "Der Lift an der Kaimauer fährt hoch zur Hofstadt. Zieh den Hebel. Der beißt."
+      - "Der Lift im großen Bogen an der Kaimauer fährt hoch zur Hofstadt. Klopf an, dann nimmt er dich mit."
     captain_hook:
       - "Hinter der Hofstadt liegt ein Krater, mit Eisen umringt. Da ist etwas brennend hineingefallen."
       - "Am Ring steht noch ein Wachposten. Der will hören, dass es aus ist."
@@ -1660,7 +1661,7 @@ talk:
       next:
         label: "Wohin jetzt?"
         echo: "Wo soll ich hin?"
-        lift: "Erst mit dem Lift hoch. Der Hebel beißt."
+        lift: "Erst mit dem Lift hoch. Der große Bogen an der Kaimauer."
       back:
         label: "Zurück rüber"
         echo: "Bring mich zurück."
@@ -1832,6 +1833,7 @@ talk:
   exile:
     door:
       veil_quay: "Der Schleierkai"
+      lift: "Der Königslift"
       crater: "Der Eisenring"
       observatory: "Das Observatorium"
       ring: "Der Sternenring"

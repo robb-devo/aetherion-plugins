@@ -55,20 +55,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The crossing. One continuous shot from inside the Veil to the Koenigskai:
+ * The crossing, the second half of the shot the Veil Quay began. The lens never leaves the stern: it sits where
+ * the departure on the main world put it ({@link ExileQuay#STERN_EYE}, looking {@link ExileQuay#LOOK_AHEAD}) and
+ * rides the barge all the way down, so the white of the hop is the only cut.
  *
  * <pre>
  *  white      the screen is still the white the player left the Veil Quay in; the character settles meanwhile
- *  0-8 s      on the stern, the Ferryman at the bow, his lantern the only warm thing; he hums four notes
- *  8-15 s     the camera cranes out: the barge alone in the mist under the giant chain (the clip shot)
+ *  0-16 s     in the mist under the giant chain, the Ferryman at the bow, his lantern the only warm thing
  *  16.5 s     the bell strikes once; the Veil tears open in front of the bow
- *  17-25 s    over the bow: the island in the evening backlight, the castle, one lit window
- *  25-41 s    down along the last chain: the cut moorings, the quay wall, the berth
- *  41-47.5 s  the barge sinks into its berth, the Ferryman fades, the lens settles into the player's eyes
+ *  17-41 s    the island in the evening backlight ahead, the cut moorings and the quay wall coming up
+ *  41-47.5 s  the barge sinks into its berth, the Ferryman fades; the player stands where the lens stopped
  * </pre>
  *
  * The barge is the real berth barge copied into displays (the copy sinks back exactly onto its blocks), the
- * camera is one spectated display moved every tick on a C1 spline. As on the Veil Quay the barge hangs on a cable:
+ * camera is one spectated display moved every tick with the barge. As on the Veil Quay the barge hangs on a cable:
  * two trolleys ride it and four slings carry the barge down to the berth, where it is lowered off the cable and the
  * rope lets go with the Ferryman. The white holds until the chunks along the line are loaded (and kept loaded while
  * a crossing runs) and the player has the ground around them. Nothing persists; quit, kick or a crash leaves the
@@ -92,7 +92,7 @@ public final class ExileArrival implements Listener {
     private static final double[] DOCK = {163.5, 72.0, 14.5};
     /** The barge itself inside the berth (stone rim excluded by material). */
     private static final int[] BARGE_BOX = {157, 70, 12, 169, 76, 16};
-    /** Where the player stands when the lens hands back: on the deck at the stern, looking at the Ferryman's hut. */
+    /** Where a ride cut short (skip, quit) leaves the player: on the deck at the stern, looking at the Ferryman's hut. */
     private static final double[] FEET = {167.5, 72.0, 14.5};
     private static final double[] FERRYMAN_SPOT = {160.5, 74.6, 7.5};
     /** The real chain ends at its top link here; the display chain carries it on up into the Veil. */
@@ -110,25 +110,6 @@ public final class ExileArrival implements Listener {
             {167.0, 79.5, 14.5},
             {163.5, 76.4, 14.5},
             DOCK
-    };
-
-    /** Camera keys: time, offset or absolute position, offset or absolute look target. */
-    private record Key(double t, boolean camAbs, double[] cam, boolean lookAbs, double[] look) {
-    }
-
-    private static final Key[] KEYS = {
-            new Key(0.0, false, new double[] {3.6, 1.7, -0.9}, false, new double[] {-14.0, 0.8, -0.4}),
-            new Key(5.0, false, new double[] {3.2, 1.9, 0.9}, false, new double[] {-14.0, 1.2, 0.0}),
-            new Key(8.5, false, new double[] {-2.0, 3.2, 9.5}, false, new double[] {1.5, 0.6, 0.0}),
-            new Key(12.5, false, new double[] {-7.5, 3.8, 8.0}, false, new double[] {0.5, 0.8, 0.0}),
-            new Key(15.5, false, new double[] {1.5, 4.2, 2.0}, false, new double[] {-30.0, -1.0, -4.0}),
-            new Key(18.0, false, new double[] {-3.0, 5.0, 1.0}, true, new double[] {40.0, 150.0, -10.0}),
-            new Key(24.0, false, new double[] {-8.0, 6.0, 0.0}, true, new double[] {-40.0, 172.0, 0.0}),
-            new Key(30.0, false, new double[] {-6.0, 7.5, -4.0}, true, new double[] {110.0, 95.0, 0.0}),
-            new Key(36.0, false, new double[] {4.0, 6.5, 7.0}, true, new double[] {150.0, 74.0, 6.0}),
-            new Key(41.0, false, new double[] {6.5, 4.0, 2.5}, true, new double[] {150.0, 75.0, 12.0}),
-            new Key(44.0, false, new double[] {3.2, 2.5, 1.4}, true, FERRYMAN_SPOT),
-            new Key(47.5, false, new double[] {4.0, 1.62, 0.0}, true, FERRYMAN_SPOT)
     };
 
     private static final double TEAR_AT = 16.5;
@@ -166,8 +147,6 @@ public final class ExileArrival implements Listener {
     private final Set<UUID> driving = ConcurrentHashMap.newKeySet();
     private final File storeFile;
     private final Spline barge;
-    private final Spline camOff;
-    private final Spline lookOff;
     /** The cable's points (world) and the length along it up to each. */
     private final List<Vector> cable = new ArrayList<>();
     private final List<Double> cableAt = new ArrayList<>();
@@ -178,25 +157,9 @@ public final class ExileArrival implements Listener {
         this.host = host;
         this.storeFile = new File(plugin.getDataFolder(), "exile-arrivals.yml");
         this.barge = new Spline(BT, BP);
-        double[] kt = new double[KEYS.length];
-        double[][] co = new double[KEYS.length][];
-        double[][] lo = new double[KEYS.length][];
-        for (int i = 0; i < KEYS.length; i++) {
-            Key k = KEYS[i];
-            kt[i] = k.t();
-            Vector b = barge.at(k.t());
-            co[i] = k.camAbs() ? minus(k.cam(), b) : k.cam();
-            lo[i] = k.lookAbs() ? minus(k.look(), b) : k.look();
-        }
-        this.camOff = new Spline(kt, co);
-        this.lookOff = new Spline(kt, lo);
         layCable();
         loadShown();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-    }
-
-    private static double[] minus(double[] a, Vector b) {
-        return new double[] {a[0] - b.getX(), a[1] - b.getY(), a[2] - b.getZ()};
     }
 
     boolean enabled() {
@@ -370,10 +333,11 @@ public final class ExileArrival implements Listener {
         return m != Material.STONE_BRICKS && m != Material.POLISHED_ANDESITE && m != Material.STONE_BRICK_SLAB;
     }
 
+    /** The lens at {@code t}: on the stern of the barge, looking past the Ferryman at the bow, as on the Veil Quay. */
     private Location frameAt(World world, double t) {
         Vector b = barge.at(t);
-        Vector c = b.clone().add(camOff.at(t));
-        Vector l = b.clone().add(lookOff.at(t));
+        Vector c = b.clone().add(ExileQuay.STERN_EYE.clone());
+        Vector l = b.clone().add(ExileQuay.LOOK_AHEAD.clone());
         Location at = new Location(world, c.getX(), c.getY(), c.getZ());
         Vector dir = l.subtract(c);
         if (dir.lengthSquared() < 1.0e-6) {
@@ -601,10 +565,16 @@ public final class ExileArrival implements Listener {
         Location feet = world == null ? host.spawnLocation()
                 : new Location(world, FEET[0], FEET[1], FEET[2]);
         if (feet != null && world != null) {
-            Location eye = feet.clone().add(0, 1.62, 0);
-            eye.setDirection(new Vector(FERRYMAN_SPOT[0], FERRYMAN_SPOT[1], FERRYMAN_SPOT[2]).subtract(eye.toVector()));
-            feet.setYaw(eye.getYaw());
-            feet.setPitch(eye.getPitch());
+            if (s.tick >= RIDE_TICKS) {
+                // ridden to the berth: the player gets their body exactly under the last frame, so there is no cut
+                Location lens = frameAt(world, RIDE_TICKS / 20.0);
+                feet = new Location(world, lens.getX(), DOCK[1], lens.getZ(), lens.getYaw(), lens.getPitch());
+            } else {
+                Location eye = feet.clone().add(0, 1.62, 0);
+                eye.setDirection(new Vector(FERRYMAN_SPOT[0], FERRYMAN_SPOT[1], FERRYMAN_SPOT[2]).subtract(eye.toVector()));
+                feet.setYaw(eye.getYaw());
+                feet.setPitch(eye.getPitch());
+            }
         }
         if (online && s.rig != null) {
             s.rig.restoreStatic(player);

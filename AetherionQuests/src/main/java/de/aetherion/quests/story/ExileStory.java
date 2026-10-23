@@ -50,13 +50,18 @@ public final class ExileStory implements Listener {
     static {
         SPOTS.put("ferryman", new double[] {160.5, 73.0, 7.5, -45});
         SPOTS.put("exile_lamplighter", new double[] {120.5, 105.0, 6.5, -20});
-        SPOTS.put("exile_sentry", new double[] {71.5, 121.0, -66.5, 0});
+        // beside the Iron Ring's bars on the apron Core digs out of the crater debris (ExileGateCut)
+        SPOTS.put("exile_sentry", new double[] {70.5, 117.0, -69.5, 0});
         SPOTS.put("orrin", new double[] {-110.5, 157.0, -175.5, -90});
         SPOTS.put("exile_usher", new double[] {14.5, 143.0, 65.5, -90});
         SPOTS.put("exile_gardener", new double[] {-53.5, 135.0, 119.5, -90});
         SPOTS.put("exile_mother", new double[] {98.5, 105.0, -40.5, 0});
         SPOTS.put("exile_keeper", new double[] {84.5, 105.0, 109.5, 180});
     }
+
+    /** Earlier spots: someone still standing there goes to the new one once its ground is there. */
+    private static final Map<String, double[]> FORMER_SPOTS = Map.of(
+            "exile_sentry", new double[] {71.5, 121.0, -66.5});
 
     private static ExileStory instance;
 
@@ -90,7 +95,12 @@ public final class ExileStory implements Listener {
         for (Map.Entry<String, double[]> e : SPOTS.entrySet()) {
             Location saved = store == null ? null : store.getSavedLocation(e.getKey());
             if (saved != null && saved.getWorld() != null && saved.getWorld().equals(w)) {
-                continue;
+                if (!movesOn(e.getKey(), saved, w)) {
+                    continue;
+                }
+                new QuestNPCSpawnService().forget(e.getKey());
+                plugin.getLogger().info("Exile cast: " + e.getKey() + " moves from its old spot to "
+                        + e.getValue()[0] + " " + e.getValue()[1] + " " + e.getValue()[2] + ".");
             }
             if (place(e.getKey(), w)) {
                 placed++;
@@ -99,6 +109,26 @@ public final class ExileStory implements Listener {
         if (placed > 0) {
             plugin.getLogger().info("Exile cast: placed " + placed + " NPC(s) at their Runde 7 spots.");
         }
+    }
+
+    /** Still on a former spot, and the new spot has ground (feet and head free, solid below). */
+    private static boolean movesOn(String id, Location saved, World w) {
+        double[] old = FORMER_SPOTS.get(id);
+        double[] now = SPOTS.get(id);
+        if (old == null || now == null) {
+            return false;
+        }
+        double dx = saved.getX() - old[0];
+        double dy = saved.getY() - old[1];
+        double dz = saved.getZ() - old[2];
+        if (dx * dx + dy * dy + dz * dz > 2.0 * 2.0) {
+            return false;
+        }
+        int x = (int) Math.floor(now[0]);
+        int y = (int) Math.floor(now[1]);
+        int z = (int) Math.floor(now[2]);
+        return w.getBlockAt(x, y, z).isPassable() && w.getBlockAt(x, y + 1, z).isPassable()
+                && !w.getBlockAt(x, y - 1, z).isPassable();
     }
 
     /** {@code /questnpc exile}: everyone back to their spot (exile backend), or the Ferryman to the quay. */
@@ -286,7 +316,7 @@ public final class ExileStory implements Listener {
                             .topic(l(p, "ferryman.desk.next.label", "Where now?"), NamedTextColor.GOLD,
                                     l(p, "ferryman.desk.next.echo", "Where should I go?"), () -> {
                                         pointNext(p, qm).run();
-                                        return new String[] {l(p, "ferryman.desk.next.lift", "Up the lift first. The lever bites."),
+                                        return new String[] {l(p, "ferryman.desk.next.lift", "Up the lift first. The big arch on the quay wall."),
                                                 nextDoor(p, qm)[2]};
                                     })
                             .action(l(p, "ferryman.desk.back.label", "Back across"), NamedTextColor.GRAY,

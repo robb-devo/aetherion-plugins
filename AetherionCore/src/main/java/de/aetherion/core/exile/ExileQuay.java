@@ -911,9 +911,12 @@ public final class ExileQuay implements Listener {
                 && m != Material.STONE && m != Material.AIR;
     }
 
-    /** First-person spot on the stern, relative to the rig origin (same as the exile side's opening frame). */
-    private static final Vector STERN_EYE = new Vector(3.6, 1.7, -0.9);
-    private static final Vector LOOK_AHEAD = new Vector(-14.0, 0.6, -0.4);
+    /**
+     * First-person spot on the stern and where it looks, relative to the rig origin (authored: the bow is west).
+     * The exile side rides the whole crossing from the same spot, so the hop reads as one shot. Clone before use.
+     */
+    public static final Vector STERN_EYE = new Vector(3.6, 1.7, -0.9);
+    public static final Vector LOOK_AHEAD = new Vector(-14.0, 0.6, -0.4);
 
     private void tick(Player p, Departure d) {
         if (d.ended) {
