@@ -379,7 +379,8 @@ public final class ExileQuay implements Listener {
         return d;
     }
 
-    private static void place(BlockDisplay d, Location a, Location b, float w, int ticks) {
+    /** Puts bar {@code d} from {@code a} to {@code b} ({@code w} thick); the client glides there over {@code ticks}. */
+    public static void place(BlockDisplay d, Location a, Location b, float w, int ticks) {
         if (d == null || !d.isValid()) {
             return;
         }
@@ -389,7 +390,7 @@ public final class ExileQuay implements Listener {
         d.setTransformation(barShape(a, b, w));
     }
 
-    private static Transformation barShape(Location a, Location b, float w) {
+    public static Transformation barShape(Location a, Location b, float w) {
         Vector3f dir = new Vector3f((float) (b.getX() - a.getX()), (float) (b.getY() - a.getY()), (float) (b.getZ() - a.getZ()));
         float len = Math.max(0.001f, dir.length());
         Quaternionf q = new Quaternionf().rotationTo(new Vector3f(0f, 1f, 0f), dir.normalize());

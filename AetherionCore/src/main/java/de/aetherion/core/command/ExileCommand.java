@@ -167,21 +167,32 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                             "§8Exil §8» §7Schon da. §f/exile return §7bringt dich zurück."));
                     return true;
                 }
+                de.aetherion.core.network.NetworkRouter router = plugin.router();
+                if (router != null && de.aetherion.core.network.ServerNames.isHub(router.here())) {
+                    // The lobby holds no character and no story: the road runs through the main world, which decides.
+                    if (!router.travel(player, router.serverFor("main"), de.aetherion.core.network.RouteBook.Kind.COMMAND,
+                            "exile go", null, "command:exile")) {
+                        player.sendMessage("§7That road is closed right now — try again in a moment.");
+                    }
+                    return true;
+                }
                 ExileQuay quay = plugin.exileQuay();
+                String no = quay == null ? null : quay.refusal(player);
                 if (quay != null && quay.placed()) {
                     if (quay.near(player, 48)) {
                         quay.board(player, "command");
-                    } else if (player.hasPermission("aetherion.core.admin")) {
+                    } else if (no == null) {
+                        // Unlocked: straight across from anywhere, like every other road.
                         link.send(player);
                     } else {
+                        player.sendMessage(Say.t(player, "§8Ferryman §8» §7", "§8Fährmann §8» §7") + no);
                         player.sendMessage(Say.t(player,
                                 "§8Ferry §8» §7The ferry leaves from the Veil Quay, off the far east edge of the Borderlands, in the fog.",
                                 "§8Fähre §8» §7Die Fähre legt am Schleierkai ab, am äußersten Ostrand der Borderlands, im Nebel."));
                     }
                     return true;
                 }
-                // No islet placed yet: the old direct hop, but the story still decides who may cross.
-                String no = quay == null ? null : quay.refusal(player);
+                // No islet on this backend (isles, dungeons): a direct hop, but the story still decides who may cross.
                 if (no != null) {
                     player.sendMessage(Say.t(player, "§8Ferryman §8» §7", "§8Fährmann §8» §7") + no);
                     return true;
