@@ -40,9 +40,17 @@ public final class Network {
         public volatile long powerSince;
         public volatile String powerBy;
         public volatile long lastSeenUp;
+        /** Host-only servers (no Helm agent): list ping + log tail from helm-ctl. */
+        public volatile McPing.Result ping;
+        public volatile long pingAt;
+        public volatile long logOffset;
 
         Srv(Config.ServerDef def) {
             this.def = def;
+        }
+
+        public boolean hostOnly() {
+            return "vanilla".equals(def.kind());
         }
 
         public boolean live() {
@@ -66,6 +74,7 @@ public final class Network {
             }
             if (live()) return "online";
             if (ctlKnown && ctlPid != null) {
+                if (hostOnly()) return "online";
                 // process is there but the plugin is not (yet) talking: booting, or Helm plugin missing
                 return ctlUptimeS < 240 ? "starting" : "degraded";
             }
@@ -148,15 +157,25 @@ public final class Network {
     }
 
     void log(AgentConn c, JsonNode lines) {
+        ingestLogLines(c.server, lines);
+    }
+
+    void ingestLogLines(String id, JsonNode lines) {
         if (!lines.isArray() || lines.isEmpty()) return;
-        Srv s = srv(c.server);
+        Srv s = srv(id);
+        if (s == null) return;
         synchronized (s.console) {
             for (JsonNode l : lines) {
                 s.console.addLast(l);
                 if (s.console.size() > CONSOLE_KEEP) s.console.removeFirst();
             }
         }
-        h.live.log(c.server, lines);
+        h.live.log(id, lines);
+    }
+
+    void applyPing(Srv s, McPing.Result r) {
+        s.ping = r;
+        s.pingAt = System.currentTimeMillis();
     }
 
     void event(AgentConn c, JsonNode e) {
@@ -271,8 +290,21 @@ public final class Network {
             o.put("rss", pr.rss());
             o.put("hostCpu", pr.cpu());
         }
-        if (!o.has("players")) o.put("players", s.players.size());
-        if (detail && s.info != null) o.set("info", s.info);
+        if (s.hostOnly() && s.ping != null && s.ping.ok() && System.currentTimeMillis() - s.pingAt < 30_000) {
+            o.put("players", s.ping.online());
+            o.put("maxPlayers", s.ping.max());
+            if (detail) {
+                ObjectNode info = s.info != null ? ((ObjectNode) s.info).deepCopy() : Json.obj();
+                if (!info.has("mc") && s.ping.version() != null) info.put("mc", s.ping.version());
+                if (!info.has("motd") && s.ping.motd() != null) info.put("motd", s.ping.motd());
+                info.put("software", "Vanilla");
+                o.set("info", info);
+                if (s.ping.sample().size() > 0) o.set("pingPlayers", s.ping.sample());
+            }
+        } else if (!o.has("players")) {
+            o.put("players", s.players.size());
+        }
+        if (detail && s.info != null && !o.has("info")) o.set("info", s.info);
         return o;
     }
 

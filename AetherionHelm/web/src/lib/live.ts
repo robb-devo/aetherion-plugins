@@ -75,6 +75,7 @@ function onSnap(s: Snapshot) {
       push(series, `${v.id}.heap`, v.heapUsed);
       push(series, `${v.id}.cpu`, v.cpu);
       push(series, `${v.id}.rss`, v.rss);
+      push(series, `${v.id}.hostCpu`, v.hostCpu);
       push(series, `${v.id}.entities`, v.entities);
     }
     const seriesT = st.seriesT.slice(-(SERIES_LEN - 1));

@@ -355,6 +355,7 @@ public final class Api {
         app.post("/api/servers/{id}/command", ctx -> {
             need(ctx, "console.command");
             Network.Srv s = server(ctx);
+            if (s.hostOnly()) throw new Fail(409, "Konsole-Befehle sind für diesen Server nicht verfügbar (kein Helm-Plugin).");
             String cmd = str(body(ctx), "command", 1000, true).replaceFirst("^/", "");
             String head = cmd.split("\\s+")[0].toLowerCase(Locale.ROOT);
             if (BLOCKED_COMMANDS.contains(head)) {
@@ -394,6 +395,7 @@ public final class Api {
         app.post("/api/servers/{id}/save", ctx -> {
             need(ctx, "console.command");
             Network.Srv s = server(ctx);
+            if (s.hostOnly()) throw new Fail(409, "Dieser Server hat kein Helm-Plugin.");
             ObjectNode a = Json.obj();
             a.put("command", s.def.kind().equals("velocity") ? "velocity reload" : "save-all");
             a.put("by", sess(ctx).user().display());
@@ -405,6 +407,7 @@ public final class Api {
         app.get("/api/servers/{id}/entities", ctx -> {
             Network.Srv s = server(ctx);
             if (s.def.kind().equals("velocity")) throw new Fail(400, "Der Proxy hat keine Welten.");
+            if (s.hostOnly()) throw new Fail(400, "Für diesen Server gibt es kein Lag-Radar.");
             ctx.json(await(agent(s).request("entities", Json.obj(), 20000)));
         });
 

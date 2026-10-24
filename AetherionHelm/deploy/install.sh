@@ -117,6 +117,10 @@ for line in open(tsv):
         if old.get(sid, {}).get(k):
             s[k] = old[sid][k]
     servers.append(s)
+ids = {s["id"] for s in servers}
+for sid, old_s in old.items():
+    if sid not in ids:
+        servers.append(old_s)
 cfg["servers"] = servers
 tmp = path + ".tmp"
 with open(tmp, "w") as f:

@@ -67,6 +67,24 @@ public final class ServerControl {
             // a stop finished: the process is gone
             if (s.powerOp != null && ("stop".equals(s.powerOp) || "kill".equals(s.powerOp)) && s.ctlPid == null) s.powerOp = null;
         }
+        pollHost();
+    }
+
+    /** Log tail + list ping for servers without a Helm agent (standalone vanilla). */
+    public void pollHost() {
+        for (Network.Srv s : h.net.servers.values()) {
+            if (!s.hostOnly()) continue;
+            if (s.def.port() > 0) {
+                McPing.Result ping = McPing.ping("127.0.0.1", s.def.port(), 2500);
+                h.net.applyPing(s, ping);
+            }
+            Result lr = run(12, "logs", s.def.id(), "180", String.valueOf(s.logOffset));
+            if (lr.code() != 0) continue;
+            JsonNode body = Json.read(lr.out());
+            if (body == null) continue;
+            if (body.path("offset").isNumber()) s.logOffset = body.path("offset").asLong();
+            h.net.ingestLogLines(s.def.id(), body.path("lines"));
+        }
     }
 
     public void pollSlow() {
@@ -93,6 +111,7 @@ public final class ServerControl {
     public String power(String id, String action, String by) {
         Network.Srv s = h.net.srv(id);
         if (s == null) return "Unbekannter Server";
+        if (s.hostOnly()) return s.def.name() + " läuft ohne Helm-Agent — Start/Stop nicht über das Panel.";
         if (!List.of("start", "stop", "restart", "kill").contains(action)) return "Unbekannte Aktion";
         if (s.powerOp != null && System.currentTimeMillis() - s.powerSince < 3 * 60_000) return "Auf " + s.def.name() + " läuft schon: " + s.powerOp;
         s.powerOp = action;

@@ -12,7 +12,7 @@ import { IconButton, Segmented, cx } from "./ui";
 
 const history: Record<string, string[]> = {};
 
-export function Console({ server, canSend, offline }: { server: string; canSend: boolean; offline?: boolean }) {
+export function Console({ server, canSend, offline, hostLog }: { server: string; canSend: boolean; offline?: boolean; hostLog?: boolean }) {
   const lines = useStore(live, (s) => (s.console.server === server ? s.console.lines : EMPTY));
   const [level, setLevel] = useState<"all" | "warn" | "error">("all");
   const [q, setQ] = useState("");
@@ -159,6 +159,7 @@ export function Console({ server, canSend, offline }: { server: string; canSend:
       </div>
       <div className="console-lines" ref={box} onScroll={onScroll}>
         {offline && shown.length === 0 && <div className="console-line"><span /><span className="msg" style={{ color: "rgba(235,238,255,.4)" }}>{t("This server isn't connected. Its log appears here once the Helm plugin is running.")}</span></div>}
+        {hostLog && shown.length === 0 && <div className="console-line"><span /><span className="msg" style={{ color: "rgba(235,238,255,.4)" }}>{t("Tailing latest.log from the host every few seconds…")}</span></div>}
         {shown.map((l, i) => (
           <div key={i} className={cx("console-line", l.lvl, l.lvl === "CMD" && "cmd")}>
             <span className="ts">{clockS(l.ts)}</span>
@@ -198,7 +199,7 @@ export function Console({ server, canSend, offline }: { server: string; canSend:
               if (sugg.length) complete(e.target.value);
             }}
             onKeyDown={onKey}
-            placeholder={offline ? t("Server not connected") : t("Enter a command · Tab to complete · ↑ for history")}
+            placeholder={offline ? t("Server not connected") : hostLog ? t("Read-only — log tail from the host") : t("Enter a command · Tab to complete · ↑ for history")}
             disabled={offline}
             spellCheck={false}
             autoCapitalize="off"

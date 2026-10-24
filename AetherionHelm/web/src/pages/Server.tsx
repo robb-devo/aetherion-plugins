@@ -32,6 +32,8 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
   useTick(10000);
   const tab = (rawTab as Tab) || "overview";
   const proxy = (s ?? detail)?.kind === "velocity";
+  const vanilla = (s ?? detail)?.kind === "vanilla";
+  const hostOnly = vanilla;
 
   if (!s && !detail) {
     return (
@@ -45,7 +47,7 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
   }
   const srv = { ...(detail ?? {}), ...(s ?? {}) } as ServerDetail;
   const online = srv.state === "online";
-  const canPower = can(me, "server.power");
+  const canPower = can(me, "server.power") && !hostOnly;
 
   const power = async (action: "start" | "stop" | "restart" | "kill") => {
     const labels = { start: "Start", stop: t("Stop"), restart: t("Restart"), kill: "Kill" };
@@ -58,8 +60,8 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
     { value: "console", label: t("Console"), icon: <Terminal />, hidden: !can(me, "console.view") },
     { value: "players", label: t("Players"), icon: <Users /> },
     { value: "backends", label: "Backends", icon: <Network />, hidden: !proxy },
-    { value: "radar", label: t("Lag radar"), icon: <Radar />, hidden: proxy },
-    { value: "plugins", label: "Plugins", icon: <Puzzle /> },
+    { value: "radar", label: t("Lag radar"), icon: <Radar />, hidden: proxy || hostOnly },
+    { value: "plugins", label: "Plugins", icon: <Puzzle />, hidden: hostOnly },
     { value: "system", label: "System", icon: <Info /> },
   ];
 
@@ -114,19 +116,26 @@ export function ServerPage({ id, tab: rawTab }: { id: string; tab?: string }) {
           </Banner>
         </div>
       )}
-      {srv.state === "degraded" && (
+      {srv.state === "degraded" && !hostOnly && (
         <div className="mb">
           <Banner tone="orange" icon={<Info />}>
             {t("The process is running, but the Helm plugin isn't reporting. Is")}{" "}<span className="mono">AetherionHelm.jar</span> {t("installed and the token set in config.yml?")}
           </Banner>
         </div>
       )}
+      {hostOnly && (
+        <div className="mb">
+          <Banner tone="accent" icon={<Info />}>
+            {t("Host view only: log tail, list ping, and process stats. No Helm plugin on this server.")}
+          </Banner>
+        </div>
+      )}
 
       <Tabs value={tab} tabs={tabs} onChange={(t) => go("servers", id, t)} />
 
-      {tab === "overview" && (proxy ? <ProxyOverview s={srv} /> : <PaperOverview s={srv} />)}
-      {tab === "console" && <Console server={id} canSend={can(me, "console.command")} offline={!srv.agent} />}
-      {tab === "players" && <ServerPlayers id={id} />}
+      {tab === "overview" && (proxy ? <ProxyOverview s={srv} /> : hostOnly ? <VanillaOverview s={srv} /> : <PaperOverview s={srv} />)}
+      {tab === "console" && <Console server={id} canSend={can(me, "console.command") && !hostOnly} offline={!srv.agent && !hostOnly} hostLog={hostOnly} />}
+      {tab === "players" && <ServerPlayers id={id} detail={detail} hostOnly={hostOnly} />}
       {tab === "backends" && <Backends s={srv} />}
       {tab === "radar" && <LagRadar id={id} online={online} />}
       {tab === "plugins" && <Plugins s={srv} />}
@@ -167,6 +176,69 @@ function useHistory(id: string) {
     />
   );
   return { data: data ?? [], picker };
+}
+
+function VanillaOverview({ s }: { s: ServerDetail }) {
+  const series = useStore(live, (st) => st.series);
+  const { data, picker } = useHistory(s.id);
+  const cpu = s.hostCpu;
+  const rssData = data.map((p) => ({ t: p.t, rss: p.rss }));
+  const playerData = data.map((p) => ({ t: p.t, players: p.players }));
+
+  return (
+    <div className="col" style={{ gap: 16 }}>
+      <div className="grid g4">
+        <Card>
+          <Stat icon={<Users />} label={t("Players")} value={s.players} unit={s.maxPlayers ? `/ ${s.maxPlayers}` : undefined} hint={s.info?.mc ? `Minecraft ${s.info.mc}` : undefined} />
+          <div style={{ marginTop: 6 }}>
+            <Spark values={series[`${s.id}.players`] ?? []} height={26} color="var(--c2)" />
+          </div>
+        </Card>
+        <Card>
+          <Stat icon={<Cpu />} label={t("Process CPU")} value={cpu != null ? n1(cpu * 100) : "–"} unit="%" hint={t("Host-measured Java process")} />
+          <div style={{ marginTop: 10 }}>
+            <Spark values={(series[`${s.id}.hostCpu`] ?? []).map((v) => (isFinite(v) ? v * 100 : NaN))} height={26} color="var(--c4)" />
+          </div>
+        </Card>
+        <Card>
+          <Stat icon={<HardDrive />} label={t("RAM (process)")} value={s.rss ? bytes(s.rss) : "–"} hint={s.xmx ? `Xmx ${s.xmx}` : undefined} />
+          <div style={{ marginTop: 10 }}>
+            <Meter value={s.rss && s.xmx ? s.rss / parseXmx(s.xmx) : 0} tone="" />
+          </div>
+        </Card>
+        <Card>
+          <Stat icon={<Timer />} label={t("Uptime")} value={s.uptime ? duration(s.uptime) : "–"} hint={s.pid ? `PID ${s.pid}` : undefined} />
+        </Card>
+      </div>
+      {s.info?.motd && (
+        <Card>
+          <CardHead title="MOTD" icon={<Globe2 />} />
+          <div className="small">{s.info.motd}</div>
+        </Card>
+      )}
+      <h2 className="section">
+        {t("History")}
+        <span style={{ marginLeft: "auto" }}>{picker}</span>
+      </h2>
+      <div className="grid g2">
+        <Card>
+          <CardHead title={t("Players")} icon={<Users />} />
+          <AreaChart data={playerData} height={190} series={[{ key: "players", label: t("Players"), color: "var(--c1)" }]} />
+        </Card>
+        <Card>
+          <CardHead title={t("Memory")} icon={<HardDrive />} />
+          <AreaChart data={rssData} height={190} yFormat={(v) => bytes(v, 0)} series={[{ key: "rss", label: t("Process (RSS)"), color: "var(--c5)", format: (v) => bytes(v) }]} />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function parseXmx(xmx: string) {
+  const m = /^(\d+)([GgMm])$/.exec(xmx.trim());
+  if (!m) return 4 * 1024 ** 3;
+  const n = Number(m[1]);
+  return m[2].toUpperCase() === "G" ? n * 1024 ** 3 : n * 1024 ** 2;
 }
 
 function PaperOverview({ s }: { s: ServerDetail }) {
@@ -453,9 +525,39 @@ function Backends({ s }: { s: Server }) {
   );
 }
 
-function ServerPlayers({ id }: { id: string }) {
+function ServerPlayers({ id, detail, hostOnly }: { id: string; detail?: ServerDetail | null; hostOnly?: boolean }) {
   const players = useStore(live, (s) => s.snap?.players ?? []);
   const here = players.filter((p) => p.server === id);
+  const pingList = detail?.pingPlayers ?? [];
+  if (hostOnly) {
+    if (!pingList.length && (detail?.players ?? 0) === 0) {
+      return (
+        <Card>
+          <Empty icon={<Users />} title={t("No one online")} text={t("Names appear here when the list ping includes player samples.")} />
+        </Card>
+      );
+    }
+    return (
+      <Card className="flush">
+        <div className="list">
+          {pingList.map((p) => (
+            <div key={p.uuid || p.name} className="list-item">
+              <Avatar uuid={p.uuid || p.name} name={p.name} size="sm" />
+              <div className="grow">
+                <div className="title">{p.name}</div>
+                <div className="sub faint">{t("From list ping (no inventories)")}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {(detail?.players ?? 0) > pingList.length && (
+          <div className="small faint" style={{ padding: 16 }}>
+            {t("{n} online; Mojang only sent {m} names in the ping sample.", { n: detail?.players ?? 0, m: pingList.length })}
+          </div>
+        )}
+      </Card>
+    );
+  }
   if (!here.length) {
     return (
       <Card>
