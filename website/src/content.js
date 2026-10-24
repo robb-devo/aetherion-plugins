@@ -12,8 +12,6 @@ export const SITE = {
   proxy: 'Velocity',
   discord: 'https://discord.gg/7BWHJaZChb',
   launcherRepo: 'robb-devo/launcheraetherion',
-  paypalEmail: 'mr.minecraft0604@gmail.com',
-  iban: 'DE23 1001 0178 9795 5314 74',
 }
 
 export const NAV_LINKS = [
@@ -51,19 +49,6 @@ export const SHARD_PACKS = [
   { id: 'freund', euros: 2.5, shards: 3000, featured: false },
   { id: 'patron', euros: 5, shards: 7500, featured: true },
 ]
-
-export function paypalUrl({ amount, itemName, lang = 'en' }) {
-  const params = new URLSearchParams({
-    cmd: '_donations',
-    business: SITE.paypalEmail,
-    currency_code: 'EUR',
-    amount: String(amount),
-    item_name: itemName,
-    no_shipping: '1',
-    lc: lang === 'de' ? 'de_DE' : 'en_US',
-  })
-  return `https://www.paypal.com/cgi-bin/webscr?${params.toString()}`
-}
 
 export function formatEuro(n, lang = 'en') {
   return new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-GB', {
