@@ -119,7 +119,7 @@ case "${1:-}" in
     log="$dir/logs/latest.log"
     [[ -f "$log" ]] || { echo '{"offset":0,"lines":[]}'; exit 0; }
     python3 - "$log" "$max" "$offset" <<'PY'
-import json, re, sys
+import json, os, re, sys
 from datetime import datetime
 
 path, max_lines, offset = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
@@ -138,17 +138,20 @@ raw = chunk.decode("utf-8", errors="replace").splitlines()
 if offset > 0 and raw:
     raw = raw[1:]
 raw = raw[-max_lines:]
-today = datetime.now().date()
+log_day = datetime.fromtimestamp(os.path.getmtime(path)).date()
+now_ms = int(datetime.now().timestamp() * 1000)
 lines = []
 for line in raw:
     m = pat.match(line)
     if not m:
         continue
-    h, m_, s_ = m.group(1).split(":")
+    h, mi, sec = m.group(1).split(":")
     try:
-        ts = int(datetime(today.year, today.month, today.day, int(h), int(m_), int(s_)).timestamp() * 1000)
+        ts = int(datetime(log_day.year, log_day.month, log_day.day, int(h), int(mi), int(sec)).timestamp() * 1000)
+        if ts > now_ms + 120_000:
+            ts -= 86_400_000
     except Exception:
-        ts = int(datetime.now().timestamp() * 1000)
+        ts = now_ms
     lines.append({"ts": ts, "lvl": m.group(3), "src": m.group(2), "msg": m.group(4)})
 print(json.dumps({"offset": new_off, "lines": lines}))
 PY
