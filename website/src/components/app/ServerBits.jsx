@@ -2,6 +2,7 @@ import { formatRam, SOFTWARE_LABEL } from '../../lib/format.js'
 import { useLang } from '../../i18n.jsx'
 
 export const RARITY_TEXT = {
+  crysis: 'text-crysis',
   common: 'text-common',
   uncommon: 'text-uncommon',
   rare: 'text-rare',
@@ -11,6 +12,7 @@ export const RARITY_TEXT = {
 }
 
 export const RARITY_BORDER = {
+  crysis: 'border-crysis/70',
   common: 'border-common/55',
   uncommon: 'border-uncommon/55',
   rare: 'border-rare/60',
@@ -48,7 +50,7 @@ export function SoftwareLabel({ software, version }) {
 export function RamTierPicker({ tiers, value, onChange, disabled = false, name = 'ram' }) {
   const { copy } = useLang()
   return (
-    <div role="radiogroup" aria-label={copy.app.create.ram} className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+    <div role="radiogroup" aria-label={copy.app.create.ram} className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
       {tiers.map((tier) => {
         const selected = tier.ramMb === value
         return (
