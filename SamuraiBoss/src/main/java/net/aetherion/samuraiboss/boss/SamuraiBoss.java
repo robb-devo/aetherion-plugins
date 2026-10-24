@@ -22,6 +22,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
+import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Zombie;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.joml.Quaternionf;
@@ -136,6 +138,7 @@ public final class SamuraiBoss {
             setAttr(m, Attribute.GENERIC_STEP_HEIGHT, 1.1);
             setAttr(m, Attribute.GENERIC_FOLLOW_RANGE, 64.0);
             if (m instanceof IronGolem g) g.setPlayerCreated(true);
+            clearSunburn(m);
         });
         Bukkit.getMobGoals().removeAllGoals(hitbox);
         Pathfinder pf = hitbox.getPathfinder();
@@ -146,6 +149,13 @@ public final class SamuraiBoss {
     private static void setAttr(LivingEntity e, Attribute a, double v) {
         AttributeInstance ai = e.getAttribute(a);
         if (ai != null) ai.setBaseValue(v);
+    }
+
+    private static void clearSunburn(LivingEntity e) {
+        e.setFireTicks(0);
+        e.setVisualFire(false);
+        if (e instanceof Zombie z) z.setShouldBurnInDay(false);
+        else if (e instanceof Skeleton s) s.setShouldBurnInDay(false);
     }
 
     public void remove() {
@@ -361,6 +371,7 @@ public final class SamuraiBoss {
         tick++;
         if (flashCooldown > 0) flashCooldown--;
         ensureHitbox();
+        if (hitbox != null && hitbox.isValid()) clearSunburn(hitbox);
         // Position: der Hitbox folgen (oder ausstehende Bewegung ausführen)
         if (pendingMove != null) {
             loc = pendingMove;
