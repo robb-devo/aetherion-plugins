@@ -533,8 +533,9 @@ public final class OriginEvents implements Listener {
             if (!world.isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
                 continue;
             }
-            Vfx.mist(at, Color.fromRGB(0xDDE6EE), rng.nextDouble(14.0d, 24.0d),
-                    new org.bukkit.util.Vector(rng.nextDouble(4.0d, 9.0d), 0.0d, rng.nextDouble(-3.0d, 3.0d)), 140);
+            // Plain cloud particles: the 14-24 block mist orbs read as flat sand-coloured discs on the water
+            // (Robb's screenshot, 2026-10-25), not as fog.
+            world.spawnParticle(org.bukkit.Particle.CLOUD, at, 24, 6.0d, 0.8d, 6.0d, 0.01d);
         }
     }
 
