@@ -356,7 +356,7 @@ public final class ExileLift implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onStopSpectating(PlayerStopSpectatingEntityEvent event) {
-        if (rides.containsKey(event.getPlayer().getUniqueId())) {
+        if (rides.containsKey(event.getPlayer().getUniqueId()) && !CineCam.rebinding(event.getPlayer())) {
             event.setCancelled(true);
         }
     }

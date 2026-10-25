@@ -21,6 +21,9 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * One player's film camera: an invisible display the player spectates. Moving it every tick with a short
@@ -28,18 +31,35 @@ import java.util.List;
  *
  * <p>Also carries the "white": billboarded mist sheets riding the camera, stacked to fade the screen into the
  * Veil (departure) or peeled away to fade out of it (arrival).
+ *
+ * <p>The client only knows the lens once the lens's chunk has reached it. A camera packet sent before that is
+ * dropped by the client while the server believes the player is on the lens, so the player floated as a free
+ * spectator wherever they had joined (the exile arrival, which starts one tick after a server hop). The lens is
+ * therefore attached only once its chunk is sent, and {@link #rebind()} sends it again before a shot opens.
  */
 public final class CineCam {
+
+    /** Players whose lens is being sent again: a stop-spectating guard lets that brief release through. */
+    private static final Set<UUID> REBINDING = ConcurrentHashMap.newKeySet();
+    /** Hold calls the lens's chunk must have been on the client before the camera goes to it (entity pairing). */
+    private static final int SENT_HOLDS = 2;
 
     private final Plugin plugin;
     private final Player viewer;
     private final ItemDisplay cam;
     private final List<TextDisplay> white = new ArrayList<>();
+    private boolean attached;
+    private int sentHolds;
 
     private CineCam(Plugin plugin, Player viewer, ItemDisplay cam) {
         this.plugin = plugin;
         this.viewer = viewer;
         this.cam = cam;
+    }
+
+    /** True while {@code player}'s lens is being sent again ({@link #rebind()}); guards must not cancel that. */
+    public static boolean rebinding(Player player) {
+        return player != null && REBINDING.contains(player.getUniqueId());
     }
 
     public static CineCam start(Plugin plugin, Player viewer, Location at, int teleportTicks) {
@@ -54,12 +74,15 @@ public final class CineCam {
             d.setViewRange(2.0f);
             d.setRotation(at.getYaw(), at.getPitch());
         });
-        viewer.showEntity(plugin, cam);
         CineCam c = new CineCam(plugin, viewer, cam);
         viewer.closeInventory();
         viewer.setGameMode(GameMode.SPECTATOR);
         viewer.teleport(at);
-        viewer.setSpectatorTarget(cam);
+        viewer.showEntity(plugin, cam);
+        if (c.lensSent()) {
+            // the player already has that ground (a shot starting where they stand): on the lens at once
+            c.attach();
+        }
         return c;
     }
 
@@ -69,6 +92,48 @@ public final class CineCam {
 
     public boolean valid() {
         return cam.isValid() && viewer.isOnline();
+    }
+
+    /** The client is on the lens (its chunk had arrived when the camera went to it). */
+    public boolean attached() {
+        return attached;
+    }
+
+    /**
+     * Sends the lens to the client once more (release and attach in the same tick, so nothing shows): a client
+     * that dropped the first camera packet is on the lens afterwards. Call it inside the white.
+     */
+    public void rebind() {
+        if (!attached || !viewer.isOnline() || !cam.isValid() || viewer.getGameMode() != GameMode.SPECTATOR) {
+            return;
+        }
+        UUID id = viewer.getUniqueId();
+        REBINDING.add(id);
+        try {
+            viewer.setSpectatorTarget(null);
+        } catch (Throwable ignored) {
+        } finally {
+            REBINDING.remove(id);
+        }
+        viewer.setSpectatorTarget(cam);
+    }
+
+    private void attach() {
+        attached = true;
+        viewer.setSpectatorTarget(cam);
+    }
+
+    private boolean lensSent() {
+        Location l = cam.getLocation();
+        if (l.getWorld() == null || !l.getWorld().equals(viewer.getWorld())) {
+            return false;
+        }
+        try {
+            long key = ((long) (l.getBlockX() >> 4) & 0xffffffffL) | (((long) (l.getBlockZ() >> 4) & 0xffffffffL) << 32);
+            return viewer.isChunkSent(key);
+        } catch (Throwable ex) {
+            return true;
+        }
     }
 
     /** Next frame (position + yaw/pitch). */
@@ -86,6 +151,20 @@ public final class CineCam {
         }
         if (viewer.getGameMode() != GameMode.SPECTATOR) {
             viewer.setGameMode(GameMode.SPECTATOR);
+        }
+        if (!attached) {
+            // waiting for the lens's chunk: the player stays on the spot (inside the white), not where they joined
+            if (viewer.getWorld() != cam.getWorld() || viewer.getLocation().distanceSquared(cam.getLocation()) > 0.25) {
+                viewer.teleport(cam.getLocation());
+            }
+            if (!lensSent()) {
+                sentHolds = 0;
+                return;
+            }
+            if (++sentHolds >= SENT_HOLDS) {
+                attach();
+            }
+            return;
         }
         Entity target = viewer.getSpectatorTarget();
         if (target == null || !target.getUniqueId().equals(cam.getUniqueId())) {

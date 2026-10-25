@@ -374,8 +374,16 @@ public final class ExileArrival implements Listener {
             if (s.preroll == 2) {
                 sound(player, f, Sound.ITEM_ELYTRA_FLYING, 0.16f, 0.5f);
             }
-            if (s.preroll >= PREROLL_MAX || (s.preroll >= PREROLL_MIN && settled(player) && s.hung && groundSent(player))) {
+            if (s.preroll >= PREROLL_MAX
+                    || (s.preroll >= PREROLL_MIN && s.cam.attached() && settled(player) && s.hung && groundSent(player))) {
                 s.tick = 0;
+                // the lens once more while the screen is still white: every rider opens on the same frame
+                driving.add(s.id);
+                try {
+                    s.cam.rebind();
+                } finally {
+                    driving.remove(s.id);
+                }
                 s.cam.clearWhite(36);
             }
             return;
@@ -957,7 +965,7 @@ public final class ExileArrival implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onStopSpectating(PlayerStopSpectatingEntityEvent event) {
         Session s = sessions.get(event.getPlayer().getUniqueId());
-        if (s == null || s.ended) {
+        if (s == null || s.ended || CineCam.rebinding(event.getPlayer())) {
             return;
         }
         event.setCancelled(true);

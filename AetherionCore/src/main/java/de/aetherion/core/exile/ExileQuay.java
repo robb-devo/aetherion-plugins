@@ -579,8 +579,8 @@ public final class ExileQuay implements Listener {
             String block = link.isExileServer() ? "" : refusal(p);
             if (block == null) {
                 if (!walks.containsKey(p.getUniqueId())) {
-                    p.sendActionBar(Component.text(Say.t(p, "Aboard the King's Ferry · ring the bell or sneak to cast off",
-                            "An Bord der Königsfähre · Glocke läuten oder schleichen zum Ablegen"), NamedTextColor.GRAY));
+                    p.sendActionBar(Component.text(Say.t(p, "Aboard the King's Ferry · ring the bell or sneak for the Ferryman",
+                            "An Bord der Königsfähre · Glocke läuten oder schleichen, der Fährmann kommt"), NamedTextColor.GRAY));
                 }
                 p.playSound(p.getLocation(), Sound.BLOCK_WOOD_STEP, SoundCategory.BLOCKS, 0.6f, 0.6f);
                 if (!departing.containsKey(p.getUniqueId())) {
@@ -657,7 +657,9 @@ public final class ExileQuay implements Listener {
         if (walks.containsKey(id)) {
             return true;
         }
-        if ("talk".equals(via) && walk(p)) {
+        // Every way aboard (talk, bell, sneak on deck, /exile go) goes with the Ferryman: he walks ahead and the
+        // crossing starts once the passenger has followed him onto the deck. Without his NPC it casts off at once.
+        if (walk(p)) {
             return true;
         }
         depart(p, null);
@@ -732,7 +734,10 @@ public final class ExileQuay implements Listener {
             return;
         }
         if (w.arrivedAt < 0) {
-            if (gap > 5.5) {
+            Location end = w.path.get(w.path.size() - 1);
+            boolean ahead = onDeck(p.getLocation())
+                    || p.getLocation().distanceSquared(end) < me.distanceSquared(end);
+            if (gap > 5.5 && !ahead) {
                 // he waits and looks back for the passenger
                 w.yaw = approach(w.yaw, yawTo(me, p.getLocation()), 12f);
                 me.setYaw(w.yaw);
@@ -782,8 +787,9 @@ public final class ExileQuay implements Listener {
             w.escort.moveTo(me);
         }
         if (w.boardAt < 0 && onDeck(p.getLocation())) {
+            // both aboard: a breath on the deck, then the shot
             fogUp(p);
-            w.boardAt = w.tick + 30;
+            w.boardAt = w.tick + 20;
         }
         if (w.boardAt >= 0 && w.tick >= w.boardAt) {
             walks.remove(w.id);
@@ -1043,7 +1049,7 @@ public final class ExileQuay implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onStopSpectating(PlayerStopSpectatingEntityEvent event) {
-        if (departing.containsKey(event.getPlayer().getUniqueId())) {
+        if (departing.containsKey(event.getPlayer().getUniqueId()) && !CineCam.rebinding(event.getPlayer())) {
             event.setCancelled(true);
         }
     }
