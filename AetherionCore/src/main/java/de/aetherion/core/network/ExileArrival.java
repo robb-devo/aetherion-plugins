@@ -1,6 +1,7 @@
 package de.aetherion.core.network;
 
 import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
+import io.papermc.paper.event.packet.PlayerChunkLoadEvent;
 
 import de.aetherion.core.AetherionCore;
 import de.aetherion.core.api.CharacterTransport;
@@ -8,6 +9,7 @@ import de.aetherion.core.api.ExileArrivalEvent;
 import de.aetherion.core.exile.BlockRig;
 import de.aetherion.core.exile.CineCam;
 import de.aetherion.core.exile.ExileProps;
+import de.aetherion.core.exile.ExileQuay;
 import de.aetherion.core.exile.Say;
 import de.aetherion.core.exile.Spline;
 import de.aetherion.core.exile.VeilFog;
@@ -28,6 +30,7 @@ import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -36,6 +39,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -47,38 +51,48 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The crossing. One continuous shot from inside the Veil to the Koenigskai:
+ * The crossing, the second half of the shot the Veil Quay began. The lens never leaves the stern: it sits where
+ * the departure on the main world put it ({@link ExileQuay#STERN_EYE}, looking {@link ExileQuay#LOOK_AHEAD}) and
+ * rides the barge all the way down, so the white of the hop is the only cut.
  *
  * <pre>
  *  white      the screen is still the white the player left the Veil Quay in; the character settles meanwhile
- *  0-8 s      on the stern, the Ferryman at the bow, his lantern the only warm thing; he hums four notes
- *  8-15 s     the camera cranes out: the barge alone in the mist under the giant chain (the clip shot)
+ *  0-16 s     in the mist under the giant chain, the Ferryman at the bow, his lantern the only warm thing
  *  16.5 s     the bell strikes once; the Veil tears open in front of the bow
- *  17-25 s    over the bow: the island in the evening backlight, the castle, one lit window
- *  25-41 s    down along the last chain: the cut moorings, the quay wall, the berth
- *  41-47.5 s  the barge sinks into its berth, the Ferryman fades, the lens settles into the player's eyes
+ *  17-41 s    the island in the evening backlight ahead, the cut moorings and the quay wall coming up
+ *  41-47.5 s  the barge sinks into its berth, the Ferryman fades; the player stands where the lens stopped
  * </pre>
  *
  * The barge is the real berth barge copied into displays (the copy sinks back exactly onto its blocks), the
- * camera is one spectated display moved every tick on a C1 spline. Nothing persists; quit, kick or a crash
- * leaves the player on the quay in adventure mode.
+ * camera is one spectated display moved every tick with the barge. As on the Veil Quay the barge hangs on a cable:
+ * two trolleys ride it and four slings carry the barge down to the berth, where it is lowered off the cable and the
+ * rope lets go with the Ferryman. The white holds until the chunks along the line are loaded (and kept loaded while
+ * a crossing runs) and the player has the ground around them. Nothing persists; quit, kick or a crash leaves the
+ * player on the quay in adventure mode.
  */
 public final class ExileArrival implements Listener {
 
     /** Legacy tag of the old armor-stand camera (purged on boot). */
     public static final String TAG = "aetherion_exile_arrival";
 
-    private static final int TP_TICKS = 3;
+    /**
+     * Client-side smoothing of every moving part (camera, barge, slings). Rotations travel as bytes (1.4 degree
+     * steps) and packets arrive in bursts over the internet; at 3 ticks both showed as a stutter.
+     */
+    private static final int TP_TICKS = 6;
+    /** The white holds until every chunk this close to the lens has reached the client (meshing happens in the white). */
+    private static final int SENT_RADIUS = 9;
 
     // ------------------------------------------------------------------ authored against Runde 7 anchors
     /** Barge origin when docked: deck surface centre of the berth barge (ferry_box 156..170 / 70..77 / 11..17). */
     private static final double[] DOCK = {163.5, 72.0, 14.5};
     /** The barge itself inside the berth (stone rim excluded by material). */
     private static final int[] BARGE_BOX = {157, 70, 12, 169, 76, 16};
-    /** Where the player stands when the lens hands back: on the deck at the stern, looking at the Ferryman's hut. */
+    /** Where a ride cut short (skip, quit) leaves the player: on the deck at the stern, looking at the Ferryman's hut. */
     private static final double[] FEET = {167.5, 72.0, 14.5};
     private static final double[] FERRYMAN_SPOT = {160.5, 74.6, 7.5};
     /** The real chain ends at its top link here; the display chain carries it on up into the Veil. */
@@ -98,31 +112,30 @@ public final class ExileArrival implements Listener {
             DOCK
     };
 
-    /** Camera keys: time, offset or absolute position, offset or absolute look target. */
-    private record Key(double t, boolean camAbs, double[] cam, boolean lookAbs, double[] look) {
-    }
-
-    private static final Key[] KEYS = {
-            new Key(0.0, false, new double[] {3.6, 1.7, -0.9}, false, new double[] {-14.0, 0.8, -0.4}),
-            new Key(5.0, false, new double[] {3.2, 1.9, 0.9}, false, new double[] {-14.0, 1.2, 0.0}),
-            new Key(8.5, false, new double[] {-2.0, 3.2, 9.5}, false, new double[] {1.5, 0.6, 0.0}),
-            new Key(12.5, false, new double[] {-7.5, 3.8, 8.0}, false, new double[] {0.5, 0.8, 0.0}),
-            new Key(15.5, false, new double[] {1.5, 4.2, 2.0}, false, new double[] {-30.0, -1.0, -4.0}),
-            new Key(18.0, false, new double[] {-3.0, 5.0, 1.0}, true, new double[] {40.0, 150.0, -10.0}),
-            new Key(24.0, false, new double[] {-8.0, 6.0, 0.0}, true, new double[] {-40.0, 172.0, 0.0}),
-            new Key(30.0, false, new double[] {-6.0, 7.5, -4.0}, true, new double[] {110.0, 95.0, 0.0}),
-            new Key(36.0, false, new double[] {4.0, 6.5, 7.0}, true, new double[] {150.0, 74.0, 6.0}),
-            new Key(41.0, false, new double[] {6.5, 4.0, 2.5}, true, new double[] {150.0, 75.0, 12.0}),
-            new Key(44.0, false, new double[] {3.2, 2.5, 1.4}, true, FERRYMAN_SPOT),
-            new Key(47.5, false, new double[] {4.0, 1.62, 0.0}, true, FERRYMAN_SPOT)
-    };
-
     private static final double TEAR_AT = 16.5;
     private static final double TITLE_AT = 18.5;
     private static final double FADE_FERRYMAN_AT = 45.2;
     private static final int RIDE_TICKS = (int) Math.round(47.5 * 20);
     private static final int PREROLL_MIN = 30;
-    private static final int PREROLL_MAX = 220;
+    private static final int PREROLL_MAX = 300;
+
+    /** The ferry cable runs this high over the barge's deck, along its line (sampled once a second). */
+    private static final double CABLE_UP = 8.0;
+    /** From here the barge is lowered into its berth; cable and trolleys stay where they are. */
+    private static final double CABLE_END_T = 44.0;
+    /** The cable runs on this far behind the barge's first position, up into the Veil. */
+    private static final double CABLE_HEAD = 36.0;
+    /** Trolleys ride the cable this far fore and aft of the barge's middle; slings go down to both gunwales. */
+    private static final double SLING_SPREAD = 2.6;
+    /** The slings' feet: this far fore and aft of the deck's middle, on both gunwales. */
+    private static final double FOOT_SPREAD = 4.6;
+    private static final double SLING_SIDE = 2.3;
+    private static final double SLING_FOOT = 0.8;
+    private static final int UNHOOK_TICKS = 18;
+    /** Chunks along the line (x1, z1, x2, z2), kept loaded while a crossing runs. */
+    private static final int[] LINE_CHUNKS = {9, -1, 21, 1};
+    /** View distance a rider gets for the crossing, so the island is there when the Veil tears. */
+    private static final int RIDE_VIEW = 14;
 
     /** Bell hymn (OriginBells): the Ferryman hums the first notes and loses the rest. */
     private static final float[] HYMN = {0.749f, 0.841f, 0.944f, 1.122f, 1.26f, 1.498f, 1.682f};
@@ -134,32 +147,19 @@ public final class ExileArrival implements Listener {
     private final Set<UUID> driving = ConcurrentHashMap.newKeySet();
     private final File storeFile;
     private final Spline barge;
-    private final Spline camOff;
-    private final Spline lookOff;
+    /** The cable's points (world) and the length along it up to each. */
+    private final List<Vector> cable = new ArrayList<>();
+    private final List<Double> cableAt = new ArrayList<>();
+    private boolean lineHeld;
 
     ExileArrival(AetherionCore plugin, ExileHost host) {
         this.plugin = plugin;
         this.host = host;
         this.storeFile = new File(plugin.getDataFolder(), "exile-arrivals.yml");
         this.barge = new Spline(BT, BP);
-        double[] kt = new double[KEYS.length];
-        double[][] co = new double[KEYS.length][];
-        double[][] lo = new double[KEYS.length][];
-        for (int i = 0; i < KEYS.length; i++) {
-            Key k = KEYS[i];
-            kt[i] = k.t();
-            Vector b = barge.at(k.t());
-            co[i] = k.camAbs() ? minus(k.cam(), b) : k.cam();
-            lo[i] = k.lookAbs() ? minus(k.look(), b) : k.look();
-        }
-        this.camOff = new Spline(kt, co);
-        this.lookOff = new Spline(kt, lo);
+        layCable();
         loadShown();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-    }
-
-    private static double[] minus(double[] a, Vector b) {
-        return new double[] {a[0] - b.getX(), a[1] - b.getY(), a[2] - b.getZ()};
     }
 
     boolean enabled() {
@@ -232,6 +232,8 @@ public final class ExileArrival implements Listener {
         BlockRig chain;
         VeilFog fog;
         ExileProps.Ferryman ferryman;
+        final List<BlockDisplay> rope = new ArrayList<>();
+        final List<BlockDisplay> slings = new ArrayList<>();
         BukkitTask task;
         int preroll;
         int tick = -1;
@@ -242,6 +244,10 @@ public final class ExileArrival implements Listener {
         boolean faded;
         boolean ended;
         boolean quitting;
+        boolean hung;
+        int unhookAt = -1;
+        int viewWas = -1;
+        int sendWas = -1;
 
         Session(UUID id, GameMode prior, boolean canSkip) {
             this.id = id;
@@ -290,11 +296,15 @@ public final class ExileArrival implements Listener {
                             x -> fogLine(x) + 3.0, 74, 52, 0x2C, 0x4A, id.getLeastSignificantBits())
                     .with(VeilFog.corridor(plugin, world, List.of(player), false, 219, 207, 3.5, 14.0,
                             x -> fogLine(x) + 4.0, 90, 64, 0x60, 0x88, id.getMostSignificantBits()));
+            widen(player, s);
+            holdLine(world, () -> hang(world, player, s));
         } catch (RuntimeException ex) {
             plugin.getLogger().warning("Exile crossing could not start for " + player.getName() + ": " + ex.getMessage());
             cleanup(s);
+            narrow(player, s);
             sessions.remove(id);
             driving.remove(id);
+            releaseLine();
             return false;
         }
         s.task = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> tick(player, s), 1L, 1L);
@@ -323,10 +333,11 @@ public final class ExileArrival implements Listener {
         return m != Material.STONE_BRICKS && m != Material.POLISHED_ANDESITE && m != Material.STONE_BRICK_SLAB;
     }
 
+    /** The lens at {@code t}: on the stern of the barge, looking past the Ferryman at the bow, as on the Veil Quay. */
     private Location frameAt(World world, double t) {
         Vector b = barge.at(t);
-        Vector c = b.clone().add(camOff.at(t));
-        Vector l = b.clone().add(lookOff.at(t));
+        Vector c = b.clone().add(ExileQuay.STERN_EYE.clone());
+        Vector l = b.clone().add(ExileQuay.LOOK_AHEAD.clone());
         Location at = new Location(world, c.getX(), c.getY(), c.getZ());
         Vector dir = l.subtract(c);
         if (dir.lengthSquared() < 1.0e-6) {
@@ -363,7 +374,7 @@ public final class ExileArrival implements Listener {
             if (s.preroll == 2) {
                 sound(player, f, Sound.ITEM_ELYTRA_FLYING, 0.16f, 0.5f);
             }
-            if (s.preroll >= PREROLL_MAX || (s.preroll >= PREROLL_MIN && settled(player))) {
+            if (s.preroll >= PREROLL_MAX || (s.preroll >= PREROLL_MIN && settled(player) && s.hung && groundSent(player))) {
                 s.tick = 0;
                 s.cam.clearWhite(36);
             }
@@ -374,6 +385,22 @@ public final class ExileArrival implements Listener {
         double t = k / 20.0;
         Vector b = barge.at(t);
         s.rig.moveTo(new Location(world, b.getX(), b.getY(), b.getZ()));
+        if (!s.slings.isEmpty()) {
+            if (s.unhookAt < 0 && t >= FADE_FERRYMAN_AT) {
+                // lowered into the berth: the Veil's rope lets go with the Ferryman
+                s.unhookAt = k;
+                s.rope.forEach(d -> thin(d, UNHOOK_TICKS));
+                for (int i = 0; i < s.slings.size(); i += 3) {
+                    player.spawnParticle(Particle.WHITE_ASH, s.slings.get(i).getLocation(), 24, 0.4, 0.6, 0.4, 0.01);
+                }
+            }
+            int gone = s.unhookAt < 0 ? 0 : k - s.unhookAt;
+            if (gone > UNHOOK_TICKS + 2) {
+                dropRigging(s);
+            } else {
+                moveSlings(world, s, t, TP_TICKS, 1f - Math.min(1f, gone / (float) UNHOOK_TICKS));
+            }
+        }
         Location f = frameAt(world, t);
         s.cam.frame(f);
         cues(player, s, k, t, f);
@@ -538,10 +565,16 @@ public final class ExileArrival implements Listener {
         Location feet = world == null ? host.spawnLocation()
                 : new Location(world, FEET[0], FEET[1], FEET[2]);
         if (feet != null && world != null) {
-            Location eye = feet.clone().add(0, 1.62, 0);
-            eye.setDirection(new Vector(FERRYMAN_SPOT[0], FERRYMAN_SPOT[1], FERRYMAN_SPOT[2]).subtract(eye.toVector()));
-            feet.setYaw(eye.getYaw());
-            feet.setPitch(eye.getPitch());
+            if (s.tick >= RIDE_TICKS) {
+                // ridden to the berth: the player gets their body exactly under the last frame, so there is no cut
+                Location lens = frameAt(world, RIDE_TICKS / 20.0);
+                feet = new Location(world, lens.getX(), DOCK[1], lens.getZ(), lens.getYaw(), lens.getPitch());
+            } else {
+                Location eye = feet.clone().add(0, 1.62, 0);
+                eye.setDirection(new Vector(FERRYMAN_SPOT[0], FERRYMAN_SPOT[1], FERRYMAN_SPOT[2]).subtract(eye.toVector()));
+                feet.setYaw(eye.getYaw());
+                feet.setPitch(eye.getPitch());
+            }
         }
         if (online && s.rig != null) {
             s.rig.restoreStatic(player);
@@ -574,6 +607,9 @@ public final class ExileArrival implements Listener {
         if (s.fog != null) {
             s.fog.remove();
         }
+        dropRigging(s);
+        narrow(player, s);
+        releaseLine();
         boolean reached = completed || s.tick >= (int) (TEAR_AT * 20);
         boolean first = !hasSeen(s.id);
         if (reached) {
@@ -609,6 +645,251 @@ public final class ExileArrival implements Listener {
         }
         if (s.fog != null) {
             s.fog.remove();
+        }
+        dropRigging(s);
+    }
+
+    // ------------------------------------------------------------------ the ferry cable
+
+    /** The cable's line: up in the Veil behind the start, along the barge's line once a second, out past the berth. */
+    private void layCable() {
+        Vector up = new Vector(0, CABLE_UP, 0);
+        Vector back = barge.at(0.0).subtract(barge.at(0.5));
+        if (back.lengthSquared() < 1.0e-6) {
+            back = new Vector(1, 0, 0);
+        }
+        cable.add(barge.at(0.0).add(up).add(back.normalize().multiply(CABLE_HEAD)));
+        for (int sec = 0; sec <= (int) CABLE_END_T; sec++) {
+            cable.add(barge.at(sec).add(up));
+        }
+        Vector last = cable.get(cable.size() - 1);
+        cable.add(new Vector(last.getX() - SLING_SPREAD - 1.5, last.getY(), last.getZ()));
+        double along = 0.0;
+        cableAt.add(along);
+        for (int i = 1; i < cable.size(); i++) {
+            along += cable.get(i).distance(cable.get(i - 1));
+            cableAt.add(along);
+        }
+    }
+
+    /** How far along the cable the barge's middle is at {@code t} (it stops at {@link #CABLE_END_T}). */
+    private double lineAt(double t) {
+        double c = Math.max(0.0, Math.min(CABLE_END_T, t));
+        int i = Math.min((int) Math.floor(c), (int) CABLE_END_T - 1);
+        double u = c - i;
+        return cableAt.get(1 + i) + (cableAt.get(2 + i) - cableAt.get(1 + i)) * u;
+    }
+
+    /** The point {@code along} blocks down the cable. */
+    private Vector linePoint(double along) {
+        double at = Math.max(0.0, Math.min(cableAt.get(cableAt.size() - 1), along));
+        for (int i = 1; i < cable.size(); i++) {
+            if (at <= cableAt.get(i) || i == cable.size() - 1) {
+                double a = cableAt.get(i - 1);
+                double len = Math.max(1.0e-6, cableAt.get(i) - a);
+                return cable.get(i - 1).clone().add(cable.get(i).clone().subtract(cable.get(i - 1)).multiply((at - a) / len));
+            }
+        }
+        return cable.get(cable.size() - 1).clone();
+    }
+
+    /** Cable, end block, two trolleys and four slings, for this rider only; the white holds until they hang. */
+    private void hang(World world, Player player, Session s) {
+        if (s.ended || sessions.get(s.id) != s || !player.isOnline()) {
+            return;
+        }
+        try {
+            BlockData rope = Material.BLACK_CONCRETE.createBlockData();
+            for (int i = 0; i + 1 < cable.size(); i++) {
+                s.rope.add(bar(player, loc(world, cable.get(i)), loc(world, cable.get(i + 1)), rope, 0.13f));
+            }
+            Vector end = cable.get(cable.size() - 1);
+            s.rope.add(bar(player, loc(world, end.clone().add(new Vector(0, -0.35, 0))), loc(world, end.clone().add(new Vector(0, 0.35, 0))),
+                    Material.POLISHED_DEEPSLATE.createBlockData(), 0.7f));
+            BlockData trolley = Material.IRON_BLOCK.createBlockData();
+            BlockData chain = Material.CHAIN.createBlockData("[axis=y]");
+            Location at = loc(world, barge.at(0.0));
+            Location above = at.clone().add(0, 1, 0);
+            for (int n = 0; n < 2; n++) {
+                s.slings.add(bar(player, at, above, trolley, 0.5f));
+                s.slings.add(bar(player, at, above, chain, 1.0f));
+                s.slings.add(bar(player, at, above, chain, 1.0f));
+            }
+            moveSlings(world, s, 0.0, 0, 1f);
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("Exile crossing: ferry cable not hung for " + player.getName() + " (" + ex + ")");
+        }
+        s.hung = true;
+    }
+
+    /**
+     * Trolleys on the cable fore and aft of the barge's middle, slings down to the gunwales; {@code width} 1 is
+     * full, toward 0 they thin away. Past {@link #CABLE_END_T} the trolleys stay and the slings pay out.
+     */
+    private void moveSlings(World world, Session s, double t, int ticks, float width) {
+        double mid = lineAt(t);
+        Vector b = barge.at(t);
+        float w = Math.max(1.0e-3f, width);
+        int i = 0;
+        for (int end = -1; end <= 1 && i + 2 < s.slings.size(); end += 2) {
+            Vector top = linePoint(mid + end * SLING_SPREAD);
+            Location hook = loc(world, top.getX(), top.getY() - 0.3, top.getZ());
+            ExileQuay.place(s.slings.get(i++), hook, loc(world, top.getX(), top.getY() + 0.25, top.getZ()), 0.5f * w, ticks);
+            double footX = b.getX() - end * FOOT_SPREAD;
+            for (double side : new double[] {-SLING_SIDE, SLING_SIDE}) {
+                ExileQuay.place(s.slings.get(i++), hook, loc(world, footX, b.getY() + SLING_FOOT, b.getZ() + side), w, ticks);
+            }
+        }
+    }
+
+    /** Thins a bar to nothing about its own axis over {@code ticks}. */
+    private static void thin(BlockDisplay d, int ticks) {
+        if (d == null || !d.isValid()) {
+            return;
+        }
+        Transformation now = d.getTransformation();
+        float w = Math.max(1.0e-3f, now.getScale().x());
+        float k = 1.0e-3f / w;
+        d.setInterpolationDelay(0);
+        d.setInterpolationDuration(ticks);
+        d.setTransformation(new Transformation(new Vector3f(now.getTranslation()).mul(k), now.getLeftRotation(),
+                new Vector3f(1.0e-3f, now.getScale().y(), 1.0e-3f), now.getRightRotation()));
+    }
+
+    private static void dropRigging(Session s) {
+        for (BlockDisplay d : s.rope) {
+            d.remove();
+        }
+        for (BlockDisplay d : s.slings) {
+            d.remove();
+        }
+        s.rope.clear();
+        s.slings.clear();
+    }
+
+    private BlockDisplay bar(Player viewer, Location a, Location b, BlockData data, float w) {
+        BlockDisplay d = a.getWorld().spawn(a, BlockDisplay.class, bd -> {
+            bd.setPersistent(false);
+            bd.setVisibleByDefault(false);
+            bd.setSilent(true);
+            bd.addScoreboardTag(BlockRig.TAG);
+            bd.setTeleportDuration(TP_TICKS);
+            bd.setViewRange(4.0f);
+            bd.setBlock(data);
+            bd.setTransformation(ExileQuay.barShape(a, b, w));
+        });
+        viewer.showEntity(plugin, d);
+        return d;
+    }
+
+    private static Location loc(World world, Vector v) {
+        return new Location(world, v.getX(), v.getY(), v.getZ());
+    }
+
+    private static Location loc(World world, double x, double y, double z) {
+        return new Location(world, x, y, z);
+    }
+
+    // ------------------------------------------------------------------ smooth arrival
+
+    /**
+     * Loads the line's chunks off the main thread and keeps them loaded while any crossing runs (no chunk load
+     * mid-shot), then runs {@code then} on the main thread.
+     */
+    private void holdLine(World world, Runnable then) {
+        List<CompletableFuture<?>> loads = new ArrayList<>();
+        for (int cx = LINE_CHUNKS[0]; cx <= LINE_CHUNKS[2]; cx++) {
+            for (int cz = LINE_CHUNKS[1]; cz <= LINE_CHUNKS[3]; cz++) {
+                loads.add(world.getChunkAtAsync(cx, cz));
+            }
+        }
+        CompletableFuture.allOf(loads.toArray(new CompletableFuture<?>[0])).whenComplete((done, ex) -> {
+            if (!plugin.isEnabled()) {
+                return;
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!lineHeld && !sessions.isEmpty()) {
+                    for (int cx = LINE_CHUNKS[0]; cx <= LINE_CHUNKS[2]; cx++) {
+                        for (int cz = LINE_CHUNKS[1]; cz <= LINE_CHUNKS[3]; cz++) {
+                            world.addPluginChunkTicket(cx, cz, plugin);
+                        }
+                    }
+                    lineHeld = true;
+                }
+                then.run();
+            });
+        });
+    }
+
+    /** The last crossing ended: the line's chunks may unload again. */
+    private void releaseLine() {
+        if (!lineHeld || !sessions.isEmpty()) {
+            return;
+        }
+        lineHeld = false;
+        World world = host.exileWorld();
+        if (world == null) {
+            return;
+        }
+        for (int cx = LINE_CHUNKS[0]; cx <= LINE_CHUNKS[2]; cx++) {
+            for (int cz = LINE_CHUNKS[1]; cz <= LINE_CHUNKS[3]; cz++) {
+                world.removePluginChunkTicket(cx, cz, plugin);
+            }
+        }
+    }
+
+    /** The chunks around the rider have reached their client, so the white never clears onto a hole. */
+    private static boolean groundSent(Player player) {
+        try {
+            int cx = player.getLocation().getBlockX() >> 4;
+            int cz = player.getLocation().getBlockZ() >> 4;
+            int r = Math.max(1, Math.min(SENT_RADIUS, Math.min(player.getClientViewDistance(), player.getSendViewDistance()) - 1));
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (dx * dx + dz * dz > r * r) {
+                        continue;
+                    }
+                    long key = ((long) (cx + dx) & 0xffffffffL) | (((long) (cz + dz) & 0xffffffffL) << 32);
+                    if (!player.isChunkSent(key)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        } catch (Throwable ex) {
+            return true;
+        }
+    }
+
+    /** A wider view for the crossing (the island is there when the Veil tears); given back at the end. */
+    private static void widen(Player player, Session s) {
+        try {
+            int view = player.getViewDistance();
+            if (view >= RIDE_VIEW) {
+                return;
+            }
+            s.sendWas = player.getSendViewDistance();
+            s.viewWas = view;
+            player.setViewDistance(RIDE_VIEW);
+            player.setSendViewDistance(RIDE_VIEW);
+        } catch (Throwable ex) {
+            narrow(player, s);
+        }
+    }
+
+    private static void narrow(Player player, Session s) {
+        if (s.viewWas < 0) {
+            return;
+        }
+        int view = s.viewWas;
+        s.viewWas = -1;
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        try {
+            player.setSendViewDistance(s.sendWas);
+            player.setViewDistance(view);
+        } catch (Throwable ignored) {
         }
     }
 
@@ -701,6 +982,26 @@ public final class ExileArrival implements Listener {
             return;
         }
         event.setCancelled(true);
+    }
+
+    /** A chunk under the berth reached the rider late (arrival): hide the real barge again at once, not on the next sweep. */
+    @EventHandler
+    public void onChunkSent(PlayerChunkLoadEvent event) {
+        Player player = event.getPlayer();
+        Session s = sessions.get(player.getUniqueId());
+        if (s == null || s.ended || s.rig == null) {
+            return;
+        }
+        int cx = event.getChunk().getX();
+        int cz = event.getChunk().getZ();
+        if (cx < BARGE_BOX[0] >> 4 || cx > BARGE_BOX[3] >> 4 || cz < BARGE_BOX[2] >> 4 || cz > BARGE_BOX[5] >> 4) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!s.ended && player.isOnline()) {
+                s.rig.hideStatic(player);
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

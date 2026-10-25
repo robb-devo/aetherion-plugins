@@ -24,6 +24,7 @@ commands:
     permission: aetherionhub.use
   harbour:
     description: Teleport to Harbour if unlocked
+    aliases: [harbor, hafen]
     permission: aetherionhub.use
   oreridge:
     description: Teleport to Ore Ridge if unlocked

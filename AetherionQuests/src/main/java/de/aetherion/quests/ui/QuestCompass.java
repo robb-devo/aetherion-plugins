@@ -92,6 +92,9 @@ public class QuestCompass {
         if (quest == null) {
             return "";
         }
+        if (QuestHint.routedViaLift(player, questTarget(player))) {
+            return de.aetherion.quests.lang.LangPack.say(player, "exile.door.lift", "The King's Lift");
+        }
 
         QuestState state = questManager.getQuestState(player, quest);
         if (state == QuestState.ACTIVE) {
@@ -154,7 +157,12 @@ public class QuestCompass {
     }
 
 
+    /** Where the arrow points: the quest's target, or the lift's arch while that target is above the exile quay. */
     public Location targetLocation(Player player) {
+        return QuestHint.viaLift(player, questTarget(player));
+    }
+
+    private Location questTarget(Player player) {
         if (player == null) {
             return null;
         }
@@ -377,7 +385,56 @@ public class QuestCompass {
         if (api == null) {
             return null;
         }
+        // A live boss first; then where it is summoned now (Pathwarden: the Colosseum, T1: the Borderlands altar).
+        // The template's old spawner home pointed the Closed Road hunt at the hub.
+        Location live = liveBoss(api, bossId, player.getLocation());
+        if (live != null) {
+            return live;
+        }
+        Location summon = summonSpot(bossId);
+        if (summon != null) {
+            return summon;
+        }
         return api.locate(bossId, player.getLocation());
+    }
+
+    private static Location liveBoss(BossEngineAPI api, String bossId, Location from) {
+        Location best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (de.aetherion.bossengine.instance.BossInstance instance : api.getActiveBosses()) {
+            if (instance == null || instance.getTemplate() == null
+                    || !bossId.equalsIgnoreCase(instance.getTemplate().getId())) {
+                continue;
+            }
+            org.bukkit.entity.LivingEntity body = instance.getEntity();
+            if (body == null || !body.isValid() || body.isDead()) {
+                continue;
+            }
+            Location at = body.getLocation();
+            double distance = from != null && from.getWorld() != null && from.getWorld().equals(at.getWorld())
+                    ? from.distanceSquared(at)
+                    : Double.MAX_VALUE / 2.0d;
+            if (best == null || distance < bestDistance) {
+                best = at;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static Location summonSpot(String bossId) {
+        try {
+            if (de.aetherion.items.world.BorderlandsRiteService.isCryptBoss(bossId)) {
+                org.bukkit.World world = Bukkit.getWorld(de.aetherion.items.world.ColosseumArena.WORLD);
+                return world == null ? null : de.aetherion.items.world.ColosseumArena.pad(world);
+            }
+            if (de.aetherion.items.world.BorderlandsRiteService.isRiteBoss(bossId)) {
+                return borderlandsAltarLocation();
+            }
+        } catch (Throwable ignored) {
+            // Items missing or older: fall back to BossEngine's own idea of home.
+        }
+        return null;
     }
 
 

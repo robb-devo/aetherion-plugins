@@ -62,7 +62,7 @@ public final class OriginPads {
         }
         for (OriginConfig.Flight flight : isle.config().flights().values()) {
             double[] m = flight.marker();
-            out.add(new Marker("flight:" + flight.id(), flight.name(), flight.to(), m[0], m[1], m[2], false));
+            out.add(new Marker("flight:" + flight.id(), flight.name(), flight.destination(), m[0], m[1], m[2], false));
         }
         return out;
     }

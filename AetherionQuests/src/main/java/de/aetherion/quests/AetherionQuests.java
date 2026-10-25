@@ -353,12 +353,13 @@ public final class AetherionQuests extends JavaPlugin {
          * =========================================================
          */
 
-        Bukkit.getPluginManager().registerEvents(
-                new QuestObjectiveListener(
-                        questManager
-                ),
-                this
-        );
+        QuestObjectiveListener objectiveListener = new QuestObjectiveListener(questManager);
+        Bukkit.getPluginManager().registerEvents(objectiveListener, this);
+        // Boss hunts finish from BossEngine's death event too (soft dependency).
+        if (Bukkit.getPluginManager().getPlugin("BossEngine") != null) {
+            Bukkit.getPluginManager().registerEvents(
+                    new de.aetherion.quests.listener.BossKillCredit(objectiveListener), this);
+        }
         Bukkit.getPluginManager().registerEvents(
                 new de.aetherion.quests.listener.VexDeathHintListener(this, questManager),
                 this
@@ -445,6 +446,7 @@ public final class AetherionQuests extends JavaPlugin {
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (!isDungeonBackend()) {
                 islandCast.autoSeed();
+                new de.aetherion.quests.isle.StraySwordSweep(this).start();
             }
         }, 260L);
         Bukkit.getScheduler().runTaskLater(this, () -> {

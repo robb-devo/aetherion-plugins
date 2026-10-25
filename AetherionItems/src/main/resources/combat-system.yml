@@ -96,7 +96,8 @@ melee:
   enabled: true
   # Charge (0..1) at or above this = timed hit.
   timed-charge: 0.9
-  # Early swings scale like vanilla: floor + (1 - floor) * charge^2.
+  # Early swings: charge * (floor + (1 - floor) * charge). Damage per second always drops the earlier you swing,
+  # so click-spam is the weakest way to fight.
   light-floor: 0.2
   aerial-mult: 1.25
   combo-window-ticks: 34
@@ -106,10 +107,29 @@ melee:
   max-mult: 2.4
   # Bonus part only, against bosses (0.5 = half the bonus). Early-swing penalty applies in full.
   boss-bonus-scale: 0.5
+  # Bosses open up after their big moves (Pathwarden after the cyclone and the judgment line, the Tier 1 bosses
+  # after their signature). Timed hits during an opening deal this much more, on top of everything else.
+  opening-mult: 1.5
   # Item ids (prefix match) the cadence never touches. Blossom Blade and Gravwell Cleaver are LOCKED.
   exempt-items:
     - ashen_katana
     - gravwell_cleaver
+  # Swings per second by weapon class; the crosshair attack indicator follows it. Aetherion items hide their
+  # vanilla attributes, which used to leave every weapon at the bare-hand 4.0. Class comes from the item id
+  # (dagger/knife, greataxe/hammer/maul/cleaver/mace, spear/halberd/glaive, katana/rapier/saber, scythe/sickle),
+  # then from the material. Items with their own attack-speed attribute keep it.
+  attack-speed:
+    enabled: true
+    dagger: 2.0
+    blade: 1.8
+    sword: 1.6
+    scythe: 1.2
+    spear: 1.1
+    axe: 1.0
+    heavy: 0.8
+    mace: 0.7
+    tool: 1.2
+    other: 1.6
 
 feedback:
   # 0 = silent, 0.5 = calm, 1 = full.

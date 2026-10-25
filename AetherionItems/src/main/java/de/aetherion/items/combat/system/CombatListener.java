@@ -13,6 +13,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -50,6 +51,13 @@ final class CombatListener implements Listener {
         if (system.guard().press(player, Bukkit.getCurrentTick())) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onHeld(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        // the new slot is in the hand one tick later
+        Bukkit.getScheduler().runTask(system.plugin(), () -> system.tempo().announce(player));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -138,6 +146,7 @@ final class CombatListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
+        system.tempo().clear(event.getPlayer());
         system.forget(event.getPlayer().getUniqueId());
     }
 

@@ -3,6 +3,7 @@ package de.aetherion.bossengine.listener;
 import de.aetherion.core.AetherKeys;
 import de.aetherion.bossengine.BossEngine;
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.combat.Openings;
 import de.aetherion.bossengine.event.BossDamageByPlayerEvent;
 import de.aetherion.bossengine.instance.BossInstance;
 import de.aetherion.bossengine.manager.BossManager;
@@ -38,6 +39,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BossCombatListener implements Listener {
+
+    /** Swing charge a plain left click needs to hurt a boss. */
+    private static final float MIN_SWING_CHARGE = 0.5f;
 
     private final JavaPlugin plugin;
     private final BossManager bossManager;
@@ -110,7 +114,9 @@ public class BossCombatListener implements Listener {
                 ? damager(byEntity.getDamager())
                 : null;
 
-        // Bare-hand / early spam clicks shouldn't chip boss HP.
+        // Bare-hand / spam clicks shouldn't chip boss HP. Above half charge the swing lands: AetherionItems' combat
+        // system already scales early swings down (damage per second always rises with charge), and the old 0.85 gate
+        // ate swings that looked full on the client, worst on slow weapons and under lag.
         // Weapon specials call LivingEntity.damage(player) with low attack cooldown — allow those.
         if (striker != null
                 && event instanceof EntityDamageByEntityEvent byEntity
@@ -122,8 +128,9 @@ public class BossCombatListener implements Listener {
                 event.setCancelled(true);
                 return;
             }
-            if (!isAbilityOrScriptedMelee(event) && striker.getAttackCooldown() < 0.85f) {
+            if (!isAbilityOrScriptedMelee(event) && striker.getAttackCooldown() < MIN_SWING_CHARGE) {
                 event.setCancelled(true);
+                striker.playSound(damaged.getLocation(), Sound.ITEM_SHIELD_BLOCK, 0.5f, 1.7f);
                 return;
             }
         }
@@ -190,6 +197,9 @@ public class BossCombatListener implements Listener {
 
         boolean lethal = instance.absorbDamage(incoming);
         bossManager.refreshHud(instance);
+        if (player != null && incoming > 0) {
+            Openings.markHit(event.getEntity(), incoming);
+        }
 
         if (lethal) {
             event.setDamage(Math.max(incoming, instance.getEntity().getHealth() + 1));

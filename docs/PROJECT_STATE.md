@@ -101,6 +101,7 @@ server already runs them, AetherMobs on mmo-r only, one restart per backend, bac
 - AetherMobs: pet bodies polished (cow and mooshroom patches, upright blaze rods, framed hacker terminal, 12-spike
   guardian, glow squid teal, dolphin slate, cat tail, butterfly wing borders).
 
+<<<<<<< HEAD
 ## Aetherion Helm, staff panel (2026-10-22, not live yet)
 
 `AetherionHelm/`: own Maven builds outside the root reactor plus a web app, see its README. Gateway (Javalin, SQLite,
@@ -109,6 +110,51 @@ subdomain; Paper agent `AetherionHelm` on every backend and Velocity agent `Aeth
 over loopback. React PWA in liquid-glass style; the Android app is a Capacitor shell that opens the live panel.
 `.github/workflows/aetherion-helm.yml` publishes everything as the release `aetherion-helm`; `deploy-helm.ps1` installs
 it from Robb's PC. Accounts: Robb (Owner) and Shuminite (Co-Owner, everything except managing staff accounts).
+=======
+## Exile, ferry, islands, routing (2026-10-22, cloud session, PR #99)
+
+Deployed with `deploy-exile-isles.ps1` (Core, BossEngine, Hub jar on mmo-r; islands moved by `ae-islands-migrate.py`).
+- Veil Quay: the PR #99 turn was refused live (the recorded origin 600 51 322 was wrong); the turn really ran on
+  2026-10-22 23:07 with PR #103's locator, see below.
+- Exile void: the trim deletes every terrain chunk (bedrock or half-generated). Its premise was WRONG: the map's core
+  stands on old terrain chunks, so the 10-23 run cut it out (repaired the same night, see below). Never re-arm
+  `exile-void-trim.armed` as the code stands.
+- Islands live on mmo-i only: mmo-r's Guilds jar parked, data moved; `/island` `/insel` `/guild` `/friend` on mmo-r, mmo-c,
+  mmo-d cross to mmo-i (IslandLink), from the hub via mmo-r.
+- Routing: `network.routed-commands.everywhere: true` arms travel commands on every backend but mmo-r; built-in labels
+  always count, `/harbor` `/hafen` replay as `/harbour`; hub hops to mmo-r only for labels it does not answer itself.
+
+## Exile void, islands on mmo-i, /exile from anywhere (2026-10-23, cloud session, PR #106 + #107)
+
+Deployed 03:08 server time with `deploy-exile-void-isles.ps1` (main `6ed0008`: Core everywhere, Items, BossEngine,
+Quests, Guilds on mmo-i; one restart of all five). The tutorial on mmo-r and mmo-i was already the newest code.
+- Islands: mmo-r's data won. mmo-i's old island data is in `<mmo-i>/_retired/pre-island-move-<time>` (6 islands that
+  only existed there, incl. david679964, can be restored one by one). Guilds jars on mmo-r and mmo-d are parked in
+  `plugins/_disabled-network`; the old island worlds there bounce players to spawn (`network.islands.old-worlds`).
+- `/exile go` crosses from the main world when the story gate passes (at the quay it boards the ferry); the hub routes
+  it through mmo-r. The arrival barge hangs on a per-rider cable; the white screen holds until the line chunks are loaded.
+- Exile void: the plugin trim cut the map's core (229 built chunks). At 03:24 a one-off script restored the 21 region
+  files from `aetherion_exile.void-backup-20261023-030928`, then deleted only the 2998 terrain chunks outside the box
+  around the map (blocks x -272..351, z -368..463, built chunks + 2). Inside the box the old terrain stays. Also gone:
+  a small wooden hut (chunks 26..28 / 11..12) and cocoa far out. Copies: `aetherion_exile.trimmed-20261023-032447`
+  (after the first trim) and `aetherion_exile.retrim-20261023-032447` (before the second).
+
+## Harbour and ferry (2026-10-22, cloud session, PR #103 + #104)
+
+Deployed with `deploy-harbour-ferry.ps1` (Core, Quests, Items, BossEngine, Hub; one restart of all five) and
+`deploy-harbour-ferry-2.ps1` (Hub on mmo-r, quay turn, underside fill; one mmo-r restart).
+- Veil Quay: `/exile turnquay [apply]` (ExileQuayTurn) finds the islet by voting on the schematic's rare blocks around the
+  recorded origin, then turns it around the deck's middle. Live: found at 620 51 322 (97 % in place), now origin
+  562 51 322, `exile.quay.facing: east`, bell in place, no causeway recorded. The jump pad reaches the quay once the
+  gangway is solid at the recorded origin.
+- Ferry: fog from the first step on deck, gantry and cable with slings (CABLE_TAG displays, purged by UUID), the
+  Ferryman walks each passenger aboard (ExileFerryEscort: a per-player FancyNpcs copy, the real one hidden for them).
+- Anker Harbour: displays are tracked by UUID and swept (stale ones survived in resting chunks); the boatmen and the crane's
+  lighterman are FancyNpcs (OriginHand) rowing with oar displays; the Halcyon berths at a sky pier (`courier.sky-pier: auto`).
+  `/origin dev underside [apply]` fills thin seabed over open air (9466 blocks placed live).
+- mmo-r's `latest.log` is not cut at a restart and holds most lines twice: deploy scripts must find answers by content
+  (lines after the last start line), never by counting lines.
+>>>>>>> origin/main
 
 ## Content state (verified against live 2026-10-19)
 

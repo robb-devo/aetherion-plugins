@@ -14,7 +14,7 @@ import org.bukkit.persistence.PersistentDataType;
  */
 final class CombatTutorial {
 
-    private static final byte VERSION = 1;
+    private static final byte VERSION = 3;
     private static final TextColor ACCENT = TextColor.color(0xFFC94A);
 
     private final CombatSystem system;
@@ -52,6 +52,18 @@ final class CombatTutorial {
                 + "nach einer Parade = Konter. Ausdauer steht über deiner HP. Schleichen + F tauscht die Hände. /combat"
                 : "Full-charge swings hit hard, spam hits weak. Three timed hits = finisher, a hit right after a parry "
                 + "= riposte. Stamina sits above your HP. Sneak + F swaps hands. /combat", NamedTextColor.GRAY));
+        player.sendMessage(Component.text()
+                .append(Component.text("⚡ Tempo ", ACCENT))
+                .append(Component.text("» ", NamedTextColor.DARK_GRAY))
+                .append(text(de
+                        ? "Jede Waffe hat ihr eigenes Tempo (steht als ⚡ Tempo auf dem Item): Dolche schlagen schnell, "
+                        + "Großäxte und Hämmer langsam, aber hart. Warte, bis die Anzeige am Fadenkreuz voll ist. Halb "
+                        + "aufgeladene Schläge prallen an Bossen ab, und nach ihren großen Angriffen sind sie offen: "
+                        + "dann treffen getimte Schläge extra hart."
+                        : "Every weapon has its own tempo (shown as ⚡ Tempo on the item): daggers swing fast, greataxes "
+                        + "and hammers slow but hard. Wait until the crosshair indicator is full. Half-charged swings "
+                        + "glance off bosses, and after their big attacks bosses are open: timed hits land extra hard."))
+                .build());
     }
 
     private static Component key(String text) {

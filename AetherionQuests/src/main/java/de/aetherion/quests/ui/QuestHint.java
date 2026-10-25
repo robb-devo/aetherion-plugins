@@ -70,8 +70,9 @@ public final class QuestHint {
 
     /** Exile island doors (Runde 7, world {@code aetherion_exile}): where the soft arrow points on mmo-c. */
     private static final Map<String, double[]> EXILE_SPOTS = Map.of(
-            "exile_lift", new double[] {134.5, 74.0, 26.5},
-            "exile_crater", new double[] {73.5, 120.0, -69.5},
+            // the King's Lift is called from its arch on the quay (the cage behind it is walled in)
+            "exile_lift", new double[] {140.5, 73.0, 26.5},
+            "exile_crater", new double[] {73.5, 117.0, -69.5},
             "exile_observatory", new double[] {-91.5, 157.0, -165.5},
             "exile_ring", new double[] {-125.5, 157.0, -165.5},
             "exile_theater", new double[] {13.5, 143.0, 69.5},
@@ -79,6 +80,36 @@ public final class QuestHint {
             "exile_maw", new double[] {-127.5, 135.0, 84.5},
             "exile_doors", new double[] {13.5, 143.0, 0.5}
     );
+
+    /** The Chain Coast (the exile quay): east of the quay wall and below the court, which starts at the lift's top. */
+    private static final double COAST_WEST_X = 126.0;
+    private static final double COAST_LOW_Y = 60.0;
+    private static final double COAST_TOP_Y = 95.0;
+
+    /**
+     * On the exile island the quay is walled off from everything above it and the King's Lift is the only way up.
+     * A target up in the court, asked for from the quay, is reached through the lift: the arrow points at its arch.
+     */
+    public static Location viaLift(Player player, Location target) {
+        if (player == null || target == null || target.getWorld() == null || player.getWorld() == null
+                || !player.getWorld().equals(target.getWorld())
+                || !player.getWorld().getName().equalsIgnoreCase(de.aetherion.core.api.ExilePlaces.EXILE_WORLD)) {
+            return target;
+        }
+        Location at = player.getLocation();
+        boolean onCoast = at.getX() >= COAST_WEST_X && at.getY() >= COAST_LOW_Y && at.getY() < COAST_TOP_Y;
+        if (!onCoast || target.getY() < COAST_TOP_Y) {
+            return target;
+        }
+        Location lift = spotLocation("exile_lift");
+        return lift == null ? target : lift;
+    }
+
+    /** True when {@link #viaLift} sends this player's arrow to the lift instead of {@code target}. */
+    public static boolean routedViaLift(Player player, Location target) {
+        Location via = viaLift(player, target);
+        return via != null && via != target;
+    }
 
     /** Spot for {@code road-spots.<key>} ({@code world, x, y, z}), else the code default, else null. */
     public static Location spotLocation(String key) {
@@ -307,7 +338,9 @@ public final class QuestHint {
             }
             return;
         }
-        Location target = npcLocation(hint.npcId());
+        Location real = npcLocation(hint.npcId());
+        Location target = viaLift(player, real);
+        boolean viaLift = target != real;
         BossBar bar = BARS.computeIfAbsent(player.getUniqueId(), id -> {
             BossBar created = Bukkit.createBossBar("", BarColor.PINK, BarStyle.SOLID);
             created.setProgress(1.0);
@@ -321,6 +354,9 @@ public final class QuestHint {
         BarSync.color(bar, BarColor.PINK);
 
         String note = hint.note() == null || hint.note().isBlank() ? "" : " §8· §7" + hint.note();
+        if (viaLift) {
+            note += " §8· §7" + de.aetherion.quests.lang.LangPack.ui(player, "via_lift", "via the King's Lift");
+        }
 
         if (target == null || target.getWorld() == null
                 || player.getWorld() == null
@@ -336,7 +372,7 @@ public final class QuestHint {
         double dz = target.getZ() - player.getLocation().getZ();
         double dist = Math.sqrt(dx * dx + dz * dz);
         if (dist <= ARRIVED) {
-            if (isRoadNpc(hint.npcId())) {
+            if (isRoadNpc(hint.npcId()) && !viaLift) {
                 ARRIVED_AT.put(player.getUniqueId(), hint.npcId());
             }
             BarSync.title(bar, BarChrome.legacy(BarChrome.Family.HINT, BarChrome.Icon.HINT_HERE,

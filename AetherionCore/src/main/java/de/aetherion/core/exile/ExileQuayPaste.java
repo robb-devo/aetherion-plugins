@@ -158,6 +158,7 @@ public final class ExileQuayPaste {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     plugin.getConfig().set("exile.quay.world", w.getName());
                     plugin.getConfig().set("exile.quay.origin", ox + " " + oy + " " + oz);
+                    plugin.getConfig().set("exile.quay.facing", "west");
                     plugin.saveConfig();
                     ExileQuay quay = plugin.exileQuay();
                     if (quay != null) {
@@ -175,6 +176,17 @@ public final class ExileQuayPaste {
                 fail(plugin, sender, t.getMessage() == null ? "paste failed" : t.getMessage());
             }
         });
+    }
+
+    /**
+     * Shift of the turned origin in x when the islet stands as authored: the walkable deck (x -64 .. +6) keeps its
+     * middle, so the landing ends up where the pier head was and the barge casts off east into the open Veil.
+     */
+    public static final int TURN_SHIFT_X = DECK_WEST + 6;
+
+    /** {@code /exile turnquay [apply]}: see {@link ExileQuayTurn} (finds the islet first, then turns it). */
+    public static void turn(AetherionCore plugin, CommandSender sender, boolean apply) {
+        ExileQuayTurn.run(plugin, sender, apply);
     }
 
     private static void fail(AetherionCore plugin, CommandSender sender, String why) {

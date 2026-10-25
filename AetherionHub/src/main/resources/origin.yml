@@ -303,6 +303,8 @@ flights:
   southeast_skyway:
     name: "Southeast Skyway"
     to: "The Capital"
+    # The pad stands in the Borderlands: it flies to the ferry grounds (Veil Quay gangway) once the quay is placed.
+    ferry: true
     trigger: pad
     min: "428 54 299"
     max: "431 54 302"
@@ -443,6 +445,10 @@ bay:
     path-out: ["300.5 77 -464.5", "300.5 84 -460", "288 98 -450", "260 112 -440", "225 124 -455", "190 132 -490",
                "160 140 -540", "142 148 -600", "136 152 -632", "132 156 -700"]
     drop: "300.5 61.2 -464.5"      # the crate comes down here; skiff "a" passes under it
+    # Where she berths: a timber mooring tower beside the hold point, platform level with her deck (lines and a
+    # gangplank go across while she is in). auto = east of her if that column is open water and clear sky, else
+    # west; east | west | off. Display entities only; /origin dev bay pier shows where it stands.
+    sky-pier: auto
   skiffs:
     a: ["296 -436", "300 -452", "300.5 -464.5", "302 -492", "318 -505", "338 -500", "350 -482", "352 -460", "340 -446", "318 -440"]
     b: ["325 -515", "345 -508", "365 -512", "374 -526", "362 -536", "340 -532", "318 -528"]

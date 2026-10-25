@@ -46,6 +46,8 @@ public final class ExileCauseway {
      * Floor z 4..6, rails z 3 and 7: clear of the barge's departure line (rel z -2..2).
      */
     public static final int[] ENTRY = {-65, 0, 5};
+    /** Turned 180° ({@code exile.quay.facing: east}): just off the landing stub (authored x +6), centred on it. */
+    public static final int[] ENTRY_TURNED = {7, 0, 0};
     private static final int MAX_LENGTH = 220;
     private static final int POST_EVERY = 8;
     private static final double FLAT_HEAD = 3.0;
@@ -84,9 +86,10 @@ public final class ExileCauseway {
         int sx = start.getBlockX();
         int sy = start.getBlockY();
         int sz = start.getBlockZ();
-        int ex = o[0] + ENTRY[0];
-        int ey = o[1] + ENTRY[1];
-        int ez = o[2] + ENTRY[2];
+        int[] entry = entry(quay);
+        int ex = entry[0];
+        int ey = entry[1];
+        int ez = entry[2];
         if (sx > ex - 8) {
             tell(sender, "§cStand on the Borderlands side, west of the pier head (x < " + (ex - 8) + ").");
             return false;
@@ -299,6 +302,15 @@ public final class ExileCauseway {
             build(plugin, sender, start);
         } catch (NumberFormatException ignored) {
         }
+    }
+
+    /** Where the walk meets the islet, in world block coordinates (the turned islet's landing faces the cliff). */
+    static int[] entry(ExileQuay quay) {
+        int[] o = quay.origin();
+        if (quay.turned()) {
+            return new int[] {o[0] - ENTRY_TURNED[0], o[1] + ENTRY_TURNED[1], o[2] - ENTRY_TURNED[2]};
+        }
+        return new int[] {o[0] + ENTRY[0], o[1] + ENTRY[1], o[2] + ENTRY[2]};
     }
 
     /** Remove exactly what the last build placed (only where the block is still what was put there). */

@@ -88,7 +88,7 @@ public final class ShutdownCountdown implements Listener {
         }
 
         if (running) {
-            sender.sendMessage("§cShutdown countdown läuft bereits.");
+            sender.sendMessage("§cA shutdown countdown is already running.");
             return true;
         }
 
@@ -100,7 +100,7 @@ public final class ShutdownCountdown implements Listener {
         running = true;
         plugin.getLogger().warning("Shutdown countdown started (10s, every 2s). restartAfter=" + restartAfter);
 
-        Bukkit.broadcast(Component.text("Server fährt gleich runter — bitte bereit machen.", NamedTextColor.GOLD)
+        Bukkit.broadcast(Component.text("Server is going down shortly — please get ready.", NamedTextColor.GOLD)
                 .decorate(TextDecoration.BOLD));
 
         new BukkitRunnable() {
@@ -109,7 +109,7 @@ public final class ShutdownCountdown implements Listener {
             @Override
             public void run() {
                 if (left > 0) {
-                    Bukkit.broadcast(Component.text("Server stoppt in ", NamedTextColor.RED)
+                    Bukkit.broadcast(Component.text("Server stops in ", NamedTextColor.RED)
                             .append(Component.text(String.valueOf(left), NamedTextColor.WHITE)
                                     .decorate(TextDecoration.BOLD))
                             .append(Component.text("…", NamedTextColor.RED)));
@@ -123,7 +123,7 @@ public final class ShutdownCountdown implements Listener {
     }
 
     private void finish(boolean restartAfter) {
-        Bukkit.broadcast(Component.text("Server stoppt jetzt.", NamedTextColor.DARK_RED)
+        Bukkit.broadcast(Component.text("Server is stopping now.", NamedTextColor.DARK_RED)
                 .decorate(TextDecoration.BOLD));
         plugin.getLogger().warning("Shutdown countdown finished — stopping.");
         if (restartAfter) {

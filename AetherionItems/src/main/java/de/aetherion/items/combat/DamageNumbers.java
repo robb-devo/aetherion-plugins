@@ -125,7 +125,7 @@ public final class DamageNumbers implements Listener {
         }
         Location at = victim.getLocation().add(
                 (ThreadLocalRandom.current().nextDouble() - 0.5d) * 0.55d,
-                victim.getHeight() + 0.35d,
+                Math.min(victim.getHeight(), 3.5d) + 0.35d, // a giant boss: numbers at eye level, not 12 blocks up
                 (ThreadLocalRandom.current().nextDouble() - 0.5d) * 0.55d
         );
         spawn(at, amount, crit, Style.NORMAL, 0.0d);
@@ -157,7 +157,7 @@ public final class DamageNumbers implements Listener {
         if (!(victim instanceof LivingEntity) || victim instanceof ArmorStand || victim instanceof Display) {
             return;
         }
-        double amount = event.getFinalDamage();
+        double amount = bossHit(victim, event.getFinalDamage());
         if (amount <= 0.05d) {
             return;
         }
@@ -169,13 +169,31 @@ public final class DamageNumbers implements Listener {
         }
         Location at = victim.getLocation().add(
                 (ThreadLocalRandom.current().nextDouble() - 0.5d) * 0.55d,
-                victim.getHeight() + 0.35d,
+                Math.min(victim.getHeight(), 3.5d) + 0.35d, // a giant boss: numbers at eye level, not 12 blocks up
                 (ThreadLocalRandom.current().nextDouble() - 0.5d) * 0.55d
         );
         spawn(at, amount, crit, style, amount / maxHealth((LivingEntity) victim));
         if (crit) {
             playCrit(attacker, victim.getLocation().add(0, victim.getHeight() * 0.6d, 0));
         }
+    }
+
+    /**
+     * BossEngine keeps its own HP pool and sets the vanilla hit to 0.01; it leaves what the hit really did in
+     * metadata for this tick.
+     */
+    private static double bossHit(Entity victim, double fallback) {
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null) {
+            return fallback;
+        }
+        for (org.bukkit.metadata.MetadataValue value : victim.getMetadata("aetherion_boss_hit")) {
+            if (value.value() instanceof double[] hit && hit.length == 2
+                    && (int) hit[0] == plugin.getServer().getCurrentTick()) {
+                return hit[1];
+            }
+        }
+        return fallback;
     }
 
     private static Style styleFor(Player attacker, Entity victim) {

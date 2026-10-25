@@ -101,6 +101,11 @@ public final class ExileHost implements Listener {
         }
     }
 
+    /** The exile island world when it is loaded here, else null. */
+    public World world() {
+        return exileWorld();
+    }
+
     World exileWorld() {
         World world = Bukkit.getWorld(worldName);
         if (world != null) {
@@ -144,6 +149,7 @@ public final class ExileHost implements Listener {
             tuneWorld(world);
             arrival.purgeRigs(world);
             world.setSpawnLocation(spawnLocation());
+            de.aetherion.core.exile.ExileGateCut.ensure(plugin, world);
             doors = new de.aetherion.core.exile.ExileDoors(plugin);
             doors.build(world);
             lift = new de.aetherion.core.exile.ExileLift(plugin);
@@ -169,6 +175,31 @@ public final class ExileHost implements Listener {
         world.setTime(12400L);
         world.setStorm(false);
         world.setThundering(false);
+        unpeaceful(plugin, world);
+    }
+
+    /**
+     * The island's bosses (the Hollow Sun, Seraphine) are hostile mobs: in peaceful the server discards their body
+     * the tick it spawns ({@code cause=DESPAWN}) and a ritual answers "ask staff". The island has no mob spawning,
+     * so a real difficulty only reaches the bosses. {@code exile.difficulty} (default easy, as the main world).
+     */
+    public static void unpeaceful(AetherionCore plugin, World world) {
+        if (world == null || world.getDifficulty() != org.bukkit.Difficulty.PEACEFUL) {
+            return;
+        }
+        org.bukkit.Difficulty want;
+        try {
+            want = org.bukkit.Difficulty.valueOf(
+                    plugin.getConfig().getString("exile.difficulty", "easy").trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            want = org.bukkit.Difficulty.EASY;
+        }
+        if (want == org.bukkit.Difficulty.PEACEFUL) {
+            want = org.bukkit.Difficulty.EASY;
+        }
+        world.setDifficulty(want);
+        plugin.getLogger().warning("[Exile] " + world.getName() + " was peaceful: boss bodies would vanish on spawn. Now "
+                + want.name().toLowerCase(Locale.ROOT) + ".");
     }
 
     /**
@@ -225,6 +256,46 @@ public final class ExileHost implements Listener {
             }, 1L);
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> arrive(player), 8L);
+        settleLater(player);
+    }
+
+    /**
+     * The character can land after {@link #arrive} ran (late file, outbox recovery) and bring the game mode the
+     * player had when the ferry left: spectator, because the departure shot films them. Once the transport is done
+     * and no crossing is playing, nobody stays a spectator over the void: adventure on the shore.
+     */
+    private void settleLater(Player player) {
+        UUID id = player.getUniqueId();
+        long deadline = System.currentTimeMillis() + 20_000L;
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                NetworkRouter router = plugin.router();
+                de.aetherion.core.api.CharacterTransport transport = router == null ? null : router.transport();
+                boolean landing = (transport != null && transport.isArriving(id)) || arrival.isPlaying(player);
+                if (landing && System.currentTimeMillis() < deadline) {
+                    return;
+                }
+                cancel();
+                if (arrival.isPlaying(player) || player.getGameMode() != GameMode.SPECTATOR
+                        || player.getSpectatorTarget() != null) {
+                    return;
+                }
+                Location spawn = spawnLocation();
+                World world = exileWorld();
+                if (spawn != null && (world == null || !player.getWorld().equals(world)
+                        || player.getLocation().getY() < world.getMinHeight() + 8)) {
+                    player.teleport(spawn);
+                }
+                player.setGameMode(GameMode.ADVENTURE);
+                plugin.getLogger().info("[Exile] " + player.getName() + " arrived as a spectator after the crossing"
+                        + " — set to adventure on the shore.");
+            }
+        }.runTaskTimer(plugin, 40L, 10L);
     }
 
     private boolean cameByFerry(Player player) {

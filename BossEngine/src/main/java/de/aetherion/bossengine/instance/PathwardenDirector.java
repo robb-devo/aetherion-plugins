@@ -1,6 +1,8 @@
 package de.aetherion.bossengine.instance;
 
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.combat.Openings;
+import de.aetherion.bossengine.instance.rite.WardenFx;
 import de.aetherion.bossengine.music.FightMusic;
 import de.aetherion.bossengine.music.NbsSong;
 import de.aetherion.bossengine.util.TextUtil;
@@ -30,14 +32,22 @@ import org.bukkit.util.Vector;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Early pathblocker: sluggish giant, dual held blades,
- * readable spin, 25%-HP tracking beam, energy-guillotine death.
+ * Early pathblocker: sluggish giant, dual held blades, a blade cyclone that drags you in, an iron verdict that
+ * falls where runners are about to be, 25%-HP tracking beam, energy-guillotine death.
+ *
+ * <p>Circling him used to dodge everything (he only smashed inside 3 blocks and spun in place). Now the cyclone
+ * drifts after the nearest player and pulls, the smash reaches 4 blocks, the beam leads its target, and anyone who
+ * keeps their distance gets a cage dropped on the spot their circle is carrying them to.
  */
 final class PathwardenDirector {
 
@@ -50,17 +60,37 @@ final class PathwardenDirector {
     private static final double SPIN_RADIUS = 5.8;
     private static final double SMASH_RADIUS = 4.4;
     private static final int SMASH_TELL = 8;
-    private static final int BEAM_SEEK = 80;
-    private static final int BEAM_LOCK = 45;
+    private static final int BEAM_SEEK = 60;
+    // Locked to blast in 0.8 s: only a player already running gets out.
+    private static final int BEAM_LOCK = 16;
     private static final int BEAM_FIRE = 14;
     private static final double BEAM_ZONE = 4.2;
     private static final double BEAM_BLAST = 4.2;
     private static final int DEATH_TICKS = 128;
+    private static final double SPIN_DRIFT = 0.12;
+    private static final double SPIN_PULL = 12.0;
+    private static final double SMASH_REACH = 4.0;
+    private static final double KITE_RANGE = 4.5;
+    private static final int KITE_TICKS = 70;
+    private static final int VERDICT_TELL = 20;
+    private static final double VERDICT_RADIUS = 2.2;
+    private static final int BEAM_LEAD = 8;
+    private static final double REBUKE_RANGE = 5.0;
+    private static final int REBUKE_CROWD = 50;
+    private static final int REBUKE_TELL = 10;
+    private static final int REBUKE_WAVE = 8;
+    private static final double REBUKE_RADIUS = 7.5;
+    /** He reels after the cyclone and after a judgment line: openings for the combat system's charged hits. */
+    private static final int DAZE_AFTER_SPIN = 40;
+    private static final int DAZE_AFTER_BEAM = 30;
 
     private static final double MUSIC_RANGE = 48.0;
 
     private final BossInstance instance;
     private final boolean[] beamUsed = new boolean[3];
+    private final WardenFx fx;
+    /** Per player, polar track around him: angle, radius, smoothed angle and radius change per tick. */
+    private final Map<UUID, double[]> tracks = new HashMap<>();
 
     private int spinCd;
     private int spinPhase = -1;
@@ -78,10 +108,19 @@ final class PathwardenDirector {
     private Vector deathAzureVel;
     private Vector deathCrimsonVel;
     private int smashCd;
+    private int kiteTicks;
+    private int verdictCd;
+    private int crowdTicks;
+    private int rebukeCd;
+    private int rebukeTick = -1;
+    private Location rebukeAt;
+    private final Set<UUID> rebukeHit = new HashSet<>();
+    private int dazedTicks;
     private FightMusic music;
 
     PathwardenDirector(BossInstance instance) {
         this.instance = instance;
+        this.fx = new WardenFx(instance);
     }
 
     boolean isPathwarden() {
@@ -105,6 +144,13 @@ final class PathwardenDirector {
         dressIronGate(entity);
         spinCd = 60;
         smashCd = 40;
+        verdictCd = 120;
+        kiteTicks = 0;
+        rebukeCd = 100;
+        crowdTicks = 0;
+        rebukeTick = -1;
+        dazedTicks = 0;
+        tracks.clear();
         spinPhase = -1;
         beamPhase = -1;
         for (int i = 0; i < beamUsed.length; i++) {
@@ -119,6 +165,7 @@ final class PathwardenDirector {
         deathTicks = -1;
         spinPhase = -1;
         beamPhase = -1;
+        rebukeTick = -1;
     }
 
     boolean beginDeath() {
@@ -236,6 +283,7 @@ final class PathwardenDirector {
         if (music != null) {
             music.tick();
         }
+        fx.tick();
         if (isDying()) {
             return tickDeath();
         }
@@ -243,9 +291,17 @@ final class PathwardenDirector {
         if (entity == null || !entity.isValid() || instance.isTransitioning()) {
             return false;
         }
-        handAura(entity);
+        track(entity);
         if (beamPhase >= 0) {
             tickBeam(entity);
+            return false;
+        }
+        if (rebukeTick >= 0) {
+            tickRebuke(entity);
+            return false;
+        }
+        if (dazedTicks > 0) {
+            dazedTicks--;
             return false;
         }
         maybeStartBeam(entity);
@@ -261,14 +317,213 @@ final class PathwardenDirector {
         } else if (nearest(entity, 28) != null) {
             beginSpin(entity);
         }
-        if (smashCd > 0) {
+        // The smash arms at SMASH_TELL + 1 and waits there until someone is in reach, so it always shows its tell.
+        if (smashCd > SMASH_TELL + 1 || (smashCd > 0 && smashCd <= SMASH_TELL)
+                || (smashCd == SMASH_TELL + 1 && nearest(entity, SMASH_REACH) != null)) {
             smashCd--;
+        }
+        watchKiters(entity);
+        watchCrowd(entity);
+        if (rebukeTick >= 0) {
+            return false;
         }
         slowCrawl(entity);
         return false;
     }
 
+    /** Keeps the polar track of everyone near him, the data the cage and the beam lead with. */
+    private void track(LivingEntity entity) {
+        Location at = entity.getLocation();
+        Set<UUID> seen = new HashSet<>();
+        for (Player player : entity.getWorld().getPlayers()) {
+            if (!vulnerable(player) || player.getLocation().distanceSquared(at) > 36 * 36) {
+                continue;
+            }
+            Location l = player.getLocation();
+            double dx = l.getX() - at.getX();
+            double dz = l.getZ() - at.getZ();
+            double ang = Math.atan2(dz, dx);
+            double r = Math.sqrt(dx * dx + dz * dz);
+            double[] tr = tracks.get(player.getUniqueId());
+            if (tr == null) {
+                tracks.put(player.getUniqueId(), new double[] {ang, r, 0, 0});
+            } else {
+                double da = ang - tr[0];
+                if (da > Math.PI) {
+                    da -= Math.PI * 2;
+                } else if (da < -Math.PI) {
+                    da += Math.PI * 2;
+                }
+                tr[2] = tr[2] * 0.75 + da * 0.25;
+                tr[3] = tr[3] * 0.75 + (r - tr[1]) * 0.25;
+                tr[0] = ang;
+                tr[1] = r;
+            }
+            seen.add(player.getUniqueId());
+        }
+        tracks.keySet().retainAll(seen);
+    }
+
+    /** Where {@code player} will be in {@code lead} ticks if they keep circling (or running) the way they are. */
+    private Location predict(LivingEntity entity, Player player, int lead) {
+        double[] tr = tracks.get(player.getUniqueId());
+        Location now = player.getLocation();
+        if (tr == null) {
+            return now;
+        }
+        Location at = entity.getLocation();
+        double ang = tr[0] + Math.max(-2.4, Math.min(2.4, tr[2] * lead));
+        double r = Math.max(0.5, Math.min(30, tr[1] + tr[3] * lead));
+        return new Location(now.getWorld(), at.getX() + Math.cos(ang) * r, now.getY(), at.getZ() + Math.sin(ang) * r);
+    }
+
+    /** Nobody in melee for a while: the iron verdict falls on a runner's path. */
+    private void watchKiters(LivingEntity entity) {
+        if (verdictCd > 0) {
+            verdictCd--;
+        }
+        if (nearest(entity, KITE_RANGE) == null && nearest(entity, 24) != null) {
+            kiteTicks++;
+        } else {
+            kiteTicks = Math.max(0, kiteTicks - 2);
+        }
+        if (kiteTicks < KITE_TICKS || verdictCd > 0) {
+            return;
+        }
+        List<Player> runners = new ArrayList<>();
+        for (Player player : entity.getWorld().getPlayers()) {
+            if (!vulnerable(player)) {
+                continue;
+            }
+            double d = player.getLocation().distanceSquared(entity.getLocation());
+            if (d > KITE_RANGE * KITE_RANGE && d <= 24 * 24) {
+                runners.add(player);
+            }
+        }
+        if (runners.isEmpty()) {
+            return;
+        }
+        boolean late = instance.healthPercent() <= 50.0;
+        verdictCd = late ? 110 : 150;
+        kiteTicks = 0;
+        Player runner = runners.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(runners.size()));
+        Location ahead = predict(entity, runner, VERDICT_TELL + 3);
+        dropCage(ahead);
+        if (late && ahead.distanceSquared(runner.getLocation()) > 3.0 * 3.0) {
+            // second cage on where they stand now, so stopping dead is no answer either
+            dropCage(runner.getLocation());
+        }
+        World world = entity.getWorld();
+        world.playSound(entity.getLocation(), Sound.BLOCK_CHAIN_BREAK, 1.3f, 0.5f);
+        world.playSound(entity.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
+        runner.sendActionBar(TextUtil.component(de.aetherion.core.api.AetherServices.german(runner)
+                ? "&4Eisernes Urteil &7· es fällt, wohin du läufst"
+                : "&4Iron Verdict &7· it falls where you are running"));
+    }
+
+    private void dropCage(Location spot) {
+        Location at = spot.clone();
+        fx.verdict(at, VERDICT_TELL, () -> {
+            LivingEntity boss = instance.getEntity();
+            if (boss == null || !boss.isValid() || isDying() || at.getWorld() == null) {
+                return;
+            }
+            for (Player player : at.getWorld().getPlayers()) {
+                if (!vulnerable(player)) {
+                    continue;
+                }
+                Location l = player.getLocation();
+                double dx = l.getX() - at.getX();
+                double dz = l.getZ() - at.getZ();
+                if (dx * dx + dz * dz > VERDICT_RADIUS * VERDICT_RADIUS || Math.abs(l.getY() - at.getY()) > 3.5) {
+                    continue;
+                }
+                BossHits.hurt(player, boss, 300);
+                player.addPotionEffect(new PotionEffect(slowness(), 40, 1, false, true, true));
+            }
+        });
+    }
+
+    /** Standing in his guard and hitting him is answered with the Iron Rebuke, a floor wave you have to jump. */
+    private void watchCrowd(LivingEntity entity) {
+        if (rebukeCd > 0) {
+            rebukeCd--;
+        }
+        Location at = entity.getLocation();
+        boolean crowded = false;
+        for (Player player : entity.getWorld().getPlayers()) {
+            Location l = player.getLocation();
+            double dx = l.getX() - at.getX();
+            double dz = l.getZ() - at.getZ();
+            if (vulnerable(player) && dx * dx + dz * dz <= REBUKE_RANGE * REBUKE_RANGE && Math.abs(l.getY() - at.getY()) < 3.0) {
+                crowded = true;
+                break;
+            }
+        }
+        crowdTicks = crowded ? crowdTicks + 1 : Math.max(0, crowdTicks - 2);
+        if (crowdTicks < REBUKE_CROWD || rebukeCd > 0 || spinPhase >= 0 || (smashCd > 0 && smashCd <= SMASH_TELL)) {
+            return;
+        }
+        crowdTicks = 0;
+        rebukeCd = instance.healthPercent() <= 50.0 ? 100 : 140;
+        rebukeTick = 0;
+        rebukeAt = ground(at);
+        rebukeHit.clear();
+        World world = entity.getWorld();
+        world.playSound(at, Sound.BLOCK_ANVIL_LAND, 0.9f, 0.5f);
+        world.playSound(at, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.2f, 0.5f);
+        for (Player player : world.getPlayers()) {
+            if (vulnerable(player) && player.getLocation().distanceSquared(at) <= 14 * 14) {
+                player.sendActionBar(TextUtil.component("&cIron Rebuke &7· jump the wave"));
+            }
+        }
+    }
+
+    /** Ten ticks of tell (iron ring, white on the last beat), then the wave runs out and hits whoever is on the floor at its front. */
+    private void tickRebuke(LivingEntity entity) {
+        rebukeTick++;
+        World world = entity.getWorld();
+        if (rebukeTick <= REBUKE_TELL) {
+            boolean last = REBUKE_TELL - rebukeTick < 4;
+            fx.halo("rebuke", rebukeAt, 1.8, last ? WardenFx.WHITE_TONE : WardenFx.IRON_TONE);
+            if (rebukeTick == REBUKE_TELL) {
+                fx.haloOff("rebuke");
+                fx.shockwave(rebukeAt, REBUKE_RADIUS, REBUKE_WAVE, WardenFx.IRON_TONE);
+                world.playSound(rebukeAt, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.3f, 0.6f);
+                world.playSound(rebukeAt, Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 0.8f);
+            }
+            return;
+        }
+        int k = rebukeTick - REBUKE_TELL;
+        double r = 1.0 + (REBUKE_RADIUS - 1.0) * k / REBUKE_WAVE;
+        for (Player player : world.getPlayers()) {
+            if (!vulnerable(player) || rebukeHit.contains(player.getUniqueId())) {
+                continue;
+            }
+            Location l = player.getLocation();
+            double dx = l.getX() - rebukeAt.getX();
+            double dz = l.getZ() - rebukeAt.getZ();
+            double d = Math.sqrt(dx * dx + dz * dz);
+            double dy = l.getY() - rebukeAt.getY();
+            // a jump clears the wave: anyone more than 0.7 above his floor is airborne
+            if (d < r - 1.0 || d > r + 0.3 || dy > 0.7 || dy < -1.5) {
+                continue;
+            }
+            rebukeHit.add(player.getUniqueId());
+            BossHits.hurt(player, entity, 260);
+            Vector away = d < 0.01 ? new Vector(1, 0, 0) : new Vector(dx / d, 0, dz / d);
+            player.setVelocity(away.multiply(1.4).setY(0.45));
+        }
+        if (k >= REBUKE_WAVE) {
+            rebukeTick = -1;
+            rebukeHit.clear();
+        }
+    }
+
     private void maybeStartBeam(LivingEntity entity) {
+        if (spinPhase >= 0) {
+            return;
+        }
         double pct = instance.healthPercent();
         int idx = pct <= 25.0 ? 2 : pct <= 50.0 ? 1 : pct <= 75.0 ? 0 : -1;
         if (idx < 0 || beamUsed[idx]) {
@@ -281,6 +536,7 @@ final class PathwardenDirector {
     private void beginSpin(LivingEntity entity) {
         spinPhase = 0;
         spinYaw = entity.getLocation().getYaw();
+        fx.cycloneBegin(entity.getLocation());
         World world = entity.getWorld();
         world.playSound(entity.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.45f);
         world.playSound(entity.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.55f, 0.7f);
@@ -298,41 +554,52 @@ final class PathwardenDirector {
             spinYaw += 1.2f + (float) (t * 2.4);
             at.setYaw(spinYaw);
             entity.teleport(at);
+            fx.cyclone(at, t, spinYaw);
             // Outer ring is the real hit edge; inner ring fills toward it as the clock.
             boolean strobe = SPIN_WINDUP - spinPhase < 6;
-            if (strobe) {
-                ringParticles(at, SPIN_RADIUS, WHITE, WHITE, 40);
-            } else if (spinPhase % 2 == 0) {
-                ringParticles(at, SPIN_RADIUS, CRIMSON, CRIMSON, 32);
-            }
-            ringParticles(at, 1.2 + t * (SPIN_RADIUS - 1.2), AZURE, CRIMSON, 18);
+            fx.halo("spin", at, SPIN_RADIUS, strobe ? WardenFx.WHITE_TONE : WardenFx.CRIMSON_TONE);
+            fx.halo("spinFill", at, 1.2 + t * (SPIN_RADIUS - 1.2), WardenFx.AZURE_TONE);
             if (spinPhase % 7 == 0) {
                 world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BASS, 0.9f, 0.5f + (float) t * 1.2f);
             }
             if (spinPhase == SPIN_WINDUP) {
                 world.playSound(at, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.9f, 0.55f);
                 world.playSound(at, Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 0.7f);
-                if (!de.aetherion.core.api.Vfx.burst(at.clone().add(0, 2.5, 0), WHITE, 3.0, 9)) {
-                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 2.5, 0), Particle.FLASH, 1, Math.max(0, 0), null);
-                }
+                world.playSound(at, Sound.ENTITY_BREEZE_WIND_BURST, 1.2f, 0.5f);
+                fx.haloOff("spinFill");
             }
             return;
         }
         int active = spinPhase - SPIN_WINDUP;
         if (active <= SPIN_ACTIVE) {
             spinYaw += 5.1f;
+            // The cyclone walks after the nearest player and drags everyone in: circling him no longer helps,
+            // only running straight out does.
+            Player prey = nearest(entity, 24);
+            if (prey != null) {
+                Vector to = prey.getLocation().toVector().subtract(at.toVector()).setY(0);
+                if (to.lengthSquared() > 1.0) {
+                    at.add(to.normalize().multiply(SPIN_DRIFT));
+                }
+            }
             at.setYaw(spinYaw);
             entity.setVelocity(new Vector(0, 0, 0));
-            entity.teleport(at);
-            tornado(at);
-            if (active % 5 == 0) {
-                ringParticles(at, SPIN_RADIUS, CRIMSON, AZURE, 28);
+            Location step = at.clone();
+            instance.runInternalTeleport(() -> {
+                if (entity.isValid()) {
+                    entity.teleport(step);
+                }
+            });
+            fx.cyclone(at, 1.0, spinYaw);
+            fx.halo("spin", at, SPIN_RADIUS, WardenFx.CRIMSON_TONE);
+            if (active % 4 == 0) {
+                pullIn(entity, at);
             }
             if (active == SPIN_ACTIVE) {
                 world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.9f, 0.6f);
-                if (!de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), WHITE, 4.0, 14)) {
-                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.3, 0), Particle.CLOUD, 30, Math.max(2.2, 2.2), null);
-                }
+                fx.cycloneRelease();
+                fx.haloOff("spin");
+                blowOut(at, SPIN_RADIUS + 4.0, 1.3, 0.55);
             }
             if (active % 5 == 0) {
                 hitAround(entity, SPIN_RADIUS, 280);
@@ -344,6 +611,46 @@ final class PathwardenDirector {
         spinCd = SPIN_COOLDOWN;
         if (entity instanceof Mob mob) {
             mob.setAI(true);
+        }
+        daze(entity, DAZE_AFTER_SPIN);
+    }
+
+    /** Reeling: he stands, stars circle his helm, and charged hits get the opening bonus. */
+    private void daze(LivingEntity entity, int ticks) {
+        dazedTicks = ticks;
+        Openings.open(entity, ticks);
+        fx.dazed(entity.getLocation().add(0, entity.getHeight() + 0.6, 0), ticks);
+    }
+
+    /** No damage: the blast throws everyone near him outward and off their feet. */
+    private void blowOut(Location centre, double radius, double push, double lift) {
+        for (Player player : centre.getWorld().getPlayers()) {
+            if (!vulnerable(player)) {
+                continue;
+            }
+            Vector away = player.getLocation().toVector().subtract(centre.toVector()).setY(0);
+            double d = away.length();
+            if (d > radius || Math.abs(player.getLocation().getY() - centre.getY()) > 4.0) {
+                continue;
+            }
+            away = d < 0.01 ? new Vector(1, 0, 0) : away.multiply(1.0 / d);
+            double fall = 1.0 - 0.5 * d / radius;
+            player.setVelocity(away.multiply(push * fall).setY(lift * fall));
+        }
+    }
+
+    private void pullIn(LivingEntity entity, Location eye) {
+        double r2 = SPIN_PULL * SPIN_PULL;
+        for (Player player : entity.getWorld().getPlayers()) {
+            if (!vulnerable(player)) {
+                continue;
+            }
+            Vector to = eye.toVector().subtract(player.getLocation().toVector()).setY(0);
+            double d2 = to.lengthSquared();
+            if (d2 > r2 || d2 < 4.0) {
+                continue;
+            }
+            player.setVelocity(player.getVelocity().add(to.normalize().multiply(0.22)));
         }
     }
 
@@ -380,10 +687,10 @@ final class PathwardenDirector {
                 }
             }
             Player locked = resolveTarget(entity.getWorld());
-            Location want = locked != null ? ground(locked.getLocation()) : beamFocus;
-            beamFocus = lerp(beamFocus, want, 0.09);
+            Location want = locked != null ? ground(predict(entity, locked, BEAM_LEAD)) : beamFocus;
+            beamFocus = lerp(beamFocus, want, 0.16);
             drawSeekBeam(from, beamFocus.clone().add(0, 0.2, 0), AZURE);
-            drawDangerZone(beamFocus, AZURE, false);
+            drawDangerZone(beamFocus, WardenFx.AZURE_TONE);
             if (beamTick >= BEAM_SEEK) {
                 beamPhase = 1;
                 beamTick = 0;
@@ -402,58 +709,49 @@ final class PathwardenDirector {
             // Zone freezes — leave the circle or eat the blast.
             double t = beamTick / (double) BEAM_LOCK;
             Color mix = mix(AZURE, CRIMSON, t);
-            boolean firing = BEAM_LOCK - beamTick < 10;
-            Color zone = firing && beamTick % 2 == 0 ? WHITE : mix;
+            boolean firing = BEAM_LOCK - beamTick < 6;
             drawSeekBeam(from, beamFocus.clone().add(0, 0.2, 0), mix);
-            drawDangerZone(beamFocus, zone, true);
-            if (firing && beamTick % 4 == 0 && !de.aetherion.core.api.Vfx.pillar(beamFocus, WHITE, 0.6, 4.0, 6)) {
-                de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 1.5, 0), Particle.END_ROD, 4, Math.max(0.08, 0.08), null);
-            } else if (firing && !de.aetherion.core.api.Vfx.active()) {
-                de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 1.5, 0), Particle.END_ROD, 4, Math.max(0.08, 0.08), null);
+            drawDangerZone(beamFocus, firing && beamTick % 2 == 0 ? WardenFx.WHITE_TONE : WardenFx.CRIMSON_TONE);
+            fx.skyCharge(beamFocus, t);
+            if (beamTick % 3 == 0) {
+                world.playSound(beamFocus, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, (float) (0.7 + t));
             }
-            if (beamTick % 6 == 0) {
-                world.playSound(beamFocus, Sound.BLOCK_NOTE_BLOCK_PLING, 0.4f, (float) (0.7 + t));
-            }
-            if (beamTick == BEAM_LOCK - 10) {
-                world.playSound(beamFocus, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.6f);
+            if (beamTick == BEAM_LOCK - 6) {
+                world.playSound(beamFocus, Sound.BLOCK_BEACON_POWER_SELECT, 2.0f, 1.6f);
+                world.playSound(beamFocus, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 2.0f, 0.6f);
             }
             if (beamTick >= BEAM_LOCK) {
                 beamPhase = 2;
                 beamTick = 0;
+                fx.haloOff("zone");
+                fx.haloOff("zoneCore");
                 world.playSound(beamFocus, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.25f, 0.55f);
                 world.playSound(beamFocus, Sound.ENTITY_GENERIC_EXPLODE, 0.95f, 0.55f);
             }
             return;
         }
         if (beamPhase == 2) {
-            drawFireBeam(from, beamFocus.clone().add(0, 0.2, 0));
+            // the firing lance hits at full width and burns down to a thread
+            float width = (float) (2.6 - 2.1 * beamTick / (double) BEAM_FIRE);
+            fx.lance(from, beamFocus.clone().add(0, 0.2, 0), CRIMSON, width, true);
             if (beamTick == 1) {
                 fireNuke(entity);
             }
-            double wave = BEAM_BLAST + (beamTick / (double) BEAM_FIRE) * 4.5;
-            ringParticles(beamFocus, wave, CRIMSON, WHITE, 36);
             if (beamTick >= BEAM_FIRE) {
+                fx.lanceOff();
                 beamPhase = -1;
                 beamTick = 0;
                 if (entity instanceof Mob mob) {
                     mob.setAI(true);
                 }
+                daze(entity, DAZE_AFTER_BEAM);
             }
         }
     }
 
     private void fireNuke(LivingEntity entity) {
         World world = entity.getWorld();
-        if (de.aetherion.core.api.Vfx.burst(beamFocus.clone().add(0, 1.0, 0), WHITE, 5.0, 12)) {
-            de.aetherion.core.api.Vfx.wave(beamFocus.clone().add(0, 0.05, 0), CRIMSON, BEAM_BLAST, 15);
-            de.aetherion.core.api.Vfx.wave(beamFocus.clone().add(0, 0.07, 0), AZURE, BEAM_BLAST * 0.45, 12);
-            de.aetherion.core.api.Vfx.pillar(beamFocus, WHITE, 1.2, 9.0, 16);
-        } else {
-            de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 0.4, 0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
-            ringParticles(beamFocus, BEAM_BLAST, CRIMSON, WHITE, 40);
-            ringParticles(beamFocus, BEAM_BLAST * 0.45, AZURE, WHITE, 20);
-            de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 1.2, 0), Particle.END_ROD, 6, Math.max(0.08, 0.08), null);
-        }
+        fx.judgment(beamFocus, BEAM_BLAST);
         boolean hitAnyone = false;
         double r2 = BEAM_BLAST * BEAM_BLAST;
         for (Player player : world.getPlayers()) {
@@ -476,11 +774,22 @@ final class PathwardenDirector {
             player.addPotionEffect(new PotionEffect(slowness(), 55, 2, false, true, true));
             world.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.95f, 0.55f);
         }
+        // the shock rolls on past the blast: no damage, but nobody near keeps their footing
+        for (Player player : world.getPlayers()) {
+            if (!vulnerable(player)) {
+                continue;
+            }
+            double d = player.getLocation().distance(beamFocus);
+            if (d <= BEAM_BLAST || d > BEAM_BLAST + 9.0) {
+                continue;
+            }
+            Vector away = player.getLocation().toVector().subtract(beamFocus.toVector()).setY(0);
+            if (away.lengthSquared() > 0.01) {
+                player.setVelocity(away.normalize().multiply(0.75).setY(0.35));
+            }
+        }
         if (!hitAnyone) {
             world.playSound(beamFocus, Sound.BLOCK_FIRE_EXTINGUISH, 1.1f, 0.7f);
-            if (!de.aetherion.core.api.Vfx.wave(beamFocus.clone().add(0, 0.05, 0), Color.fromRGB(200, 200, 205), 2.0, 12)) {
-                de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 0.4, 0), Particle.CLOUD, 18, Math.max(0.45, 0.45), null);
-            }
             shout("&7Judgment &fmisses&7 — the path holds.");
         }
     }
@@ -545,12 +854,15 @@ final class PathwardenDirector {
             if (deathTicks % 8 == 0) {
                 world.playSound(strike, Sound.BLOCK_BEACON_AMBIENT, 0.7f, 0.6f + (float) t);
             }
-            ringParticles(strike.clone().add(0, -1.5, 0), 2.2 + t * 2.5, AZURE, CRIMSON, 14);
+            fx.halo("death", strike.clone().add(0, -1.5, 0), 2.2 + t * 2.5, WardenFx.CRIMSON_TONE);
             return false;
         }
 
         // 73-88: charged tremor — blades scream before the cut
         if (deathTicks < 89) {
+            if (deathTicks == 73) {
+                fx.haloOff("death");
+            }
             double shake = Math.sin(deathTicks * 1.4) * 0.18;
             bladeAzure = strike.clone().add(1.35 + shake, 3.6, 0.2);
             bladeCrimson = strike.clone().add(-1.35 - shake, 3.6, -0.2);
@@ -634,16 +946,16 @@ final class PathwardenDirector {
             });
         } else {
             entity.setRotation(look.getYaw(), 0f);
-            if (smashCd > 0 && smashCd <= SMASH_TELL) {
-                smashTell(entity);
-            }
-            if (smashCd <= 0) {
-                smashCd = 28;
-                hitAround(entity, SMASH_RADIUS, 420);
-                smashImpact(entity);
-                entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.45f);
-                entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 0.85f, 0.55f);
-            }
+        }
+        if (smashCd > 0 && smashCd <= SMASH_TELL) {
+            smashTell(entity);
+        }
+        if (smashCd <= 0) {
+            smashCd = 28;
+            hitAround(entity, SMASH_RADIUS, 420);
+            smashImpact(entity);
+            entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.45f);
+            entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 0.85f, 0.55f);
         }
         if (entity instanceof Mob mob) {
             mob.setTarget(target);
@@ -658,8 +970,8 @@ final class PathwardenDirector {
         Location at = entity.getLocation();
         boolean last = smashCd <= 2;
         double t = 1.0 - (smashCd - 1) / (double) SMASH_TELL;
-        ringParticles(at, SMASH_RADIUS, last ? WHITE : CRIMSON, last ? WHITE : CRIMSON, 26);
-        ringParticles(at, 0.8 + t * (SMASH_RADIUS - 0.8), CRIMSON, AZURE, 14);
+        fx.halo("smash", at, SMASH_RADIUS, last ? WardenFx.WHITE_TONE : WardenFx.CRIMSON_TONE);
+        fx.halo("smashFill", at, 0.8 + t * (SMASH_RADIUS - 0.8), WardenFx.AZURE_TONE);
         if (smashCd == SMASH_TELL) {
             world.playSound(at, Sound.ITEM_ARMOR_EQUIP_IRON, 1.1f, 0.5f);
             world.playSound(at, Sound.BLOCK_GRINDSTONE_USE, 0.6f, 0.55f);
@@ -667,27 +979,11 @@ final class PathwardenDirector {
     }
 
     private void smashImpact(LivingEntity entity) {
-        if (de.aetherion.core.api.Vfx.active()) {
-            World w = entity.getWorld();
-            Location here = entity.getLocation();
-            de.aetherion.core.api.Vfx.wave(here.clone().add(0, 0.05, 0), CRIMSON, SMASH_RADIUS, 13);
-            de.aetherion.core.api.Vfx.wave(here.clone().add(0, 0.07, 0), AZURE, SMASH_RADIUS * 0.6, 11);
-            de.aetherion.core.api.Vfx.burst(here.clone().add(0, 0.8, 0), WHITE, 2.6, 9);
-            de.aetherion.core.api.Vfx.chips(here, Material.IRON_BLOCK.createBlockData(), 10, 1.6);
-            w.playSound(here, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
-            return;
-        }
-        World world = entity.getWorld();
         Location at = entity.getLocation();
-        for (int i = 0; i < 36; i++) {
-            double ang = Math.PI * 2 * i / 36.0;
-            Location p = at.clone().add(Math.cos(ang) * SMASH_RADIUS, 0.15, Math.sin(ang) * SMASH_RADIUS);
-            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.BLOCK, 2, Math.max(0.1, 0.1), Material.IRON_BLOCK.createBlockData());
-            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0, 0), null);
-        }
-        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.6, 0), Particle.CRIT, 30, Math.max(1.6, 1.6), null);
-        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.EXPLOSION, 1, Math.max(0, 0), null);
-        world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
+        fx.haloOff("smash");
+        fx.haloOff("smashFill");
+        fx.smash(at, SMASH_RADIUS);
+        entity.getWorld().playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
     }
 
     private void dressIronGate(LivingEntity entity) {
@@ -738,28 +1034,6 @@ final class PathwardenDirector {
         }
         equipment.setItemInMainHand(new ItemStack(Material.AIR));
         equipment.setItemInOffHand(new ItemStack(Material.AIR));
-    }
-
-    /** Soft blue/red dust at hand height so the dual-blade theme still reads. */
-    private void handAura(LivingEntity entity) {
-        if (instance.getTicksAlive() % 4 != 0) {
-            return;
-        }
-        World world = entity.getWorld();
-        Location base = entity.getLocation().clone().add(0, Math.max(5.0, entity.getHeight() * 0.45), 0);
-        float yaw = base.getYaw();
-        double rad = Math.toRadians(yaw);
-        Vector right = new Vector(-Math.cos(rad), 0, -Math.sin(rad)).normalize().multiply(3.6);
-        Vector left = right.clone().multiply(-1);
-        Vector forward = new Vector(-Math.sin(rad), 0, Math.cos(rad)).multiply(1.2);
-        Location a = base.clone().add(right).add(forward);
-        Location c = base.clone().add(left).add(forward);
-        if (de.aetherion.core.api.Vfx.orb(a, null, AZURE, 1.1, 6)) {
-            de.aetherion.core.api.Vfx.orb(c, null, CRIMSON, 1.1, 6);
-            return;
-        }
-        de.aetherion.bossengine.fx.ShapeFx.puff(a, Particle.DUST, 3, Math.max(0.12, 0.12), null);
-        de.aetherion.bossengine.fx.ShapeFx.puff(c, Particle.DUST, 3, Math.max(0.12, 0.12), null);
     }
 
     private Location strikePoint() {
@@ -952,162 +1226,14 @@ final class PathwardenDirector {
         }
     }
 
-    private void drawDangerZone(Location center, Color color, boolean pulsing) {
-        if (de.aetherion.bossengine.fx.ShapeFx.ring(center.clone().add(0, 0.08, 0), color, pulsing ? BEAM_ZONE * (1.0 + 0.06 * Math.sin(beamTick * 0.5)) : BEAM_ZONE)) {
-            de.aetherion.bossengine.fx.ShapeFx.ring(center.clone().add(0, 0.06, 0), color, BEAM_ZONE * 0.5);
-            return;
-        }
-        World world = center.getWorld();
-        if (world == null) {
-            return;
-        }
-        double radius = pulsing ? BEAM_ZONE * (1.0 + 0.06 * Math.sin(beamTick * 0.5)) : BEAM_ZONE;
-        int points = pulsing ? 28 : 20;
-        for (int i = 0; i < points; i++) {
-            double ang = (Math.PI * 2 * i) / points + (pulsing ? beamTick * 0.08 : 0);
-            double x = center.getX() + Math.cos(ang) * radius;
-            double z = center.getZ() + Math.sin(ang) * radius;
-            world.spawnParticle(Particle.DUST, x, center.getY() + 0.08, z, 1, 0, 0, 0, new Particle.DustOptions(color, pulsing ? 1.55f : 1.25f));
-            if (i % 2 == 0) {
-                world.spawnParticle(Particle.END_ROD, x, center.getY() + 0.12, z, 1, 0, 0, 0, 0);
-            }
-        }
-        // Soft floor fill so the escape circle reads as a field.
-        world.spawnParticle(
-                Particle.DUST,
-                center.getX(),
-                center.getY() + 0.05,
-                center.getZ(),
-                pulsing ? 18 : 10,
-                radius * 0.35,
-                0.02,
-                radius * 0.35,
-                new Particle.DustOptions(color, 1.1f)
-        );
+    /** The blast edge as a floor ring with a half-size ring inside: azure while it tracks, crimson once locked. */
+    private void drawDangerZone(Location center, int tone) {
+        fx.halo("zone", center, BEAM_ZONE, tone);
+        fx.halo("zoneCore", center, BEAM_ZONE * 0.5, tone);
     }
 
     private void drawSeekBeam(Location from, Location to, Color color) {
-        if (de.aetherion.core.api.Vfx.line(instance.getInstanceId() + ":seek", from, to, color, 0.32)) {
-            de.aetherion.bossengine.fx.ShapeFx.ring(to.clone().add(0, 0.1, 0), color, 0.9);
-            return;
-        }
-        World world = from.getWorld();
-        if (world == null) {
-            return;
-        }
-        Vector delta = to.toVector().subtract(from.toVector());
-        int steps = 26;
-        for (int i = 0; i <= steps; i++) {
-            Location p = from.clone().add(delta.clone().multiply(i / (double) steps));
-            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 2, Math.max(0.04, 0.04), null);
-            if (i % 2 == 0) {
-                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.END_ROD, 1, Math.max(0.01, 0.01), null);
-            }
-            if (i % 4 == 0) {
-                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.ELECTRIC_SPARK, 1, Math.max(0.02, 0.02), null);
-            }
-        }
-        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.15, 0), Particle.DUST, 14, Math.max(0.35, 0.35), null);
-        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.25, 0), Particle.GLOW, 6, Math.max(0.2, 0.2), null);
-    }
-
-    private void drawFireBeam(Location from, Location to) {
-        if (de.aetherion.core.api.Vfx.beam(from, to, CRIMSON, 1.0, 10)) {
-            de.aetherion.core.api.Vfx.beam(from, to, Color.fromRGB(255, 200, 120), 0.35, 10);
-            de.aetherion.core.api.Vfx.burst(to.clone().add(0, 0.5, 0), Color.fromRGB(255, 140, 60), 3.0, 11);
-            de.aetherion.core.api.Vfx.wave(to.clone().add(0, 0.05, 0), CRIMSON, 3.0, 13);
-            return;
-        }
-        World world = from.getWorld();
-        if (world == null) {
-            return;
-        }
-        Vector delta = to.toVector().subtract(from.toVector());
-        for (int i = 0; i <= 32; i++) {
-            Location p = from.clone().add(delta.clone().multiply(i / 32.0));
-            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 5, Math.max(0.1, 0.1), null);
-            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.FLAME, 2, Math.max(0.06, 0.06), null);
-            if (i % 3 == 0) {
-                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.LAVA, 1, Math.max(0, 0), null);
-            }
-        }
-        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.5, 0), Particle.FLASH, 2, Math.max(0, 0), null);
-        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.3, 0), Particle.EXPLOSION, 2, Math.max(0.2, 0.2), null);
-    }
-
-    private void tornado(Location at) {
-        if (de.aetherion.core.api.Vfx.active() && at.getWorld() != null) {
-            if (instance.getTicksAlive() % 20 == 0) {
-                de.aetherion.core.api.Vfx.spiral(at.clone().add(0, 0.2, 0), AZURE, 2.6, 8.4, 24, 2);
-                de.aetherion.core.api.Vfx.spiral(at.clone().add(0, 0.2, 0), CRIMSON, 3.8, 8.4, 24, 2);
-            }
-            de.aetherion.bossengine.fx.ShapeFx.ring(at.clone().add(0, 0.15, 0), WHITE, 1.6);
-            return;
-        }
-        World world = at.getWorld();
-        if (world == null) {
-            return;
-        }
-        // Fat dual-helix cone: narrow feet, roaring crown.
-        double height = 8.4;
-        int layers = 12;
-        for (int layer = 0; layer < layers; layer++) {
-            double t = layer / (double) (layers - 1);
-            double y = at.getY() + 0.2 + height * t;
-            double radius = 1.15 + t * 5.2;
-            int points = 10 + layer * 2;
-            for (int i = 0; i < points; i++) {
-                double ang = Math.toRadians(spinYaw * 1.85 + i * (360.0 / points) + layer * 18);
-                double x = at.getX() + Math.cos(ang) * radius;
-                double z = at.getZ() + Math.sin(ang) * radius;
-                Color c = (i + layer) % 2 == 0 ? AZURE : CRIMSON;
-                world.spawnParticle(Particle.DUST, x, y, z, 1, 0, 0, 0, new Particle.DustOptions(c, 1.45f));
-                if (i % 3 == 0) {
-                    world.spawnParticle(Particle.END_ROD, x, y, z, 1, 0, 0, 0, 0);
-                }
-                if (layer > 7 && i % 4 == 0) {
-                    world.spawnParticle(c.getBlue() > c.getRed() ? Particle.SOUL_FIRE_FLAME : Particle.FLAME, x, y, z, 1, 0, 0, 0, 0.001);
-                }
-            }
-            // Counter-helix
-            double ang2 = Math.toRadians(-spinYaw * 1.5 + layer * 40);
-            world.spawnParticle(
-                    Particle.DUST,
-                    at.getX() + Math.cos(ang2) * (radius * 0.72),
-                    y,
-                    at.getZ() + Math.sin(ang2) * (radius * 0.72),
-                    2, 0.05, 0.05, 0.05,
-                    new Particle.DustOptions(layer % 2 == 0 ? CRIMSON : AZURE, 1.25f)
-            );
-        }
-        // Ground scrape ring
-        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.15, 0), Particle.CLOUD, 6, Math.max(1.4, 1.4), null);
-        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.2, 0), Particle.SWEEP_ATTACK, 2, Math.max(1.8, 1.8), null);
-    }
-
-    private void ringParticles(Location at, double radius, Color a, Color b, int points) {
-        if (de.aetherion.bossengine.fx.ShapeFx.ring(at.clone().add(0, 0.2, 0), a, radius)) {
-            if (!a.equals(b)) {
-                de.aetherion.bossengine.fx.ShapeFx.ring(at.clone().add(0, 0.18, 0), b, Math.max(0.3, radius - 0.2));
-            }
-            return;
-        }
-        World world = at.getWorld();
-        if (world == null) {
-            return;
-        }
-        for (int i = 0; i < points; i++) {
-            double ang = (Math.PI * 2 * i) / points;
-            Color c = i % 2 == 0 ? a : b;
-            world.spawnParticle(
-                    Particle.DUST,
-                    at.getX() + Math.cos(ang) * radius,
-                    at.getY() + 0.2,
-                    at.getZ() + Math.sin(ang) * radius,
-                    1, 0, 0, 0,
-                    new Particle.DustOptions(c, 1.1f)
-            );
-        }
+        fx.lance(from, to, color, 0.32f, false);
     }
 
     private void hitAround(LivingEntity entity, double radius, double power) {
@@ -1235,9 +1361,13 @@ final class PathwardenDirector {
     private void clearCombatFx() {
         beamPhase = -1;
         spinPhase = -1;
+        rebukeTick = -1;
+        dazedTicks = 0;
+        fx.clear();
     }
 
     private void clearProps() {
+        fx.clear();
         bladeAzure = null;
         bladeCrimson = null;
         deathAzureStart = null;

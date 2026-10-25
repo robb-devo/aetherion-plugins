@@ -66,6 +66,7 @@ public final class ExileQuayRepair {
             return;
         }
         int deckWest = ox + ExileQuayPaste.DECK_WEST;
+        boolean turned = ExileQuay.turnedIn(plugin);
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 ClipboardFormat format = ClipboardFormats.findByFile(schem);
@@ -73,17 +74,21 @@ public final class ExileQuayRepair {
                 try (ClipboardReader reader = format.getReader(new FileInputStream(schem))) {
                     clipboard = reader.read();
                 }
-                BlockVector3 shift = BlockVector3.at(ox, oy, oz).subtract(clipboard.getOrigin());
+                BlockVector3 co = clipboard.getOrigin();
                 Map<String, Integer> byMat = new TreeMap<>();
                 int missing = 0;
                 int standing = 0;
                 try (EditSession edit = WorldEdit.getInstance().newEditSessionBuilder()
                         .world(BukkitAdapter.adapt(world)).maxBlocks(-1).build()) {
                     for (BlockVector3 p : clipboard.getRegion()) {
-                        BlockVector3 at = p.add(shift);
-                        if (at.x() >= deckWest) {
+                        BlockVector3 rel = p.subtract(co);
+                        if (rel.x() >= ExileQuayPaste.DECK_WEST) {
                             continue;
                         }
+                        // turned 180°: the chain hangs east; its blocks (iron, slabs, bricks) read the same either way
+                        BlockVector3 at = turned
+                                ? BlockVector3.at(ox - rel.x(), oy + rel.y(), oz - rel.z())
+                                : BlockVector3.at(ox + rel.x(), oy + rel.y(), oz + rel.z());
                         BaseBlock block = clipboard.getFullBlock(p);
                         if (block.getBlockType().getMaterial().isAir()) {
                             continue;
@@ -100,7 +105,8 @@ public final class ExileQuayRepair {
                     }
                 }
                 String line = "ExileQuayRepair " + (apply ? "put back " : "would put back ") + missing
-                        + " chain blocks (" + standing + " still there) west of x=" + deckWest + " " + byMat;
+                        + " chain blocks (" + standing + " still there) " + (turned ? "east of x=" + (ox - ExileQuayPaste.DECK_WEST)
+                        : "west of x=" + deckWest) + " " + byMat;
                 plugin.getLogger().info(line);
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     RUNNING.set(false);

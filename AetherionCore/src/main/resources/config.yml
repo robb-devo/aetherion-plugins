@@ -29,13 +29,14 @@ network:
     connect-timeout-ms: 8000
     keep-history-days: 3
   # Commands that belong to another backend cross there and run on arrival.
-  # 'on' lists where this is armed. mmo-d keeps its own /dungeon home; add it here only after testing.
+  # everywhere: armed on every backend but mmo-r (mmo-d keeps Dungeons' own /spawn /hub; the hub keeps its lobby
+  # warps and sends the rest via mmo-r). false = only the backends in 'on'.
+  # main / dungeon: extra labels; the built-in list (all Hub warps, /harbor, /hafen …) always counts.
   routed-commands:
+    everywhere: true
     on: [mmo-c, mmo-i]
-    main: [spawn, hub, spawns, hubs, spawnmenu, harbour, oreridge, ore_ridge, mines, capital, forage,
-           forageisle, farm, farmisle, borderlands, colosseum, eldervale, mining, miningisle, fishing,
-           fishingisle, summit, skyreach, whisperwood, wilds, origin, originisle, originjournal]
-    dungeon: [dhub, dungeonhub, dh]
+    main: []
+    dungeon: []
     # One economy: Bazaar / Auction House live on mmo-r only (one market.yml). These cross even though Items
     # answers them locally. Empty list = keep a local market on that backend (not recommended).
     force-main: [bazaar, bz, aetherbazaar, ah, auction, auctionhouse, aetherah]
@@ -85,6 +86,9 @@ exile:
   quay:
     world: ""
     origin: ""
+    # west = pasted as authored (ferry points west); east = turned 180° by /exile turnquay (ferry sails east,
+    # away from the main island). Written by placequay / turnquay.
+    facing: west
     # The walk from the Borderlands cliff to the pier head (air-only, undoable). Written by /exile causeway
     # (stand on the cliff where it should leave); a quay re-paste lays it again from here.
     causeway: ""
@@ -132,3 +136,5 @@ particles:
   max-per-burst: 10
   budget-per-tick: 60
   long-range: false
+  # Vanilla sprays one dark heart per two health a melee hit takes; capped per hit (0 = vanilla). Always on with ProtocolLib.
+  damage-hearts-max: 3

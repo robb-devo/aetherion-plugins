@@ -70,8 +70,17 @@ public final class OriginConfig {
 
     public enum Trigger { PAD, RIFT }
 
+    /**
+     * @param ferry the flight lands at the Veil Quay's gangway (the ferry grounds) whenever Core knows where the quay
+     *              stands; {@code path} and {@code to} are the fallback while it does not
+     */
     public record Flight(String id, String name, String to, Trigger trigger, int[] min, int[] max, double[] at,
-                         double radius, double speed, List<double[]> path) {
+                         double radius, double speed, List<double[]> path, boolean ferry) {
+
+        /** Where the flight goes, as the pad preview and the take-off card say it. */
+        public String destination() {
+            return ferry && de.aetherion.core.api.ExilePlaces.quayBoard() != null ? "the Veil Quay" : to;
+        }
 
         public double[] start() {
             return path.get(0);
@@ -318,7 +327,9 @@ public final class OriginConfig {
                 Trigger trigger = "pad".equalsIgnoreCase(s.getString("trigger", "rift")) ? Trigger.PAD : Trigger.RIFT;
                 flights.put(id, new Flight(id, s.getString("name", OriginText.pretty(id)), s.getString("to", ""), trigger,
                         ints(s.getString("min")), ints(s.getString("max")), nums(s.getString("at")), s.getDouble("radius", 1.4d),
-                        Math.max(0.6d, Math.min(3.4d, s.getDouble("speed", 2.4d))), Collections.unmodifiableList(path)));
+                        Math.max(0.6d, Math.min(3.4d, s.getDouble("speed", 2.4d))), Collections.unmodifiableList(path),
+                        // No fallback argument: a live file that predates the key reads the jar's value on this load.
+                        s.getBoolean("ferry")));
             }
         }
 

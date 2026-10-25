@@ -190,8 +190,12 @@ public final class GroveEvents implements Listener {
         switch (active) {
             case WINDFALL -> tickWindfall(onIsle, now);
             case BLOSSOM_STORM -> {
-                for (Player player : onIsle) {
-                    player.spawnParticle(Particle.CHERRY_LEAVES, player.getLocation().add(0, 3, 0), 6, 4, 1.5, 4, 0.0);
+                // Cherry petals live ~15 s on the client and the shelf's own leaves already shed them: a light touch
+                // every other second (6 a second piled up and dropped frames when the storm began).
+                if (tick % 2 == 0) {
+                    for (Player player : onIsle) {
+                        player.spawnParticle(Particle.CHERRY_LEAVES, player.getLocation().add(0, 3, 0), 3, 4, 1.5, 4, 0.0);
+                    }
                 }
             }
             case BARK_BLIGHT -> {

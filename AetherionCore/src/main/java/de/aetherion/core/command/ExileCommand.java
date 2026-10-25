@@ -92,6 +92,30 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
             de.aetherion.core.exile.ExileQuayRepair.run(plugin, sender, args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
             return true;
         }
+        // Turn the Veil Quay 180° so the ferry casts off east, away from the main island. Dry run unless "apply".
+        if ("turnquay".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            de.aetherion.core.exile.ExileQuayPaste.turn(plugin, sender, args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
+            return true;
+        }
+        // Exile host: dig the Iron Ring's approach out of the crater debris (runs once on its own). "undo" puts it back.
+        if ("gatecut".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            ExileHost host = plugin.exileHost();
+            org.bukkit.World exile = host == null ? null : host.world();
+            if (args.length >= 2 && "undo".equalsIgnoreCase(args[1])) {
+                de.aetherion.core.exile.ExileGateCut.undo(plugin, sender);
+            } else {
+                de.aetherion.core.exile.ExileGateCut.run(plugin, sender, exile);
+            }
+            return true;
+        }
         // Walk from the Borderlands cliff to the pier head: stand where it should leave the cliff. "undo" takes it back.
         if ("causeway".equals(sub)) {
             if (!admin) {
@@ -158,21 +182,32 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                             "§8Exil §8» §7Schon da. §f/exile return §7bringt dich zurück."));
                     return true;
                 }
+                de.aetherion.core.network.NetworkRouter router = plugin.router();
+                if (router != null && de.aetherion.core.network.ServerNames.isHub(router.here())) {
+                    // The lobby holds no character and no story: the road runs through the main world, which decides.
+                    if (!router.travel(player, router.serverFor("main"), de.aetherion.core.network.RouteBook.Kind.COMMAND,
+                            "exile go", null, "command:exile")) {
+                        player.sendMessage("§7That road is closed right now — try again in a moment.");
+                    }
+                    return true;
+                }
                 ExileQuay quay = plugin.exileQuay();
+                String no = quay == null ? null : quay.refusal(player);
                 if (quay != null && quay.placed()) {
                     if (quay.near(player, 48)) {
                         quay.board(player, "command");
-                    } else if (player.hasPermission("aetherion.core.admin")) {
+                    } else if (no == null) {
+                        // Unlocked: straight across from anywhere, like every other road.
                         link.send(player);
                     } else {
+                        player.sendMessage(Say.t(player, "§8Ferryman §8» §7", "§8Fährmann §8» §7") + no);
                         player.sendMessage(Say.t(player,
                                 "§8Ferry §8» §7The ferry leaves from the Veil Quay, off the far east edge of the Borderlands, in the fog.",
                                 "§8Fähre §8» §7Die Fähre legt am Schleierkai ab, am äußersten Ostrand der Borderlands, im Nebel."));
                     }
                     return true;
                 }
-                // No islet placed yet: the old direct hop, but the story still decides who may cross.
-                String no = quay == null ? null : quay.refusal(player);
+                // No islet on this backend (isles, dungeons): a direct hop, but the story still decides who may cross.
                 if (no != null) {
                     player.sendMessage(Say.t(player, "§8Ferryman §8» §7", "§8Fährmann §8» §7") + no);
                     return true;
@@ -268,7 +303,8 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                 || sender instanceof org.bukkit.command.ConsoleCommandSender;
         for (String s : admin
                 ? List.of("go", "return", "replay", "stop", "where", "setquay", "causeway", "paste",
-                        "placequay", "quayundo", "clearsaint", "restoremap", "cleararena", "repairquay")
+                        "placequay", "quayundo", "clearsaint", "restoremap", "cleararena", "repairquay", "turnquay",
+                        "gatecut")
                 : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);
