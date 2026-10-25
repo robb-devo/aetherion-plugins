@@ -80,7 +80,6 @@ public final class IsleCast {
             seat("timber_clerk", 338.5, 65, -317.5, -126f, "eastwood"),
             seat("mushroom_forager", 353.5, 67, -354.5, -141f, "eastwood"),
             seat("beekeeper", 290.5, 61, -44.5, -17f, "eastwood"),
-            seat("gate_warden", 168.5, 58, 87.5, 153f, "borderlands"),
             seat("ash_scout", 141.5, 62, 118.5, -52f, "borderlands"),
             seat("tollkeeper", -261.5, 56, -258.5, 106f, "whisperwood"),
             seat("hermit", -409.5, 58, -238.5, 121f, "whisperwood")
@@ -153,6 +152,7 @@ public final class IsleCast {
         if (!originMap(world)) {
             return "§7Not the Origin map here — nothing seeded.";
         }
+        retire(storage);
         relocateMoved(world, storage);
         joinAnchors(world, storage);
         List<Seat> todo = new ArrayList<>();
@@ -232,13 +232,27 @@ public final class IsleCast {
 
     /**
      * Seeded NPCs whose seat turned out wrong for their job (beta list): one still on that old seat walks over to
-     * stand beside the NPC its quest belongs with, wherever staff placed that one. Gate Warden's Pathwarden is now
-     * summoned at the Colosseum (Proctor); Rook prepares players for the dungeons (Threshold).
+     * stand beside the NPC its quest belongs with, wherever staff placed that one. Rook prepares players for the
+     * dungeons (Threshold).
      */
     private static final Object[][] JOIN = {
-            {"gate_warden", "arena_proctor", 168.5, 87.5},
             {"rook", "dungeon_gate", -151.5, 27.5}
     };
+
+    /**
+     * NPCs from the old map that must not stand on the Origin map: the Gate Warden's "Closed Road" was the first
+     * Pathwarden hunt; the Colosseum Proctor owns the Pathwarden now and stays the only one (Robb, 2026-10-25).
+     * Whoever still has a placement for one loses it at the next seed.
+     */
+    private static final String[] RETIRED = {"gate_warden"};
+
+    private void retire(NPCDataStorage storage) {
+        for (String id : RETIRED) {
+            if (storage.hasSavedNPC(id) && new QuestNPCSpawnService().forget(id)) {
+                plugin.getLogger().info("Island cast: " + id + " retired (old map NPC) and removed.");
+            }
+        }
+    }
 
     private void joinAnchors(World world, NPCDataStorage storage) {
         for (Object[] j : JOIN) {
