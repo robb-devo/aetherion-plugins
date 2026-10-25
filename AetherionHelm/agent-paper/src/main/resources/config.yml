@@ -1,0 +1,8 @@
+# Aetherion Helm agent. The deploy script fills these in; nothing here is secret except the token.
+gateway: ws://127.0.0.1:8788/agent
+token: ''
+# server id as the gateway knows it: hub, mmor, mmod, mmoc, mmoi
+server: ''
+# chat commands a muted player cannot use either
+mute-blocked-commands: [msg, tell, w, whisper, r, reply, me, pm, dm, mail, m, t]
+report-cooldown-seconds: 60

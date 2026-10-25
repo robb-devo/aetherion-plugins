@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#a996ff"/><stop offset=".48" stop-color="#7461ff"/><stop offset="1" stop-color="#3fc4ff"/>
+</linearGradient>
+<radialGradient id="hl" cx=".28" cy=".18" r=".75">
+  <stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="lo" cx=".75" cy="1" r=".8">
+  <stop offset="0" stop-color="#0b1440" stop-opacity=".45"/><stop offset="1" stop-color="#0b1440" stop-opacity="0"/>
+</radialGradient>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="0.8" stdDeviation="1.3" flood-color="#1a1060" flood-opacity=".45"/>
+</filter>
+</defs><rect width="64" height="64" rx="14.4" fill="url(#g)"/><rect width="64" height="64" rx="14.4" fill="url(#lo)"/><rect width="64" height="64" rx="14.4" fill="url(#hl)"/><g filter="url(#sh)"><circle cx="32.0" cy="32.0" r="14.78" fill="none" stroke="#fff" stroke-width="3.81"/><circle cx="32.0" cy="32.0" r="5.60" fill="#fff"/><path d="M32.00 27.07 L32.00 10.94 M35.48 28.52 L46.89 17.11 M36.93 32.00 L53.06 32.00 M35.48 35.48 L46.89 46.89 M32.00 36.93 L32.00 53.06 M28.52 35.48 L17.11 46.89 M27.07 32.00 L10.94 32.00 M28.52 28.52 L17.11 17.11" fill="none" stroke="#fff" stroke-width="3.25" stroke-linecap="round"/><circle cx="32.00" cy="8.93" r="3.02" fill="#fff"/><circle cx="48.31" cy="15.69" r="3.02" fill="#fff"/><circle cx="55.07" cy="32.00" r="3.02" fill="#fff"/><circle cx="48.31" cy="48.31" r="3.02" fill="#fff"/><circle cx="32.00" cy="55.07" r="3.02" fill="#fff"/><circle cx="15.69" cy="48.31" r="3.02" fill="#fff"/><circle cx="8.93" cy="32.00" r="3.02" fill="#fff"/><circle cx="15.69" cy="15.69" r="3.02" fill="#fff"/></g></svg>

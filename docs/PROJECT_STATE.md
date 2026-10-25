@@ -101,6 +101,15 @@ server already runs them, AetherMobs on mmo-r only, one restart per backend, bac
 - AetherMobs: pet bodies polished (cow and mooshroom patches, upright blaze rods, framed hacker terminal, 12-spike
   guardian, glow squid teal, dolphin slate, cat tail, butterfly wing borders).
 
+## Aetherion Helm, staff panel (live since 2026-10-22)
+
+`AetherionHelm/`: own Maven builds outside the root reactor plus a web app, see its README. Gateway (Javalin, SQLite,
+login with mandatory 2FA, roles, audit log, host monitor) on the Hetzner host behind a Cloudflare tunnel on a panel
+subdomain; Paper agent `AetherionHelm` on every backend and Velocity agent `AetherionHelmProxy` on the proxy talk to it
+over loopback. React PWA in liquid-glass style; the Android app is a Capacitor shell that opens the live panel.
+`.github/workflows/aetherion-helm.yml` publishes everything as the release `aetherion-helm`; `deploy-helm.ps1` installs
+it from Robb's PC. Accounts: Robb (Owner) and Shuminite (Co-Owner, everything except managing staff accounts).
+
 ## Exile, ferry, islands, routing (2026-10-22, cloud session, PR #99)
 
 Deployed with `deploy-exile-isles.ps1` (Core, BossEngine, Hub jar on mmo-r; islands moved by `ae-islands-migrate.py`).

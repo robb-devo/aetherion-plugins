@@ -1,0 +1,179 @@
+#!/bin/bash
+# helm-ctl: the one command the Helm gateway may run as root (sudo, see /etc/sudoers.d/aetherion-helm).
+# It only wraps the existing ops scripts, so power actions behave exactly like ae.ps1: graceful stop with the
+# LOCKED countdown, stop markers for the watchdog, session-lock cleanup on start.
+#
+#   helm-ctl status                     JSON: pid, stop marker and uptime per server
+#   helm-ctl sizes                      JSON: disk use per server and world, backup snapshots
+#   helm-ctl watchdog                   last lines of the watchdog log
+#   helm-ctl logs <id> [maxLines] [byteOffset]   JSON: new log lines from latest.log (host-only servers)
+#   helm-ctl start|stop|restart|kill <id>        network servers only (ae-start/ae-stop)
+set -uo pipefail
+
+OPS=/root/aetherion-ops
+BACKUPS=/var/backups/aetherion/snapshots
+HELM_JSON="${HELM_JSON:-/opt/aetherion-helm/helm.json}"
+POWER_IDS=(proxy hub mmor mmod mmoc mmoi)
+. "$OPS/ae-lib.sh"
+
+power_known() {
+  local i
+  for i in "${POWER_IDS[@]}"; do [[ "$1" == "$i" ]] && return 0; done
+  return 1
+}
+
+java_pid() {
+  local dir="$1" p
+  for p in $(pgrep -x java 2>/dev/null || true); do
+    [[ "$(readlink -f "/proc/$p/cwd" 2>/dev/null)" == "$dir" ]] && { echo "$p"; return 0; }
+  done
+  ae_pid "$dir"
+}
+
+server_dir() {
+  local id="$1"
+  python3 - "$HELM_JSON" "$id" <<'PY'
+import json, sys
+path, sid = sys.argv[1], sys.argv[2]
+try:
+    cfg = json.load(open(path))
+except Exception:
+    sys.exit(1)
+for s in cfg.get("servers", []):
+    if s.get("id") == sid and s.get("dir"):
+        print(s["dir"])
+        sys.exit(0)
+sys.exit(2)
+PY
+}
+
+each_server() {
+  python3 - "$HELM_JSON" <<'PY'
+import json, sys
+path = sys.argv[1]
+try:
+    cfg = json.load(open(path))
+except Exception:
+    sys.exit(0)
+for s in cfg.get("servers", []):
+    sid = s.get("id", "")
+    d = s.get("dir", "")
+    if sid and d:
+        print(f"{sid}\t{d}")
+PY
+}
+
+case "${1:-}" in
+  status)
+    printf '{"servers":{'
+    sep=""
+    while IFS=$'\t' read -r id dir; do
+      [[ -n "$id" ]] || continue
+      pid=$(java_pid "$dir" 2>/dev/null || true)
+      stopped=false
+      [[ -f "$OPS/state/$(basename "$dir").stopped" ]] && stopped=true
+      up=0
+      [[ -n "$pid" ]] && up=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')
+      printf '%s"%s":{"pid":%s,"stopped":%s,"uptime":%s}' "$sep" "$id" "${pid:-null}" "$stopped" "${up:-0}"
+      sep=","
+    done < <(each_server)
+    printf '}}\n'
+    ;;
+
+  sizes)
+    printf '{"servers":{'
+    sep=""
+    while IFS=$'\t' read -r id dir; do
+      [[ -d "$dir" ]] || continue
+      total=$(nice -n 19 ionice -c3 du -sb "$dir" 2>/dev/null | cut -f1)
+      printf '%s"%s":{"bytes":%s,"worlds":{' "$sep" "$id" "${total:-0}"
+      wsep=""
+      for lvl in "$dir"/*/level.dat "$dir"/world/level.dat "$dir"/level.dat; do
+        [[ -f "$lvl" ]] || continue
+        w=$(dirname "$lvl")
+        b=$(nice -n 19 ionice -c3 du -sb "$w" 2>/dev/null | cut -f1)
+        printf '%s"%s":%s' "$wsep" "$(basename "$w")" "${b:-0}"
+        wsep=","
+      done
+      printf '}}'
+      sep=","
+    done < <(each_server)
+    printf '}'
+    if [[ -d "$BACKUPS" ]]; then
+      bb=$(nice -n 19 ionice -c3 du -sb "$BACKUPS" 2>/dev/null | cut -f1)
+      count=$(find "$BACKUPS" -mindepth 1 -maxdepth 1 | wc -l)
+      latest=$(find "$BACKUPS" -mindepth 1 -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n | tail -1)
+      lts=${latest%% *}
+      lts=${lts%.*}
+      lname=${latest#* }
+      printf ',"backups":{"bytes":%s,"count":%s,"latest":%s,"latestName":"%s"}' "${bb:-0}" "$count" "$(( ${lts:-0} * 1000 ))" "${lname//\"/}"
+    fi
+    printf '}\n'
+    ;;
+
+  logs)
+    id="${2:-}"
+    max="${3:-200}"
+    offset="${4:-0}"
+    dir=$(server_dir "$id") || { echo '{"offset":0,"lines":[]}'; exit 2; }
+    log="$dir/logs/latest.log"
+    [[ -f "$log" ]] || { echo '{"offset":0,"lines":[]}'; exit 0; }
+    python3 - "$log" "$max" "$offset" <<'PY'
+import json, os, re, sys
+from datetime import datetime
+
+path, max_lines, offset = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+pat = re.compile(r"^\[(\d{2}:\d{2}:\d{2})\] \[([^/]+)/(\w+)\]: (.*)$")
+try:
+    with open(path, "rb") as f:
+        f.seek(0, 2)
+        size = f.tell()
+        f.seek(min(offset, size))
+        chunk = f.read()
+        new_off = f.tell()
+except Exception:
+    print(json.dumps({"offset": 0, "lines": []}))
+    sys.exit(0)
+raw = chunk.decode("utf-8", errors="replace").splitlines()
+if offset > 0 and raw:
+    raw = raw[1:]
+raw = raw[-max_lines:]
+log_day = datetime.fromtimestamp(os.path.getmtime(path)).date()
+now_ms = int(datetime.now().timestamp() * 1000)
+lines = []
+for line in raw:
+    m = pat.match(line)
+    if not m:
+        continue
+    h, mi, sec = m.group(1).split(":")
+    try:
+        ts = int(datetime(log_day.year, log_day.month, log_day.day, int(h), int(mi), int(sec)).timestamp() * 1000)
+        if ts > now_ms + 120_000:
+            ts -= 86_400_000
+    except Exception:
+        ts = now_ms
+    lines.append({"ts": ts, "lvl": m.group(3), "src": m.group(2), "msg": m.group(4)})
+print(json.dumps({"offset": new_off, "lines": lines}))
+PY
+    ;;
+
+  watchdog)
+    tail -n 30 "$OPS/state/watchdog.log" 2>/dev/null || true
+    ;;
+
+  start | stop | restart | kill)
+    id="${2:-}"
+    power_known "$id" || { echo "unbekannter Server: $id"; exit 2; }
+    case "$1" in
+      start) bash "$OPS/ae-start.sh" "$id" ;;
+      stop) bash "$OPS/ae-stop.sh" "$id" ;;
+      kill) bash "$OPS/ae-stop.sh" "$id" now ;;
+      restart) bash "$OPS/ae-stop.sh" "$id" && bash "$OPS/ae-start.sh" "$id" ;;
+    esac
+    ;;
+
+  *)
+    echo "usage: helm-ctl status | sizes | watchdog | logs <id> [max] [offset] | start|stop|restart|kill <id>"
+    exit 2
+    ;;
+esac
