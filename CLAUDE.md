@@ -6,7 +6,8 @@
   hosts, keys, passwords, ports or server ids here, even though the repo is private.
 
 Rules that keep breaking things when ignored:
-- `main` equals live. Build and deploy only from the ship worktree, then commit, push and merge.
+- `main` equals live. Merge the PR first, then build and deploy from the clean clone of `main`
+  (`IdeaProjects/_deploy/aetherion-plugins`); never from a work branch or the stale root checkout.
 - Never overwrite live plugin YAMLs; patch them.
 - After deploying a jar, restart every server that loads it, and keep exactly one jar file per plugin per server.
 - Resource-pack swap: build it with `AetherionItems/tools/build_served_pack.py` from the live zip and replace the
