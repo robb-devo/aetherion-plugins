@@ -27,7 +27,7 @@ export interface Server {
   id: string;
   name: string;
   role: string;
-  kind: "paper" | "velocity";
+  kind: "paper" | "velocity" | "vanilla";
   state: ServerState;
   agent: boolean;
   agentVersion?: string;
@@ -60,6 +60,7 @@ export interface Server {
 }
 
 export interface ServerDetail extends Server {
+  pingPlayers?: { name: string; uuid: string }[];
   info?: {
     software?: string;
     mc?: string;

@@ -282,12 +282,17 @@ export function ServerTile({ s, spark }: { s: Server; spark?: number[] }) {
   const heap = s.heapMax ? (s.heapUsed ?? 0) / s.heapMax : undefined;
   const on = s.state === "online";
   const isProxy = s.kind === "velocity";
+  const isVanilla = s.kind === "vanilla";
   return (
     <a href={href("servers", s.id)} className={cx("glass card interactive srv-tile", !on && "off")}>
       <div className="srv-head">
         {isProxy ? (
           <Ring value={on ? 1 : 0} size={48} stroke={5} color="var(--accent)">
             <Network size={18} />
+          </Ring>
+        ) : isVanilla ? (
+          <Ring value={on && s.hostCpu != null ? Math.min(1, s.hostCpu) : on ? 0.15 : 0} size={48} stroke={5} color="var(--c4)">
+            <Cpu size={18} />
           </Ring>
         ) : (
           <Ring value={tps != null ? tps / 20 : 0} size={48} stroke={5} color={toneColor(tpsTone(tps))}>
@@ -309,6 +314,11 @@ export function ServerTile({ s, spark }: { s: Server; spark?: number[] }) {
           <div className="m">
             <b>{s.backends ? `${s.backends.filter((b) => b.reachable).length}/${s.backends.length}` : "–"}</b>
             <span>Backends</span>
+          </div>
+        ) : isVanilla ? (
+          <div className="m">
+            <b>{s.rss ? bytes(s.rss, 0) : "–"}</b>
+            <span>RSS</span>
           </div>
         ) : (
           <div className="m">
