@@ -73,6 +73,15 @@ public final class MiningAccessImpl implements MiningAccess {
         return MiningRespawnTimes.seconds(material);
     }
 
+    @Override
+    public boolean knowsIsle(Player player) {
+        MineIsle isle = isle();
+        if (isle == null || player == null) {
+            return false;
+        }
+        return isle.profiles().knows(player);
+    }
+
     // ------------------------------------------------------------------ Mining Eldervale
 
     @Override

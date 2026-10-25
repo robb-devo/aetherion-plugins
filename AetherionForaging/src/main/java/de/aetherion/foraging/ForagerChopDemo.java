@@ -15,6 +15,9 @@ import java.util.UUID;
 /**
  * Slow, readable chop tutorial next to the Forager.
  * Beats are spaced so speech, bar, and fall never hit at once.
+ * <p>
+ * Watching is optional: chopping is open from the first tick (people go straight for a tree and only got
+ * "watch first" errors), and a chop of the player's own ends the demo.
  */
 public final class ForagerChopDemo {
 
@@ -40,12 +43,14 @@ public final class ForagerChopDemo {
         if (!RUNNING.add(viewer.getUniqueId())) {
             return;
         }
+        unlockChop(viewer);
 
         ForagingListener listener = plugin.listener();
         Block trunk = listener.findDemoTrunk(nearForager, 6);
         if (trunk == null) {
             RUNNING.remove(viewer.getUniqueId());
-            foragerSay(viewer, "...tree's shy. Just hit a glowing trunk with the axe.");
+            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer, "Just hit a glowing trunk with the axe.",
+                    "Schlag einfach einen leuchtenden Stamm mit der Axt."));
             unlockChop(viewer);
             return;
         }
@@ -53,7 +58,8 @@ public final class ForagerChopDemo {
         ForagingListener.TreeJob job = listener.createJobPublic(trunk, viewer, null);
         if (job == null || job.fellLog == null) {
             RUNNING.remove(viewer.getUniqueId());
-            foragerSay(viewer, "That trunk's decorative. Find a living glow.");
+            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer, "Find a glowing trunk and hit it with the axe.",
+                    "Such einen leuchtenden Stamm und schlag ihn mit der Axt."));
             unlockChop(viewer);
             return;
         }
@@ -82,12 +88,12 @@ public final class ForagerChopDemo {
         glowTrunk(world, fellAt);
 
         later(plugin, viewer, 55L, () ->
-                foragerSay(viewer, "See the glow on the trunk? That's your target."));
+                foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
+                        "Watch: glowing trunk, then hit again on green §aCHOP§f.",
+                        "Schau: leuchtender Stamm, dann nochmal schlagen bei grünem §aCHOP§f.")));
 
         later(plugin, viewer, 100L, () -> swingFx(world, foragerAt, fellAt));
 
-        later(plugin, viewer, 145L, () ->
-                foragerSay(viewer, "This bar is the timing. CHOP comes late — wait for green."));
 
         later(plugin, viewer, 185L, () -> {
             if (plugin.hud() == null) {
@@ -109,6 +115,12 @@ public final class ForagerChopDemo {
                 public void run() {
                     if (!viewer.isOnline()) {
                         cleanup(plugin, viewer);
+                        cancel();
+                        return;
+                    }
+                    if (!chopped && listener.chopping(viewer)) {
+                        // they went for a tree themselves: their own bar owns the screen
+                        finishDemo(plugin, viewer);
                         cancel();
                         return;
                     }
@@ -140,11 +152,11 @@ public final class ForagerChopDemo {
                         ));
                         listener.markDemo(job, viewer);
                         listener.collapsePublic(job);
-                        later(plugin, viewer, 70L, () ->
-                                foragerSay(viewer, "That's the hit. Your turn — glowing trunk, wait for green CHOP."));
-                        later(plugin, viewer, 100L, () ->
-                                foragerSay(viewer, "Ten oak logs to §eEgon §fon the pier."));
-                        later(plugin, viewer, 110L, () -> finishDemo(plugin, viewer));
+                        later(plugin, viewer, 40L, () ->
+                                foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
+                                        "Your turn. Ten oak for §eEgon§f on the pier.",
+                                        "Du bist dran. Zehn Eiche für §eEgon§f am Pier.")));
+                        later(plugin, viewer, 50L, () -> finishDemo(plugin, viewer));
                     }
 
                     if (chopped) {

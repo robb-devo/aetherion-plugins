@@ -89,9 +89,9 @@ final class CombatCommand extends Command {
                     return true;
                 }
                 player.sendMessage(Component.text(CombatSystem.t(player,
-                        "Training golem up. Yellow ! = parry (F) on the hit. Red !! = roll (Sneak + Jump) through it. "
+                        "Training golem up. Yellow ! = parry (swap-hands key) on the hit. Red !! = roll (Sneak + Jump) through it. "
                                 + "/combat dummy clear removes it.",
-                        "Übungsgolem steht. Gelbes ! = beim Treffer parieren (F). Rotes !! = durchrollen (Schleichen + Springen). "
+                        "Übungsgolem steht. Gelbes ! = beim Treffer parieren (Hand-tauschen-Taste). Rotes !! = durchrollen (Schleichen + Springen). "
                                 + "/combat dummy clear entfernt ihn."), NamedTextColor.GOLD));
                 return true;
             }

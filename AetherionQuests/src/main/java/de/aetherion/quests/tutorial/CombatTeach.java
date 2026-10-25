@@ -25,8 +25,9 @@ import java.util.Locale;
  * <p>
  * Kit check plus three moves, each on the Items combat kit's training golem (yellow "!" jab, red "!!" slam):
  * <ul>
- *   <li>{@value #READY}: two armour pieces and a weapon in hand, noted by {@link OrientationWatch}.</li>
- *   <li>{@value #PARRY}: a perfect parry (F) — the golem's jab.</li>
+ *   <li>{@value #READY}: credited on accept. Everyone already wears Egon's kit, so Vex no longer inspects it
+ *   (Robb, 2026-10-25); {@link OrientationWatch} still credits it for older accepts.</li>
+ *   <li>{@value #PARRY}: a perfect parry (swap-hands key, F by default) — the golem's jab.</li>
  *   <li>{@value #DODGE}: a roll (Sneak + Jump) when the golem's unparryable slam turns white.</li>
  *   <li>{@value #FINISHER}: three timed (full-charge) hits on one target.</li>
  * </ul>
@@ -166,14 +167,13 @@ public final class CombatTeach {
      * LINES + FLOW
      * ========================================================= */
 
-    /** Vex's offer: the drill in four lines (dialog {@code vex_combat_drill}), or the stub's kit check. */
+    /** Vex's offer: the drill in three lines (dialog {@code vex_combat_drill}), or the stub's kit check. */
     public static String[] introLines(Player player) {
         if (drill) {
             return LangPack.dialogs(player, "vex_combat_drill", new String[] {
-                    "Sergeant Vex. Out there, spam-clicking gets you killed. So we drill.",
-                    "My golem hits back. Yellow §e!§f — when it turns white, tap §eF§f. That's a parry.",
-                    "Red §c!!§f you can't block. When it turns white: §eSneak + Jump§f, and you roll clear.",
-                    "Then three full swings in a row, no spam: a §6finisher§f. Kit on, blade up. Ready?"
+                    "Sergeant Vex. Spam-clicking gets you killed out there. So we drill on my golem.",
+                    "Yellow §e!§f: parry when it flashes white. Red §c!!§f: roll clear when it turns white.",
+                    "Then three full swings in a row: a §6finisher§f. Your keys are in chat. Ready?"
             });
         }
         return LangPack.dialogs(player, "vex_combat_intro", new String[] {
@@ -190,21 +190,46 @@ public final class CombatTeach {
                 : LangPack.say(player, "vex.combat_go", "Good. Kit on, blade up. Then look at me.");
     }
 
-    /** Quest accepted: the golem goes up beside the player; Vex adds what is still missing. */
+    /** Quest accepted: the kit counts at once, the golem goes up beside the player, the keys go to chat. */
     public static void started(Player player) {
         if (player == null || !player.isOnline()) {
             return;
         }
-        List<String> lines = new ArrayList<>();
+        de.aetherion.quests.bridge.QuestProgressBridge.noteUsed(player, READY);
+        if (drill) {
+            keys(player);
+        }
         if (drill && kitRunning() && !armGolem(player)) {
-            lines.add(noRoomLine(player));
+            vex(player, noRoomLine(player));
         }
-        if (!ready(player)) {
-            lines.addAll(List.of(notReadyLines(player)));
+        if (!holdsWeapon(player)) {
+            vex(player, bladeLine(player));
         }
-        for (String line : lines) {
-            vex(player, line);
-        }
+    }
+
+    /**
+     * The drill's keys as the player has them bound (the client fills in its own key): a friend with his own
+     * layout looked for F for ages. Chat, so it stays readable while the golem swings.
+     */
+    public static void keys(Player player) {
+        boolean german = de.aetherion.core.exile.Say.german(player);
+        net.kyori.adventure.text.format.TextColor key = net.kyori.adventure.text.format.NamedTextColor.YELLOW;
+        net.kyori.adventure.text.format.TextColor txt = net.kyori.adventure.text.format.NamedTextColor.GRAY;
+        player.sendMessage(net.kyori.adventure.text.Component.text()
+                .append(net.kyori.adventure.text.Component.text(german ? "⚔ Deine Tasten » " : "⚔ Your keys » ",
+                        net.kyori.adventure.text.format.TextColor.color(0xFFC94A)))
+                .append(net.kyori.adventure.text.Component.text(german ? "Parieren " : "Parry ", txt))
+                .append(net.kyori.adventure.text.Component.keybind("key.swapOffhand", key))
+                .append(net.kyori.adventure.text.Component.text(german ? " · Rolle " : " · Roll ", txt))
+                .append(net.kyori.adventure.text.Component.keybind("key.sneak", key))
+                .append(net.kyori.adventure.text.Component.text(" + ", txt))
+                .append(net.kyori.adventure.text.Component.keybind("key.jump", key))
+                .append(net.kyori.adventure.text.Component.text(german ? " · Finisher: 3 volle Schläge" : " · Finisher: 3 full swings", txt))
+                .build());
+    }
+
+    private static String bladeLine(Player player) {
+        return LangPack.say(player, "vex.drill_blade", "Blade in your main hand, {player}. A parry needs one.");
     }
 
     /** Short nudge while the beat is running and the kit isn't on yet. */
@@ -220,11 +245,11 @@ public final class CombatTeach {
      * expired) and one hint for the next move still open.
      */
     public static String[] visitLines(Player player) {
-        if (!ready(player)) {
-            return notReadyLines(player);
-        }
         if (!drill) {
-            return notReadyLines(player);
+            return ready(player) ? new String[0] : notReadyLines(player);
+        }
+        if (!holdsWeapon(player)) {
+            return new String[] {bladeLine(player)};
         }
         if (!kitRunning()) {
             return new String[] {LangPack.say(player, "vex.drill_off", "Drill's grounded today. Kit on counts — report.")};
@@ -248,13 +273,16 @@ public final class CombatTeach {
         if (qm == null) {
             return null;
         }
+        if (qm.getProgress(player, QUEST_ID, PARRY) < 1 || qm.getProgress(player, QUEST_ID, DODGE) < 1) {
+            keys(player);
+        }
         if (qm.getProgress(player, QUEST_ID, PARRY) < 1) {
-            return LangPack.say(player, "vex.drill_hint_parry",
-                    "Yellow §e!§f over its head: tap §eF§f the moment the fist flashes white. Not before.");
+            return LangPack.say(player, "vex.drill_hint_parry2",
+                    "Yellow §e!§f: press your parry key the moment the fist flashes white. Not before.");
         }
         if (qm.getProgress(player, QUEST_ID, DODGE) < 1) {
-            return LangPack.say(player, "vex.drill_hint_dodge",
-                    "Red §c!!§f: hold §eSneak§f, press §eJump§f the moment it turns white.");
+            return LangPack.say(player, "vex.drill_hint_dodge2",
+                    "Red §c!!§f: hold sneak, jump the moment it turns white.");
         }
         if (qm.getProgress(player, QUEST_ID, FINISHER) < 1) {
             return LangPack.say(player, "vex.drill_hint_finisher",

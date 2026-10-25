@@ -172,6 +172,28 @@ public final class SkillRoads {
         if (player == null || road == null || !player.isOnline()) {
             return;
         }
+        // Mining and farming start in the capital (Robb, 2026-10-25): the Foreman's shift and the Surveyor's
+        // first blueprint tool before the Mining pad, the Farmer's field before the Farm Isle.
+        if (road == Road.MINE && !mineOpen(player)) {
+            if (speak && speaker != null) {
+                say(player, speaker, LangPack.say(player, "ledger.isles.mine.foreman",
+                        "§6Mining§f starts in the Shabby Mine: the §eShaft Foreman§f first. Your first tool there opens the pad."));
+            }
+            QuestHint.clearPending(player);
+            QuestHint.show(player, "foreman", LangPack.ui(player, "hint_label.foreman", "Shaft Foreman"));
+            player.sendActionBar(Component.text(LangPack.ui(player, "tip.mine_foreman", "→ Shaft Foreman · /mines"), road.color));
+            return;
+        }
+        if (road == Road.FARM && !farmOpen(player)) {
+            if (speak && speaker != null) {
+                say(player, speaker, LangPack.say(player, "ledger.isles.farm.farmer",
+                        "§eFarming§f starts on the Fields: the §eFarmer§f first, then §eElsie§f on the isle."));
+            }
+            QuestHint.clearPending(player);
+            QuestHint.show(player, "farmer", LangPack.ui(player, "hint_label.farmer", "Farmer"));
+            player.sendActionBar(Component.text(LangPack.ui(player, "tip.farm_farmer", "→ Farmer · the Fields"), road.color));
+            return;
+        }
         if (speak && speaker != null) {
             say(player, speaker, done(player, road) ? lineDone(player, road) : line(player, road));
         }
@@ -181,6 +203,52 @@ public final class SkillRoads {
         if (road == Road.FORAGE) {
             markForagePointed(player);
         }
+    }
+
+    /**
+     * The Mining pad is open for this player: the isle lesson is done, a Surveyor blueprint is stamped, or they
+     * worked the isle before the capital start existed. Hub's pad reads this as the story flag
+     * {@code mine_road_open}.
+     */
+    public static boolean mineOpen(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (done(player, Road.MINE)) {
+            return true;
+        }
+        try {
+            de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
+            if (items != null && items.blueprintUnlocks() != null && items.blueprintUnlocks().hasStampedAny(player)) {
+                return true;
+            }
+        } catch (LinkageError ignored) {
+        }
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        return mining != null && mining.knowsIsle(player);
+    }
+
+    /** The Farm Isle road leads to the pad: the Farmer's field is done, or the isle lesson. */
+    public static boolean farmOpen(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (done(player, Road.FARM)) {
+            return true;
+        }
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        return plugin != null && plugin.getQuestManager() != null
+                && de.aetherion.quests.util.QuestStoryGate.questCompleted(player, plugin.getQuestManager(), "farm_hand");
+    }
+
+    /** The Surveyor stamped a first blueprint tool (Items calls this): the arrow moves to the Mining pad. */
+    public static void minePadOpened(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        QuestHint.clearPending(player);
+        QuestHint.showSpot(player, Road.MINE.spot, hintLabel(player, Road.MINE));
+        player.sendActionBar(Component.text(tip(player, Road.MINE), Road.MINE.color));
     }
 
     /** First isle whose lesson isn't done yet (Forage → Farm → Fish → Mine), else Forage. */

@@ -162,6 +162,11 @@ public class ForagingListener implements Listener {
         collapse(job);
     }
 
+    /** The player is in a chop of their own (their fell bar is up). */
+    boolean chopping(Player player) {
+        return player != null && pulses.containsKey(player.getUniqueId());
+    }
+
     /** Tutorial fall: no loot, no quest credit; suppress viewer dig/swing. */
     void markDemo(TreeJob job, Player viewer) {
         if (job == null) {
@@ -445,17 +450,12 @@ public class ForagingListener implements Listener {
     }
 
     private static void denyChop(Player player) {
-        if (ForagerChopDemo.isRunning(player)) {
-            player.sendMessage("§7Watch the §eForager§7 finish his chop first.");
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "→ Wait — Forager is still chopping",
-                    net.kyori.adventure.text.format.NamedTextColor.GOLD
-            ));
-            return;
-        }
-        player.sendMessage("§7Talk to the §eForager§7 first — he shows you how to chop.");
+        // The demo never blocks any more (chopping opens when it starts); only "never talked to him" lands here.
+        player.sendMessage(de.aetherion.core.exile.Say.t(player,
+                "§7The §eForager§7 up the hill hands out the axe. Talk to him first.",
+                "§7Der §eForager§7 oben am Hügel gibt dir die Axt. Sprich zuerst mit ihm."));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "→ Forager · chop lesson first",
+                de.aetherion.core.exile.Say.t(player, "→ Forager first · he has the axe", "→ Zuerst zum Forager · er hat die Axt"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
             ));
     }

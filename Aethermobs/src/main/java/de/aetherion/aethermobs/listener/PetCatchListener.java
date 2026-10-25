@@ -193,6 +193,15 @@ public class PetCatchListener implements Listener {
                     de.aetherion.core.api.Vfx.puff(streak, Particle.END_ROD, 1, Math.max(0.0, 0.0), null);
                 }
 
+                // An NPC's companion (Lark's parrot) is no catch: the sphere bounces back into the hand unspent.
+                String owner = companionNear(snowball);
+                if (owner != null) {
+                    snowball.remove();
+                    deflect(player, sphere, streak, owner);
+                    cancel();
+                    return;
+                }
+
                 for (PetEntity pet : plugin.getPetSpawnManager().getActivePets()) {
 
                     if (!pet.isSpawned() || pet.isCatching()) {
@@ -235,6 +244,77 @@ public class PetCatchListener implements Listener {
             }
 
         }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    /** Tag Quests puts on an NPC's companion pet ({@code ae_living_companion_<npc>}). */
+    private static final String COMPANION_TAG = "ae_living_companion_";
+    private static final double COMPANION_RADIUS = 1.8;
+
+    /** The NPC whose companion the sphere is about to hit, or null. */
+    private static String companionNear(Snowball snowball) {
+        for (org.bukkit.entity.Entity near : snowball.getNearbyEntities(COMPANION_RADIUS, COMPANION_RADIUS, COMPANION_RADIUS)) {
+            for (String tag : near.getScoreboardTags()) {
+                if (tag.startsWith(COMPANION_TAG)) {
+                    return tag.substring(COMPANION_TAG.length());
+                }
+            }
+        }
+        return null;
+    }
+
+    /** A sphere that hits a companion's body before the tracker saw it coming: same bounce, once. */
+    @EventHandler(priority = EventPriority.LOW)
+    public void onCompanionHit(org.bukkit.event.entity.ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof Snowball snowball) || event.getHitEntity() == null
+                || !(snowball.getShooter() instanceof Player player)) {
+            return;
+        }
+        String owner = null;
+        for (String tag : event.getHitEntity().getScoreboardTags()) {
+            if (tag.startsWith(COMPANION_TAG)) {
+                owner = tag.substring(COMPANION_TAG.length());
+            }
+        }
+        if (owner == null) {
+            return;
+        }
+        CatchSphere sphere = plugin.getBetaSphereManager().getThrownSphere(snowball);
+        if (sphere == null) {
+            return;
+        }
+        event.setCancelled(true);
+        snowball.remove();
+        deflect(player, sphere, snowball.getLocation(), owner);
+    }
+
+    private void deflect(Player player, CatchSphere sphere, Location at, String owner) {
+        NamespacedKey done = new NamespacedKey(plugin, "companion_deflected");
+        if (player.getPersistentDataContainer().has(done, PersistentDataType.LONG)
+                && Bukkit.getCurrentTick() - player.getPersistentDataContainer().get(done, PersistentDataType.LONG) < 2) {
+            return;
+        }
+        player.getPersistentDataContainer().set(done, PersistentDataType.LONG, (long) Bukkit.getCurrentTick());
+        if (at.getWorld() != null) {
+            at.getWorld().playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.6f, 1.4f);
+        }
+        de.aetherion.core.api.Vfx.puff(at, Particle.WHITE_ASH, 4, Math.max(0.1, 0.1), null);
+        if (!sphere.isInfinite()) {
+            var back = plugin.getBetaSphereManager().createCatchSphere(sphere.getId());
+            if (back != null) {
+                player.getInventory().addItem(back).values()
+                        .forEach(rest -> player.getWorld().dropItemNaturally(player.getLocation(), rest));
+            }
+        }
+        String line = "lark".equals(owner)
+                ? de.aetherion.core.exile.Say.t(player,
+                        "§8Lark §7· Oi, not him, he's mine! Your sphere's back. Throw it at a wild one.",
+                        "§8Lark §7· He, nicht der, der gehört mir! Deine Sphäre ist zurück. Wirf sie auf ein wildes.")
+                : de.aetherion.core.exile.Say.t(player,
+                        "§7That's someone's companion. Your sphere bounced back.",
+                        "§7Das ist ein Begleiter. Deine Sphäre ist zurückgeprallt.");
+        player.sendMessage(legacy(line));
+        player.sendActionBar(legacy(de.aetherion.core.exile.Say.t(player,
+                "§7Sphere returned · catch §fwild§7 pets", "§7Sphäre zurück · fang §fwilde§7 Pets")));
     }
 
     /*

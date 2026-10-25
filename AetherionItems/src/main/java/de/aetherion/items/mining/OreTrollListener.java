@@ -53,6 +53,8 @@ public final class OreTrollListener implements Listener {
     private static final double TROLL_ATTACK = 2.0d;
     private static final double TROLL_HIT_CAP = 2.5d;
     private static final double SPAWN_CHANCE = 0.01d;
+    /** Before a player's first page: trolls come quickly and the first one always drops (the mining road waits on it). */
+    private static final double FIRST_SPAWN_CHANCE = 0.12d;
     private static final double BLUEPRINT_CHANCE = 0.50d;
     private static final double KEEP_RANGE = 48.0d;
 
@@ -115,7 +117,7 @@ public final class OreTrollListener implements Listener {
         if (!BlueprintHunt.unlocked(player)) {
             return;
         }
-        if (ThreadLocalRandom.current().nextDouble() >= SPAWN_CHANCE) {
+        if (ThreadLocalRandom.current().nextDouble() >= (firstPage(player) ? FIRST_SPAWN_CHANCE : SPAWN_CHANCE)) {
             return;
         }
         Location ore = at.clone();
@@ -129,6 +131,15 @@ public final class OreTrollListener implements Listener {
                 player.sendMessage("§cOre Troll failed to crawl out — tell DEV.");
             }
         });
+    }
+
+    /** No blueprint collected or stamped yet: the first page is on its way. */
+    private static boolean firstPage(Player player) {
+        AetherionItems items = AetherionItems.getInstance();
+        if (items == null || items.blueprintUnlocks() == null || player == null) {
+            return false;
+        }
+        return items.blueprintUnlocks().collectedOf(player).isEmpty() && !items.blueprintUnlocks().hasStampedAny(player);
     }
 
     private static boolean tutorialDone(Player player) {
@@ -362,7 +373,7 @@ public final class OreTrollListener implements Listener {
             return;
         }
         killer.playSound(killer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 0.8f);
-        if (ThreadLocalRandom.current().nextDouble() >= BLUEPRINT_CHANCE) {
+        if (!firstPage(killer) && ThreadLocalRandom.current().nextDouble() >= BLUEPRINT_CHANCE) {
             killer.sendMessage("§6Tiny Ore Troll §7crumbles — no schematic this time.");
             return;
         }

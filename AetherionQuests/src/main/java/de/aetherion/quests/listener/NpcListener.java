@@ -659,51 +659,30 @@ public class NpcListener implements Listener {
     private void handoffForagerOnboarding(Player player, QuestNPC npc) {
         AetherionQuests plugin = AetherionQuests.getInstance();
 
-        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.lesson", "Egon sent you? Course he did. Axe lesson, then."));
+        // One line, the axe, and the trees are open at once: people go straight for a trunk, so the demo beside
+        // him is there to watch, never a wait.
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.axe_now",
+                "Axe's yours. Hit a §eglowing trunk§f, then hit again on green §aCHOP§f."));
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.chop_now", "→ Glowing trunk · again on green CHOP · 10 oak for Egon"),
+                net.kyori.adventure.text.format.NamedTextColor.GOLD
+        ));
+        Quest timber = questManager.getQuest("gather_wood");
+        if (timber != null
+                && questManager.getQuestState(player, timber) == QuestState.AVAILABLE) {
+            questManager.startQuest(player, timber);
+        }
+        de.aetherion.quests.bridge.QuestProgressBridge.unlockForagerChop(player);
 
         org.bukkit.Location at = resolveNpcLocation(npc);
-        if (plugin == null) {
-            Quest timber = questManager.getQuest("gather_wood");
-            if (timber != null
-                    && questManager.getQuestState(player, timber) == QuestState.AVAILABLE) {
-                questManager.startQuest(player, timber);
-            }
-            playForagerDemo(player, at);
+        if (plugin == null || at == null) {
             return;
         }
-
-        // Space handoff lines so chat / axe / demo never stack.
-        // Chop stays locked until ForagerChopDemo finishes ("your turn").
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) {
-                return;
-            }
-            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.take_axe", "Take this axe. Watch me once — slowly — then you chop."));
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    de.aetherion.quests.lang.LangPack.ui(player, "tip.chop_demo", "→ Watch the chop demo, then fell oak for Egon"),
-                    net.kyori.adventure.text.format.NamedTextColor.GOLD
-            ));
-        }, 50L);
-
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) {
-                return;
-            }
-            Quest timber = questManager.getQuest("gather_wood");
-            if (timber != null
-                    && questManager.getQuestState(player, timber) == QuestState.AVAILABLE) {
-                questManager.startQuest(player, timber);
-            }
-            if (at != null) {
+            if (player.isOnline()) {
                 playForagerDemo(player, at);
-            } else {
-                npcSay(player, npc,
-                        de.aetherion.quests.lang.LangPack.say(player, "lumberjack.click_trunk", "Left-click a glowing trunk — when CHOP hits green, click again."));
-                npcSay(player, npc,
-                        de.aetherion.quests.lang.LangPack.say(player, "lumberjack.ten_oak", "Ten oak logs to §eEgon §fon the pier."));
-                de.aetherion.quests.bridge.QuestProgressBridge.unlockForagerChop(player);
             }
-        }, 110L);
+        }, 30L);
     }
 
 
@@ -981,9 +960,9 @@ public class NpcListener implements Listener {
         }
 
         LivingNpcProfile.say(player, npc,
-                de.aetherion.quests.lang.LangPack.say(player, "surveyor.trolls", "Trolls crawl the veins now, {player}. Hunt them — they drop blueprint pages."));
+                de.aetherion.quests.lang.LangPack.say(player, "surveyor.trolls_short", "Ore trolls crawl out of the veins now. Knock one down for a page."));
         LivingNpcProfile.say(player, npc,
-                de.aetherion.quests.lang.LangPack.say(player, "surveyor.bring_page", "Bring me a page. I'll stamp it into a tool right here."));
+                de.aetherion.quests.lang.LangPack.say(player, "surveyor.bring_page_pad", "Bring the page, I stamp it into a tool. That opens the §6Mining pad§f."));
     }
 
     private void handleEldervaleUpgradeVisit(Player player, QuestNPC npc) {
@@ -1197,6 +1176,17 @@ public class NpcListener implements Listener {
     }
 
 
+    /** Shift done after orientation: the mining road goes on to the Surveyor's first blueprint, then the pad. */
+    private void briefSurveyorNext(Player player, QuestNPC npc) {
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.shift_done_surveyor",
+                "Good shift, {player}. Deeper in sits the §bSurveyor§f."));
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.troll_pages",
+                "Ore trolls drop his pages. Your first blueprint tool opens the §6Mining pad§f."));
+        de.aetherion.quests.ui.QuestHint.clearPending(player);
+        de.aetherion.quests.ui.QuestHint.show(player, "surveyor",
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.surveyor", "Surveyor · blueprints"));
+    }
+
     private void escortToCapital(Player player, QuestNPC npc) {
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.shift_done", "That's a shift, {player}. Proper dust on you."));
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.road_capital", "Road to Capital next — stop at §eTemper§f on the way. Booster Tutor."));
@@ -1292,11 +1282,8 @@ public class NpcListener implements Listener {
 
         de.aetherion.quests.ui.QuestHint.clearPending(player);
 
-        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.fused", "Booster fused! Smell that? Progress. Also slight burning."));
-        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.upgrade_warning",
-                "Once a booster's socketed, it stays until you pull it here. Upgrades don't knock them out."));
-        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.mining_line",
-                "Mining Power opens harder ore, Fortune multiplies it. Crystal Finds and Dungeon-Core picks come later."));
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.fused_short",
+                "Fused. It stays on, upgrades too. More boosters drop as you play."));
         if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "pocket_zoo")) {
             npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_vex",
                     "Next: §cSergeant Vex§f, Borderlands gate, east of here. Mines teleport's yours too."));
@@ -1534,7 +1521,11 @@ public class NpcListener implements Listener {
         }
 
         if ("first_shift".equalsIgnoreCase(quest.getId())) {
-            escortToCapital(player, npc);
+            if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
+                briefSurveyorNext(player, npc);
+            } else {
+                escortToCapital(player, npc);
+            }
             return;
         }
 
@@ -1614,10 +1605,8 @@ public class NpcListener implements Listener {
             // The kit handoff scene (StarterKitCeremony) is already in the air —
             // Egon talks over it, one DialogPace beat per line (say queue).
             String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "egon_kit_capital", new String[] {
-                    "Ten logs. Counted twice. Here's your kit — pickaxe, sword, hoe, armour.",
-                    "Gear here has numbers — Damage, Defense, Mining Power. Hover a piece. That's your build.",
-                    "Everything else lives in the §eNether Star§f, slot 9. Your Manager.",
-                    "Capital teleport's in there now — §eTeleports§f. §dMiss Ledger§f runs orientation. Go on, {player}."
+                    "Ten logs, counted. Your kit: pickaxe, sword, hoe, armour. Hover an item to see its numbers.",
+                    "Everything else is in the §eNether Star§f, slot 9: your Manager. §eTeleports§f → Capital, §dMiss Ledger§f waits there."
             });
             for (String line : lines) {
                 npcSay(player, npc, line);

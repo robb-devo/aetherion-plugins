@@ -164,6 +164,9 @@ ui:
     kit_to_quartermaster: "Kit an? Rüstung in die Rüstungsslots · → Quartermaster hinterm Markt"
     to_lark: "→ Lark · Felder-Zaun · ein Pet fangen"
     to_farmer: "→ Farmer · Felder · 48 Weizen, Vögel verscheuchen"
+    chop_now: "→ Leuchtender Stamm · nochmal bei grünem CHOP · 10 Eiche für Egon"
+    mine_foreman: "→ Shaft Foreman · /mines"
+    farm_farmer: "→ Farmer · die Felder"
   # Soft-hint bossbar labels (QuestHint)
   hint_label:
     harlow: "Harlow · Farm Isle"
@@ -172,6 +175,9 @@ ui:
     fish_pad: "Fishing-Eldervale-Pad"
     mine_pad: "Mining-Eldervale-Pad"
     temper: "Temper"
+    foreman: "Shaft Foreman"
+    farmer: "Farmer"
+    surveyor: "Surveyor · Blaupausen"
   hint_note:
     temper: "Booster Tutor"
   # /guide + Discord tips (QuestStoryGate#guideTips) — one "next" at a time
@@ -423,19 +429,16 @@ quests:
 
 dialogs:
   egon_kit_capital:
-    - "Zehn Stämme. Zweimal gezählt. Hier ist dein Kit — Spitzhacke, Schwert, Hacke, Rüstung."
-    - "Ausrüstung hat hier Zahlen — Schaden, Verteidigung, Mining Power. Fahr mit der Maus drüber. Das ist dein Build."
-    - "Alles andere lebt im §eNether Star§f, Slot 9. Dein Manager."
-    - "Der Capital-Teleport ist jetzt da drin — §eTeleports§f. §dMiss Ledger§f leitet die Orientierung. Los, {player}."
+    - "Zehn Stämme, gezählt. Dein Kit: Spitzhacke, Schwert, Hacke, Rüstung. Maus drüber zeigt die Werte."
+    - "Alles andere steckt im §eNether Star§f, Slot 9: dein Manager. §eTeleports§f → Capital, dort wartet §dMiss Ledger§f."
   vex_combat_intro:
     - "Sergeant Vex. Kämpfen heißt hier nicht: Klick halten und beten."
     - "Der Drill wird gerade neu gebaut — Beinarbeit, Timing, alles. Wenn er steht, jag ich dich durch."
     - "Heute: Rüstung an — Egons ganzes Kit — und eine Klinge in die Hand. Dann sieh mich an."
   vex_combat_drill:
-    - "Sergeant Vex. Da draußen bringt dich Dauerklicken um. Also drillen wir."
-    - "Mein Golem schlägt zurück. Gelbes §e!§f — wird es weiß, tipp §eF§f. Das ist eine Parade."
-    - "Rotes §c!!§f blockst du nicht. Wird es weiß: §eSchleichen + Springen§f, und du rollst raus."
-    - "Dann drei volle Schläge am Stück, kein Spam: ein §6Finisher§f. Kit an, Klinge hoch. Bereit?"
+    - "Sergeant Vex. Dauerklicken bringt dich da draußen um. Also drillen wir an meinem Golem."
+    - "Gelbes §e!§f: parieren, wenn es weiß blitzt. Rotes §c!!§f: rausrollen, wenn es weiß wird."
+    - "Dann drei volle Schläge am Stück: ein §6Finisher§f. Deine Tasten stehen im Chat. Bereit?"
   # ---------------------------------------------------------------- gates
   fishing_before_egon:
     - "Moment. Erst Egon fertig machen — dann reden wir übers Angeln."
@@ -447,10 +450,9 @@ dialogs:
     - "§aEgon§f, am Hafenpier. Zehn Eiche — der Forager zeigt dir wie."
     - "Dann öffne ich deine Skills. Keine Minute früher."
   egon_intro:
-    - "{player}, oder? Egon. Ich rüste Rookies aus. Du siehst aus wie einer."
-    - "Hier redet man so: meine Worte oben, deine Antworten schweben neben mir. Schau eine an, klick."
-    - "Das Kit kostet zehn Eiche. Der §eForager§f oben am Hügel leiht dir die Axt — und zeigt dir, wie Bäume hier fallen."
-    - "Der §egelbe Balken oben§f zeigt auf deinen nächsten Job. Vertrau ihm mehr als mir."
+    - "Egon. Ich rüste Neue aus, {player}. Zehn Eiche, und das Kit gehört dir."
+    - "Der §eForager§f oben am Hügel leiht dir eine Axt."
+    - "Deine Antworten schweben neben mir: schau eine an, klick. Der §egelbe Balken§f oben zeigt deinen nächsten Schritt."
   egon_arrival_call:
     - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
   egon_greet_near:
@@ -460,19 +462,14 @@ dialogs:
     - "Die Rüstung ist gebraucht. Vorbesitzer ist in Rente. Größtenteils friedlich."
     - "Der §eQuartermaster§f sitzt hinter dem kleinen Markt. Na los, {player}."
   lumberjack_intro:
-    - "Egon braucht Eiche. Schon wieder. Der Mann frisst Planken, ich schwör's."
-    - "Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f — das startet die Chop-Leiste."
-    - "Grünes §aCHOP§f? Nochmal Linksklick. Verpasst? Baum setzt zurück. Bäume sind nachtragend."
-    - "Zehn Eichenstämme → §eEgon am Pier§f. Nicht zu mir. Ich hab genug."
+    - "Egon will zehn Eiche. Schlag einen §eleuchtenden Stamm§f mit der Axt, dann nochmal bei grünem §aCHOP§f."
+    - "Verpasst? Der Baum setzt zurück, einfach nochmal."
   quartermaster_intro:
-    - "Quartermaster. Ich zähle Dinge. Heute: Kohle."
-    - "Zwanzig Stück. §eOre Ridge§f — der Hügel hinter dem kleinen Markt. Offene Adern."
-    - "Der §egelbe Pfeil oben§f verfolgt den Auftrag. Ich verfolge dich. Unauffällig."
+    - "Quartermaster. Ich brauche §e20 Kohle§f vom §eOre Ridge§f, dem Hügel hinter dem kleinen Markt."
+    - "Der gelbe Pfeil oben zeigt den Weg."
   craftsman_intro:
-    - "Hm. Craftsman. Crafting ist offen — das Recipe Book steckt in deinem Manager."
-    - "Nether Star, Hotbar §e9§f → §agrünes Buch§f. Da drin ist jede Blaupause."
-    - "Bau eine §fMining Pickaxe§f. Simple Pickaxe in die Mitte, Kohle drumherum."
-    - "Bring sie her. Ich versuch, beeindruckt zu gucken."
+    - "Craftsman. Dein §aRecipe Book§f: Nether Star, Slot §e9§f → grünes Buch."
+    - "Bau eine §fMining Pickaxe§f: Simple Pickaxe in die Mitte, Kohle drumherum. Bring sie her."
   foreman_intro:
     default:
       - "Die Shabby Mine ist hinter mir. Schäbig trifft's."
@@ -483,27 +480,25 @@ dialogs:
       - "Bau §eKohle, Kupfer, Eisen§f ab. §e32 Erzblöcke§f, dann komm zurück, {player}."
       - "Crafting ist jetzt offen. Grünes Recipe Book, im Manager."
       - "Mining Pickaxe und etwas Rüstung helfen da unten."
+    start:
+      - "Shaft Foreman. Bau hier §e32 Erz§f ab: Kohle, Kupfer, Eisen. Dann komm zurück, {player}."
+      - "Rüstung an, der Fels beißt. Kohle und deine Spitzhacke ergeben eine §fMining Pickaxe§f: grünes §aRecipe Book§f im Manager."
   booster_tutor_intro:
-    - "Temper. Skills sind die Hälfte deines Builds, {player}. Booster sind die andere."
-    - "Jedes Teil hat Sockel — der §eAmboss§f hält vierzehn. Schaden, Verteidigung, Mining Power, Fortune."
-    - "Sag ja: ein Emerald Booster. Nether Star → §eAnvil§f. Ausrüstung links, Booster rechts."
+    - "Temper. Booster machen deine Ausrüstung stärker. Du steckst sie am §eAmboss§f ein."
+    - "Sag ja und such dir deinen ersten aus. Auf jedem steht, was er macht."
   ledger_intro:
-    - "Miss Ledger. Ich leite die Orientierung — und führe Buch über dich."
-    - "Dein §dLoadout§f: sieben Skill-Slots, einer offen. Ein Skill levelt, während du sein Handwerk machst."
-    - "Nether Star, Hotbar §e9§f → §dSkills§f — es blinkt. Rüste einen aus. Dann dein §eCodex§f, oben links."
-    - "Der Codex zählt jeden Baum, jedes Erz, jeden Kill. Stufen zahlen Münzen; Münzen öffnen Slots. Das ist der Kreislauf."
+    - "Miss Ledger. Zwei Dinge, {player}: deine Skills und dein Codex."
+    - "Nether Star → §dSkills§f (es blinkt): rüste einen Skill aus. Er levelt, während du sein Handwerk machst."
+    - "Dann öffne deinen §eCodex§f oben links. Er zählt alles und zahlt Münzen für neue Stufen."
   farmer_intro:
     default:
-      - "Weizen von diesen Feldern. Vögel weg von der Saat. Das ist der Job, {player}."
-      - "Ernte, bis du §e48§f Weizen hast. Vögel landen? §eKlick§f drauf — die Bossbar zählt mit."
-      - "§eLark§f macht Pets, gleiche Felder. Eigener Job — der Pfeil wandert, wenn's so weit ist."
+      - "Farmer. Bau Weizen ab, bis du §e48§f hast. Landen Vögel? §eKlick§f sie weg."
+      - "§eLark§f macht Pets auf denselben Feldern, der Pfeil sagt dir wann."
     lark_done:
-      - "Weizen von diesen Feldern. Vögel weg von der Saat. Das ist der Job, {player}."
-      - "Ernte, bis du §e48§f Weizen hast. Vögel landen? §eKlick§f drauf — die Bossbar zählt mit."
+      - "Farmer. Bau Weizen ab, bis du §e48§f hast. Landen Vögel? §eKlick§f sie weg."
   lark_intro:
-    - "Die Felder sind Jagdgebiet. Wilde Tiere — nicht mein Papagei. Die beißt."
-    - "Catch Sphere in die Hand, Tier anschauen, §eRechtsklick§f zum Werfen."
-    - "Fang §eeins§f, dann rede mit mir. §eAusrüsten§f kommt danach. Schritt für Schritt."
+    - "Lark. Halt eine §eCatch Sphere§f, schau ein wildes Tier an, §eRechtsklick§f zum Werfen. Nicht mein Papagei!"
+    - "Fang §eeins§f, dann komm zurück zu mir."
   fisher_intro:
     - "Auswerfen. Auf den Biss warten. §eREEL§f, wenn die Leiste grün wird."
     - "Fenster verpasst, Fisch weg. Fang §efünf§f, dann komm zurück, {player}."
@@ -570,8 +565,8 @@ dialogs:
     - "Seltenere Kiste, besseres Loot. Erkunden lohnt sich."
     - "Mit mir reden schaltet sie frei. Die Probekiste steht neben mir, {player}."
   surveyor_intro:
-    - "Trolle kriechen jetzt durch die weichen Adern — Kohle, Eisen, Kupfer. Sie droppen Blaupausen."
-    - "Bring mir eine Seite, {player}. Ich stemple sie dir hier in ein Tool."
+    - "Erz-Trolle kriechen hier aus den Adern. Hau einen um, er lässt eine Blaupausen-Seite fallen."
+    - "Bring mir die Seite, ich stemple sie zu einem Werkzeug. Das öffnet das §6Mining-Pad§f."
   liquidator_intro:
     - "Kristall-Schalter. Kaufen, verkaufen oder Mats zu Aether Crystals schmelzen."
     - "Crystals gibt's im offiziellen Shop — oder als Level-Belohnung."
@@ -1268,6 +1263,7 @@ talk:
     ten_oak: "Zehn Eichenstämme zu §eEgon §fam Pier."
     demo_chop: "Linksklick auf einen leuchtenden Stamm — grünes CHOP, dann zuschlagen."
     demo_egon: "Zehn Eichenstämme zu Egon am Pier."
+    axe_now: "Die Axt gehört dir. Schlag einen §eleuchtenden Stamm§f, dann nochmal bei grünem §aCHOP§f."
   quartermaster:
     coal_logged: "Kohle verbucht. Danke, {player}. Ehrlich."
     mines_tp: "Der Mines-Teleport ist offen — Manager → Teleports, oder tipp §e/mines§f."
@@ -1277,6 +1273,8 @@ talk:
   foreman:
     shift_done: "Das war 'ne Schicht, {player}. Ordentlich Staub auf dir."
     road_capital: "Jetzt Richtung Capital — unterwegs bei §eTemper§f halten. Booster Tutor."
+    shift_done_surveyor: "Gute Schicht, {player}. Weiter hinten sitzt der §bSurveyor§f."
+    troll_pages: "Erz-Trolle lassen seine Seiten fallen. Dein erstes Blaupausen-Werkzeug öffnet das §6Mining-Pad§f."
   amethyst_guide:
     hello: "Kristall-Guide. Die Amethyst Mine geht durch mich — Geoden, Resonance, Heartstones."
     send: "Bereit? Ich setz dich am violetten Hub ab. §e/amethyst§f macht dasselbe."
@@ -1288,6 +1286,9 @@ talk:
     fused: "Booster gefust! Riechst du das? Fortschritt. Und leicht verbrannt."
     next_ledger_short: "Als Nächstes — §dMiss Ledger§f in der Capital."
     next_ledger: "Als Nächstes — §dMiss Ledger§f in der Capital. Skills."
+    picked: "Gute Wahl. Nether Star → §eAmboss§f: Ausrüstung links, Booster rechts."
+    picked_default: "Keine Wahl? Dann Eisen: mehr von dem, was das Teil kann. Nether Star → §eAmboss§f: Ausrüstung links, Booster rechts."
+    fused_short: "Eingesetzt. Er bleibt drauf, auch beim Aufwerten. Mehr Booster findest du beim Spielen."
   ledger:
     next_temper: "Als Nächstes: §eTemper§f, Südstraße Richtung Minen. Booster — die andere Hälfte deines Builds."
     autopickup_soon: "Achte auf den Balken unten: Level §e5§f, und Drops fliegen zu dir. Du bist Level §e{0}§f."
@@ -1359,6 +1360,7 @@ talk:
         label: "Farm Isle"
         line: "§eFarm Isle§f — ernte im Rhythmus, und das Feld zahlt mehr. Pad im Südwesten; §eElsie§f empfängt dich."
         line_done: "Zurück auf die Felder? Hatties Aufträge zahlen doppelt. Der Pfeil zeigt aufs Pad."
+        farmer: "§eFarming§f fängt auf den Feldern an: zuerst der §eFarmer§f, dann §eElsie§f auf der Insel."
       fish:
         label: "Angel-Insel"
         line: "§bFishing Eldervale§f — zwölf Gewässer, ein ehrlicher Zug. Pad im Nordwesten; §bMaren§f empfängt dich."
@@ -1368,6 +1370,7 @@ talk:
         echo: "Fels. Tiefer Fels."
         line: "§6Mining Eldervale§f — die Kraft deiner Spitzhacke gegen den Fels. Pad im Süden; §6Old Wick§f empfängt dich."
         line_done: "Wieder in den Fels? Ottos Aufträge erledigen sich nicht selbst. Der Pfeil zeigt aufs Pad."
+        foreman: "§6Mining§f fängt in der Shabby Mine an: zuerst der §eShaft Foreman§f. Dein erstes Werkzeug dort öffnet das Pad."
     desk_prompt: "Auffrischung, {player}? Such dir ein Thema aus."
     desk:
       more: "Mehr Themen…"
@@ -1584,6 +1587,9 @@ talk:
     chip_ready: "Bin trotzdem bereit."
     gear_ok: "Klug. Ich bin hier. Am Brüllen."
     check_again: "Sprich mich an, wenn du so weit bist. Oder wenn du dich mutig fühlst."
+    drill_blade: "Klinge in die Haupthand, {player}. Zum Parieren brauchst du eine."
+    drill_hint_parry2: "Gelbes §e!§f: drück deine Parieren-Taste, sobald die Faust weiß blitzt. Nicht vorher."
+    drill_hint_dodge2: "Rotes §c!!§f: Schleichen halten, springen, sobald es weiß wird."
   vince:
     visit:
       - "Casino ist hinter mir. Such dir 'ne Maschine. Nicht auf den Filz heulen."
@@ -1598,6 +1604,8 @@ talk:
     got_page: "Eine Blaupause! Oh, die ist gut. Der Tisch gehört dir — stempel sie in ein Tool."
     trolls: "Trolle kriechen jetzt durch die Adern, {player}. Jag sie — sie droppen Blaupausen-Seiten."
     bring_page: "Bring mir eine Seite. Ich stemple sie dir hier in ein Tool."
+    trolls_short: "Erz-Trolle kriechen jetzt aus den Adern. Hau einen um, er lässt eine Seite fallen."
+    bring_page_pad: "Bring mir die Seite, ich stemple sie zu einem Werkzeug. Das öffnet das §6Mining-Pad§f."
   eldervale_upgrade:
     open: "Die Schmiede ist heiß, {player}. Blaupausen-Tool + Upgrade Stone. Ich mach den Tisch auf."
   root_cellar:
