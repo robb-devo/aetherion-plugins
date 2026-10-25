@@ -48,6 +48,11 @@ public interface MiningAccess {
         return false;
     }
 
+    /** The player has worked Mining Eldervale before (lesson started, a district found, a contract, the forge). */
+    default boolean knowsIsle(Player player) {
+        return false;
+    }
+
     /**
      * Ore-only Fortune from Mining loops (ore mastery, Strike Rhythm, Hearth rations, depth,
      * specimen cabinet). Added by the Items harvest listener to ore / mineral payouts only —

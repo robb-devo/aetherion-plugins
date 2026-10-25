@@ -227,6 +227,13 @@ public final class MineProfiles {
         return profiles.computeIfAbsent(id, this::load);
     }
 
+    /** Has worked the isle before: lesson begun, a district found, a contract, crystals or forge rep. */
+    public boolean knows(Player player) {
+        Profile profile = of(player);
+        return profile.lesson > 0 || !profile.districts.isEmpty() || profile.contractsDone > 0
+                || profile.forgeRep > 0 || profile.crystals > 0;
+    }
+
     public void markDirty() {
         dirty = true;
     }

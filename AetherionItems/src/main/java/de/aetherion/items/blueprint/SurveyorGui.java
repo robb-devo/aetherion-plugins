@@ -234,6 +234,7 @@ public final class SurveyorGui implements Listener {
         ItemStack tool = kind.createTool(customItem);
         player.getInventory().addItem(tool).values()
                 .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+        boolean first = plugin.blueprintUnlocks() != null && !plugin.blueprintUnlocks().hasStampedAny(player);
         if (plugin.blueprintUnlocks() != null) {
             plugin.blueprintUnlocks().markStamped(player, kind.id());
         }
@@ -247,6 +248,22 @@ public final class SurveyorGui implements Listener {
                 net.kyori.adventure.text.format.NamedTextColor.AQUA
         ));
         clearSurveyorHint(player);
+        if (first) {
+            // the mining road's last step: the pad on Origin opens with this first tool
+            player.sendMessage(de.aetherion.core.exile.Say.t(player,
+                    "§bSurveyor §8» §7That's your first tool. The §6Mining pad§7 is open now: §6Old Wick§7 waits on the isle.",
+                    "§bSurveyor §8» §7Dein erstes Werkzeug. Das §6Mining-Pad§7 ist jetzt offen: §6Old Wick§7 wartet auf der Insel."));
+            pointMinePad(player);
+        }
+    }
+
+    private static void pointMinePad(Player player) {
+        try {
+            Class.forName("de.aetherion.quests.ui.SkillRoads")
+                    .getMethod("minePadOpened", Player.class)
+                    .invoke(null, player);
+        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        }
     }
 
     private static void clearSurveyorHint(Player player) {

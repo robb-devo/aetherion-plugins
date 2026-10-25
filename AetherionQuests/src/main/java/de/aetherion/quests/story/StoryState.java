@@ -176,6 +176,10 @@ public final class StoryState implements StoryAccess {
             de.aetherion.quests.AetherionQuests plugin = de.aetherion.quests.AetherionQuests.getInstance();
             return plugin != null && de.aetherion.quests.util.QuestStoryGate.graduated(player, plugin.getQuestManager());
         }
+        if ("mine_road_open".equalsIgnoreCase(key)) {
+            // The Mining pad: Foreman, Surveyor and a first blueprint tool come first (SkillRoads.mineOpen).
+            return de.aetherion.quests.ui.SkillRoads.mineOpen(player);
+        }
         return hasPlayerFlag(player, key);
     }
 

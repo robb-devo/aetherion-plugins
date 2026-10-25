@@ -365,6 +365,7 @@ public final class AetherionQuests extends JavaPlugin {
                 this
         );
         de.aetherion.quests.tutorial.OrientationWatch.start(this, questManager);
+        Bukkit.getPluginManager().registerEvents(new de.aetherion.quests.tutorial.BoosterPick(), this);
         de.aetherion.quests.listener.SurveyorMineHintListener surveyorHint =
                 new de.aetherion.quests.listener.SurveyorMineHintListener(this);
         Bukkit.getPluginManager().registerEvents(surveyorHint, this);

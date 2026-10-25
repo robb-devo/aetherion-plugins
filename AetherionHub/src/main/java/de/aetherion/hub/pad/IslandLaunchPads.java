@@ -165,16 +165,20 @@ public final class IslandLaunchPads implements Listener {
             if (player.hasPermission("aetherionhub.admin") || player.hasPermission("aetherion.mines.admin")) {
                 return true;
             }
-            return orientationStamped(player) || hasStampedBlueprint(player, pad.requireIds);
+            return roadOpen(player) || hasStampedBlueprint(player, pad.requireIds);
         }
         return true;
     }
 
-    /** Miss Ledger stamped this player's orientation: "the roads are open" means every island pad. */
-    private static boolean orientationStamped(Player player) {
+    /**
+     * The blueprint-locked pad (Mining) opens once Quests says the road there is walked: the Shaft Foreman's shift
+     * and the Surveyor's first blueprint tool, or an earlier start on the isle. Ledger's stamp alone no longer
+     * opens it (Robb, 2026-10-25: mining starts in the Shabby Mine).
+     */
+    private static boolean roadOpen(Player player) {
         try {
             de.aetherion.core.api.StoryAccess story = de.aetherion.core.api.AetherServices.story();
-            return story != null && story.playerFlag(player, "orientation_stamped");
+            return story != null && story.playerFlag(player, "mine_road_open");
         } catch (RuntimeException | LinkageError ex) {
             return false;
         }
@@ -481,11 +485,14 @@ public final class IslandLaunchPads implements Listener {
         if (player.hasPermission("aetherionhub.admin") || player.hasPermission("aetherion.mines.admin")) {
             return true;
         }
-        if (orientationStamped(player) || hasStampedBlueprint(player, pad.requireIds)) {
+        if (roadOpen(player) || hasStampedBlueprint(player, pad.requireIds)) {
             return true;
         }
-        player.sendMessage("§cJump pad sealed.");
-        player.sendMessage("§7Finish orientation — §dMiss Ledger§7's stamp opens every road. §8(A stamped Surveyor blueprint works too.)");
+        boolean german = de.aetherion.core.exile.Say.german(player);
+        player.sendMessage(german ? "§cDas Sprungpad ist noch zu." : "§cJump pad sealed.");
+        player.sendMessage(german
+                ? "§7Mining fängt in der Shabby Mine an: erst der §eShaft Foreman§7, dann dein erstes Blueprint-Werkzeug beim §bSurveyor§7. §8(/mines)"
+                : "§7Mining starts in the Shabby Mine: the §eShaft Foreman§7 first, then your first blueprint tool at the §bSurveyor§7. §8(/mines)");
         de.aetherion.hub.origin.OriginHooks.padSealed(player, pad.id());
         player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.7f, 0.6f);
         nudgeOffPad(player, pad);

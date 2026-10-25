@@ -682,7 +682,8 @@ public class QuestManager {
         }
         if ("lesson_boost".equalsIgnoreCase(quest.getId())) {
             unlockProgressFeature(player, "ANVIL", "Anvil", "Manager → Anvil");
-            giveEmeraldBooster(player, 1);
+            // The player picks the first booster (each says what it does); closing the pick gives Iron.
+            de.aetherion.quests.tutorial.BoosterPick.offer(player);
         }
         if ("lesson_manager".equalsIgnoreCase(quest.getId())) {
             unlockProgressFeature(player, "SKILLS", "Skills", "Manager → Skills will blink");

@@ -219,14 +219,11 @@ public final class QuestProgressBridge {
     }
 
     /**
-     * Harbour wood stays locked until the Forager finishes his chop lesson.
+     * Harbour wood stays locked until the Forager hands over the axe (his demo no longer blocks).
      * Quests missing → allow (singleplayer / offline tooling).
      */
     public static boolean canChopTrees(Player player) {
         if (player == null) {
-            return false;
-        }
-        if (foragerDemoRunning(player)) {
             return false;
         }
         QuestManager manager = manager();
@@ -269,11 +266,6 @@ public final class QuestProgressBridge {
         if (plugin != null && plugin.getPlayerQuestStorage() != null) {
             plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "forager_chop_unlocked");
         }
-    }
-
-    private static boolean foragerDemoRunning(Player player) {
-        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
-        return foraging != null && foraging.isChopDemoRunning(player);
     }
 
     private static Quest find(QuestManager manager, String questId) {

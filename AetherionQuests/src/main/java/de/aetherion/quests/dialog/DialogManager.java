@@ -1663,10 +1663,9 @@ public class DialogManager implements Listener {
         )) {
 
             return new String[] {
-                    "{player}, right? Egon. I kit out rookies. You look like one.",
-                    "We talk like this here: my words up top, your answers floating beside me. Look at one, click.",
-                    "Kit costs ten oak. The §eForager§f up the hill lends the axe — and shows you how trees fall here.",
-                    "§eYellow bar up top§f points at your next job. Trust it more than me."
+                    "Egon. I kit out rookies, {player}. Ten oak and the kit is yours.",
+                    "The §eForager§f up the hill lends you an axe.",
+                    "Your answers float beside me: look at one, click. The §eyellow bar§f up top shows your next step."
             };
 
         }
@@ -1684,9 +1683,8 @@ public class DialogManager implements Listener {
         )) {
 
             return new String[] {
-                    "Quartermaster. I count things. Today: coal.",
-                    "Twenty lumps. §eOre Ridge§f — hill past the little market. Open veins.",
-                    "§eYellow arrow up top§f tracks the job. I track you. Lightly."
+                    "Quartermaster. I need §e20 coal§f from the §eOre Ridge§f, the hill past the little market.",
+                    "The yellow arrow up top shows the way."
             };
 
         }
@@ -1702,10 +1700,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("lumberjack_intro")) {
             return new String[] {
-                    "Egon needs oak. Again. Man eats planks, I swear.",
-                    "Simple Axe. Left-click a §eglowing trunk§f — that starts the chop bar.",
-                    "Bar hits §aCHOP§f (green)? Left-click again. Miss it, the tree resets. Trees are petty.",
-                    "Ten oak logs → §eEgon on the pier§f. Not me. I have plenty."
+                    "Egon wants ten oak. Hit a §eglowing trunk§f with the axe, then hit again on green §aCHOP§f.",
+                    "Missed it? The tree resets, just try again."
             };
         }
 
@@ -1743,8 +1739,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("surveyor_intro")) {
             return new String[] {
-                    "Trolls crawl the soft veins now — coal, iron, copper. They drop blueprint pages.",
-                    "Bring me a page, {player}. I'll stamp it into a tool right here."
+                    "Ore trolls crawl out of the veins here. Knock one down for a blueprint page.",
+                    "Bring the page, I stamp it into a tool. That opens the §6Mining pad§f."
             };
         }
 
@@ -1758,9 +1754,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("lark_intro")) {
             return new String[] {
-                    "Fields are hunting ground. Wild animals — not my parrot. She bites.",
-                    "Hold a Catch Sphere, look at a critter, §eright-click§f to throw.",
-                    "Catch §eone§f, then talk to me. §eEquipping§f comes after. One step at a time."
+                    "Lark. Hold a §eCatch Sphere§f, look at a wild animal, §eright-click§f to throw. Not my parrot!",
+                    "Catch §eone§f, then come back to me."
             };
         }
 
@@ -1873,9 +1868,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("booster_tutor_intro")) {
             return new String[] {
-                    "Temper. Skills are half your build, {player}. Boosters are the other half.",
-                    "Every piece has sockets — the §eAnvil§f holds fourteen. Damage, Defense, Mining Power, Fortune.",
-                    "Say yes: one Emerald Booster. Nether Star → §eAnvil§f. Gear left, booster right."
+                    "Temper. Boosters make your gear stronger. You socket them at the §eAnvil§f.",
+                    "Say yes and pick your first one. Each says what it does."
             };
         }
 
@@ -1897,10 +1891,9 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("ledger_intro")) {
             return new String[] {
-                    "Miss Ledger. I run orientation — and I keep the books on you.",
-                    "Your §dloadout§f: seven skill slots, one open. A skill levels as you work its trade.",
-                    "Nether Star, hotbar §e9§f → §dSkills§f — it blinks. Equip one. Then your §eCodex§f, top-left.",
-                    "Codex logs every tree, ore and kill. Tiers pay coins; coins open more slots. That's the loop."
+                    "Miss Ledger. Two things, {player}: your skills and your Codex.",
+                    "Nether Star → §dSkills§f (it blinks): equip one skill. It levels while you work its trade.",
+                    "Then open your §eCodex§f, top-left. It tracks everything and pays coins for new tiers."
             };
         }
 
@@ -2555,10 +2548,8 @@ public class DialogManager implements Listener {
 
     private String[] craftsmanIntroLines(Player player) {
         return new String[] {
-                "Hm. Craftsman. Crafting's open — Recipe Book lives in your Manager.",
-                "Nether Star, hotbar §e9§f → §agreen book§f. Every blueprint's in there.",
-                "Make a §fMining Pickaxe§f. Simple Pickaxe in the middle, coal around it.",
-                "Bring it here. I'll try to look impressed."
+                "Craftsman. Your §aRecipe Book§f: Nether Star, slot §e9§f → green book.",
+                "Make a §fMining Pickaxe§f: Simple Pickaxe in the middle, coal around it. Bring it here."
         };
     }
 
@@ -2567,14 +2558,12 @@ public class DialogManager implements Listener {
                 && QuestStoryGate.questCompleted(player, questManager, "pocket_zoo");
         if (larkDone) {
             return de.aetherion.quests.lang.LangPack.dialogs(player, "farmer_intro.lark_done", new String[] {
-                    "Wheat from these fields. Birds off the crops. That's the job, {player}.",
-                    "Break wheat till you've got §e48§f. Birds land? §eClick§f them — bossbar counts the shoos."
+                    "Farmer. Break wheat until you have §e48§f. Birds land? §eClick§f them away."
             });
         }
         return de.aetherion.quests.lang.LangPack.dialogs(player, "farmer_intro.default", new String[] {
-                "Wheat from these fields. Birds off the crops. That's the job, {player}.",
-                "Break wheat till you've got §e48§f. Birds land? §eClick§f them — bossbar counts the shoos.",
-                "§eLark§f does pets, same fields. Separate job — the arrow moves when it's time."
+                "Farmer. Break wheat until you have §e48§f. Birds land? §eClick§f them away.",
+                "§eLark§f does pets on the same fields, the arrow tells you when."
         });
     }
 
@@ -2615,17 +2604,14 @@ public class DialogManager implements Listener {
             if (plugin != null && plugin.getPlayerQuestStorage() != null && player != null) {
                 plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "craftsman_spoken");
             }
-            return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.crafting_unlocked", new String[] {
-                    "Shabby Mine's behind me. The name is accurate.",
-                    "Dig §ecoal, copper, iron§f. Break §e32 ore blocks§f, then come back, {player}.",
-                    "Crafting's open now. Green Recipe Book, in the Manager.",
-                    "A mining pickaxe and some armour help down there."
+            return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.start", new String[] {
+                    "Shaft Foreman. Mine §e32 ore§f in here: coal, copper, iron. Then come back, {player}.",
+                    "Armour on, the rock bites. Coal and your pick make a §fMining Pickaxe§f: green §aRecipe Book§f in the Manager."
             });
         }
-        return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.default", new String[] {
-                "Shabby Mine's behind me. The name is accurate.",
-                "Dig §ecoal, copper, iron§f. Break §e32 ore blocks§f, then come back, {player}.",
-                "Mining pickaxe and some armour help. Recipe Book's in the Manager if you need them."
+        return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.start", new String[] {
+                "Shaft Foreman. Mine §e32 ore§f in here: coal, copper, iron. Then come back, {player}.",
+                "Armour on, the rock bites. Coal and your pick make a §fMining Pickaxe§f: green §aRecipe Book§f in the Manager."
         });
     }
 
