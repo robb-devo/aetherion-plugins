@@ -53,6 +53,8 @@ public final class DecoManager {
     private boolean playersNear;
     private int bellTick = -1;
     private boolean enabled = true;
+    /** False when the dojo is idle and empty — no ensure/tick work and no live displays. */
+    private boolean awake;
 
     public DecoManager(Arena arena, Settings settings) {
         this.arena = arena;
@@ -62,7 +64,31 @@ public final class DecoManager {
 
     public void setEnabled(boolean e) {
         this.enabled = e;
-        if (!e) despawnAll();
+        if (!e) {
+            awake = false;
+            despawnAll();
+        }
+    }
+
+    /** Deko-Tick und ensure() nur wenn Kampf/Bau läuft oder Spieler in der Nähe sind. */
+    public void setAwake(boolean on) {
+        if (awake == on) return;
+        awake = on;
+        if (!on) despawnAll();
+        else if (enabled && arena.built) ensure();
+    }
+
+    public boolean isAwake() {
+        return awake;
+    }
+
+    public boolean isPlayersNear() {
+        return playersNear;
+    }
+
+    /** Leichter Proximity-Check ohne Deko-Tick (für schlafende Arenen). */
+    public void probePlayersNear(double r) {
+        playersNear = anyPlayerNear(r);
     }
 
     // ------------------------------------------------------------------ Spawnen
@@ -75,7 +101,10 @@ public final class DecoManager {
         for (DecoSpec d : specs.values()) {
             if (hidden.contains(d.element)) continue;
             Entity e = live.get(d.id);
-            if (e != null && e.isValid()) continue;
+            if (e != null) {
+                if (e.isValid()) continue;
+                live.remove(d.id);
+            }
             Location l = arena.loc(d.x, d.y, d.z);
             if (!w.isChunkLoaded(l.getBlockX() >> 4, l.getBlockZ() >> 4)) continue;
             Entity spawned = spawn(d, l);
@@ -173,14 +202,14 @@ public final class DecoManager {
     /** Alles wieder sichtbar (nach dem Wiederaufbau). */
     public void showAll() {
         hidden.clear();
-        ensure();
+        if (awake) ensure();
     }
 
     // ------------------------------------------------------------------ Animation
 
     public void tick() {
+        if (!enabled || !awake) return;
         tick++;
-        if (!enabled) return;
         if (tick % 40 == 0) ensure();
         if (tick % 20 == 0) playersNear = anyPlayerNear(56);
         if (!playersNear) return;

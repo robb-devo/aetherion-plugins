@@ -65,10 +65,6 @@ public final class SamuraiBossPlugin extends JavaPlugin {
         }
 
         task = Bukkit.getScheduler().runTaskTimer(this, this::tick, 1L, 1L);
-        // Deko in bereits geladenen Chunks erscheinen lassen
-        Bukkit.getScheduler().runTask(this, () -> {
-            for (Arena a : arenas.all()) a.deco.ensure();
-        });
         getLogger().info("桜木 刃斎 erwacht – " + arenas.all().size() + " Dojo(s) geladen ("
                 + (System.currentTimeMillis() - t0) + " ms). Resource Pack: " + (settings.packEnabled ? "an" : "aus"));
     }

@@ -216,7 +216,16 @@ public final class ArenaManager {
             }
             if (done && jobs.get(a) == j) jobs.remove(a);
         }
+        long now = Bukkit.getCurrentTick();
         for (Arena a : arenas.values()) {
+            if (a.deco == null || !a.built) continue;
+            boolean run = a.state != Arena.State.IDLE || plugin.fights().get(a) != null;
+            if (!run) {
+                if (now % 40 == 0) a.deco.probePlayersNear(56);
+                run = a.deco.isPlayersNear();
+            }
+            a.deco.setAwake(run);
+            if (!run) continue;
             a.deco.tick();
             a.deco.postTick();
         }
