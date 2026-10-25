@@ -1,6 +1,6 @@
 # Aetherion — Project state (read this first)
 
-Snapshot: **2026-10-21**. One page so a new session does not have to rescan the
+Snapshot: **2026-10-25** (live builds, truth, 10-25 rounds); older sections keep their dates. One page so a new session does not have to rescan the
 repo. Update the dated sections when they change.
 Open work and priorities: [BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).
 Ops, hosting and access details are deliberately **not** in this repo; they live in
@@ -35,25 +35,38 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
 ## Where the truth lives
 
 - **GitHub `main` = live code.** Every jar on the servers is built from it.
-- The local ship worktree is `IdeaProjects/.claude/worktrees/mining-eldervale-progression-65660c`
-  (branch `ship/live-hardening`). Build and deploy from there, commit, push, merge to `main`.
+- Build source: a clean clone of GitHub `main` at `IdeaProjects/_deploy/aetherion-plugins` (fast-forward it,
+  build, deploy). Work happens on a branch in a worktree beside it, merged by PR before any deploy. The old ship
+  worktree `mining-eldervale-progression-65660c` stopped on 10-21 and is not a source any more.
+- Helm (staff panel, `AetherionHelm/`) is on `main` since PR #98; its jars come from the `aetherion-helm` release.
 - The `IdeaProjects/` root checkout (branch `claude/polish-pets`) is **stale (09-28)** with
   ~6000 dirty files. Do not build or commit from it.
 - Agent prompts and briefs live in `docs/prompts/`; they are history, not specs.
 
-## Live plugin builds (sha1 prefix, 2026-10-21)
+## Live plugin builds (sha1 prefix, 2026-10-25 12:00)
 
-Same on every server that loads them: Core `536b35c5`, Items `a4ade9d2` (10-21, HUD carrier + menu icons; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (10-20; not on hub),
-BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
-byte-identical to a build of `main` (classes and resources).
+One build per plugin on every backend that loads it, all from `main` `c5eb105` (PR #119) or earlier `main`:
 
-| Jar | mmo-r | mmo-d | mmo-c | mmo-i | hub |
-|---|---|---|---|---|---|
-| Dungeons | sha256 cd896d99 (10-20, PR #76) | same | – | – | – |
-| Mining / Foraging / Farming / Fishing | d55c57f6 / 8d58797b (10-20) / 5e8a58ce / a6aae3f0 | – | same as mmo-r | – | – |
-| Hub | 96ed909c | – | – | – | **d1a097e7 (10-05)** |
-| Beta | ed9d1621 | ed9d1621 | – | – | – |
-| SamuraiBoss / Pit | mmo-r only | | | | Pit `7e494d00` (10-21, HP readout) on hub |
+| Plugin | sha1 | Backends |
+|---|---|---|
+| Core | `9b556b78` | hub, mmo-r, mmo-d, mmo-c, mmo-i |
+| Items | `ebfac21b` | mmo-r, mmo-d, mmo-c, mmo-i |
+| Quests | `d2663e0b` | mmo-r, mmo-d, mmo-c, mmo-i |
+| AetherMobs | `baba6df2` | mmo-r, mmo-d, mmo-c, mmo-i |
+| BossEngine | `c47cba94` | hub, mmo-r, mmo-d, mmo-c |
+| Foraging / Mining | `a8c46420` / `f2faa59c` | mmo-r, mmo-c |
+| Farming / Fishing | `919d9515` / `c55d270e` | mmo-r, mmo-c |
+| Gnomon | `684013f0` | mmo-r, mmo-c |
+| Dungeons / Beta | `07c2c939` / `ed9d1621` | mmo-r, mmo-d |
+| Guilds | `5e72839d` | mmo-i (parked on mmo-r and mmo-d) |
+| Hub | `7a3fa285` | mmo-r; **hub keeps `d1a097e7` (10-05)** |
+| SamuraiBoss / Pit | `b6f736f0` / `7e494d00` | mmo-r / hub |
+| Helm agent | `2da97e46` | all five (proxy: `AetherionHelmProxy`) |
+
+Deploys swap jars by plugin name only where a server already runs that plugin, back the old ones up and
+restart each backend once (graceful RCON stop). The host also runs a standalone vanilla server (own port,
+not behind the proxy). Crafty and the Mineflayer stress-bot service were switched off on 10-25: Crafty
+auto-started a second, idle Velocity on its restart of 10-24.
 
 The proxy runs **AetherionProxy** `44947554` (Velocity 4, built on JDK 25, see "Resource pack").
 
@@ -153,6 +166,20 @@ Deployed with `deploy-harbour-ferry.ps1` (Core, Quests, Items, BossEngine, Hub; 
   `/origin dev underside [apply]` fills thin seabed over open air (9466 blocks placed live).
 - mmo-r's `latest.log` is not cut at a restart and holds most lines twice: deploy scripts must find answers by content
   (lines after the last start line), never by counting lines.
+
+## 10-25 rounds (PR #118, #119)
+
+- Exile arrival: `CineCam` attaches the lens once its chunk has reached the client and `rebind()`s it before
+  the white peels, so every rider opens on the same frame (before, the camera packet beat the entity and the
+  player floated wherever they had joined). Every way aboard the King's Ferry (talk, bell, sneak, `/exile go`)
+  has the Ferryman walk ahead; the shot starts a second after both are on the deck.
+- The old Gate Warden (Closed Road) is retired; the Colosseum Proctor is the only Pathwarden quest.
+- Onboarding: spine NPCs say at most three lines, task first (EN + DE). Chopping opens with the Forager's axe
+  (the demo no longer blocks). Spheres bounce off NPC companions (Lark's parrot) unspent. Vex credits the kit
+  on accept and posts the drill keys as keybind components. Temper's first booster is a pick of three
+  (`tutorial/BoosterPick`). Mining starts at the Shaft Foreman, then the Surveyor's first blueprint tool; the
+  Mining pad reads Quests' story flag `mine_road_open` instead of Ledger's stamp (veterans keep it via
+  `MiningAccess.knowsIsle`). The Farm Isle road starts at the Farmer.
 
 ## Content state (verified against live 2026-10-19)
 
