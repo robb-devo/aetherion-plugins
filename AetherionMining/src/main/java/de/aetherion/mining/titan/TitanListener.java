@@ -43,12 +43,17 @@ public final class TitanListener implements Listener {
     private final TitanWorld titan;
     private final Jawcamp camp;
     private final java.util.Map<java.util.UUID, String> lastIsle = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Set<java.util.UUID> warmed = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private long nextBeat;
+    private long pulseUntil;
 
     public TitanListener(AetherionMining plugin, TitanWorld titan, Jawcamp camp) {
         this.plugin = plugin;
         this.titan = titan;
         this.camp = camp;
         Bukkit.getScheduler().runTaskTimer(plugin, this::breathe, 40L, 4L);
+        nextBeat = System.currentTimeMillis() + beatMillis();
+        Bukkit.getScheduler().runTaskTimer(plugin, this::heart, 100L, 20L);
     }
 
     private static boolean staff(Player player) {
@@ -71,6 +76,74 @@ public final class TitanListener implements Listener {
             return;
         }
         event.setCancelled(false);
+    }
+
+    private long beatMillis() {
+        return Math.max(5, plugin.getConfig().getInt("titan.heartbeat-minutes", 30)) * 60_000L;
+    }
+
+    /** What the body gives: Titan Bone from bone, Titan Marrow from the Marrowdeep, Heart Embers during a pulse. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onHarvest(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        if (!titan.isTitan(block.getWorld()) || player.getGameMode() != GameMode.SURVIVAL) {
+            return;
+        }
+        Location at = block.getLocation().add(0.5, 0.5, 0.5);
+        Material type = block.getType();
+        if (type == Material.BONE_BLOCK) {
+            event.setDropItems(false);
+            block.getWorld().dropItemNaturally(at, TitanItems.create(TitanItems.Kind.BONE, 1));
+            return;
+        }
+        if ((type == Material.SHROOMLIGHT || type == Material.NETHER_WART_BLOCK) && block.getY() <= 36) {
+            if (Math.random() < 0.6) {
+                event.setDropItems(false);
+                block.getWorld().dropItemNaturally(at, TitanItems.create(TitanItems.Kind.MARROW, 1));
+            }
+            return;
+        }
+        if (System.currentTimeMillis() < pulseUntil && de.aetherion.mining.isle.IsleOre.fromBlock(type) != null
+                && type != Material.STONE && Math.random() < 0.04) {
+            block.getWorld().dropItemNaturally(at, TitanItems.create(TitanItems.Kind.EMBER, 1));
+            player.playSound(at, org.bukkit.Sound.ITEM_FIRECHARGE_USE, 0.6f, 1.5f);
+        }
+    }
+
+    /** Heartbeat: the stone heart beats every half hour; for a minute the veins shed embers, the heart gives one. */
+    private void heart() {
+        World world = titan.world();
+        TitanShape shape = titan.shape();
+        long now = System.currentTimeMillis();
+        if (world == null || shape == null || !titan.open()) {
+            return;
+        }
+        if (now >= nextBeat) {
+            nextBeat = now + beatMillis();
+            pulseUntil = now + 60_000L;
+            warmed.clear();
+            for (Player player : world.getPlayers()) {
+                player.showTitle(net.kyori.adventure.title.Title.title(
+                        net.kyori.adventure.text.Component.text("§4Heartbeat"),
+                        net.kyori.adventure.text.Component.text("§7the veins shed embers · the heart gives one"),
+                        net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(200),
+                                java.time.Duration.ofMillis(2000), java.time.Duration.ofMillis(600))));
+                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_WARDEN_HEARTBEAT, 1.5f, 0.5f);
+            }
+        }
+        if (now >= pulseUntil) {
+            return;
+        }
+        world.spawnParticle(Particle.DUST, shape.heartX, shape.heartY, shape.heartZ, 40, 6, 7, 6, 0,
+                new Particle.DustOptions(org.bukkit.Color.fromRGB(220, 30, 40), 2.0f));
+        for (Player player : world.getPlayers()) {
+            Location at = player.getLocation();
+            if (shape.zoneAt(at.getX(), at.getY(), at.getZ()) == TitanShape.Zone.HEART && warmed.add(player.getUniqueId())) {
+                TitanItems.give(player, TitanItems.Kind.EMBER, 1);
+                player.sendMessage("§4✦ §7The heart beats beside you. §cA Heart Ember §7falls into your hands.");
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)

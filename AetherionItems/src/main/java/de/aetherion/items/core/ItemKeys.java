@@ -308,6 +308,11 @@ public final class ItemKeys {
         return key("booster_sockets");
     }
 
+    /** Bonegrafts (Heartforge): extra booster sockets on this item, 0..BoosterLimits.MAX_GRAFTS. */
+    public static NamespacedKey boneGrafts() {
+        return key("bone_grafts");
+    }
+
     public static NamespacedKey sackId() {
         return key("sack_id");
     }

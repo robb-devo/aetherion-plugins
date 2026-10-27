@@ -45,13 +45,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class Jawcamp implements Listener {
 
     /** Bump when the skull is redrawn: the next start clears the box and builds it again. */
-    private static final int BUILD = 1;
+    private static final int BUILD = 2;
     private static final int OY = 100;
     private static final int GX = -30;
     private static final double GULLET_R = 5.2;
 
     private final AetherionMining plugin;
     private final TitanWorld titan;
+    private final Heartforge forge;
     private final NamespacedKey npcKey;
     private final Map<UUID, Long> cooldown = new ConcurrentHashMap<>();
     private final List<Entity> placed = new ArrayList<>();
@@ -59,9 +60,10 @@ public final class Jawcamp implements Listener {
     private TextDisplay board;
     private boolean built;
 
-    public Jawcamp(AetherionMining plugin, TitanWorld titan) {
+    public Jawcamp(AetherionMining plugin, TitanWorld titan, Heartforge forge) {
         this.plugin = plugin;
         this.titan = titan;
+        this.forge = forge;
         this.npcKey = new NamespacedKey(plugin, "jawcamp_npc");
     }
 
@@ -301,6 +303,23 @@ public final class Jawcamp implements Listener {
             set.put(key(45, y, -10), chain);
         }
         set.put(key(45, 4, -10), hanging);
+        // The Heartforge: a blast furnace on a blackstone hearth, anvil, lava trough and hanging chains.
+        BlockData hearth = Material.POLISHED_BLACKSTONE_BRICKS.createBlockData();
+        for (int x = -16; x <= -10; x++) {
+            for (int z = -13; z <= -9; z++) {
+                set.put(key(x, -1, z), hearth);
+            }
+        }
+        set.put(key(-13, 0, -12), Bukkit.createBlockData("minecraft:blast_furnace[facing=south,lit=true]"));
+        set.put(key(-14, 0, -12), Bukkit.createBlockData("minecraft:blast_furnace[facing=south,lit=true]"));
+        set.put(key(-13, 1, -12), Material.POLISHED_BLACKSTONE_BRICKS.createBlockData());
+        set.put(key(-14, 1, -12), Material.POLISHED_BLACKSTONE_BRICKS.createBlockData());
+        set.put(key(-11, 0, -11), Bukkit.createBlockData("minecraft:anvil[facing=east]"));
+        set.put(key(-15, 0, -10), Material.LAVA_CAULDRON.createBlockData());
+        set.put(key(-12, 0, -12), Material.SMITHING_TABLE.createBlockData());
+        for (int y = 2; y <= 8; y++) {
+            set.put(key(-13, y, -12), Material.BRICKS.createBlockData());
+        }
         for (int[] c : new int[][]{{-8, 5}, {12, -4}, {24, 3}, {-20, -5}, {0, 9}}) {
             int top = 0;
             while (top < 40 && inner(c[0], top + 1, c[1])) {
@@ -356,6 +375,9 @@ public final class Jawcamp implements Listener {
                 Villager.Profession.TOOLSMITH));
         placed.add(npc(new Location(world, -23.5, OY, 8.5, -90f, 0f), "keeper", "§cGullet Keeper",
                 Villager.Profession.CLERIC));
+        placed.add(npc(new Location(world, -12.5, OY, -9.5, 180f, 0f), "grafter", "§6The Grafter",
+                Villager.Profession.WEAPONSMITH));
+        placed.add(label(new Location(world, -13.0, OY + 3.4, -10.0), "§6§lThe Heartforge\n§7Bonegrafts · Titan Runes"));
         placed.add(label(new Location(world, GX + 0.5, OY + 4.5, 0.5), "§4§lThe Gullet\n§7Mining 40 · step onto the throat"));
         placed.add(label(new Location(world, 8.5, OY + 6.6, -11.5), "§d§lThe Veins\n§7Amethyst Mine · Mining 30"));
         board = label(new Location(world, 34.5, OY + 3.4, 10.0), boardText());
@@ -507,6 +529,10 @@ public final class Jawcamp implements Listener {
                         plugin.getVeins().exitToMain(player);
                     }
                 }, 30L);
+            }
+            case "grafter" -> {
+                player.sendMessage("§6The Grafter§f: Bone, marrow and embers. Give me those and your gear grows.");
+                forge.open(player);
             }
             case "keeper" -> {
                 player.sendMessage("§cGullet Keeper§f: Step onto the throat and it swallows you. Mining "

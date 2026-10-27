@@ -64,6 +64,39 @@ public final class ItemFactoryAccessImpl implements ItemFactoryAccess {
     }
 
     @Override
+    public int boneGrafts(ItemStack item) {
+        de.aetherion.items.manager.ItemManager items = manager();
+        return items == null || !items.isAetherionItem(item) ? 0 : items.getItemStats(item).getBoneGrafts();
+    }
+
+    /** Heartforge: one more booster socket; boosters already socketed stay where they are. */
+    @Override
+    public boolean addBoneGraft(ItemStack item) {
+        de.aetherion.items.manager.ItemManager items = manager();
+        if (items == null || !items.isAetherionItem(item) || items.getBoosterType(item) != null) {
+            return false;
+        }
+        de.aetherion.items.model.ItemStats stats = items.getItemStats(item);
+        if (stats.getBoneGrafts() >= de.aetherion.items.core.BoosterLimits.MAX_GRAFTS) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+        stats.setBoneGrafts(stats.getBoneGrafts() + 1);
+        items.saveItemStats(meta, stats);
+        item.setItemMeta(meta);
+        items.refreshItemLore(item);
+        return true;
+    }
+
+    private static de.aetherion.items.manager.ItemManager manager() {
+        de.aetherion.items.AetherionItems plugin = de.aetherion.items.AetherionItems.getInstance();
+        return plugin == null ? null : plugin.getItemManager();
+    }
+
+    @Override
     public ItemStack dungeonWeaponSchematic(int floor) {
         return customItem == null ? null : customItem.createDungeonWeaponSchematic(floor);
     }

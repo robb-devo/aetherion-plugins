@@ -53,6 +53,8 @@ public class ItemStats {
      */
 
     private int coalBoosters;
+    /** Bonegrafts: extra booster sockets (see {@link #boosterCapacity()}). */
+    private int boneGrafts;
     private int ironBoosters;
     private int goldBoosters;
     private int diamondBoosters;
@@ -361,6 +363,19 @@ public class ItemStats {
         return coalBoosters;
     }
 
+    public int getBoneGrafts() {
+        return boneGrafts;
+    }
+
+    public void setBoneGrafts(int boneGrafts) {
+        this.boneGrafts = Math.max(0, Math.min(de.aetherion.items.core.BoosterLimits.MAX_GRAFTS, boneGrafts));
+    }
+
+    /** How many boosters this item holds: the shared cap plus its Bonegrafts. */
+    public int boosterCapacity() {
+        return de.aetherion.items.core.BoosterLimits.MAX_TOTAL + boneGrafts;
+    }
+
     public void setCoalBoosters(
             int coalBoosters
     ) {
@@ -575,6 +590,7 @@ public class ItemStats {
         merged.setFishingCatch(newBase.getFishingCatch() + extra(oldActual.getFishingCatch(), oldBase.getFishingCatch()));
 
         merged.setCoalBoosters(oldActual.getCoalBoosters());
+        merged.setBoneGrafts(oldActual.getBoneGrafts());
         merged.setIronBoosters(oldActual.getIronBoosters());
         merged.setGoldBoosters(oldActual.getGoldBoosters());
         merged.setDiamondBoosters(oldActual.getDiamondBoosters());

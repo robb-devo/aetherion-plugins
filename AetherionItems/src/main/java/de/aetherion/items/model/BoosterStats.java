@@ -228,7 +228,8 @@ public class BoosterStats {
                     + (percent ? "%" : ""));
         }
         lore.add("");
-        lore.add("§eSocket §7at the Custom Anvil. §8Max " + BoosterLimits.MAX_TOTAL + " per item.");
+        lore.add("§eSocket §7at the Custom Anvil. §8Max " + BoosterLimits.MAX_TOTAL + " per item, "
+                + BoosterLimits.MAX_SLOTS + " with Bonegrafts.");
         return lore;
     }
 
@@ -279,4 +280,4 @@ public class BoosterStats {
 
     private BoosterStats() {
     }
-}
+}
