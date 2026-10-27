@@ -42,6 +42,7 @@ public final class TitanListener implements Listener {
     private final AetherionMining plugin;
     private final TitanWorld titan;
     private final Jawcamp camp;
+    private final java.util.Map<java.util.UUID, String> lastIsle = new java.util.concurrent.ConcurrentHashMap<>();
 
     public TitanListener(AetherionMining plugin, TitanWorld titan, Jawcamp camp) {
         this.plugin = plugin;
@@ -149,6 +150,25 @@ public final class TitanListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         titan.forget(event.getPlayer().getUniqueId());
+        lastIsle.remove(event.getPlayer().getUniqueId());
+    }
+
+    /** The first step onto a swallowed isle shows its name, once per isle per day. */
+    private void announceIsle(Player player, TitanShape shape, Location at) {
+        TitanShape.Isle isle = shape.isleAt(at.getX(), at.getY(), at.getZ());
+        if (isle == null) {
+            return;
+        }
+        String mark = titan.generation() + ":" + isle.theme();
+        if (mark.equals(lastIsle.put(player.getUniqueId(), mark))) {
+            return;
+        }
+        player.showTitle(net.kyori.adventure.title.Title.title(
+                net.kyori.adventure.text.Component.text("§6" + isle.name()),
+                net.kyori.adventure.text.Component.text("§7swallowed long ago · find its Relic Chest"),
+                net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(300),
+                        java.time.Duration.ofMillis(2500), java.time.Duration.ofMillis(700))));
+        player.playSound(at, org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 0.6f);
     }
 
     /** Updrafts: rise inside a breath column, sneak to sink through it without a fall. */
@@ -161,6 +181,9 @@ public final class TitanListener implements Listener {
         boolean puff = (Bukkit.getCurrentTick() & 7) == 0;
         for (Player player : world.getPlayers()) {
             Location at = player.getLocation();
+            if (puff) {
+                announceIsle(player, shape, at);
+            }
             for (TitanShape.Updraft draft : shape.updrafts) {
                 double dx = at.getX() - draft.x(), dz = at.getZ() - draft.z();
                 if (puff && dx * dx + dz * dz < 40 * 40) {

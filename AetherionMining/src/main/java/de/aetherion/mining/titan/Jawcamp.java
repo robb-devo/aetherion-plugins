@@ -395,8 +395,15 @@ public final class Jawcamp implements Listener {
     private String boardText() {
         int hour = plugin.getConfig().getInt("titan.churn-hour", 5);
         String state = titan.open() ? "§aThe Gullet is open" : "§eOssarath is churning";
-        return "§6§lJawcamp\n" + state + "\n§7Three swallowed isles drift in the belly\n§8The Churn: "
-                + String.format("%02d", hour) + ":00";
+        StringBuilder isles = new StringBuilder();
+        TitanShape shape = titan.shape();
+        if (shape != null && titan.open()) {
+            for (TitanShape.Isle isle : shape.isles) {
+                isles.append("\n§f").append(isle.name());
+            }
+        }
+        return "§6§lJawcamp\n" + state + (isles.length() > 0 ? "\n§7In the belly today:" + isles : "")
+                + "\n§8The Churn: " + String.format("%02d", hour) + ":00";
     }
 
     public void refreshBoard() {

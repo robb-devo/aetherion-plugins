@@ -29,8 +29,11 @@ final class TitanShape {
         }
     }
 
-    /** A swallowed isle site in the belly sea (step 3 builds the theme on it). */
-    record Isle(int index, int x, int z, int radius, int top) {
+    /** A swallowed isle in the belly sea: theme = which of the six isles, site = where it drifts today. */
+    record Isle(int theme, int site, int x, int z, int radius, int top) {
+        String name() {
+            return IsleBuilder.NAMES[theme];
+        }
     }
 
     static final int MIN_X = -352;
@@ -63,6 +66,10 @@ final class TitanShape {
     final long seed;
     final double heartX, heartY, heartZ;
     final List<Isle> isles;
+    /** Isle buildings, keyed like {@link IsleBuilder#key}; read-only after construction. */
+    private final java.util.Map<Long, BlockData> overlay;
+    /** Relic Chests: x, y, z, theme. */
+    final List<int[]> relics;
     final List<Updraft> updrafts;
     private final double[][] shafts; // x, z, top, bottom (marrow shafts with ladders)
     private final double[][] tail;
@@ -99,11 +106,13 @@ final class TitanShape {
         downB = new double[]{heartX + 6, 40, heartZ + 4};
 
         List<Integer> sites = new ArrayList<>(List.of(0, 1, 2, 3, 4, 5));
+        List<Integer> themes = new ArrayList<>(List.of(0, 1, 2, 3, 4, 5));
         java.util.Collections.shuffle(sites, random);
+        java.util.Collections.shuffle(themes, random);
         List<Isle> picked = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             int[] site = ISLE_SITES[sites.get(i)];
-            picked.add(new Isle(sites.get(i), site[0] + random.nextInt(9) - 4, site[1] + random.nextInt(9) - 4,
+            picked.add(new Isle(themes.get(i), sites.get(i), site[0] + random.nextInt(9) - 4, site[1] + random.nextInt(9) - 4,
                     20 + random.nextInt(5), 59 + random.nextInt(4)));
         }
         isles = List.copyOf(picked);
@@ -129,6 +138,9 @@ final class TitanShape {
         bronchi = new double[][]{
                 {-250, 184, 0, -240, 168, 42}, {-250, 184, 0, -240, 168, -42},
                 {-170, 184, 0, -160, 168, 42}, {-170, 184, 0, -160, 168, -42}};
+        List<int[]> chests = new ArrayList<>();
+        overlay = IsleBuilder.buildAll(this, isles, chests);
+        relics = List.copyOf(chests);
     }
 
     // ------------------------------------------------------------------ palette
@@ -162,6 +174,11 @@ final class TitanShape {
         final BlockData magma = Material.MAGMA_BLOCK.createBlockData();
         final BlockData moss = Material.MOSS_BLOCK.createBlockData();
         final BlockData mud = Material.MUD.createBlockData();
+        final BlockData grass = Material.GRASS_BLOCK.createBlockData();
+        final BlockData dirt = Material.DIRT.createBlockData();
+        final BlockData rootedDirt = Material.ROOTED_DIRT.createBlockData();
+        final BlockData sand = Material.SAND.createBlockData();
+        final BlockData mycelium = Material.MYCELIUM.createBlockData();
         final BlockData clay = Material.CLAY.createBlockData();
         final BlockData amethyst = Material.AMETHYST_BLOCK.createBlockData();
         final BlockData budding = Material.BUDDING_AMETHYST.createBlockData();
@@ -476,20 +493,50 @@ final class TitanShape {
         return dy * dy + r * r < 1.5 * 1.5;
     }
 
-    private boolean isleRock(double x, double y, double z) {
+    /** The isle whose rock fills (x, y, z), or null. */
+    private Isle isleRock(double x, double y, double z) {
         for (Isle isle : isles) {
-            double dx = x - isle.x(), dz = z - isle.z();
-            double d = Math.sqrt(dx * dx + dz * dz);
-            double edge = isle.radius() * (1 + 0.14 * detail.noise(x / 9.0, z / 9.0 + isle.index() * 31));
-            if (d >= edge) {
-                continue;
-            }
-            double top = isle.top() - Math.pow(d / edge, 2) * 9;
-            if (y <= top && y > seaFloor(x, z) - 2) {
-                return true;
+            int surface = isleSurface(isle, (int) Math.floor(x), (int) Math.floor(z));
+            if (surface != Integer.MIN_VALUE && y <= surface && y > seaFloor(x, z) - 2) {
+                return isle;
             }
         }
-        return false;
+        return null;
+    }
+
+    /** Top block of an isle at (x, z), or Integer.MIN_VALUE off it. Shared with IsleBuilder so houses sit flush. */
+    int isleSurface(Isle isle, int x, int z) {
+        double dx = x - isle.x(), dz = z - isle.z();
+        double d = Math.sqrt(dx * dx + dz * dz);
+        double edge = isle.radius() * (1 + 0.14 * detail.noise(x / 9.0, z / 9.0 + isle.site() * 31));
+        if (d >= edge) {
+            return Integer.MIN_VALUE;
+        }
+        return (int) Math.floor(isle.top() - Math.pow(d / edge, 2) * 9);
+    }
+
+    /** The isle a player stands on (name titles, relics), or null. */
+    Isle isleAt(double x, double y, double z) {
+        for (Isle isle : isles) {
+            double dx = x - isle.x(), dz = z - isle.z();
+            if (dx * dx + dz * dz < (isle.radius() + 3) * (isle.radius() + 3) && y > SEA - 1 && y < isle.top() + 40) {
+                return isle;
+            }
+        }
+        return null;
+    }
+
+    private BlockData overlayAt(int x, int y, int z) {
+        if (overlay.isEmpty() || y < SEA - 10 || y > SEA + 60) {
+            return null;
+        }
+        for (Isle isle : isles) {
+            int reach = isle.radius() + 18;
+            if (Math.abs(x - isle.x()) <= reach && Math.abs(z - isle.z()) <= reach) {
+                return overlay.get(IsleBuilder.key(x, y, z));
+            }
+        }
+        return null;
     }
 
     // ------------------------------------------------------------------ the block at (x, y, z)
@@ -606,9 +653,23 @@ final class TitanShape {
         if (ell(x, y, z, 340, 36, -16, 4.6, 4.6, 4.6) < 1) {
             return ell(x, y, z, 340, 36, -16, 2.2, 2.2, 2.2) < 1 ? p.cryingObsidian : p.sealBricks;
         }
-        // Swallowed isles rise from the sea floor.
-        if (inBelly(x, y, z) && isleRock(x, y, z)) {
-            return isleBlock(x, y, z);
+        // Swallowed isles: their buildings first, then the isle rock rising from the sea floor.
+        BlockData built = overlayAt(x, y, z);
+        if (built != null) {
+            if (built == p.cave || built.getMaterial().isAir()) {
+                code[0] = AIR_OTHER;
+                return p.cave;
+            }
+            if (built.getMaterial() == Material.WATER) {
+                code[0] = WATER;
+            }
+            return built;
+        }
+        if (inBelly(x, y, z)) {
+            Isle isle = isleRock(x, y, z);
+            if (isle != null) {
+                return isleBlock(isle, x, y, z);
+            }
         }
 
         // Cavities.
@@ -658,10 +719,48 @@ final class TitanShape {
         return rockWithOre(x, y, z);
     }
 
-    private BlockData isleBlock(int x, int y, int z) {
+    /** Each isle keeps the ground it was swallowed with, and its own veins in the rock below. */
+    private BlockData isleBlock(Isle isle, int x, int y, int z) {
+        int surface = isleSurface(isle, x, z);
+        int depth = surface - y;
         double n = detail.noise(x / 7.0, y / 7.0, z / 7.0);
-        if (y >= SEA + 3 && n > -0.3) {
-            return p.moss;
+        if (surface <= SEA && depth <= 1) {
+            return n > 0 ? p.clay : p.mud;
+        }
+        if (depth <= 2) {
+            boolean top = depth == 0;
+            switch (isle.theme()) {
+                case 0 -> {
+                    return top ? p.snow : (n > 0 ? p.packedIce : p.dirt);
+                }
+                case 1 -> {
+                    boolean shore = surface <= SEA + 2;
+                    return shore ? p.sand : (top ? p.grass : p.dirt);
+                }
+                case 2 -> {
+                    return top ? (hash(x, y, z, 91) < 0.15 ? p.magma : n > 0 ? p.blackstone : p.basalt) : p.blackstone;
+                }
+                case 3 -> {
+                    return top ? (n > 0.1 ? p.moss : p.grass) : (n > 0.3 ? p.rootedDirt : p.dirt);
+                }
+                case 4 -> {
+                    return top ? p.grass : p.dirt;
+                }
+                default -> {
+                    return top ? p.mycelium : p.dirt;
+                }
+            }
+        }
+        if (ore.noise(x / 5.5, y / 5.5, z / 5.5) > 0.62) {
+            double pick = hash(x >> 2, y >> 2, z >> 2, 93);
+            return switch (isle.theme()) {
+                case 0 -> pick < 0.25 ? p.diamond : pick < 0.75 ? p.lapis : p.iron;
+                case 1 -> pick < 0.4 ? p.gold : pick < 0.65 ? p.emerald : p.copper;
+                case 2 -> pick < 0.45 ? p.iron : pick < 0.75 ? p.copper : p.coal;
+                case 3 -> pick < 0.3 ? p.emerald : pick < 0.75 ? p.lapis : p.gold;
+                case 4 -> pick < 0.45 ? p.redstone : pick < 0.7 ? p.gold : p.copper;
+                default -> pick < 0.4 ? p.coal : pick < 0.75 ? p.iron : p.quartz;
+            };
         }
         return n > 0.2 ? p.tuff : p.terracotta;
     }
