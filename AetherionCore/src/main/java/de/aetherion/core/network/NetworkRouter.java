@@ -33,6 +33,7 @@ public final class NetworkRouter implements Listener {
     public static final String DEPART_ISLANDS = "§a✦ §7The isle winds lift you…";
     public static final String DEPART_DUNGEON = "§5✦ §7The Dungeon Gate opens…";
     public static final String DEPART_EXILE = "§8✦ §7The ferry takes you into the Veil…";
+    public static final String DEPART_MINES = "§d✦ §7The mine cage drops into the deep…";
 
     private static final long FIRST_TRY_TICKS = 2L;
     private static final long RETRY_TICKS = 2L;
@@ -123,7 +124,7 @@ public final class NetworkRouter implements Listener {
         return true;
     }
 
-    /** Velocity name configured for a role key (main / dungeon / islands / exile) or a literal name. */
+    /** Velocity name configured for a role key (main / dungeon / islands / exile / mines) or a literal name. */
     public String serverFor(String role) {
         if (role == null || role.isBlank()) {
             return "";
@@ -133,6 +134,7 @@ public final class NetworkRouter implements Listener {
             case "dungeon", "dungeons", "mmo-d" -> plugin.getConfig().getString("network.dungeon-server", ServerNames.DUNGEON);
             case "islands", "island", "isles", "mmo-i" -> plugin.getConfig().getString("network.islands-server", ServerNames.ISLANDS);
             case "exile", "mmo-c" -> plugin.getConfig().getString("network.exile-server", ServerNames.EXILE);
+            case "mines", "mine", "mmo-m" -> plugin.getConfig().getString("network.mines-server", ServerNames.MINES);
             default -> role.trim().toLowerCase(Locale.ROOT);
         };
     }
@@ -146,6 +148,9 @@ public final class NetworkRouter implements Listener {
         }
         if (ServerNames.isExile(server)) {
             return DEPART_EXILE;
+        }
+        if (ServerNames.isMines(server)) {
+            return DEPART_MINES;
         }
         return DEPART_MAIN;
     }

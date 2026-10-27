@@ -41,6 +41,13 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
+        if (sub.equals("enter")) {
+            // Replayed on the mine server after a crossing: greets in place (MinesHost already landed them).
+            if (sender instanceof Player player) {
+                veins.enter(player);
+            }
+            return true;
+        }
         if (sub.equals("leave")) {
             if (sender instanceof Player player) {
                 veins.leave(player);
@@ -48,6 +55,10 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (sub.equals("time")) {
+            if (!veins.hostedHere() && plugin.getConfig().getInt("veins.reset-hour", -1) < 0) {
+                sender.sendMessage("§7The Amethyst Mine (The Veins) resets once a day. §8Ask in the mine for the hour.");
+                return true;
+            }
             sender.sendMessage("§7The Amethyst Mine (The Veins) resets in §f" + untilReset() + "§7.");
             return true;
         }

@@ -30,12 +30,20 @@ public class AetherionMining extends JavaPlugin {
         veins = new VeinsWorld(this);
         VeinsNpcs npcs = new VeinsNpcs(this);
         veins.bind(npcs);
+        // The mine server (mmo-m) runs the Amethyst Mine with mmo-r's config copy; the Eldervale isle stays on mmo-r.
+        if (veins.mineServer()) {
+            de.aetherion.mining.isle.MineWorld.isleAway(this, true);
+            new de.aetherion.mining.veins.MinesHost(this, veins);
+        }
 
         // Mining Eldervale first: its break router must see the strike before MiningListener seals it.
         if (getConfig().getBoolean("mine-isle.enabled", true)) {
             try {
                 isle = new de.aetherion.mining.isle.MineIsle(this);
                 isle.start();
+                // Mastery, ledger, forge rep and mine tallies travel with the character. Left registered on disable
+                // so Core can still pack a player who is online while the server stops.
+                de.aetherion.core.api.AetherServices.registerPlayerData(isle.profiles().part());
                 PluginCommand mineisle = getCommand("mineisle");
                 if (mineisle != null) {
                     de.aetherion.mining.isle.MineCommand isleCommand = new de.aetherion.mining.isle.MineCommand(isle);
@@ -75,7 +83,9 @@ public class AetherionMining extends JavaPlugin {
             }
         });
         getServer().getScheduler().runTaskTimer(this, veins::tickReset, 20L * 60L, 20L * 60L * 5L);
-        getLogger().info("Amethyst Area dig world ready. Players: /amethyst. Admin: /deepmines.");
+        getLogger().info(veins.hostedHere()
+                ? "Amethyst Area dig world ready. Players: /amethyst. Admin: /deepmines."
+                : "The Amethyst Mine runs on the mine server: /amethyst and the Foreman send players there.");
         miningAccess = new de.aetherion.mining.api.MiningAccessImpl();
         de.aetherion.core.api.AetherServices.registerMining(miningAccess);
     }

@@ -11,7 +11,7 @@ import java.util.Locale;
  * {@code network.this-server} is blank and Velocity has not answered GetServer yet.
  *
  * <p>Roles (fixed): hub = lobby + pit, mmo-r = main world, mmo-d = dungeons only,
- * mmo-c = exile (story / ferry), mmo-i = private + guild islands only.
+ * mmo-c = exile (story / ferry), mmo-i = private + guild islands only, mmo-m = the mines only.
  */
 public final class ServerNames {
 
@@ -22,6 +22,8 @@ public final class ServerNames {
     public static final String EXILE = "mmo-c";
     /** Private + guild islands ({@code aether_islands} / {@code aether_guilds}). Never exile, never dungeons. */
     public static final String ISLANDS = "mmo-i";
+    /** The mines ({@code aether_veins} Amethyst Mine and what grows around it). Never islands, never dungeons. */
+    public static final String MINES = "mmo-m";
     /**
      * Historical alias — same Velocity backend as {@link #EXILE}.
      * Colosseum combat itself lives on the main world, not this backend.
@@ -33,10 +35,11 @@ public final class ServerNames {
     public static final int PORT_DUNGEON = 25568;
     public static final int PORT_EXILE = 25569;
     public static final int PORT_ISLANDS = 25570;
+    public static final int PORT_MINES = 25571;
     public static final int PORT_COLOSSEUM = PORT_EXILE;
 
     /** Backends that carry a character between each other (transfer v6). Hub is join + pit only. */
-    public static final List<String> CHARACTER_BACKENDS = List.of(MAIN, DUNGEON, EXILE, ISLANDS);
+    public static final List<String> CHARACTER_BACKENDS = List.of(MAIN, DUNGEON, EXILE, ISLANDS, MINES);
 
     private ServerNames() {
     }
@@ -48,6 +51,7 @@ public final class ServerNames {
             case PORT_DUNGEON -> DUNGEON;
             case PORT_EXILE -> EXILE;
             case PORT_ISLANDS -> ISLANDS;
+            case PORT_MINES -> MINES;
             default -> "";
         };
     }
@@ -62,6 +66,10 @@ public final class ServerNames {
 
     public static boolean isIslands(String name) {
         return is(ISLANDS, name);
+    }
+
+    public static boolean isMines(String name) {
+        return is(MINES, name);
     }
 
     public static boolean isDungeon(String name) {
@@ -91,6 +99,7 @@ public final class ServerNames {
             case DUNGEON -> "the Dungeon Hub";
             case EXILE -> "the Exile shore";
             case ISLANDS -> "the Isles";
+            case MINES -> "the Mines";
             case HUB -> "the Harbour Lobby";
             default -> "Aetherion";
         };

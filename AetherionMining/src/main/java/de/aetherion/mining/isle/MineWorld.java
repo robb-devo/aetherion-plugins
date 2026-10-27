@@ -33,12 +33,23 @@ public final class MineWorld {
     }
 
     private static volatile Box box;
+    /** The mine server carries mmo-r's config but not the isle: no footprint, no isle world, nothing placed. */
+    private static volatile boolean isleAway;
 
     private MineWorld() {
     }
 
+    public static void isleAway(AetherionMining plugin, boolean away) {
+        isleAway = away;
+        refresh(plugin);
+    }
+
     /** Re-read {@code mine-isle-footprint} (after a config reload). */
     public static void refresh(AetherionMining plugin) {
+        if (isleAway) {
+            box = new Box(false, "", 0, 0, 0, 0, 0, 0);
+            return;
+        }
         ConfigurationSection section = plugin == null ? null : plugin.getConfig().getConfigurationSection("mine-isle-footprint");
         if (section == null) {
             box = new Box(false, "world", 0, 0, 0, 0, 0, 0);
@@ -115,7 +126,7 @@ public final class MineWorld {
 
     /** {@code world/x/y/z/yaw/pitch} section → location (null when the world is not loaded). */
     public static Location location(ConfigurationSection section) {
-        if (section == null) {
+        if (section == null || isleAway) {
             return null;
         }
         World world = Bukkit.getWorld(section.getString("world", "world"));
@@ -140,7 +151,7 @@ public final class MineWorld {
     /** Where the Origin jump pad drops players ({@code mine-isle.landing}), or {@code null}. */
     public static Location landing(AetherionMining plugin) {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("mine-isle.landing");
-        if (section == null) {
+        if (section == null || isleAway) {
             return null;
         }
         World world = Bukkit.getWorld(section.getString("world", "world"));

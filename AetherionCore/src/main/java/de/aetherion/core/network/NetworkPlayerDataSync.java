@@ -115,6 +115,9 @@ public final class NetworkPlayerDataSync {
             putFile(out, NetworkDataKeys.blob("quests2"), new File(quests.getDataFolder(), "data/" + key + ".yml"));
         }
 
+        // Plugin-owned per-player state (Mining profile …), carried even where the plugin is absent.
+        PlayerDataParts.exportInto(out, id);
+
         File worldFolder = Bukkit.getWorlds().getFirst().getWorldFolder();
         putFile(out, NetworkDataKeys.blob("stats"), new File(worldFolder, "stats/" + key + ".json"));
         putFile(out, NetworkDataKeys.blob("advancements"), new File(worldFolder, "advancements/" + key + ".json"));
@@ -183,6 +186,8 @@ public final class NetworkPlayerDataSync {
             importBlob(plain, "quests", new File(quests.getDataFolder(), "players/" + key + ".yml"), false);
             importBlob(plain, "quests2", new File(quests.getDataFolder(), "data/" + key + ".yml"), false);
         }
+
+        PlayerDataParts.importFrom(plain, id);
 
         File worldFolder = Bukkit.getWorlds().getFirst().getWorldFolder();
         importBlob(plain, "stats", new File(worldFolder, "stats/" + key + ".json"), false);
