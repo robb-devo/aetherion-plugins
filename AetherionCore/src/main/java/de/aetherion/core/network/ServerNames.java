@@ -35,7 +35,7 @@ public final class ServerNames {
     public static final int PORT_DUNGEON = 25568;
     public static final int PORT_EXILE = 25569;
     public static final int PORT_ISLANDS = 25570;
-    public static final int PORT_MINES = 25571;
+    public static final int PORT_MINES = 25572;
     public static final int PORT_COLOSSEUM = PORT_EXILE;
 
     /** Backends that carry a character between each other (transfer v6). Hub is join + pit only. */
