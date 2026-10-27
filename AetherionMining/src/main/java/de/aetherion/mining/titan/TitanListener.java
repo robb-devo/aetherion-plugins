@@ -226,6 +226,43 @@ public final class TitanListener implements Listener {
         lastIsle.remove(event.getPlayer().getUniqueId());
     }
 
+    /** First visit to each part of the titan: its name, a line on what it gives, Mining XP. The Marrowdeep burns below 50. */
+    private void discover(Player player, TitanShape shape, Location at) {
+        TitanShape.Zone zone = shape.zoneAt(at.getX(), at.getY(), at.getZ());
+        if (zone == TitanShape.Zone.MARROW && !MineGate.reaches(player, 50) && player.getGameMode() == GameMode.SURVIVAL) {
+            player.damage(1.0);
+            player.setFireTicks(Math.max(player.getFireTicks(), 20));
+            player.sendActionBar(net.kyori.adventure.text.Component.text("§cThe marrow burns. §7Mining 50 to bear it."));
+        }
+        de.aetherion.mining.isle.MineIsle isle = plugin.getIsle();
+        if (zone == TitanShape.Zone.ROCK || isle == null) {
+            return;
+        }
+        var profile = isle.profiles().of(player);
+        if (!profile.claimMark("titan_zone_" + zone.name().toLowerCase(java.util.Locale.ROOT))) {
+            return;
+        }
+        isle.profiles().markDirty();
+        String[] text = switch (zone) {
+            case GULLET -> new String[]{"The Gullet", "the throat · the lodestone takes you back up", "100"};
+            case RIBVAULT -> new String[]{"The Ribvault", "ribs of Titan Bone · iron and coal in the walls", "150"};
+            case HEART -> new String[]{"The Heartwell", "stand here when the heart beats", "250"};
+            case LUNGS -> new String[]{"The Breathing Caves", "ride the breath · diamonds and lapis in the ice", "250"};
+            case SPINE -> new String[]{"The Spine Road", "the long way from head to belly · gold and redstone", "200"};
+            case SEA -> new String[]{"The Churning Sea", "three swallowed isles drift here today", "250"};
+            case MARROW -> new String[]{"The Marrowdeep", "Titan Marrow grows here · ancient debris below", "400"};
+            default -> new String[]{"The Tail Coil", "sealed. For now.", "100"};
+        };
+        int xp = Integer.parseInt(text[2]);
+        de.aetherion.mining.isle.MineSkills.bonus(player, xp);
+        player.showTitle(net.kyori.adventure.title.Title.title(
+                net.kyori.adventure.text.Component.text("§6" + text[0]),
+                net.kyori.adventure.text.Component.text("§7" + text[1] + " §8· §a+" + xp + " Mining XP"),
+                net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(300),
+                        java.time.Duration.ofMillis(2800), java.time.Duration.ofMillis(700))));
+        player.playSound(at, org.bukkit.Sound.BLOCK_BELL_RESONATE, 0.6f, 0.6f);
+    }
+
     /** The first step onto a swallowed isle shows its name, once per isle per day. */
     private void announceIsle(Player player, TitanShape shape, Location at) {
         TitanShape.Isle isle = shape.isleAt(at.getX(), at.getY(), at.getZ());
@@ -256,6 +293,7 @@ public final class TitanListener implements Listener {
             Location at = player.getLocation();
             if (puff) {
                 announceIsle(player, shape, at);
+                discover(player, shape, at);
             }
             for (TitanShape.Updraft draft : shape.updrafts) {
                 double dx = at.getX() - draft.x(), dz = at.getZ() - draft.z();

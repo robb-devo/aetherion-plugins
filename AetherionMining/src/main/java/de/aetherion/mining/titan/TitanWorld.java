@@ -345,6 +345,17 @@ public final class TitanWorld {
             player.teleport(to);
             player.setFallDistance(0f);
             player.playSound(to, Sound.ENTITY_WARDEN_HEARTBEAT, SoundCategory.PLAYERS, 1.2f, 0.5f);
+            // Swallowed Whole: the first descent gets the Keeper's two lines once the fall is over.
+            de.aetherion.mining.isle.MineIsle isle = plugin.getIsle();
+            if (isle != null && isle.profiles().of(player).claimMark("titan_first_swallow")) {
+                isle.profiles().markDirty();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        player.sendMessage("§cGullet Keeper§f: Ribs give Titan Bone, the Marrowdeep gives marrow. When the heart beats, stand close.");
+                        player.sendMessage("§cGullet Keeper§f: The Grafter in Jawcamp turns all of it into sockets and runes. The lodestone brings you up.");
+                    }
+                }, 100L);
+            }
         }, 20L);
         return true;
     }
