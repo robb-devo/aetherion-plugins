@@ -227,13 +227,22 @@ public final class MineIsle implements Listener, StatProvider {
         Location at = block.getLocation();
         boolean spread = block.hasMetadata("aetherion_spread_break");
         boolean veins = plugin.getVeins() != null && plugin.getVeins().isVeins(block.getWorld());
-        boolean isle = !veins && MineWorld.onIsle(plugin, at);
+        boolean titan = de.aetherion.mining.titan.TitanWorld.isTitanWorld(block.getWorld());
+        boolean isle = !veins && !titan && MineWorld.onIsle(plugin, at);
 
-        if (!isle && !veins) {
+        if (!isle && !veins && !titan) {
             mastery.onMined(player, ore, 1);
             return;
         }
         mastery.onMined(player, ore, 2);
+        if (titan) {
+            // The Swallowed Isles: contracts, mastery and crystal finds like the Veins, without the Veins' tallies.
+            contracts.onMined(player, ore, true, MineDistricts.Band.SURFACE);
+            if (!spread && ore != IsleOre.STONE) {
+                crystals.roll(player, ore, at, true);
+            }
+            return;
+        }
         if (veins) {
             onVeinsStrike(player, ore, at, spread);
             return;
@@ -373,7 +382,8 @@ public final class MineIsle implements Listener, StatProvider {
     }
 
     private boolean inVeins(Location at) {
-        return at != null && plugin.getVeins() != null && plugin.getVeins().isVeins(at.getWorld());
+        return at != null && (plugin.getVeins() != null && plugin.getVeins().isVeins(at.getWorld())
+                || de.aetherion.mining.titan.TitanWorld.isTitanWorld(at.getWorld()));
     }
 
     /** Ore-only Fortune from every Mining loop. Isle: everything. Amethyst Mine: mastery, ledger, marks, resonance. */

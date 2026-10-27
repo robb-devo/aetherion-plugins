@@ -16,6 +16,8 @@ public class AetherionMining extends JavaPlugin {
     private VeinsWorld veins;
     private de.aetherion.core.api.MiningAccess miningAccess;
     private de.aetherion.mining.isle.MineIsle isle;
+    private de.aetherion.mining.titan.TitanWorld titan;
+    private de.aetherion.mining.titan.Jawcamp camp;
 
     @Override
     public void onEnable() {
@@ -34,6 +36,17 @@ public class AetherionMining extends JavaPlugin {
         if (veins.mineServer()) {
             de.aetherion.mining.isle.MineWorld.isleAway(this, true);
             new de.aetherion.mining.veins.MinesHost(this, veins);
+            if (getConfig().getBoolean("titan.enabled", true)) {
+                // The Swallowed Isles: Jawcamp in the main world, Ossarath's body regrown every morning.
+                titan = new de.aetherion.mining.titan.TitanWorld(this);
+                camp = new de.aetherion.mining.titan.Jawcamp(this, titan);
+                titan.bind(camp);
+                de.aetherion.mining.titan.Jawcamp hub = camp;
+                veins.bindCamp(() -> hub.ready() ? hub.spawn() : null);
+                getServer().getPluginManager().registerEvents(camp, this);
+                getServer().getPluginManager().registerEvents(
+                        new de.aetherion.mining.titan.TitanListener(this, titan, camp), this);
+            }
         }
 
         // Mining Eldervale first: its break router must see the strike before MiningListener seals it.
@@ -66,6 +79,14 @@ public class AetherionMining extends JavaPlugin {
             amethyst.setExecutor(command);
             amethyst.setTabCompleter(command);
         }
+        de.aetherion.mining.titan.TitanCommand titanCommand = new de.aetherion.mining.titan.TitanCommand(this, veins);
+        for (String name : new String[]{"jawcamp", "titan"}) {
+            PluginCommand titanCmd = getCommand(name);
+            if (titanCmd != null) {
+                titanCmd.setExecutor(titanCommand);
+                titanCmd.setTabCompleter(titanCommand);
+            }
+        }
         PluginCommand deepmines = getCommand("deepmines");
         if (deepmines != null) {
             deepmines.setExecutor(command);
@@ -75,6 +96,10 @@ public class AetherionMining extends JavaPlugin {
         getServer().getScheduler().runTask(this, () -> {
             veins.ensureLoaded();
             npcs.loadEntrance();
+            if (titan != null) {
+                camp.start();
+                titan.start();
+            }
             if (getConfig().getBoolean("eldervale.auto-paste-once", false)) {
                 getConfig().set("eldervale.auto-paste-once", false);
                 saveConfig();
@@ -104,6 +129,10 @@ public class AetherionMining extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (titan != null) {
+            titan.shutdown();
+            camp.shutdown();
+        }
         if (isle != null) {
             isle.shutdown();
             isle = null;
@@ -129,6 +158,11 @@ public class AetherionMining extends JavaPlugin {
 
     public VeinsWorld getVeins() {
         return veins;
+    }
+
+    /** The Swallowed Isles, or {@code null} off the mine server. */
+    public de.aetherion.mining.titan.TitanWorld getTitan() {
+        return titan;
     }
 
     /** Mining Eldervale router, or {@code null} when disabled. */
