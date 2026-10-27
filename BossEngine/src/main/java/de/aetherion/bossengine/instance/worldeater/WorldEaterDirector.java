@@ -1,6 +1,9 @@
 package de.aetherion.bossengine.instance.worldeater;
 
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.combat.BossTells;
+import de.aetherion.bossengine.combat.Openings;
+import de.aetherion.bossengine.combat.Parries;
 import de.aetherion.bossengine.instance.BossInstance;
 import de.aetherion.bossengine.model.BossPhase;
 
@@ -53,7 +56,8 @@ import static de.aetherion.bossengine.instance.worldeater.WeMath.window;
  *   ARRIVAL    silence; the sky tears open behind the island and the sun is dragged down into
  *              night; it pours out of the tear and circles the island once.
  *   HUNGER     Lunge (it looks at one of you, then bites), Sweep (its body mows a lane),
- *              Devour (the F3+G chunk border appears around your chunk: the chunk is eaten)
+ *              Devour (the F3+G chunk border appears around your chunk: the chunk is eaten),
+ *              Gnash (it hangs over one of you and bites in a rhythm)
  *   STARLESS   it rears into the sky and drinks the stars. From then on it is lit only by its
  *              eyes. + Inhale (crouch to brace), Void Breath (a trench across the island)
  *   UNMADE     "Can't keep up!" - it rewinds, you rubber-band, textures go missing.
@@ -68,6 +72,11 @@ import static de.aetherion.bossengine.instance.worldeater.WeMath.window;
  *              Chest.
  * </pre>
  *
+ * <p>It speaks the combat kit's language: a yellow "!" over its skull is a bite you can parry,
+ * a red "!!" is its body, its breath or the ground being eaten, which you roll through or leave.
+ * Every parried bite rocks its skull; the third breaks its guard: the skull crashes into the
+ * island and lies open for a finisher.
+ *
  * <p>Only at the site does it edit the world, and only inside the site boxes, which the site
  * rebuilds from the layout. Anywhere else the same fight plays out as displays and client paint.
  */
@@ -77,7 +86,15 @@ public final class WorldEaterDirector {
 
     private enum Act { NONE, ARRIVING, FIGHT, TRANSITION, DYING, DONE }
 
-    private enum Move { IDLE, LUNGE, SWEEP, DEVOUR, INHALE, BREATH, SPIT, UNMAKE, SNAP }
+    private enum Move { IDLE, LUNGE, SWEEP, DEVOUR, INHALE, BREATH, SPIT, UNMAKE, SNAP, GNASH, BROKEN }
+
+    /** Parried bites until its guard breaks. */
+    private static final int POSTURE = 3;
+    /** How long the broken skull lies open, and what hits on it are worth meanwhile. */
+    private static final int BROKEN_TICKS = 110;
+    private static final double BROKEN_TAKEN = 1.3;
+    /** Size of the "!" / "!!" over its skull. */
+    private static final float TELL_SIZE = 4.5f;
 
     /** Authored transition lengths, by the phase being entered. */
     private static final int[] AUTHORED = {0, 0, 200, 200, 220};
@@ -145,6 +162,14 @@ public final class WorldEaterDirector {
     /** Body-swing cooldown (clock tick when next body hit is allowed). */
     private final Map<UUID, Integer> bodySwingReady = new HashMap<>();
 
+    /* the combat kit: tells, parries, the broken guard */
+    private BossTells tells;
+    private BossTells.Tell tell;
+    private int posture;
+    private int postureAt;
+    private boolean breakPending;
+    private boolean broken;
+
     /* ouroboros */
     private boolean inRing;
     private int ringTick;
@@ -207,11 +232,12 @@ public final class WorldEaterDirector {
     }
 
     /**
-     * Head hitbox damage — full value. Body swings go through {@link #tryBodySwing} at ~25%.
-     * No Unbroken-style hide tax: the skull is always the honest precision target in FIGHT.
+     * Head hitbox damage — full value, more while its guard is broken. Body swings go through
+     * {@link #tryBodySwing} at ~25%. No Unbroken-style hide tax: the skull is always the honest
+     * precision target in FIGHT.
      */
     public double scaleIncoming(double amount) {
-        return amount;
+        return broken ? amount * BROKEN_TAKEN : amount;
     }
 
     public void onDamaged(double amount) {
@@ -300,7 +326,6 @@ public final class WorldEaterDirector {
         instance.absorbDamage(amount);
         fx.sound(best.center, Sound.BLOCK_SCULK_HIT, 1.5f, 0.65f);
         fx.sound(best.center, Sound.ENTITY_ENDER_DRAGON_HURT, 0.5f, 1.35f);
-        fx.dust(best.center, WeProps.VOID, 1.0f, 7, 0.45);
         if (taught.add("body")) {
             fx.actionBar("&7The body yields. &fThe head is the wound that opens it.");
         }
@@ -335,6 +360,7 @@ public final class WorldEaterDirector {
                 .audience(site ? 110.0 : edge + 70.0)
                 .combat(site ? 46.0 : edge + 16.0, 34.0, 60.0);
         props = new WeProps();
+        tells = new BossTells(instance.getKeys(), instance.getInstanceId(), site ? 70.0 : edge + 30.0);
         paint = new FakeBlocks(fx.world(), fx::audience);
         if (!site) {
             ownSenses = new Senses(fx.world(), fx::audience, fx::audience);
@@ -364,7 +390,10 @@ public final class WorldEaterDirector {
         if (!isMine() || act == Act.DYING || act == Act.DONE || fx == null) {
             return false;
         }
+        broken = false;
+        breakPending = false;
         endMove();
+        tells.clear();
         act = Act.DYING;
         actTick = 0;
         chestSpot = site ? new Location(fx.world(), SiteLayout.CENTER_X, SiteLayout.FLOOR + 1.0, SiteLayout.CENTER_Z) : fx.anchor();
@@ -390,6 +419,10 @@ public final class WorldEaterDirector {
         endMove();
         clearSpills();
         props.clear();
+        tells.clear();
+        tell = null;
+        broken = false;
+        breakPending = false;
         paint.clear();
         if (serpent != null) {
             serpent.remove();
@@ -456,6 +489,10 @@ public final class WorldEaterDirector {
         }
         render();
         props.tick();
+        if (tell != null && serpent != null && serpent.spawned()) {
+            tell.move(fx.at(overSkull()));
+        }
+        tells.tick();
         paint.tick();
         tickSpills();
         if (ownSenses != null) {
@@ -862,6 +899,16 @@ public final class WorldEaterDirector {
         } else {
             bodyContact();
         }
+        if (posture > 0 && clock - postureAt > 500) {
+            // A guard that is left alone mends, one parry's worth every 25 seconds.
+            posture--;
+            postureAt = clock;
+        }
+        if (breakPending && move != Move.BROKEN) {
+            breakPending = false;
+            endMove();
+            begin(Move.BROKEN);
+        }
         if (move == Move.IDLE) {
             if (phase >= 4) {
                 ringIdle();
@@ -882,6 +929,8 @@ public final class WorldEaterDirector {
             case SPIT -> spit();
             case UNMAKE -> unmake();
             case SNAP -> snap();
+            case GNASH -> gnash();
+            case BROKEN -> brokenGuard();
             default -> finish(20);
         }
         stepTick++;
@@ -905,6 +954,7 @@ public final class WorldEaterDirector {
         List<Move> bag = new ArrayList<>();
         List<Float> weight = new ArrayList<>();
         option(bag, weight, Move.LUNGE, phase == 1 ? 3f : 2.2f);
+        option(bag, weight, Move.GNASH, phase == 1 ? 1.6f : 2.2f);
         option(bag, weight, Move.SWEEP, phase == 3 ? 0.8f : 1.8f);
         option(bag, weight, Move.DEVOUR, canDevour() ? (phase == 1 ? 2.2f : 1.4f) : 0f);
         if (phase >= 2) {
@@ -968,7 +1018,11 @@ public final class WorldEaterDirector {
     }
 
     private void endMove() {
-        if (serpent != null) {
+        if (tell != null) {
+            tell.remove();
+            tell = null;
+        }
+        if (serpent != null && !broken) {
             serpent.eyes(WeProps.VOID);
         }
         if (mark != null) {
@@ -1017,6 +1071,7 @@ public final class WorldEaterDirector {
                     serpent.brow(true);
                     fx.sound(serpent.browPoint(), Sound.ENTITY_WARDEN_SNIFF, 2.5f, 0.5f);
                     fx.sound(serpent.browPoint(), Sound.ENTITY_ENDERMAN_STARE, 1.4f, 0.5f);
+                    tell = tells.parry(fx.at(overSkull()), aim + 7, TELL_SIZE);
                 }
                 float w = smooth(window(stepTick, 0, aim));
                 serpent.faceTo(new Vector3f(tp).sub(serpent.pos), 0.09f);
@@ -1035,6 +1090,7 @@ public final class WorldEaterDirector {
                 }
             }
             case 2 -> {
+                float speed = phase >= 3 ? 2.9f : 2.6f;
                 if (stepTick == 0) {
                     Vector3f dir = new Vector3f(mB).sub(serpent.pos);
                     dir.y = 0f;
@@ -1042,19 +1098,22 @@ public final class WorldEaterDirector {
                     mC.set(mB).fma(4.2f, dir);
                     mC.y = 0.5f;
                     mD.set(dir);
-                    swimTo(mC, new Vector3f(dir.x, -0.35f, dir.z), phase >= 3 ? 2.9f : 2.6f, 0.3f);
+                    swimTo(mC, new Vector3f(dir.x, -0.35f, dir.z), speed, 0.3f);
                     fx.sound(serpent.pos, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.5f, 0.4f);
                     fx.sound(serpent.pos, Sound.ITEM_ELYTRA_FLYING, 2f, 1.2f);
                     serpent.lookForward();
                     if (taught.add("lunge")) {
-                        fx.actionBar("&5When the eye opens, it has chosen. &7Leave the ring.");
+                        fx.actionBar("&5When the eye opens, it has chosen. &eParry the bite &7or leave the ring.");
                     }
                 }
                 boolean done = swim();
+                if (mI == 0 && tell != null) {
+                    tell.landIn((int) Math.ceil(Math.max(0f, WeMath.horizontal(serpent.mouth(), mB) - 2.4f) / speed));
+                }
                 if (mI == 0 && (WeMath.horizontal(serpent.mouth(), mB) < 2.4f || done)) {
                     mI = 1;
                     serpent.snap();
-                    bite(mB, 3.6f, 140, "lunge");
+                    bite(mB, 3.6f, 140, "lunge", false);
                     freeze = 3;
                 }
                 if (done) {
@@ -1066,6 +1125,7 @@ public final class WorldEaterDirector {
                 int stuck = phase == 1 ? 76 : phase == 2 ? 68 : 62;
                 if (stepTick == 0) {
                     expose(stuck + 6);
+                    Openings.open(instance.getEntity(), stuck);
                     serpent.jaw(0.1f);
                     serpent.brow(false);
                     if (taught.add("stuck")) {
@@ -1074,7 +1134,7 @@ public final class WorldEaterDirector {
                 }
                 if (stepTick % 9 == 0) {
                     serpent.skull.kick(0.08f, (ThreadLocalRandom.current().nextFloat() - 0.5f) * 0.3f, 0f);
-                    fx.blockDust(serpent.mouth(), Material.DIRT, 14, 0.8);
+                    fx.blockDust(serpent.mouth(), Material.DIRT, 6, 0.8);
                     fx.sound(serpent.mouth(), Sound.BLOCK_ROOTED_DIRT_BREAK, 1.6f, 0.5f);
                     fx.sound(serpent.skullCenter(), Sound.ENTITY_WARDEN_ANGRY, 1f, 0.5f);
                 }
@@ -1087,7 +1147,7 @@ public final class WorldEaterDirector {
                     Vector3f out = flat(serpent.pos);
                     swimTo(rim(out, 10f, -14f), new Vector3f(out.x, -0.6f, out.z), 1.1f, 0.6f);
                     fx.sound(serpent.mouth(), Sound.BLOCK_ROOTED_DIRT_BREAK, 2f, 0.4f);
-                    fx.blockDust(serpent.mouth(), Material.DIRT, 30, 1.2);
+                    fx.blockDust(serpent.mouth(), Material.DIRT, 12, 1.2);
                 }
                 if (swim()) {
                     finish(30);
@@ -1109,6 +1169,223 @@ public final class WorldEaterDirector {
         int n = Math.min(24, (int) (len / 1.2f));
         for (int i = 1; i <= n; i++) {
             fx.dust(new Vector3f(from).fma(i / (float) n, d), WeProps.VOID, 0.8f, 1, 0.02);
+        }
+    }
+
+    /* ================================================================== move: GNASH */
+
+    /**
+     * It comes in low over the island, hangs its head over one of you and bites in a rhythm:
+     * yellow bites you parry (each one rocks its skull), and from the second phase a last red one
+     * that takes the ground where you stand: roll or leave the ring. After each bite it pulls its
+     * head back along its own body. Two bites in the first phase, three after.
+     */
+    private void gnash() {
+        int bites = phase == 1 ? 2 : 3;
+        int wind = phase == 1 ? 18 : phase == 2 ? 15 : 13;
+        if (step == 0) {
+            if (stepTick == 0) {
+                Player p = currentTarget();
+                if (p == null) {
+                    finish(10);
+                    return;
+                }
+                Vector3f tp = stage(p);
+                Vector3f away = new Vector3f(serpent.pos).sub(tp);
+                away.y = 0f;
+                away = away.lengthSquared() < 0.01f ? flat(tp) : away.normalize();
+                mA.set(tp).fma(7f, away);
+                mA.y = 2.6f;
+                swimTo(mA, new Vector3f(-away.x, -0.1f, -away.z), 1.45f, 0.5f);
+                fx.sound(mA, Sound.ENTITY_ELDER_GUARDIAN_AMBIENT, 2.5f, 0.7f);
+            }
+            if (swim() || stepTick > 90) {
+                next();
+            }
+            return;
+        }
+        if (step > bites) {
+            if (stepTick == 0) {
+                Vector3f out = flat(serpent.pos);
+                swimTo(rim(out, 10f, -14f), new Vector3f(out.x, -0.6f, out.z), 1.2f, 0.6f);
+            }
+            if (swim()) {
+                finish(28);
+            }
+            return;
+        }
+        boolean red = phase >= 2 && step == bites;
+        float speed = red ? 2.4f : 2.0f;
+        Player p = currentTarget();
+        Vector3f tp = p == null ? new Vector3f(serpent.pos).fma(6f, serpent.fwd) : stage(p);
+        if (stepTick == 0) {
+            mI = 0;
+            leg = null;
+            serpent.skull.kick(-0.3f, 0f, 0f);
+            Vector3f skull = serpent.skullCenter();
+            if (red) {
+                // The last one takes the ground: the ring is where it will close its jaws.
+                mB.set(tp.x, 0f, tp.z);
+                props.add(new WeProps.Circle(fx, mB, 3.2f, wind + 4, Material.BLACK_STAINED_GLASS, WeProps.VOID));
+                tell = tells.roll(fx.at(overSkull()), wind + 4, TELL_SIZE);
+                fx.sound(skull, Sound.ENTITY_WARDEN_ROAR, 2.2f, 0.7f);
+            } else {
+                tell = tells.parry(fx.at(overSkull()), wind + 3, TELL_SIZE);
+                fx.sound(skull, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.8f, 1.25f);
+            }
+            if (taught.add("gnash")) {
+                fx.actionBar("&5It hangs over you. &eYellow: parry the bite. &cRed: roll out of the ring.");
+            }
+        }
+        if (stepTick < wind) {
+            serpent.faceTo(new Vector3f(tp).sub(serpent.pos), 0.14f);
+            serpent.look(new Vector3f(tp).add(0f, 1f, 0f), 0.8f, 0.3f);
+            serpent.jaw((red ? 0.8f : 0.45f) + 0.45f * smooth(window(stepTick, 0, wind)));
+            if (!red && stepTick < wind - 5) {
+                // The aim follows you until a beat before the bite, then it is committed.
+                mB.set(tp.x, tp.y + 0.9f, tp.z);
+            }
+            return;
+        }
+        if (stepTick == wind) {
+            Vector3f dir = new Vector3f(mB).sub(serpent.pos);
+            dir.y = 0f;
+            dir = dir.lengthSquared() < 0.01f ? new Vector3f(serpent.fwd.x, 0f, serpent.fwd.z).normalize() : dir.normalize();
+            mD.set(dir);
+            mC.set(mB).fma(1.2f, dir);
+            mC.y = red ? 0.4f : mB.y;
+            swimTo(mC, new Vector3f(dir.x, red ? -0.4f : -0.1f, dir.z), speed, 0.25f);
+            fx.sound(serpent.pos, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2f, red ? 0.5f : 0.8f);
+        }
+        boolean done = swim();
+        if (mI == 0) {
+            float left = WeMath.horizontal(serpent.mouth(), mB);
+            if (tell != null) {
+                tell.landIn((int) Math.ceil(Math.max(0f, left - 2f) / speed));
+            }
+            if (left < 2f || done) {
+                mI = 1;
+                mJ = stepTick;
+                leg = null;
+                serpent.snap();
+                freeze = 2;
+                if (red) {
+                    bite(mB, 3.2f, 110, "gnash-red", true);
+                    expose(36);
+                } else {
+                    nip(mB, 60, "gnash" + step);
+                }
+            }
+            return;
+        }
+        int since = stepTick - mJ;
+        if (red) {
+            // Its jaws are in the ground for a moment, then it is gone.
+            if (since >= 22) {
+                next();
+            }
+            return;
+        }
+        if (since >= 4 && since < 10) {
+            // Recoil: the head slides back the way it came, the body folding after it.
+            serpent.rewind(1.1f);
+        }
+        if (since >= 10) {
+            next();
+        }
+    }
+
+    /** A bite in the air where you stand: whoever is inside its jaws. The guard can parry it. */
+    private void nip(Vector3f at, double power, String key) {
+        for (Player p : fx.targets()) {
+            Vector3f pp = stage(p);
+            if (WeMath.horizontal(pp, at) <= 2.6f && pp.y < at.y + 2.5f && pp.y > at.y - 3f) {
+                strike(p, power, serpent.skullCenter(), 0.9f, 0.35f, key, 10, false);
+            }
+        }
+        fx.sound(at, Sound.ENTITY_EVOKER_FANGS_ATTACK, 2.5f, 0.6f);
+        fx.sound(at, Sound.ENTITY_GENERIC_EAT, 2.5f, 0.5f);
+    }
+
+    /* ================================================================== guard broken */
+
+    /**
+     * Its guard is broken (three parried bites): the skull crashes into the island and lies
+     * there, jaw slack, every eye white. Hits on it are worth more and charged hits get the
+     * combat kit's opening bonus. Then it tears itself free and goes back to the void (or its
+     * corner of the ring).
+     */
+    private void brokenGuard() {
+        switch (step) {
+            case 0 -> {
+                if (stepTick == 0) {
+                    posture = 0;
+                    Vector3f dir = new Vector3f(serpent.fwd.x, 0f, serpent.fwd.z);
+                    if (dir.lengthSquared() < 0.01f) {
+                        dir.set(flat(serpent.pos).negate());
+                    }
+                    dir.normalize();
+                    mB.set(serpent.pos).fma(3f, dir);
+                    mB.y = 1.0f;
+                    swimTo(mB, new Vector3f(dir.x, -0.6f, dir.z), 1.1f, 0.3f);
+                    serpent.jaw(1.0f);
+                    serpent.brow(false);
+                    serpent.lookForward();
+                    Vector3f skull = serpent.skullCenter();
+                    fx.sound(skull, Sound.ENTITY_ENDER_DRAGON_HURT, 3f, 0.4f);
+                    fx.sound(skull, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 3f, 0.4f);
+                    fx.sound(skull, Sound.ITEM_SHIELD_BREAK, 2.5f, 0.5f);
+                    tells.finisher(fx.at(skull));
+                    fx.actionBar("&6&lGUARD BROKEN &7· its skull lies open: &ffinish it");
+                }
+                if (swim() || stepTick > 30) {
+                    next();
+                }
+            }
+            case 1 -> {
+                if (stepTick == 0) {
+                    broken = true;
+                    expose(BROKEN_TICKS);
+                    Openings.open(instance.getEntity(), BROKEN_TICKS);
+                    serpent.jaw(0.55f);
+                    Vector3f ground = new Vector3f(mB.x, 0f, mB.z);
+                    props.add(new WeProps.Shockwave(fx, ground, 0.6f, 7f, 0.8f, 12, Material.DIRT, null));
+                    fx.sound(ground, Sound.ENTITY_GENERIC_EXPLODE, 2f, 0.5f);
+                    fx.sound(ground, Sound.BLOCK_ROOTED_DIRT_BREAK, 3f, 0.4f);
+                }
+                if (stepTick > 0 && stepTick % 14 == 0) {
+                    // Dazed: the skull twitches, the heart under it is loud.
+                    serpent.skull.kick(0.06f, (ThreadLocalRandom.current().nextFloat() - 0.5f) * 0.25f, 0f);
+                    fx.sound(serpent.skullCenter(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.8f, 0.5f);
+                }
+                if (stepTick >= BROKEN_TICKS) {
+                    next();
+                }
+            }
+            default -> {
+                if (stepTick == 0) {
+                    broken = false;
+                    serpent.eyes(WeProps.VOID);
+                    fx.sound(serpent.skullCenter(), Sound.ENTITY_ENDER_DRAGON_GROWL, 3f, 0.5f);
+                    fx.sound(serpent.mouth(), Sound.BLOCK_ROOTED_DIRT_BREAK, 2f, 0.4f);
+                    if (phase >= 4) {
+                        Vector3f rp = new Vector3f();
+                        Vector3f rf = new Vector3f();
+                        serpent.ringHead(rp, rf);
+                        rp.y += 1.5f;
+                        swimTo(rp, rf, 1.0f, 0.4f);
+                    } else {
+                        Vector3f out = flat(serpent.pos);
+                        swimTo(rim(out, 10f, -14f), new Vector3f(out.x, -0.6f, out.z), 1.1f, 0.6f);
+                    }
+                }
+                if (swim()) {
+                    if (phase >= 4) {
+                        snapReady = 50;
+                    }
+                    finish(30);
+                }
+            }
         }
     }
 
@@ -1145,8 +1422,9 @@ public final class WorldEaterDirector {
                     swimTo(new Vector3f(mA.x, 1.6f, mA.z), new Vector3f(mD), 0.9f, 0.4f);
                     fx.sound(mA, Sound.BLOCK_ROOTED_DIRT_BREAK, 2f, 0.5f);
                     fx.sound(mA, Sound.ENTITY_ELDER_GUARDIAN_AMBIENT, 2.5f, 0.6f);
+                    tell = tells.roll(fx.at(overSkull()), tele + 10, TELL_SIZE);
                     if (taught.add("sweep")) {
-                        fx.actionBar("&5It is going to cross. &7Get out of the lane: you cannot jump it.");
+                        fx.actionBar("&5It is going to cross. &cRoll through it &7or get out of the lane: you cannot jump it.");
                     }
                 }
                 swim();
@@ -1156,12 +1434,22 @@ public final class WorldEaterDirector {
                 }
             }
             case 2 -> {
+                float speed = phase >= 3 ? 1.95f : 1.75f;
                 if (stepTick == 0) {
-                    swimTo(new Vector3f(mB), new Vector3f(mD), phase >= 3 ? 1.95f : 1.75f, 0.2f);
+                    swimTo(new Vector3f(mB), new Vector3f(mD), speed, 0.2f);
                     fx.sound(serpent.pos, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.5f, 0.5f);
                     fx.sound(serpent.pos, Sound.ITEM_ELYTRA_FLYING, 2.5f, 0.8f);
                 }
                 boolean done = swim();
+                Player aimed = currentTarget();
+                if (tell != null && aimed != null) {
+                    // The beat follows the head to whoever it crosses at: roll as it reaches you.
+                    Vector3f to = stage(aimed).sub(serpent.skullCenter());
+                    float along = to.x * mD.x + to.z * mD.z;
+                    if (along > -2f) {
+                        tell.landIn((int) Math.ceil(Math.max(0f, along - 2.5f) / speed));
+                    }
+                }
                 Vector3f side = new Vector3f(-mD.z, 0f, mD.x);
                 for (Player pl : fx.targets()) {
                     Vector3f pp = stage(pl);
@@ -1172,7 +1460,7 @@ public final class WorldEaterDirector {
                     if (hit) {
                         float s = Math.signum(new Vector3f(pp).sub(serpent.pos).dot(side));
                         Vector3f from = new Vector3f(pp).fma(-(s == 0f ? 1f : s), side);
-                        strike(pl, 110, from, 1.2f, 0.7f, "sweep", 40);
+                        strike(pl, 110, from, 1.2f, 0.7f, "sweep", 40, true);
                     }
                 }
                 if (stepTick % 2 == 0) {
@@ -1297,6 +1585,8 @@ public final class WorldEaterDirector {
                     controls.add(below);
                     swimPath(SplinePath.through(controls, 16), 1.6f);
                     fx.sound(mA, Sound.BLOCK_BEACON_POWER_SELECT, 2f, 0.5f);
+                    // The red "!!" hangs over the chunk itself: the ground is the attack.
+                    tells.roll(fx.at(new Vector3f(mA.x, 5f, mA.z)), warn, TELL_SIZE);
                     if (taught.add("devour")) {
                         fx.actionBar("&eThat is a chunk border. &7It is hungry for the whole chunk. &fGet off it.");
                     }
@@ -1304,10 +1594,8 @@ public final class WorldEaterDirector {
                 swim();
                 if (stepTick % 6 == 0) {
                     ThreadLocalRandom r = ThreadLocalRandom.current();
-                    for (int i = 0; i < 3; i++) {
-                        Vector3f at = new Vector3f(mA.x + (float) r.nextDouble(-7.5, 7.5), 0.2f, mA.z + (float) r.nextDouble(-7.5, 7.5));
-                        fx.blockDust(at, Material.DIRT, 8, 0.6);
-                    }
+                    Vector3f at = new Vector3f(mA.x + (float) r.nextDouble(-7.5, 7.5), 0.2f, mA.z + (float) r.nextDouble(-7.5, 7.5));
+                    fx.blockDust(at, Material.DIRT, 6, 0.6);
                     fx.sound(new Vector3f(mA.x, -2f, mA.z), Sound.BLOCK_ROOTED_DIRT_BREAK, 1.8f, 0.4f + stepTick * 0.004f);
                 }
                 if (stepTick % 20 == 0) {
@@ -1364,7 +1652,7 @@ public final class WorldEaterDirector {
                 }
                 if (stepTick == 30) {
                     fx.sound(serpent.mouth(), Sound.ENTITY_PLAYER_BURP, 3f, 0.5f);
-                    fx.blockDust(serpent.mouth(), Material.GRASS_BLOCK, 30, 0.8);
+                    fx.blockDust(serpent.mouth(), Material.GRASS_BLOCK, 12, 0.8);
                     expose(46);
                     if (taught.add("swallow")) {
                         fx.actionBar("&7It is swallowing. &fHit it while it digests.");
@@ -1403,7 +1691,7 @@ public final class WorldEaterDirector {
         for (Player p : fx.targets()) {
             Vector3f pp = stage(p);
             if (chunkOf(pp) == idx && pp.y > -3f && pp.y < 5f) {
-                strike(p, 120, new Vector3f(pp.x, -4f, pp.z), 0f, 0.35f, "devour", 60);
+                strike(p, 120, new Vector3f(pp.x, -4f, pp.z), 0f, 0.35f, "devour", 60, true);
             }
         }
         // The ground flies into its mouth.
@@ -1501,8 +1789,9 @@ public final class WorldEaterDirector {
                     fx.sound(mouth, Sound.ENTITY_BREEZE_INHALE, 3f, 0.5f);
                     fx.sound(mouth, Sound.ENTITY_ELDER_GUARDIAN_AMBIENT, 2f, 0.5f);
                 }
-                ThreadLocalRandom r = ThreadLocalRandom.current();
-                for (int i = 0; i < 3; i++) {
+                if (stepTick % 2 == 0) {
+                    // One wisp every other tick: the torn-out plants flying in carry the rest.
+                    ThreadLocalRandom r = ThreadLocalRandom.current();
                     float a = (float) r.nextDouble(TAU);
                     float d = (float) r.nextDouble(4.0, 16.0);
                     Vector3f from = new Vector3f(mouth.x + (float) Math.sin(a) * d, 0.3f + r.nextFloat() * 2.5f, mouth.z + (float) Math.cos(a) * d);
@@ -1515,7 +1804,7 @@ public final class WorldEaterDirector {
                     float dist = in.length();
                     if (dist < 3.3f && pp.y < mouth.y + 2.5f && pp.y > mouth.y - 3f) {
                         serpent.snap();
-                        strike(pl, 150, mouth, 1.7f, 0.7f, "inhale", 40);
+                        strike(pl, 150, mouth, 1.7f, 0.7f, "inhale", 40, true);
                         fx.sound(mouth, Sound.ENTITY_EVOKER_FANGS_ATTACK, 3f, 0.5f);
                         next();
                         return;
@@ -1626,13 +1915,17 @@ public final class WorldEaterDirector {
                     fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_SONIC_CHARGE, 3f, 0.55f);
                     fx.sound(serpent.mouth(), Sound.BLOCK_BEACON_AMBIENT, 2.2f, 0.5f);
                     fx.score(Sound.AMBIENT_CAVE, 0.85f, 0.45f);
+                    // Lands when the beam reaches whoever it aimed at: about a third of the sweep in.
+                    tell = tells.roll(fx.at(overSkull()), charge + 5, TELL_SIZE);
                     if (taught.add("breath")) {
-                        fx.actionBar("&5It breathes the void. &7The line it marks will be gone.");
+                        fx.actionBar("&5It breathes the void. &7The line it marks will be gone. &cRoll out of it.");
                     }
                 }
                 serpent.faceTo(new Vector3f(mD.x, -0.35f, mD.z), 0.08f);
                 serpent.jaw(smooth(window(stepTick, 0, charge)) * 1.05f);
-                fx.particle(Particle.REVERSE_PORTAL, serpent.mouth(), 10, 0.8, 0.05);
+                if (stepTick % 2 == 0) {
+                    fx.particle(Particle.REVERSE_PORTAL, serpent.mouth(), 4, 0.8, 0.05);
+                }
                 if (stepTick == charge / 2) {
                     fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_HEARTBEAT, 2.4f, 0.5f);
                     fx.score(Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.7f, 0.45f);
@@ -1670,13 +1963,12 @@ public final class WorldEaterDirector {
                 for (Player pl : fx.targets()) {
                     Vector3f pp = stage(pl).add(0f, 0.9f, 0f);
                     if (WeMath.segmentDistance(pp, mouth, end) < 1.9f) {
-                        strike(pl, 150, end, 1.1f, 0.5f, "breath", 40);
+                        strike(pl, 140, end, 1.1f, 0.5f, "breath", 40, true);
                     }
                 }
                 if (stepTick % 4 == 0) {
                     fx.sound(end, Sound.BLOCK_ROOTED_DIRT_BREAK, 2.2f, 0.45f);
                     fx.sound(end, Sound.BLOCK_STONE_BREAK, 1.4f, 0.4f);
-                    fx.particle(Particle.SQUID_INK, end, 10, 0.8, 0.05);
                 }
                 if (stepTick >= dur) {
                     next();
@@ -1850,13 +2142,13 @@ public final class WorldEaterDirector {
         for (Player pl : fx.targets()) {
             Vector3f pp = stage(pl);
             if (WeMath.horizontal(pp, at) < 5.5f && pp.y < 4f && pp.y > -2f) {
-                strike(pl, 90, at, 0.9f, 0.6f, "spit", 30);
+                strike(pl, 90, at, 0.9f, 0.6f, "spit", 30, true);
             }
         }
         Material top = w == null ? Material.DIRT : w.top();
         fx.sound(at, top.createBlockData().getSoundGroup().getBreakSound(), 3f, 0.5f);
         fx.sound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.7f);
-        fx.blockDust(new Vector3f(at).add(0f, 0.4f, 0f), top, 60, 2.2);
+        fx.blockDust(new Vector3f(at).add(0f, 0.4f, 0f), top, 24, 2.2);
         props.add(new WeProps.Shockwave(fx, at, 0.8f, 7f, 0.8f, 12, top, null));
         if (w != null) {
             addSpill(new Spill(fx, paint, w, Spill.kindOf(w), at, 6.5f, 260, floorY, "spill" + clock));
@@ -2028,8 +2320,11 @@ public final class WorldEaterDirector {
     /* ================================================================== transitions */
 
     private void beginTransition() {
+        broken = false;
+        breakPending = false;
         endMove();
         props.clear();
+        tells.clear();
         move = Move.IDLE;
         act = Act.TRANSITION;
         actTick = 0;
@@ -2426,7 +2721,7 @@ public final class WorldEaterDirector {
                 double out = s.outside(p.getLocation());
                 if (out > 0.25) {
                     Vector3f pp = stage(p);
-                    strike(p, 35, new Vector3f(pp).mul(1.2f), 0.5f, 0.2f, "edge", 20);
+                    strike(p, 35, new Vector3f(pp).mul(1.2f), 0.5f, 0.2f, "edge", 20, true);
                     Vector3f in = flat(pp).negate().mul(0.35f);
                     Vector v = p.getVelocity();
                     p.setVelocity(new Vector(v.getX() + in.x, v.getY(), v.getZ() + in.z));
@@ -2470,7 +2765,7 @@ public final class WorldEaterDirector {
         fx.title("", "&4It ate the world.", 4, 30, 10);
         fx.score(Sound.ENTITY_WARDEN_SONIC_BOOM, 1f, 0.5f);
         for (Player p : fx.targets()) {
-            strike(p, 200, new Vector3f(), 0f, 0.6f, "worldend", 80);
+            strike(p, 200, new Vector3f(), 0f, 0.6f, "worldend", 80, true);
         }
         for (int i = 0; i < 4; i++) {
             regurgitate();
@@ -2497,8 +2792,6 @@ public final class WorldEaterDirector {
         fx.sound(mouth, Sound.ENTITY_LLAMA_SPIT, 2.6f, 0.4f);
         fx.score(Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.55f, 0.55f);
         fx.stream(Particle.END_ROD, mouth, tip, 1.1);
-        fx.dust(mouth, WeProps.WHITE, 1.6f, 14, 0.7);
-        fx.dust(tip, WeProps.VOID, 1.4f, 10, 0.6);
         serpent.skull.kick(-0.2f, 0f, 0f);
         serpent.eyes(WeProps.WHITE);
         // Brief bright eyes: head wound → ring gave ground.
@@ -2541,38 +2834,59 @@ public final class WorldEaterDirector {
 
     /* ================================================================== move: SNAP */
 
-    /** From its corner it snaps at whoever came too close, then settles back on its tail. */
+    /**
+     * From its corner it rears at whoever came too close (a yellow "!": parry it), snaps, then
+     * settles back on its tail.
+     */
     private void snap() {
+        int rear = 14;
         switch (step) {
             case 0 -> {
+                Player p = fx.nearestTarget(serpent.pos);
+                if (p == null) {
+                    finish(20);
+                    return;
+                }
+                Vector3f tp = stage(p);
                 if (stepTick == 0) {
-                    Player p = fx.nearestTarget(serpent.pos);
-                    if (p == null) {
-                        finish(20);
-                        return;
-                    }
-                    Vector3f tp = stage(p);
+                    serpent.jaw(0.7f);
+                    serpent.skull.kick(-0.25f, 0f, 0f);
+                    fx.sound(serpent.pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 2f, 0.7f);
+                    tell = tells.parry(fx.at(overSkull()), rear + 4, TELL_SIZE);
+                }
+                serpent.faceTo(new Vector3f(tp).sub(serpent.pos), 0.12f);
+                serpent.look(new Vector3f(tp).add(0f, 1f, 0f), 0.8f, 0.25f);
+                if (stepTick < rear - 4) {
                     mB.set(tp.x, 0.8f, tp.z);
+                }
+                if (stepTick >= rear) {
+                    next();
+                }
+            }
+            case 1 -> {
+                if (stepTick == 0) {
                     Vector3f dir = new Vector3f(mB).sub(serpent.pos);
                     dir.y = 0f;
                     dir = dir.lengthSquared() < 0.01f ? new Vector3f(0f, 0f, 1f) : dir.normalize();
                     mC.set(mB).fma(1.5f, dir);
                     serpent.jaw(1.1f);
                     swimTo(mC, dir, 2.1f, 0.3f);
-                    fx.sound(serpent.pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 2f, 0.7f);
                 }
                 boolean done = swim();
+                if (mI == 0 && tell != null) {
+                    tell.landIn((int) Math.ceil(Math.max(0f, WeMath.horizontal(serpent.mouth(), mB) - 2.2f) / 2.1f));
+                }
                 if (mI == 0 && (WeMath.horizontal(serpent.mouth(), mB) < 2.2f || done)) {
                     mI = 1;
                     serpent.snap();
-                    bite(mB, 3.2f, 130, "snap");
+                    bite(mB, 3.2f, 130, "snap", false);
                     freeze = 3;
                 }
                 if (done) {
                     next();
                 }
             }
-            case 1 -> {
+            case 2 -> {
                 if (stepTick == 0) {
                     expose(24);
                 }
@@ -2688,7 +3002,7 @@ public final class WorldEaterDirector {
                 // The implosion lands: one violet shock across the island, one boom, then nothing.
                 fx.score(Sound.ENTITY_WARDEN_SONIC_BOOM, 1f, 0.5f);
                 fx.particle(Particle.SONIC_BOOM, mD, 1, 0.0, 0);
-                fx.particle(Particle.END_ROD, mD, 80, 0.2, 0.6);
+                fx.particle(Particle.END_ROD, mD, 40, 0.2, 0.6);
                 Vector3f ground = new Vector3f(mD.x, 0.1f, mD.z);
                 props.add(new WeProps.Shockwave(fx, ground, 0.5f, 34f, 1.4f, 16, Material.PURPLE_STAINED_GLASS, WeProps.VOID));
                 props.add(new WeProps.Shockwave(fx, ground, 0.3f, 22f, 0.6f, 12, Material.BLACK_CONCRETE, WeProps.VOID));
@@ -2730,7 +3044,7 @@ public final class WorldEaterDirector {
         }
         fx.score(Sound.ENTITY_ENDER_DRAGON_GROWL, 1f, 0.4f);
         fx.score(Sound.ENTITY_WITHER_DEATH, 0.5f, 0.5f);
-        fx.particle(Particle.END_ROD, c, 60, 0.3, 0.35);
+        fx.particle(Particle.END_ROD, c, 30, 0.3, 0.35);
         fx.particle(Particle.EXPLOSION, c, 3, 1.0, 0);
     }
 
@@ -2774,7 +3088,7 @@ public final class WorldEaterDirector {
             fx.score(Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 0.5f);
         }
         if (r > 38 && r % 4 == 0) {
-            fx.particle(Particle.REVERSE_PORTAL, c, 40, 3.0, 0.3);
+            fx.particle(Particle.REVERSE_PORTAL, c, 20, 3.0, 0.3);
         }
     }
 
@@ -2835,7 +3149,7 @@ public final class WorldEaterDirector {
                 }
                 fx.score(Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, WeMath.semitone(idx * 2 - 6));
                 fx.score(Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, WeMath.semitone(idx * 2 - 6));
-                fx.blockDust(new Vector3f(c.x, 0.5f, c.z), Material.GRASS_BLOCK, 40, 5.0);
+                fx.blockDust(new Vector3f(c.x, 0.5f, c.z), Material.GRASS_BLOCK, 20, 5.0);
             }
             return;
         }
@@ -2917,7 +3231,6 @@ public final class WorldEaterDirector {
             serpent.eyes(WeProps.WHITE);
             fx.sound(serpent.skullCenter(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 2.4f, 0.5f);
             fx.sound(serpent.skullCenter(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.8f, 0.55f);
-            fx.dust(serpent.skullCenter(), WeProps.WHITE, 1.5f, 12, 0.7);
         }
     }
 
@@ -2934,22 +3247,25 @@ public final class WorldEaterDirector {
             Vector3f skull = serpent.skullCenter();
             fx.sound(skull, Sound.ENTITY_ENDER_DRAGON_HURT, 1.4f, 0.6f + ThreadLocalRandom.current().nextFloat() * 0.2f);
             fx.sound(skull, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.2f, 0.5f);
-            fx.dust(skull, WeProps.VOID, 1.4f, 10, 0.8);
             serpent.skull.kick(0.06f, 0f, 0f);
         }
         lastHealth = hp;
     }
 
-    /** The body is solid where it crosses the island. */
+    /**
+     * The body is solid where it crosses the island. The skull only while it is not biting (a
+     * bite is its own, parryable hit) and never while its guard is broken.
+     */
     private void bodyContact() {
-        if (serpent == null || !serpent.spawned()) {
+        if (serpent == null || !serpent.spawned() || broken || move == Move.BROKEN) {
             return;
         }
+        boolean biting = move == Move.LUNGE || move == Move.GNASH || move == Move.SNAP;
         for (Player p : fx.targets()) {
             Vector3f pp = stage(p).add(0f, 0.9f, 0f);
-            if (pp.distance(serpent.skullCenter()) < 2.6f || touchesBody(pp, 0.5f)) {
+            if (!biting && pp.distance(serpent.skullCenter()) < 2.6f || touchesBody(pp, 0.5f)) {
                 Vector3f from = serpent.nearestBody(pp);
-                strike(p, 45, from == null ? serpent.pos : from, 1.0f, 0.5f, "body", 30);
+                strike(p, 40, from == null ? serpent.pos : from, 1.0f, 0.5f, "body", 40, true);
             }
         }
     }
@@ -2986,11 +3302,20 @@ public final class WorldEaterDirector {
         return p;
     }
 
+    /** A spill's ground tick: the "!!" kind, only a roll gets you through it. */
     private boolean strike(Player p, double power, Vector3f from, String key, int gateTicks) {
-        return strike(p, power, from, 0.4f, 0.25f, key, gateTicks);
+        return strike(p, power, from, 0.4f, 0.25f, key, gateTicks, true);
     }
 
-    private boolean strike(Player p, double power, Vector3f from, float knock, float lift, String key, int gateTicks) {
+    /**
+     * One hit on one player, at most once per {@code gateTicks} for that key. {@code peril}: the
+     * red "!!" kind (body, breath, ground), which only a roll avoids; otherwise a bite the guard
+     * can parry. A hit that never landed knocks nobody around.
+     *
+     * @return true when it was tried (not gated)
+     */
+    private boolean strike(Player p, double power, Vector3f from, float knock, float lift, String key, int gateTicks,
+                           boolean peril) {
         String k = p.getUniqueId() + "|" + key;
         Integer last = gate.get(k);
         if (last != null && clock - last < gateTicks) {
@@ -3001,7 +3326,18 @@ public final class WorldEaterDirector {
             gate.entrySet().removeIf(e -> clock - e.getValue() > 400);
         }
         if (power > 0) {
-            BossHits.hurt(p, instance.getEntity(), power);
+            if (peril) {
+                BossHits.peril(p, instance.getEntity(), power);
+            } else {
+                BossHits.hurt(p, instance.getEntity(), power);
+            }
+            if (!peril && Parries.parried(p)) {
+                parried(p);
+                return true;
+            }
+            if (Parries.avoided(p)) {
+                return true;
+            }
         }
         if (knock > 0f || lift > 0f) {
             Vector3f pp = stage(p);
@@ -3018,20 +3354,48 @@ public final class WorldEaterDirector {
         return true;
     }
 
-    /** A bite into the island: a hole where it closed its jaws, and whoever was there. */
-    private void bite(Vector3f at, float radius, double power, String key) {
+    /** Where the "!" / "!!" hangs: over its skull, wherever the head goes. */
+    private Vector3f overSkull() {
+        return serpent.skullCenter().add(0f, 4.2f, 0f);
+    }
+
+    /**
+     * Someone parried a bite: the skull is thrown back, the jaw rings. Three of these and its
+     * guard breaks ({@link #brokenGuard}).
+     */
+    private void parried(Player p) {
+        posture++;
+        postureAt = clock;
+        serpent.skull.kick(-0.45f, (ThreadLocalRandom.current().nextFloat() - 0.5f) * 0.4f, 0f);
+        serpent.jaw.kick(0.6f, 0f, 0f);
+        Vector3f skull = serpent.skullCenter();
+        fx.sound(skull, Sound.BLOCK_ANVIL_LAND, 1.6f, 0.5f);
+        fx.sound(skull, Sound.ENTITY_ENDER_DRAGON_HURT, 1.8f, 0.45f);
+        fx.sound(skull, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 2f, 0.6f);
+        if (posture >= POSTURE && move != Move.BROKEN) {
+            breakPending = true;
+        } else if (taught.add("parry")) {
+            fx.actionBar("&eParried. &7Its skull rocks. &fThree in a row and its guard breaks.");
+        }
+    }
+
+    /**
+     * A bite into the island: a hole where it closed its jaws, and whoever was there. The yellow
+     * kind can be parried, the red kind ({@code peril}) only rolled through.
+     */
+    private void bite(Vector3f at, float radius, double power, String key, boolean peril) {
         Vector3f ground = new Vector3f(at.x, 0f, at.z);
         for (Player p : fx.targets()) {
             Vector3f pp = stage(p);
             if (WeMath.horizontal(pp, ground) <= radius + 0.3f && pp.y < 4.5f && pp.y > -2.5f) {
-                strike(p, power, ground, 1.3f, 0.7f, key, 20);
+                strike(p, power, ground, 1.3f, 0.7f, key, 20, peril);
             }
         }
         fx.sound(ground, Sound.ENTITY_EVOKER_FANGS_ATTACK, 3f, 0.5f);
         fx.sound(ground, Sound.ENTITY_GENERIC_EAT, 3f, 0.4f);
         fx.sound(ground, Sound.BLOCK_ROOTED_DIRT_BREAK, 3f, 0.5f);
         fx.sound(ground, Sound.ENTITY_GENERIC_EXPLODE, 1.1f, 0.6f);
-        fx.blockDust(new Vector3f(ground).add(0f, 0.4f, 0f), Material.DIRT, 50, radius * 0.5);
+        fx.blockDust(new Vector3f(ground).add(0f, 0.4f, 0f), Material.DIRT, 16, radius * 0.5);
         props.add(new WeProps.Shockwave(fx, ground, 0.6f, radius * 2.2f, 0.8f, 12, Material.DIRT, null));
         SiteTerrain t = terrain();
         if (t != null) {
