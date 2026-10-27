@@ -218,6 +218,10 @@ loot:
         item-id: staff_of_technical_difficulties
         amount: 1
         chance: 0.18
+      - source: AETHERION
+        item-id: rune_sigil
+        amount: 1
+        chance: 0.08
   top-damagers:
     count: 3
     items:

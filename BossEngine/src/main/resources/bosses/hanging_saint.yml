@@ -93,6 +93,10 @@ loot:
         item-id: random_seraphine_armor
         amount: 1
         chance: 1.0
+      - source: AETHERION
+        item-id: vesper_bell
+        amount: 1
+        chance: 0.08
     2:
       - source: AETHERION
         item-id: seraphine_needle
@@ -102,6 +106,10 @@ loot:
         item-id: random_seraphine_armor
         amount: 1
         chance: 0.70
+      - source: AETHERION
+        item-id: vesper_bell
+        amount: 1
+        chance: 0.04
     3:
       - source: AETHERION
         item-id: seraphine_needle
@@ -111,6 +119,10 @@ loot:
         item-id: random_seraphine_armor
         amount: 1
         chance: 0.35
+      - source: AETHERION
+        item-id: vesper_bell
+        amount: 1
+        chance: 0.02
 
   top-damagers:
     count: 0

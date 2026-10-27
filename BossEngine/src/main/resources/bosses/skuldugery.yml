@@ -150,6 +150,10 @@ loot:
       item-id: catch_sphere_epic
       amount: 8
       chance: 1.0
+    - source: AETHERION
+      item-id: cascade_shortbow
+      amount: 1
+      chance: 0.06
 
   top-damagers:
     count: 3
