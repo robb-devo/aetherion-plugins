@@ -42,6 +42,15 @@ veins:
   # false turns the timed reset off (servers that only carry the jar for parity, e.g. mmo-c).
   daily-reset: true
   keep-inventory: true
+  # auto = the mine runs on the network's mine server (Core network.mines-server, mmo-m); every other backend sends
+  # /amethyst and the Foreman's miners there. local = run it on this server (single-server test boxes).
+  host: auto
+  # Mine server only: where people stand in the void main world while the mine is being restored.
+  landing:
+    x: 0.5
+    y: 100.0
+    z: 0.5
+    yaw: 0.0
 
 # Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
 eldervale:
