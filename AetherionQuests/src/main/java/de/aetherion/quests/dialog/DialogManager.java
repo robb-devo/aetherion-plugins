@@ -452,6 +452,7 @@ public class DialogManager implements Listener {
         if (lines.length == 0) {
             return;
         }
+        lines = brief(npc, lines);
 
         boolean offerQuest = npc.getType() != de.aetherion.quests.npc.NPCType.FLAVOR
                 && npc.getQuestId() != null
@@ -488,6 +489,7 @@ public class DialogManager implements Listener {
                 npc.getId(),
                 getCompletedLines(npc.getId(), player)
         ));
+        lines = brief(npc, lines);
         if (lines.length == 0) {
             lines = new String[] {
                     de.aetherion.quests.lang.LangPack.msg(
@@ -549,6 +551,25 @@ public class DialogManager implements Listener {
      *
      * =========================================================
      */
+
+    /**
+     * Quest and story NPCs say hello and the job, then let you go (10-27, Pit: half a minute at the Forager
+     * was far too long): the first line plus the one line that carries the task (a highlighted word or a number),
+     * else the last line. Flavor NPCs keep their full lines.
+     */
+    private static String[] brief(QuestNPC npc, String[] lines) {
+        if (npc == null || npc.getType() == de.aetherion.quests.npc.NPCType.FLAVOR || lines.length <= 2) {
+            return lines;
+        }
+        String task = lines[lines.length - 1];
+        for (int i = lines.length - 1; i >= 1; i--) {
+            if (lines[i].matches(".*(§[0-9a-e]|[0-9]).*")) {
+                task = lines[i];
+                break;
+            }
+        }
+        return new String[] {lines[0], task};
+    }
 
     private void playDialog(
             Player player,

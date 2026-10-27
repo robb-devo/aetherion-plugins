@@ -88,6 +88,14 @@ final class ForagingFx {
         }
     }
 
+    /** Off-window fell: the tree comes down anyway; the line says how a clean one works. */
+    static void rough(Player player, Location at) {
+        impact(player, at);
+        player.sendActionBar(LEGACY.deserialize(de.aetherion.core.exile.Say.t(player,
+                "§eRough fell §8· §7hit again on green §aCHOP§7 for a clean one",
+                "§eGrober Schnitt §8· §7nochmal bei grünem §aCHOP§7 schlagen für einen sauberen")));
+    }
+
     static String word(boolean perfect) {
         return perfect ? "§6Perfect fell." : "§aClean fell.";
     }

@@ -33,8 +33,8 @@ public final class DialogPace {
     /** Bubble wrap width — must match {@code TalkUx.line} so typing time is exact. */
     public static final int WRAP_PX = 168;
 
-    private static final double DEFAULT_CHARS_PER_TICK = 1.5;
-    private static final long DEFAULT_READ_GAP_TICKS = 36L;
+    private static final double DEFAULT_CHARS_PER_TICK = 2.2;
+    private static final long DEFAULT_READ_GAP_TICKS = 28L;
     /** Even "Hm." gets a beat to land. */
     private static final long MIN_TYPE_TICKS = 6L;
 

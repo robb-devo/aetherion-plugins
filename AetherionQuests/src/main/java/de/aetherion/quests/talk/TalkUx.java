@@ -230,8 +230,8 @@ public final class TalkUx implements Listener {
         lingerTicks = Math.max(20, cfg.getInt("talk-ux.linger-ticks", 90));
         bubbleScale = (float) Math.max(0.3, Math.min(1.2, cfg.getDouble("talk-ux.bubble-scale", 0.56)));
         de.aetherion.quests.dialog.DialogPace.configure(
-                cfg.getDouble("talk-ux.chars-per-tick", 1.5),
-                cfg.getLong("talk-ux.read-gap-ticks", 36L));
+                cfg.getDouble("talk-ux.chars-per-tick", 2.2),
+                cfg.getLong("talk-ux.read-gap-ticks", 28L));
         List<String> prefixes = cfg.getStringList("talk-ux.classic-name-prefixes");
         if (!cfg.isSet("talk-ux.classic-name-prefixes")) {
             prefixes = List.of("QaQuest", "QaCombat", "QaMine", "QaForage", "QaCatch", "QaRoam",
