@@ -26,6 +26,15 @@ commands:
     usage: /deepmines [leave|time|npc|reset|zones|softlight|eldervale]
     permission: aetherion.mines.admin
     permission-message: "Use /amethyst or the Crystal Guide."
+  jawcamp:
+    description: Travel to Jawcamp, the camp in the Isle-Eater's skull
+    usage: /jawcamp
+    aliases: [camp]
+    permission: aetherion.mines.use
+  titan:
+    description: Admin tools for the Swallowed Isles (status, churn, tp, camp)
+    usage: /titan [status|churn|tp|camp]
+    permission: aetherion.mines.admin
   mineisle:
     description: "Mining Eldervale journal, compass and crew tour (admins: reload, dev)"
     usage: "/mineisle [tour|go <place>|stop|map]"

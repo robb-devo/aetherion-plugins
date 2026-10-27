@@ -50,6 +50,7 @@ public final class VeinsWorld {
     /** The world on disk was created as the schematic's void host (not the retired Deep Mines dig world). */
     private boolean schematicHost;
     private Boolean hosted;
+    private java.util.function.Supplier<Location> camp;
 
     public VeinsWorld(AetherionMining plugin) {
         this.plugin = plugin;
@@ -59,6 +60,16 @@ public final class VeinsWorld {
 
     public void bind(VeinsNpcs npcs) {
         this.npcs = npcs;
+    }
+
+    /** The mine server's hub (Jawcamp) once it is built; leaving the Veins goes there instead of to the main world. */
+    public void bindCamp(java.util.function.Supplier<Location> camp) {
+        this.camp = camp;
+    }
+
+    public Location campSpot() {
+        Location spot = camp == null ? null : camp.get();
+        return spot != null && spot.getWorld() != null ? spot : null;
     }
 
     /**
@@ -95,19 +106,53 @@ public final class VeinsWorld {
         return core == null ? null : core.router();
     }
 
-    /** Off the mine server: the character crosses to it and lands in the hub (MinesHost), "/amethyst enter" greets. */
-    private boolean travelToMines(Player player) {
+    /** Off the mine server: the character crosses to it, MinesHost lands it in place and {@code command} greets. */
+    private boolean travelToMines(Player player, String command) {
         NetworkRouter router = router();
         if (router == null || !router.canTravel()) {
-            player.sendMessage("§dThe Amethyst Mine §7is out of reach right now. Try again in a moment.");
+            player.sendMessage("§dThe mines §7are out of reach right now. Try again in a moment.");
             return false;
         }
-        if (!router.travel(player, router.serverFor("mines"), RouteBook.Kind.COMMAND, "amethyst enter",
+        if (!router.travel(player, router.serverFor("mines"), RouteBook.Kind.COMMAND, command,
                 NetworkRouter.DEPART_MINES, "mines")) {
             player.sendMessage("§7The mine cage is stuck. Try again in a moment.");
             return false;
         }
         return true;
+    }
+
+    /** Jawcamp, the camp in Ossarath's skull: across the network, or a walk on the mine server itself. */
+    public boolean enterCamp(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (!hostedHere()) {
+            return travelToMines(player, "jawcamp");
+        }
+        Location spot = campSpot();
+        if (spot == null) {
+            return enter(player);
+        }
+        if (!spot.getWorld().equals(player.getWorld()) || player.getLocation().distanceSquared(spot) > 64.0d) {
+            player.teleport(spot);
+            player.setFallDistance(0f);
+        }
+        player.sendMessage("§6Jawcamp §7· the camp in Ossarath's skull. §dThe Veins §7on the left, §4the Gullet §7at the back.");
+        player.playSound(spot, org.bukkit.Sound.BLOCK_CHAIN_PLACE, 1f, 0.6f);
+        return true;
+    }
+
+    /** Back to the main world, where the player left it (Foreman Brann in Jawcamp). */
+    public boolean exitToMain(Player player) {
+        NetworkRouter router = router();
+        if (player == null || router == null || !mineServer() || !router.canTravel()) {
+            return false;
+        }
+        if (router.travel(player, router.serverFor("main"), RouteBook.Kind.NONE, "", DEPART_UP, "mines-exit")) {
+            return true;
+        }
+        player.sendMessage("§7The cage up is stuck. Try again in a moment.");
+        return false;
     }
 
     public String worldName() {
@@ -510,7 +555,7 @@ public final class VeinsWorld {
 
     public boolean enter(Player player) {
         if (player != null && !hostedHere()) {
-            return travelToMines(player);
+            return travelToMines(player, "amethyst enter");
         }
         if (player != null && schematicMode() && isRestoring()) {
             player.sendMessage("§dThe Amethyst Mine §7is being restored. Try again in a moment.");
@@ -539,6 +584,14 @@ public final class VeinsWorld {
     public boolean leave(Player player) {
         if (player == null) {
             return false;
+        }
+        Location spot = mineServer() ? campSpot() : null;
+        if (spot != null) {
+            player.teleport(spot);
+            player.setFallDistance(0f);
+            player.sendMessage("§7Back to §6Jawcamp§7.");
+            player.playSound(spot, org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.1f);
+            return true;
         }
         if (leavesByRoute()) {
             // Back on the main world they stand where they left it: the Foreman at the mine road.
@@ -635,7 +688,7 @@ public final class VeinsWorld {
         World current = world != null ? world : Bukkit.getWorld(worldName());
         Location fallback = overworldSpawn();
         if (current != null) {
-            boolean up = leavesByRoute();
+            boolean up = leavesByRoute() || campSpot() != null;
             for (Player occupant : new ArrayList<>(current.getPlayers())) {
                 occupant.sendMessage("§8" + reason);
                 exits.remove(occupant.getUniqueId());

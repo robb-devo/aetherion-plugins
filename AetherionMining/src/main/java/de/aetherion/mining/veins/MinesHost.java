@@ -54,9 +54,16 @@ public final class MinesHost implements Listener {
         return landing == null ? null : landing.clone();
     }
 
-    /** The mine hub when the map is there, else the landing in the main world. */
-    private Location arrival() {
+    /** Jawcamp when it stands, else the Veins hub, else the landing in the main world. */
+    private Location arrival(boolean veinsFirst) {
+        Location camp = veins.campSpot();
         Location hub = veins.isRestoring() || !veins.isSchematicReady() ? null : veins.hubSpawn();
+        if (veinsFirst && hub != null && hub.getWorld() != null) {
+            return hub;
+        }
+        if (camp != null) {
+            return camp;
+        }
         return hub != null && hub.getWorld() != null ? hub : landing();
     }
 
@@ -128,11 +135,15 @@ public final class MinesHost implements Listener {
         Player player = event.getPlayer();
         Location at = event.getSpawnLocation();
         NetworkRouter router = AetherionCore.get() == null ? null : AetherionCore.get().router();
-        boolean routed = router != null && router.routes().pendingFor(player.getUniqueId(), router.here()) != null;
-        if (!routed && player.hasPlayedBefore() && at.getWorld() != null && veins.isVeins(at.getWorld())) {
+        de.aetherion.core.network.RouteBook.Route route = router == null ? null
+                : router.routes().pendingFor(player.getUniqueId(), router.here());
+        boolean routed = route != null;
+        if (!routed && player.hasPlayedBefore() && at.getWorld() != null
+                && (veins.isVeins(at.getWorld()) || at.getWorld() != Bukkit.getWorlds().getFirst())) {
             return;
         }
-        Location target = arrival();
+        // "/amethyst" from the main world goes straight into the Veins; everything else lands in Jawcamp.
+        Location target = arrival(route != null && route.value().toLowerCase(java.util.Locale.ROOT).startsWith("amethyst"));
         if (target != null && target.getWorld() != null) {
             event.setSpawnLocation(target);
         }
@@ -143,7 +154,7 @@ public final class MinesHost implements Listener {
         if (event.isBedSpawn() || event.isAnchorSpawn() || veins.isVeins(event.getRespawnLocation().getWorld())) {
             return;
         }
-        Location target = arrival();
+        Location target = arrival(false);
         if (target != null && target.getWorld() != null) {
             event.setRespawnLocation(target);
         }
@@ -151,7 +162,7 @@ public final class MinesHost implements Listener {
 
     private void hintTick() {
         Location spot = landing;
-        if (spot == null || spot.getWorld() == null) {
+        if (spot == null || spot.getWorld() == null || veins.campSpot() != null) {
             return;
         }
         Component hint = LegacyComponentSerializer.legacySection().deserialize(veins.isRestoring()

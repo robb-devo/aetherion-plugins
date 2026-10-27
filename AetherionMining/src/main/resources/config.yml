@@ -52,6 +52,14 @@ veins:
     z: 0.5
     yaw: 0.0
 
+# The Swallowed Isles (mine server only): Jawcamp in the main world, Ossarath's body regrown every morning.
+titan:
+  enabled: true
+  # The Churn: hour of the day (server time) when the body is regrown from a fresh seed.
+  churn-hour: 5
+  gullet-mining-level: 40
+  veins-mining-level: 30
+
 # Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
 eldervale:
   world: world

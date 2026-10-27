@@ -200,7 +200,7 @@ public final class SharedWorldGuard implements Listener {
     private static boolean isVeins(World world) {
         AetherionMining plugin = AetherionMining.getInstance();
         VeinsWorld veins = plugin == null ? null : plugin.getVeins();
-        return veins != null && veins.isVeins(world);
+        return veins != null && veins.isVeins(world) || de.aetherion.mining.titan.TitanWorld.isTitanWorld(world);
     }
 
     private static boolean isLog(Material material) {

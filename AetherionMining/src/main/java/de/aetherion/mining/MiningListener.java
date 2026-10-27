@@ -165,7 +165,8 @@ public class MiningListener implements Listener {
         }
         AetherionMining plugin = AetherionMining.getInstance();
         VeinsWorld veins = plugin == null ? null : plugin.getVeins();
-        return veins != null && veins.isVeins(block.getWorld());
+        return veins != null && veins.isVeins(block.getWorld())
+                || de.aetherion.mining.titan.TitanWorld.isTitanWorld(block.getWorld());
     }
 
     private static boolean allowsMining(Block block) {
