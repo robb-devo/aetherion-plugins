@@ -1,6 +1,9 @@
 package de.aetherion.bossengine.instance;
 
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.combat.BossTells;
+import de.aetherion.bossengine.combat.Openings;
+import de.aetherion.bossengine.combat.Parries;
 import de.aetherion.bossengine.model.BossPhase;
 import de.aetherion.bossengine.util.AttributeUtil;
 import de.aetherion.bossengine.util.TextUtil;
@@ -118,7 +121,13 @@ final class AshenSovereignDirector {
 
     private enum Form { SOVEREIGN, CHAINED, UNCHAINED }
 
-    private enum Move { NONE, WAKE, CINDERFALL, TALON, VOLLEY, METEOR, LANDED, TAKEOFF, SWEEP, BREATH, ERUPTION, LUNGE, LASH }
+    private enum Move { NONE, WAKE, CINDERFALL, TALON, VOLLEY, METEOR, LANDED, TAKEOFF, SWEEP, BREATH, ERUPTION, LUNGE, LASH, CLAW, BROKEN }
+
+    /** Parried talons and claws until the guard breaks and he is thrown down. */
+    private static final int POSTURE = 3;
+    private static final int BROKEN_TICKS = 110;
+    private static final double BROKEN_TAKEN = 1.3;
+    private static final float TELL_SIZE = 4.0f;
 
     private enum Cinematic { NONE, THRONE, LAST_SKY, HOLD }
 
@@ -158,6 +167,15 @@ final class AshenSovereignDirector {
     private boolean grounded;
     private final Vector[] partOffset = new Vector[8];
     private boolean partsLive;
+    /** His own display body; the boss entity is only an invisible hitbox under it (null on a vanilla dragon). */
+    private SovereignBody body;
+    private Location lastBodyPos;
+
+    /* The combat kit: tells, parried talons and claws, the broken guard. */
+    private BossTells tells;
+    private BossTells.Tell tell;
+    private int posture;
+    private long postureAt;
 
     /* Rig. */
     private BlockDisplay heartCore;
@@ -189,6 +207,8 @@ final class AshenSovereignDirector {
     private int eruptCd;
     private int lungeCd;
     private int lashCd;
+    private int clawCd = 60;
+    private boolean clawBite;
     private int exposedTicks;
     private double exposedMul = 1.0;
     private double cruiseAngle;
@@ -304,6 +324,14 @@ final class AshenSovereignDirector {
         if (entity instanceof Mob mob) {
             mob.setAware(false);
         }
+        if (!(entity instanceof EnderDragon)) {
+            // The display dragon is the body; this is only where it can be hit.
+            entity.setInvisible(true);
+            entity.setSilent(true);
+        }
+        if (tells == null) {
+            tells = new BossTells(instance.getKeys(), instance.getInstanceId(), arenaRadius + 30.0);
+        }
         pos = entity.getLocation().clone();
         vel = new Vector();
         deathTick = -1;
@@ -323,6 +351,9 @@ final class AshenSovereignDirector {
     }
 
     void abort() {
+        if (tells != null) {
+            tells.clear();
+        }
         clearCombatFx();
         clearRig();
         stopWhoosh();
@@ -344,6 +375,9 @@ final class AshenSovereignDirector {
         }
         if (center == null || center.getWorld() == null) {
             return false;
+        }
+        if (tells != null) {
+            tells.clear();
         }
         clearCombatFx();
         stopWhoosh();
@@ -433,6 +467,12 @@ final class AshenSovereignDirector {
         tickChains();
         ambient(form);
         syncRig();
+        if (tell != null) {
+            tell.move(over());
+        }
+        if (tells != null) {
+            tells.tick();
+        }
         return false;
     }
 
@@ -608,6 +648,18 @@ final class AshenSovereignDirector {
         dest.setYaw(wrapDeg(yawOf(heading) + 180.0f));
         dest.setPitch(0.0f);
         pos = dest.clone();
+        if (body != null) {
+            // The hitbox stands under the chest, from the floor up into the body.
+            Location hit = dest.clone().add(heading.clone().multiply(1.0));
+            hit.setYaw(yawOf(heading));
+            instance.runInternalTeleport(() -> {
+                if (entity.isValid()) {
+                    entity.teleport(hit);
+                }
+            });
+            entity.setVelocity(new Vector());
+            return;
+        }
         if (entity instanceof EnderDragon dragon) {
             // Re-entering HOVER re-seeds its fly target to where we just put him, so vanilla never tugs back.
             dragon.setPhase(EnderDragon.Phase.CIRCLING);
@@ -679,6 +731,16 @@ final class AshenSovereignDirector {
 
     /** 0 head · 1 neck · 2 body · 3-5 tail · 6-7 wings. Falls back to a heading model if parts are missing. */
     private Location partPos(int index) {
+        if (body != null && body.spawned()) {
+            return switch (index) {
+                case 0 -> body.snout();
+                case 1 -> body.neckPoint();
+                case 3, 4, 5 -> body.tailPoint(index - 2);
+                case 6 -> body.wingTip(true);
+                case 7 -> body.wingTip(false);
+                default -> body.chestPoint();
+            };
+        }
         if (partsLive && partOffset[index] != null) {
             return pos.clone().add(partOffset[index]);
         }
@@ -698,6 +760,9 @@ final class AshenSovereignDirector {
     }
 
     private Location heartPos() {
+        if (body != null && body.spawned()) {
+            return body.heart();
+        }
         return partPos(2).add(0, 1.0, 0).add(heading.clone().multiply(1.4));
     }
 
@@ -842,6 +907,11 @@ final class AshenSovereignDirector {
         eruptCd = Math.max(0, eruptCd - 1);
         lungeCd = Math.max(0, lungeCd - 1);
         lashCd = Math.max(0, lashCd - 1);
+        clawCd = Math.max(0, clawCd - 1);
+        if (posture > 0 && clock - postureAt > 500) {
+            posture--;
+            postureAt = clock;
+        }
         if (move == Move.NONE && breath > 0) {
             breath--;
         }
@@ -885,6 +955,8 @@ final class AshenSovereignDirector {
             }
             if (behind >= 1 && sweepCd <= 0 && roll < 70) {
                 beginSweep(false);
+            } else if (nd <= 7.0 && clawCd <= 0 && roll < 60 && angleFrom(heading, pos, near.getLocation()) < 70.0) {
+                beginClaw(near);
             } else if (nd > 11.0 && lungeCd <= 0) {
                 beginLunge(near);
             } else if (eruptCd <= 0 && (crowd >= 2 || roll < 30)) {
@@ -961,6 +1033,8 @@ final class AshenSovereignDirector {
             case ERUPTION -> tickEruption(entity);
             case LUNGE -> tickLunge(entity, form);
             case LASH -> tickLash(entity);
+            case CLAW -> tickClaw(entity);
+            case BROKEN -> tickBroken(entity);
             default -> endMove();
         }
     }
@@ -972,6 +1046,10 @@ final class AshenSovereignDirector {
     }
 
     private void endMove() {
+        if (tell != null) {
+            tell.remove();
+            tell = null;
+        }
         move = Move.NONE;
         actionTick = 0;
         lashChain = null;
@@ -979,6 +1057,10 @@ final class AshenSovereignDirector {
     }
 
     private void cancelMove() {
+        if (tells != null) {
+            tells.clear();
+        }
+        tell = null;
         move = Move.NONE;
         actionTick = 0;
         lashChain = null;
@@ -1032,6 +1114,7 @@ final class AshenSovereignDirector {
     private void expose(int ticks, double mul) {
         exposedTicks = Math.max(exposedTicks, ticks);
         exposedMul = mul;
+        Openings.open(instance.getEntity(), ticks);
         actionBar("&a✦ OPENING &8| &fhis heart is bare — strike now");
         World world = center.getWorld();
         world.playSound(heartPos(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 1.8f);
@@ -1209,7 +1292,7 @@ final class AshenSovereignDirector {
                 if (!gate("wake", player, 20)) {
                     continue;
                 }
-                BossHits.hurt(player, entity, 34);
+                BossHits.peril(player, entity, 34);
                 player.setFireTicks(Math.max(player.getFireTicks(), 80));
                 player.setVelocity(right(aim).multiply(Math.signum(right(aim).dot(pl.toVector().subtract(g.toVector()))) * 0.5).setY(0.35));
             }
@@ -1289,6 +1372,8 @@ final class AshenSovereignDirector {
         mark = target == null ? center.clone() : ground(target.getLocation());
         windup = form() == Form.UNCHAINED ? 24 : 30;
         talonCd = form() == Form.UNCHAINED ? 150 : 200;
+        // Lands after the wind-up, the white strobe (8) and the dive (12): parry the talons as they come down.
+        tell = tells.parry(over(), windup + 8 + 12 + 1, TELL_SIZE);
         teach(Move.TALON, "&c&lTALON DIVE", "&7You are marked. &fKeep moving, then leave the ring.");
         World world = center.getWorld();
         world.playSound(pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.6f, 1.1f);
@@ -1341,6 +1426,10 @@ final class AshenSovereignDirector {
             de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.5, 0), Particle.FLAME, 6, Math.max(1.2, 1.2), null);
             if (t == windup + strobe + dive) {
                 talonImpact(entity, form);
+                if (move == Move.BROKEN) {
+                    // The talons were parried a third time: he went down instead of landing.
+                    return;
+                }
                 start(Move.LANDED, null);
                 landedFor = form == Form.UNCHAINED ? 44 : 60;
                 expose(landedFor - 6, 1.3);
@@ -1365,7 +1454,11 @@ final class AshenSovereignDirector {
                 continue;
             }
             BossHits.hurt(player, entity, 52);
-            player.setVelocity(away(pl, mark).multiply(1.0).setY(0.6));
+            if (Parries.parried(player)) {
+                parried(entity);
+            } else if (!Parries.avoided(player)) {
+                player.setVelocity(away(pl, mark).multiply(1.0).setY(0.6));
+            }
         }
         waves.add(new Shockwave(mark, 1.5, 0.55, form == Form.UNCHAINED ? 17.0 : 14.0, form == Form.UNCHAINED ? EMBER : ROYAL, 24.0, 2));
         teachWave();
@@ -1573,7 +1666,7 @@ final class AshenSovereignDirector {
                 player.setVelocity(player.getVelocity().add(new Vector(0, 0.25, 0)));
                 continue;
             }
-            BossHits.hurt(player, entity, 60);
+            BossHits.peril(player, entity, 60);
             player.setFireTicks(Math.max(player.getFireTicks(), 100));
             player.setVelocity(away(pl, mark).multiply(1.1).setY(0.7));
         }
@@ -1597,6 +1690,7 @@ final class AshenSovereignDirector {
         sweepFrom = heading.clone();
         sign = ThreadLocalRandom.current().nextBoolean() ? 1 : -1;
         windup = form() == Form.UNCHAINED ? 12 : 16;
+        tell = tells.roll(over(), windup + 1, TELL_SIZE);
         sweepCd = form() == Form.CHAINED ? 90 : 120;
         teach(Move.SWEEP, "&c&lTAIL SWEEP", "&7The rear arc is about to be swept. &fGet in front of him — or far away.");
         center.getWorld().playSound(pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.4f, 1.4f);
@@ -1636,7 +1730,7 @@ final class AshenSovereignDirector {
                 if (angleFrom(sweepFrom, feet, pl) <= 70.0 || !gate("sweep", player, 20)) {
                     continue;
                 }
-                BossHits.hurt(player, entity, 44);
+                BossHits.peril(player, entity, 44);
                 player.setVelocity(away(pl, feet).multiply(1.15).setY(0.5));
             }
             return;
@@ -1659,6 +1753,7 @@ final class AshenSovereignDirector {
         aim = target == null ? heading.clone() : flatDir(pos, target.getLocation(), heading);
         sign = ThreadLocalRandom.current().nextBoolean() ? 1 : -1;
         windup = 26;
+        tell = tells.roll(over(), windup + 2, TELL_SIZE);
         breathCd = 170;
         lastBurnAt = -99;
         teach(Move.BREATH, "&6&lASHFIRE BREATH", "&7It sweeps the way the arrows point. &fGet behind him.");
@@ -1724,7 +1819,7 @@ final class AshenSovereignDirector {
                 if (!gate("breath", player, 10)) {
                     continue;
                 }
-                BossHits.hurt(player, entity, 20);
+                BossHits.peril(player, entity, 20);
                 player.setFireTicks(Math.max(player.getFireTicks(), 80));
             }
             if (p == duration) {
@@ -1781,7 +1876,7 @@ final class AshenSovereignDirector {
             for (Player player : fighters()) {
                 Location pl = player.getLocation();
                 if (horizontal(pl, cinStart) <= 3.5 && Math.abs(pl.getY() - cinStart.getY()) < 3.0) {
-                    BossHits.hurt(player, entity, 40);
+                    BossHits.peril(player, entity, 40);
                     player.setVelocity(away(pl, cinStart).multiply(0.9).setY(0.5));
                 }
             }
@@ -1807,6 +1902,7 @@ final class AshenSovereignDirector {
         to = ground(cinStart.clone().add(aim.clone().multiply(laneLen)));
         windup = 18;
         lungeCd = 150;
+        tell = tells.roll(over(), windup + 3, TELL_SIZE);
         teach(Move.LUNGE, "&c&lLUNGE", "&7He hurls himself down the lane. &fSidestep.");
         center.getWorld().playSound(pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.8f, 1.0f);
     }
@@ -1835,7 +1931,7 @@ final class AshenSovereignDirector {
                 if (!gate("lunge", player, 20)) {
                     continue;
                 }
-                BossHits.hurt(player, entity, 40);
+                BossHits.peril(player, entity, 40);
                 player.setVelocity(right(aim).multiply(Math.signum(right(aim).dot(pl.toVector().subtract(at.toVector()))) * 0.9).setY(0.4));
             }
             if (t == windup + 8) {
@@ -1846,7 +1942,7 @@ final class AshenSovereignDirector {
                 for (Player player : fighters()) {
                     Location pl = player.getLocation();
                     if (inCone(to, aim, pl, 5.5, 55.0) && Math.abs(pl.getY() - to.getY()) < 3.0 && gate("bite", player, 20)) {
-                        BossHits.hurt(player, entity, 48);
+                        BossHits.peril(player, entity, 48);
                         player.setVelocity(aim.clone().multiply(0.9).setY(0.45));
                     }
                 }
@@ -1868,6 +1964,131 @@ final class AshenSovereignDirector {
         }
     }
 
+    // ------------------------------------------------------------------ CLAW (the parry lesson)
+
+    /** Where the "!" / "!!" hangs: over his head. */
+    private Location over() {
+        return partPos(0).add(0, 3.2, 0);
+    }
+
+    /**
+     * Chained, he rakes at whoever stands at his head: a yellow "!", parry it as the claw comes
+     * down. Sometimes the jaws follow the claw, faster: a second "!".
+     */
+    private void beginClaw(Player target) {
+        start(Move.CLAW, target);
+        aim = target == null ? heading.clone() : flatDir(pos, target.getLocation(), heading);
+        windup = 16;
+        clawBite = ThreadLocalRandom.current().nextInt(100) < 40;
+        clawCd = 90;
+        tell = tells.parry(over(), windup + 1, TELL_SIZE);
+        center.getWorld().playSound(pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.4f, 1.3f);
+        teach(Move.CLAW, "&e&lCLAW", "&7Yellow &e! &7over his head: &fparry it as it lands.");
+    }
+
+    private void tickClaw(LivingEntity entity) {
+        int t = actionTick;
+        Player target = target();
+        if (target != null && t < windup - 4) {
+            aim = steer(aim, flatDir(pos, target.getLocation(), aim), 0.3);
+        }
+        int second = windup + 10;
+        if (t <= windup || clawBite && t > windup + 1 && t <= second) {
+            turnToward(entity, pos.clone().add(aim), 9.0f);
+            if (t == windup + 2 && clawBite) {
+                tell = tells.parry(over(), second - t + 1, TELL_SIZE);
+                center.getWorld().playSound(pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.2f, 1.6f);
+            }
+            return;
+        }
+        if (t == windup + 1 || clawBite && t == second + 1) {
+            boolean bite = t != windup + 1;
+            Location front = ground(pos.clone().add(aim.clone().multiply(bite ? 5.0 : 3.5)));
+            moveBody(entity, pos.clone().add(aim.clone().multiply(0.8)), aim);
+            World world = center.getWorld();
+            world.playSound(front, bite ? Sound.ENTITY_EVOKER_FANGS_ATTACK : Sound.ITEM_MACE_SMASH_AIR, 1.6f, 0.6f);
+            world.playSound(front, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.4f, 0.5f);
+            for (Player player : fighters()) {
+                Location pl = player.getLocation();
+                if (!inCone(pos, aim, pl, bite ? 7.5 : 6.5, bite ? 40.0 : 70.0) || Math.abs(pl.getY() - pos.getY()) > 3.5) {
+                    continue;
+                }
+                BossHits.hurt(player, entity, bite ? 40 : 44);
+                if (Parries.parried(player)) {
+                    parried(entity);
+                } else if (!Parries.avoided(player)) {
+                    player.setVelocity(aim.clone().multiply(0.8).setY(0.4));
+                }
+            }
+            return;
+        }
+        holdAt(entity, pos, heading, 0.0);
+        if (t >= (clawBite ? second : windup) + 14) {
+            endMove();
+        }
+    }
+
+    /**
+     * A talon or claw was parried: he rears back with a scream. Three of these and his guard
+     * breaks ({@link #tickBroken}).
+     */
+    private void parried(LivingEntity entity) {
+        posture++;
+        postureAt = clock;
+        heartKick = 0.18;
+        World world = center.getWorld();
+        world.playSound(pos, Sound.BLOCK_ANVIL_LAND, 1.4f, 0.6f);
+        world.playSound(pos, Sound.ENTITY_ENDER_DRAGON_HURT, 1.6f, 0.7f);
+        if (posture >= POSTURE) {
+            beginBroken(entity);
+        } else if (posture == 1) {
+            actionBar("&eParried. &7He rears back. &fThree in a row and his guard breaks.");
+        }
+    }
+
+    /**
+     * Three parries: the guard breaks. He crashes down sprawled, wings flat, the heart bare under
+     * his chest. Hits on him are worth more and charged hits get the combat kit's opening bonus.
+     * Then he heaves himself up (and back into the air unless the chains hold him).
+     */
+    private void beginBroken(LivingEntity entity) {
+        cancelMove();
+        posture = 0;
+        start(Move.BROKEN, null);
+        cinStart = pos.clone();
+        expose(BROKEN_TICKS, BROKEN_TAKEN);
+        tells.finisher(heartPos());
+        World world = center.getWorld();
+        world.playSound(pos, Sound.ENTITY_ENDER_DRAGON_HURT, 2.0f, 0.5f);
+        world.playSound(pos, Sound.ITEM_SHIELD_BREAK, 1.6f, 0.5f);
+        actionBar("&6&lGUARD BROKEN &7· he is down, the heart is bare: &ffinish it");
+    }
+
+    private void tickBroken(LivingEntity entity) {
+        int t = actionTick;
+        if (t <= 10) {
+            moveBody(entity, lerp(cinStart, ground(cinStart), easeOut(t / 10.0)), heading);
+            if (t == 10) {
+                grounded = true;
+                World world = center.getWorld();
+                world.playSound(pos, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.8f, 0.5f);
+                world.playSound(pos, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.6f);
+                ringForce(world, ground(pos).add(0, 0.2, 0), 6.0, ASH, 1.6f);
+            }
+            return;
+        }
+        if (t % 16 == 0 && t < BROKEN_TICKS) {
+            center.getWorld().playSound(heartPos(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.4f, 0.6f);
+        }
+        if (t >= BROKEN_TICKS) {
+            center.getWorld().playSound(pos, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.6f);
+            if (form() == Form.CHAINED) {
+                endMove();
+            } else {
+                beginTakeoff();
+            }
+        }
+    }
     // ------------------------------------------------------------------ CHAIN LASH
 
     private void beginLash() {
@@ -3604,7 +3825,7 @@ final class AshenSovereignDirector {
             if (horizontal(pl, e.ground) > e.radius + 0.4 || Math.abs(pl.getY() - e.ground.getY()) > 3.0) {
                 continue;
             }
-            BossHits.hurt(player, entity, e.power);
+            BossHits.peril(player, entity, e.power);
             player.setFireTicks(Math.max(player.getFireTicks(), 50));
             player.setVelocity(away(pl, e.ground).multiply(0.55).setY(0.42));
         }
@@ -3647,7 +3868,7 @@ final class AshenSovereignDirector {
                     }
                     wave.struck.add(player.getUniqueId());
                     if (entity != null && entity.isValid()) {
-                        BossHits.hurt(player, entity, wave.power);
+                        BossHits.peril(player, entity, wave.power);
                     }
                     player.setVelocity(away(pl, wave.center).multiply(0.6).setY(0.45));
                 }
@@ -3712,7 +3933,7 @@ final class AshenSovereignDirector {
                     continue;
                 }
                 if (entity != null && entity.isValid()) {
-                    BossHits.hurt(player, entity, lane.power);
+                    BossHits.peril(player, entity, lane.power);
                 }
                 if (lane.slam) {
                     Vector side = right(lane.dir);
@@ -3778,7 +3999,7 @@ final class AshenSovereignDirector {
                     continue;
                 }
                 if (entity != null && entity.isValid()) {
-                    BossHits.hurt(player, entity, rb.power);
+                    BossHits.peril(player, entity, rb.power);
                 }
                 player.setVelocity(player.getVelocity().setY(0.8));
                 player.setFireTicks(Math.max(player.getFireTicks(), 60));
@@ -3928,9 +4149,34 @@ final class AshenSovereignDirector {
             crown.add(spawnRigBlock(pos, (i % 2 == 0 ? Material.SHROOMLIGHT : Material.MAGMA_BLOCK).createBlockData()));
         }
         crownShown = form() == Form.UNCHAINED ? 5 : 0;
+        LivingEntity entity = instance.getEntity();
+        if (entity != null && !(entity instanceof EnderDragon)) {
+            body = new SovereignBody(center != null ? center : pos, instance.getKeys(), instance.getInstanceId());
+            body.spawn();
+            lastBodyPos = pos.clone();
+        }
+    }
+
+    /** Animates the display dragon from what the director did with {@code pos} this tick. */
+    private void syncBody() {
+        if (body == null || pos == null) {
+            return;
+        }
+        Vector step = lastBodyPos == null || lastBodyPos.getWorld() != pos.getWorld()
+                ? new Vector() : pos.toVector().subtract(lastBodyPos.toVector());
+        lastBodyPos = pos.clone();
+        Player near = nearest(pos, fighters());
+        Location look = near == null ? null : near.getEyeLocation();
+        boolean roaring = move == Move.BREATH || move == Move.VOLLEY || move == Move.WAKE || move == Move.LUNGE
+                || move == Move.ERUPTION || introTick >= 0 && introTick > INTRO_LAND;
+        float jaw = roaring ? 0.85f : exposedTicks > 0 ? 0.45f : 0.08f;
+        boolean sprawled = isDying() && deathTick >= 88 || move == Move.BROKEN;
+        boolean down = grounded || move == Move.LANDED || move == Move.SWEEP || move == Move.LASH;
+        body.tick(pos, heading, step, down, look, jaw, sprawled);
     }
 
     private void syncRig() {
+        syncBody();
         if (heartCore == null || pos == null) {
             return;
         }
@@ -3982,6 +4228,10 @@ final class AshenSovereignDirector {
     }
 
     private void clearRig() {
+        if (body != null) {
+            body.remove();
+            body = null;
+        }
         discardRig(heartCore);
         discardRig(heartShell);
         heartCore = null;

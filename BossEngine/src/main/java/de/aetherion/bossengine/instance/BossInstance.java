@@ -1134,7 +1134,7 @@ public class BossInstance {
             }
             if (isTransitioning()) {
                 if (finished == null || !finished.isExplode()) {
-                    if (!(entity instanceof org.bukkit.entity.EnderDragon) && !hollowSunDirector.isMine() && !ownsWorldEaterBody()) {
+                    if (!(entity instanceof org.bukkit.entity.EnderDragon) && !hollowSunDirector.isMine() && !sovereignDirector.isMine() && !ownsWorldEaterBody()) {
                         entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1.2f, 0.55f);
                     }
                 }
@@ -2385,7 +2385,7 @@ public class BossInstance {
             // Cave boss: zero leash, zero pulls, zero ports.
             return;
         }
-        if (saintDirector.isMine() || eggDirector.isMine()) {
+        if (saintDirector.isMine() || eggDirector.isMine() || sovereignDirector.isMine()) {
             // Stage fight: the director owns the body; leash would yank the hitbox off the boards.
             return;
         }
