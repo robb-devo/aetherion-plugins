@@ -16,7 +16,8 @@ import java.util.Locale;
  */
 public final class BoosterSockets {
 
-    public static final int COUNT = BoosterLimits.MAX_TOTAL;
+    /** Array size: base sockets plus every possible Bonegraft. The open ones are {@code stats.boosterCapacity()}. */
+    public static final int COUNT = BoosterLimits.MAX_SLOTS;
 
     private BoosterSockets() {
     }

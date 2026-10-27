@@ -1,6 +1,7 @@
 package de.aetherion.items.menu;
 
 import de.aetherion.items.AetherionItems;
+import de.aetherion.items.core.BoosterLimits;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.DungeonCore;
 import de.aetherion.items.item.DungeonCoreInfusion;
@@ -46,8 +47,11 @@ public final class BoosterSocketMenu implements Listener {
 
     private static final int[] SOCKET_SLOTS = {
             19, 20, 21, 22, 23, 24, 25,
-            28, 29, 30, 31, 32, 33, 34
+            28, 29, 30, 31, 32, 33, 34,
+            38, 39, 41, 42
     };
+    /** Between the four Bonegraft sockets: what they are and where they open. */
+    private static final int GRAFT_INFO_SLOT = 40;
 
     private static BoosterSocketMenu instance;
 
@@ -223,6 +227,11 @@ public final class BoosterSocketMenu implements Listener {
         BoosterType[] slots = BoosterSockets.read(items, gear);
         BoosterType sitting = index < slots.length ? slots[index] : null;
         BoosterType incoming = cursor == null || cursor.getType().isAir() ? null : items.getBoosterType(cursor);
+        if (sitting == null && index >= capacity(gear)) {
+            player.sendMessage("§6Bonegraft socket §7· graft this item at the §6Heartforge §7in Jawcamp to open it.");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.4f, 1f);
+            return;
+        }
         if (incoming == null && sitting == null) {
             return;
         }
@@ -256,8 +265,10 @@ public final class BoosterSocketMenu implements Listener {
         }
         BoosterType[] slots = BoosterSockets.read(items, gear);
         int target = index >= 0 ? index : BoosterSockets.firstEmpty(slots);
-        if (target < 0 || target >= BoosterSockets.COUNT || slots[target] != null) {
-            player.sendMessage("§7All §f14 §7booster slots are full.");
+        int open = capacity(gear);
+        if (target < 0 || target >= open || slots[target] != null) {
+            player.sendMessage("§7All §f" + open + " §7booster slots are full."
+                    + (open < BoosterSockets.COUNT ? " §8More open with Bonegrafts at the Heartforge." : ""));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.4f, 1f);
             return false;
         }
@@ -310,10 +321,18 @@ public final class BoosterSocketMenu implements Listener {
         }
         inventory.setItem(INFO_SLOT, info(gear, slots));
         inventory.setItem(GEAR_SLOT, gear == null ? gearHint() : gear);
+        int open = capacity(gear);
         for (int i = 0; i < SOCKET_SLOTS.length; i++) {
             BoosterType type = i < slots.length ? slots[i] : null;
-            inventory.setItem(SOCKET_SLOTS[i], type == null ? emptySocket(i + 1) : socketIcon(type, i + 1));
+            inventory.setItem(SOCKET_SLOTS[i], type != null ? socketIcon(type, i + 1)
+                    : i < open ? emptySocket(i + 1) : graftSocket(i + 1));
         }
+        inventory.setItem(GRAFT_INFO_SLOT, de.aetherion.items.util.GuiIcons.icon(named(Material.BONE, "§6Bonegrafts",
+                "§7Four more sockets, one per graft.",
+                "§7Graft at the §6Heartforge §7in Jawcamp",
+                "§7with Titan Bone, Titan Marrow and Heart Embers.",
+                gear == null ? "§8No item placed." : "§7This item: §f" + (open - BoosterLimits.MAX_TOTAL) + "§8/§f"
+                        + BoosterLimits.MAX_GRAFTS + " §7grafts."), de.aetherion.items.util.GuiIcons.SPACER));
         inventory.setItem(VANILLA_ANVIL_SLOT, vanillaAnvil());
         inventory.setItem(CLOSE_SLOT, close());
     }
@@ -405,7 +424,7 @@ public final class BoosterSocketMenu implements Listener {
                 "§ctheir stats and sockets.",
                 "",
                 "§7Place a tool, weapon, or armor.",
-                "§7" + filled + "§8/§f" + BoosterSockets.COUNT + " §7socketed.",
+                "§7" + filled + "§8/§f" + capacity(gear) + " §7socketed.",
                 "§7Insert or swap anytime — they apply while socketed.",
                 "§7Upgrades and crafts keep these sockets.",
                 gear == null ? "§8Empty" : "§aItem in the center slot.");
@@ -416,6 +435,16 @@ public final class BoosterSocketMenu implements Listener {
         return named(Material.HOPPER, "§eItem",
                 "§7Click with a tool, weapon, or armor.",
                 "§7Hold a dungeon core and click to infuse.");
+    }
+
+    private int capacity(ItemStack gear) {
+        return gear == null ? BoosterLimits.MAX_TOTAL : items.getItemStats(gear).boosterCapacity();
+    }
+
+    private ItemStack graftSocket(int number) {
+        return de.aetherion.items.util.GuiIcons.icon(named(Material.BLACK_STAINED_GLASS_PANE, "§8Socket " + number,
+                "§6Bonegraft socket",
+                "§7Opens with a graft at the Heartforge (Jawcamp)."), de.aetherion.items.util.GuiIcons.SPACER);
     }
 
     private ItemStack emptySocket(int number) {
@@ -434,7 +463,7 @@ public final class BoosterSocketMenu implements Listener {
         ItemMeta meta = icon.getItemMeta();
         if (meta != null) {
             meta.setLore(List.of(
-                    "§7Socket §f" + number + "§8/§f" + BoosterSockets.COUNT,
+                    "§7Socket §f" + number,
                     "§aActive while socketed.",
                     "§eClick to remove."
             ));

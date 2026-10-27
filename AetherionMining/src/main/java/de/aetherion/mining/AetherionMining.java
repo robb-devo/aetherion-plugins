@@ -30,6 +30,8 @@ public class AetherionMining extends JavaPlugin {
         saveConfig();
 
         veins = new VeinsWorld(this);
+        de.aetherion.mining.titan.TitanItems.init(this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.mining.titan.TitanRunes(this), this);
         VeinsNpcs npcs = new VeinsNpcs(this);
         veins.bind(npcs);
         // The mine server (mmo-m) runs the Amethyst Mine with mmo-r's config copy; the Eldervale isle stays on mmo-r.
@@ -39,7 +41,9 @@ public class AetherionMining extends JavaPlugin {
             if (getConfig().getBoolean("titan.enabled", true)) {
                 // The Swallowed Isles: Jawcamp in the main world, Ossarath's body regrown every morning.
                 titan = new de.aetherion.mining.titan.TitanWorld(this);
-                camp = new de.aetherion.mining.titan.Jawcamp(this, titan);
+                de.aetherion.mining.titan.Heartforge forge = new de.aetherion.mining.titan.Heartforge();
+                getServer().getPluginManager().registerEvents(forge, this);
+                camp = new de.aetherion.mining.titan.Jawcamp(this, titan, forge);
                 titan.bind(camp);
                 de.aetherion.mining.titan.Jawcamp hub = camp;
                 veins.bindCamp(() -> hub.ready() ? hub.spawn() : null);

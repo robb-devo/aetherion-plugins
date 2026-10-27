@@ -25,6 +25,16 @@ public interface ItemFactoryAccess {
         return null;
     }
 
+    /** Bonegrafts on an Aetherion item (extra booster sockets), 0 for anything else. */
+    default int boneGrafts(ItemStack item) {
+        return 0;
+    }
+
+    /** One more Bonegraft (one more booster socket). False when the item is not Aetherion gear or already full. */
+    default boolean addBoneGraft(ItemStack item) {
+        return false;
+    }
+
     /** Persistent item id, or null. */
     default String itemId(ItemStack item) {
         return null;
