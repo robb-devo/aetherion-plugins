@@ -9,16 +9,17 @@ public final class SkillProgression {
     public static final int RARITY_EVERY = 20;
     /**
      * Effect curve (base bonuses stay flat; this scales them).
-     * Wave 2: early levels stay modest so T1 gear is the power spike;
-     * mid is a slow climb; 75–100 is where skills become a real stack slice.
-     * Curve only: ~1.00× @1 · ~1.24× @25 · ~1.50× @50 · ~2.60× @75 · ~6.10× @100.
-     * With rarity: ~1.33× @25 · ~1.66× @50 · ~2.84× @75 · ~6.50× @100.
+     * 10-27 (Pit: skills felt like nothing until 75): front-loaded, same ~6.5× end. Every level counts,
+     * every 10th level is a step ({@link #PER_TEN_LEVELS}), every 20th adds the rarity step on top.
+     * With steps and rarity: ~1.24× @10 · ~1.68× @25 · ~2.44× @50 · ~3.39× @75 · ~6.48× @100
+     * (was ~1.09 · 1.33 · 1.66 · 2.84 · 6.50).
      * Midgame pass kept these numbers (Wave-2 intent holds) and made them readable
      * instead: see {@link Stage} — Apprentice / Journeyman / Master in the menu.
      */
-    public static final double PER_LEVEL = 0.0102d;
-    public static final double PER_LEVEL_AFTER_50 = 0.044d;
-    public static final double PER_LEVEL_AFTER_75 = 0.140d;
+    public static final double PER_LEVEL = 0.02d;
+    public static final double PER_LEVEL_AFTER_50 = 0.03d;
+    public static final double PER_LEVEL_AFTER_75 = 0.11d;
+    public static final double PER_TEN_LEVELS = 0.06d;
     public static final double PER_RARITY = 0.08d;
 
     /** Compact proc chance at skill level 1 — modest early helper. Wave 1. */
@@ -76,6 +77,7 @@ public final class SkillProgression {
                 + ((early - 1) * PER_LEVEL)
                 + (mid * PER_LEVEL_AFTER_50)
                 + (late * PER_LEVEL_AFTER_75)
+                + ((clamped / 10) * PER_TEN_LEVELS)
                 + (rarityTier(clamped) * PER_RARITY);
     }
 

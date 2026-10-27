@@ -2525,7 +2525,7 @@ public class CustomItem {
             stats.setDamage(22.0);
             stats.setAttackSpread(5.0);
             stats.setCritChance(6.0);
-            stats.setCritDamage(40.0);
+            stats.setCritDamage(46.0);
 
             applyItemData(
                     meta,
