@@ -712,8 +712,18 @@ public final class ExileDoors implements Listener {
         }, 40L);
     }
 
+    /** The four lullabies, one per boss of the Exile: together they are the doors' four seals. */
+    private static final List<String> SEALS = List.of("lullaby_captain", "lullaby_heart", "lullaby_doll", "lullaby_seed");
+    private static final String FINALE_WORLD = "ashen_void";
+    private static final double[] FINALE_ARRIVAL = {0.5, 68.0, 0.5, 0, 0};
+    private static final double[] FINALE_BOSS = {0.5, 63.0, 73.5};
+
     private void sealed(Player p, Ritual r) {
         if (!busyRituals.add("doors:" + p.getUniqueId())) {
+            return;
+        }
+        if (SEALS.stream().allMatch(q -> questDone(p, q)) && Bukkit.getWorld(FINALE_WORLD) != null) {
+            open(p, r);
             return;
         }
         tell(p, r, Say.t(p, "Bronze, taller than the colossi. No handle on this side.",
@@ -749,9 +759,61 @@ public final class ExileDoors implements Listener {
                 boolean done = questDone(p, e.getKey());
                 p.sendMessage("  " + (done ? "§a✔ §f" : "§8✘ §7") + Say.t(p, e.getValue()[0], e.getValue()[1]));
             }
-            p.sendMessage(Say.t(p, "§8(Aetherion himself is still on his way. The doors stay shut for now.)",
-                    "§8(Aetherion selbst ist noch unterwegs. Die Tore bleiben vorerst zu.)"));
+            p.sendMessage(Say.t(p, "§8(Every song you finish breaks one seal. With four, the fifth stroke opens the doors.)",
+                    "§8(Jedes Lied, das du zu Ende bringst, bricht ein Siegel. Mit vier öffnet der fünfte Schlag die Tore.)"));
         }, 40L + 4 * 26L + 10L);
+    }
+
+    /** All four seals broken: the fifth stroke, the doors part, and Aetherion waits in the Ashen Void beyond. */
+    private void open(Player p, Ritual r) {
+        tell(p, r, Say.t(p, "The bronze is warm. Something on the other side is listening.",
+                "Die Bronze ist warm. Auf der anderen Seite hört etwas zu."));
+        Location at = loc(r.at());
+        for (int i = 0; i < 5; i++) {
+            final int k = i;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (p.isOnline()) {
+                    p.playSound(at.clone().add(-40, 60, 0), Sound.BLOCK_BELL_USE, SoundCategory.AMBIENT, 1.0f, k == 4 ? 0.7f : 0.5f);
+                }
+            }, 40L + i * 26L);
+        }
+        long fifth = 40L + 4 * 26L;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!p.isOnline()) {
+                busyRituals.remove("doors:" + p.getUniqueId());
+                return;
+            }
+            p.playSound(at, Sound.BLOCK_IRON_DOOR_OPEN, SoundCategory.AMBIENT, 1.0f, 0.4f);
+            p.showTitle(Title.title(Component.text(Say.t(p, "The fifth stroke.", "Der fünfte Schlag."), NamedTextColor.WHITE),
+                    Component.text(Say.t(p, "The Great Doors open.", "Die Großen Tore öffnen sich."), NamedTextColor.GRAY),
+                    Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(2500), Duration.ofMillis(800))));
+        }, fifth);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            busyRituals.remove("doors:" + p.getUniqueId());
+            World finale = Bukkit.getWorld(FINALE_WORLD);
+            if (!p.isOnline() || finale == null) {
+                return;
+            }
+            p.teleport(new Location(finale, FINALE_ARRIVAL[0], FINALE_ARRIVAL[1], FINALE_ARRIVAL[2]));
+            p.sendMessage(Say.t(p, "§5⚜ Aetherion §8» §7You came all this way to hear the end of the song.",
+                    "§5⚜ Aetherion §8» §7Du bist den ganzen Weg gekommen, um das Ende des Liedes zu hören."));
+            p.sendMessage(Say.t(p, "§8(/exile takes you back to the island.)", "§8(/exile bringt dich zurück auf die Insel.)"));
+            BossSpawnAccess bosses = AetherServices.bosses();
+            if (bosses == null || bosses.alive("dungeon_aetherion")) {
+                return;
+            }
+            de.aetherion.core.network.ExileHost.unpeaceful(plugin, finale);
+            Location boss = new Location(finale, FINALE_BOSS[0], FINALE_BOSS[1], FINALE_BOSS[2]);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                try {
+                    if (!bosses.spawn("dungeon_aetherion", boss, p.isOnline() ? p : null)) {
+                        plugin.getLogger().warning("Great Doors: BossEngine refused dungeon_aetherion in " + FINALE_WORLD);
+                    }
+                } catch (RuntimeException ex) {
+                    plugin.getLogger().warning("Great Doors: dungeon_aetherion failed: " + ex.getMessage());
+                }
+            }, 60L);
+        }, fifth + 50L);
     }
 
     // ------------------------------------------------------------------ district tells
