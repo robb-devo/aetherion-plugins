@@ -514,9 +514,10 @@ public final class LivingNpcAtmosphere {
 
     private static final double GREET_RANGE = 6.5;
     private static final long GREET_COOLDOWN_MS = 12L * 60L * 1000L;
-    private static final long PLAYER_GREET_GAP_TICKS = 20L * 25L;
-    private static final long IDLE_COOLDOWN_TICKS = 20L * 150L;
-    private static final long BANTER_GAP_TICKS = 20L * 45L;
+    // 10-27 (Pit: players are tired of being talked at): far fewer unprompted lines per player.
+    private static final long PLAYER_GREET_GAP_TICKS = 20L * 90L;
+    private static final long IDLE_COOLDOWN_TICKS = 20L * 300L;
+    private static final long BANTER_GAP_TICKS = 20L * 180L;
     private static final long PAIR_COOLDOWN_TICKS = 20L * 60L * 6L;
 
     private static volatile BukkitTask socialTask;
@@ -653,7 +654,7 @@ public final class LivingNpcAtmosphere {
             for (Player p : at.getWorld().getPlayers()) {
                 double d = p.getLocation().distanceSquared(at);
                 Long heard = lastIdleHeard.get(p.getUniqueId());
-                if (d >= 16.0 && d <= 196.0 && (heard == null || socialTick - heard > 20L * 60L)) {
+                if (d >= 16.0 && d <= 196.0 && (heard == null || socialTick - heard > 20L * 180L)) {
                     audience.add(p);
                 }
             }
