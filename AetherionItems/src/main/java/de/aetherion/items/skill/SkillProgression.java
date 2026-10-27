@@ -68,6 +68,30 @@ public final class SkillProgression {
         return 0.12d + 0.24d * (clamped - 1) / (double) (MAX_LEVEL - 1);
     }
 
+    /**
+     * Flat stat bonuses (Damage, Defense, Health, Fortune, Mining Power, Spread …) — the weight of a skill.
+     * 10-27 (Pit: skills had no weight at any level): steep and linear with a step every 10 levels and per rarity,
+     * ~2.4× @10 · ~5× @25 · ~9.4× @50 · ~13.5× @75 · ~18.4× @100. A maxed fortune skill (+22 base) is ~+400 Fortune,
+     * a quarter of a T5 set; Heavy Hands at 100 is a T5 sword's damage. Percent stats and special effects stay on
+     * {@link #effectMultiplier(int)} so crit, lifesteal and loot rolls don't run away.
+     */
+    public static double weightMultiplier(int level) {
+        int clamped = clampLevel(level);
+        return 1.0d + 0.12d * (clamped - 1) + 0.30d * (clamped / 10) + 0.50d * rarityTier(clamped);
+    }
+
+    /** The scale a skill's bonus of this kind gets at {@code level}. */
+    public static double bonusMultiplier(int level, de.aetherion.items.model.ItemCapability capability) {
+        return isPercent(capability) ? effectMultiplier(level) : weightMultiplier(level);
+    }
+
+    public static boolean isPercent(de.aetherion.items.model.ItemCapability capability) {
+        return capability == de.aetherion.items.model.ItemCapability.SPEED
+                || capability == de.aetherion.items.model.ItemCapability.CRIT_CHANCE
+                || capability == de.aetherion.items.model.ItemCapability.CRIT_DAMAGE
+                || capability == de.aetherion.items.model.ItemCapability.PET_CATCH_RATE;
+    }
+
     public static double effectMultiplier(int level) {
         int clamped = clampLevel(level);
         int early = Math.min(clamped, 50);

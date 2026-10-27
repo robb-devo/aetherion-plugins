@@ -104,8 +104,6 @@ public class DialogManager implements Listener {
 
     /** Small-talk topics already asked this conversation (player → npc:label). */
     private final Map<UUID, java.util.Set<String>> askedTopics = new HashMap<>();
-    /** Player → NPC → the lore lines held back from the intro; offered as "Tell me more" (never forced). */
-    private final Map<UUID, Map<String, String[]>> heldBack = new HashMap<>();
 
 
 
@@ -148,7 +146,6 @@ public class DialogManager implements Listener {
         activeDialogNpc.remove(playerId);
         lastOffer.remove(playerId);
         askedTopics.remove(playerId);
-        heldBack.remove(playerId);
         BukkitTask task = activeDialogs.remove(playerId);
         if (task != null) {
             task.cancel();
@@ -201,10 +198,8 @@ public class DialogManager implements Listener {
         if (quest == null) {
             return;
         }
-        OfferContext ctx = lastOffer.get(player.getUniqueId());
         // Conflict was already confirmed in the Accept GUI ("Accept anyway").
         acceptQuest(player, quest);
-        offerLoreAfterReply(player, ctx);
     }
 
     /** GUI Decline / Cancel. */
@@ -217,29 +212,10 @@ public class DialogManager implements Listener {
             return;
         }
         pendingQuestChoices.remove(player.getUniqueId());
-        OfferContext ctx = lastOffer.get(player.getUniqueId());
         Quest quest = findQuest(pending);
         if (quest != null) {
             declineQuest(player, quest);
         }
-        offerLoreAfterReply(player, ctx);
-    }
-
-    /** After a quest answer: if the intro held lore back, the NPC offers it ("Tell me more" / "Bye"). */
-    private void offerLoreAfterReply(Player player, OfferContext ctx) {
-        if (ctx == null || ctx.npc() == null) {
-            return;
-        }
-        Map<String, String[]> held = heldBack.get(player.getUniqueId());
-        if (held == null || !held.containsKey(ctx.npc().getId().toLowerCase(java.util.Locale.ROOT))) {
-            return;
-        }
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            de.aetherion.quests.talk.TalkUx t = de.aetherion.quests.talk.TalkUx.get();
-            if (player.isOnline() && t != null && !t.hasChips(player) && !isSpeaking(player)) {
-                offerTopics(player, ctx.npc());
-            }
-        }, DialogPace.untilReplies(player) + 10L);
     }
 
     public boolean hasPendingChoice(Player player) {
@@ -476,7 +452,6 @@ public class DialogManager implements Listener {
         if (lines.length == 0) {
             return;
         }
-        lines = holdBackLore(player, npc, lines);
 
         boolean offerQuest = npc.getType() != de.aetherion.quests.npc.NPCType.FLAVOR
                 && npc.getQuestId() != null
@@ -1505,34 +1480,6 @@ public class DialogManager implements Listener {
     }
 
     /**
-     * Intros say who you're talking to and what they want, nothing more: the first line, any line
-     * carrying a highlighted instruction (§e/§a/§b/§c) and the last line. The rest is lore, kept for a
-     * "Tell me more" chip. Only for living NPCs with in-world chips, so the lore always stays reachable.
-     */
-    private String[] holdBackLore(Player player, QuestNPC npc, String[] lines) {
-        de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
-        if (lines.length < 3 || talk == null || !talk.enabledFor(player) || !LivingNpcProfile.isLiving(npc.getId())) {
-            return lines;
-        }
-        List<String> keep = new ArrayList<>();
-        List<String> lore = new ArrayList<>();
-        for (int i = 0; i < lines.length; i++) {
-            boolean edge = i == 0 || i == lines.length - 1;
-            if (edge || lines[i].matches(".*§[eabc].*")) {
-                keep.add(lines[i]);
-            } else {
-                lore.add(lines[i]);
-            }
-        }
-        if (lore.isEmpty()) {
-            return lines;
-        }
-        heldBack.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>())
-                .put(npc.getId().toLowerCase(java.util.Locale.ROOT), lore.toArray(new String[0]));
-        return keep.toArray(new String[0]);
-    }
-
-    /**
      * Small talk after a conversation: up to three topics from the NPC's voice sheet
      * plus "Bye." as in-world reply chips. Nothing happens in classic mode.
      */
@@ -1547,38 +1494,13 @@ public class DialogManager implements Listener {
         // Isle errand chip (isle.IsleErrands) — one extra reply, never a quest offer.
         de.aetherion.quests.talk.TalkUx.Choice errand =
                 de.aetherion.quests.isle.IsleErrands.chip(player, npc, () -> offerTopics(player, npc));
-        Map<String, String[]> held = heldBack.get(player.getUniqueId());
-        String[] lore = held == null ? null : held.get(npc.getId().toLowerCase(java.util.Locale.ROOT));
-        if (topics.isEmpty() && errand == null && lore == null) {
+        if (topics.isEmpty() && errand == null) {
             return;
         }
         java.util.Set<String> asked = askedTopics.computeIfAbsent(player.getUniqueId(), k -> new java.util.HashSet<>());
         java.util.List<de.aetherion.quests.talk.TalkUx.Choice> choices = new ArrayList<>();
         if (errand != null) {
             choices.add(errand);
-        }
-        if (lore != null) {
-            String moreLabel = de.aetherion.quests.lang.LangPack.german(player) ? "Erzähl mehr." : "Tell me more.";
-            choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
-                    moreLabel,
-                    net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE,
-                    () -> {
-                        held.remove(npc.getId().toLowerCase(java.util.Locale.ROOT));
-                        for (String line : lore) {
-                            LivingNpcProfile.say(player, npc, line);
-                        }
-                        long after = DialogPace.untilReplies(player);
-                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                            de.aetherion.quests.talk.TalkUx t = de.aetherion.quests.talk.TalkUx.get();
-                            if (player.isOnline() && t != null && t.isTalkingWith(player, npc.getId())
-                                    && !t.hasChips(player) && !isSpeaking(player)) {
-                                offerTopics(player, npc);
-                            }
-                        }, after);
-                    },
-                    false,
-                    moreLabel
-            ));
         }
         for (de.aetherion.quests.npc.CastBook.Topic topic : topics) {
             String key = npc.getId() + ":" + topic.label();
@@ -1742,8 +1664,7 @@ public class DialogManager implements Listener {
 
             return new String[] {
                     "Egon. I kit out rookies, {player}. Ten oak and the kit is yours.",
-                    "The §eForager§f up the hill lends you an axe.",
-                    "Your answers float beside me: look at one, click. The §eyellow bar§f up top shows your next step."
+                    "The §eForager§f up the hill lends you an axe."
             };
 
         }
@@ -1778,8 +1699,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("lumberjack_intro")) {
             return new String[] {
-                    "Egon wants ten oak. Hit a §eglowing trunk§f with the axe, then hit again on green §aCHOP§f.",
-                    "Missed it? The tree resets, just try again."
+                    "Egon wants ten oak. Watch me once, then it's your turn."
             };
         }
 
@@ -1937,10 +1857,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("vex_intro")) {
             return new String[] {
-                    "Sergeant Vex. Gate to the §cBorderlands§f — wasteland past the wall.",
-                    "First lesson: ten hostiles. Husk, stray, crawler — I don't care which.",
-                    "Checklist: armour on, blade in hand, food in the bag. Boosters help.",
-                    "Now move, {player}."
+                    "Sergeant Vex. Ten hostiles past the §cBorderlands§f gate, any kind.",
+                    "Armour on, blade in hand. Move, {player}."
             };
         }
 
@@ -1969,9 +1887,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("ledger_intro")) {
             return new String[] {
-                    "Miss Ledger. Two things, {player}: your skills and your Codex.",
-                    "Nether Star → §dSkills§f (it blinks): equip one skill. It levels while you work its trade.",
-                    "Then open your §eCodex§f, top-left. It tracks everything and pays coins for new tiers."
+                    "Miss Ledger. Nether Star → §dSkills§f (it blinks): equip one skill, {player}.",
+                    "Then your §eCodex§f, top-left. It counts everything and pays coins."
             };
         }
 
@@ -2424,16 +2341,14 @@ public class DialogManager implements Listener {
         return switch (npcId.toLowerCase()) {
             case "quartermaster" -> new String[] {
                     "Coal's filed, {player}. Mines teleport stays open — §e/mines§f.",
-                    "Walk somewhere once and it's yours. §e/spawns§f lists the lot.",
-                    "Foreman still lives at the Mines. By choice, allegedly."
+                    "Next: the §eShaft Foreman§f at the Mines."
             };
             case "hunter" -> new String[] {
                     "First blood's filed. Don't get sentimental about it.",
                     "Next time bring bigger problems. Or quieter footsteps."
             };
             case "lumberjack" -> new String[] {
-                    "Egon got his oak? Good. Keep the axe. It likes you.",
-                    "Free afternoon? §aTwig§f's slime pad is just past me. Forage Isle."
+                    "Egon got his oak? Good. Keep the axe. It likes you."
             };
             case "egon" -> QuestStoryGate.questCompleted(player, questManager, "forge_coal")
                     ? de.aetherion.quests.lang.LangPack.completed(player, "egon.after_coal", new String[] {
@@ -2443,20 +2358,16 @@ public class DialogManager implements Listener {
                     // Mid-orientation the Quartermaster's desk is shut (side road after the stamp): point at the spine.
                     : !QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "egon.orientation", new String[] {
-                            "Kit fits? Good. Don't tell me if it doesn't.",
                             "Your next stop's on the §eyellow bar up top§f. Trust it more than me.",
                             "Lost? Nether Star → §eTeleports§f → Capital. §dMiss Ledger§f sorts you out."
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "egon.default", new String[] {
-                            "Kit fits? Good. Don't tell me if it doesn't.",
-                            "§eQuartermaster§f past the little market wants you next.",
-                            "§eYellow arrow up top§f. Trust it more than me."
+                            "Kit fits? Good. §eQuartermaster§f past the little market wants you next."
                     });
             case "farmer" -> farmerCompletedLines(player);
             case "ledger" -> de.aetherion.quests.lang.LangPack.completed(player, "ledger_spine", new String[] {
-                    "Loadout's set. Good. Filed.",
-                    "Next: §eTemper§f on the south road, §dLark§f at the Fields fence, then §cSergeant Vex§f at the Borderlands gate.",
-                    "Come back after all three, {player}. I close orientation — and I keep a help desk."
+                    "Loadout's set. Next: §eTemper§f, §dLark§f, then §cSergeant Vex§f.",
+                    "Come back after all three, {player}."
             });
             case "lark" -> QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "lark.graduate", new String[] {

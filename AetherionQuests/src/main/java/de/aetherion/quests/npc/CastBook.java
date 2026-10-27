@@ -74,12 +74,9 @@ public final class CastBook {
         v = voice("egon");
         v.accept = "Point me at the oak.";
         v.decline = "Later, Egon.";
-        v.onAccept = new String[] {"Good. Lumberjack's up the hill. Don't let him hug you."};
+        v.onAccept = new String[] {"Good. Off to the Forager."};
         v.onDecline = new String[] {"Pier's not going anywhere. Neither am I."};
-        v.returning = new String[] {
-                "Back, {player}. Still no oak. Bold strategy.",
-                "§eLumberjack§f, up the hill. §eYellow arrow§f knows the way."
-        };
+        v.returning = new String[] {"§eForager§f, up the hill. Ten oak, {player}."};
         v.greetNew = new String[] {"Oi, {player}! Over here — pier's got work.", "New face. Pier. Me. Now."};
         v.greet = new String[] {"Kit holding up, {player}?", "{player}. Still in one piece. Good kit."};
         v.greetGrad = new String[] {"Look at you, {player}. Almost dangerous.", "Kit's earned its keep. Nice."};
@@ -106,12 +103,9 @@ public final class CastBook {
         v = voice("lumberjack");
         v.accept = "Hand me the axe.";
         v.decline = "Maybe later.";
-        v.onAccept = new String[] {"Timber! …Sorry. Habit. Glowing trunks only."};
+        v.onAccept = new String[] {"Watch."};
         v.onDecline = new String[] {"Trees'll wait. They're good at that."};
-        v.returning = new String[] {
-                "{player}! Back for the axe lesson? Glowing trunk, green §aCHOP§f.",
-                "Ten oak logs → §eEgon on the pier§f. Not me. I've got plenty."
-        };
+        v.returning = new String[] {"Glowing trunk, green §aCHOP§f. Ten oak for §eEgon§f, {player}."};
         v.greetNew = new String[] {"Axe-curious, {player}? Egon sent you, didn't he."};
         v.greet = new String[] {"{player}! Heard any trees fall lately?", "Arms sore yet, {player}? Good."};
         v.greetGrad = new String[] {"There's the chopper. Trees still whisper about you, {player}."};
@@ -169,10 +163,7 @@ public final class CastBook {
         v.decline = "Not yet.";
         v.onAccept = new String[] {"Mine's behind me. Helmet on. Oh — no helmet. Brave."};
         v.onDecline = new String[] {"Mine'll wait. Been waiting since forever."};
-        v.returning = new String[] {
-                "Thirty-two ores, {player}. Cave's behind me. It doesn't bite. Much.",
-                "Coal, copper, iron. All count."
-        };
+        v.returning = new String[] {"Thirty-two ores, {player}: coal, copper, iron. Cave's behind me."};
         v.greetNew = new String[] {"Hard hats save lives, {player}. I'm told."};
         v.greet = new String[] {"{player}! Back for another shift?", "Dust suits you, {player}."};
         v.greetGrad = new String[] {"Look who's a miner now. Proud of you. Don't tell anyone."};
@@ -319,10 +310,7 @@ public final class CastBook {
         v.decline = "Not ready.";
         v.onAccept = new String[] {"MOVE, {player}! Ten! Go!"};
         v.onDecline = new String[] {"Then get ready. Clock's running."};
-        v.returning = new String[] {
-                "Ten hostiles, {player}. Borderlands. They won't kill themselves.",
-                "Husk, stray, crawler. I don't care which."
-        };
+        v.returning = new String[] {"Ten hostiles past the Borderlands gate, {player}. Any kind."};
         v.greetNew = new String[] {"Eyes front, {player}!"};
         v.greet = new String[] {"{player}. Still breathing. Adequate.", "Chin up, {player}. Blade up."};
         v.greetGrad = new String[] {"{player}. Soldier. …Don't let that go to your head."};

@@ -909,7 +909,7 @@ public final class SkillService implements StatProvider, Listener {
                 continue;
             }
             double scale = multiplier(player, skill);
-            total += skill.bonus(capability) * scale;
+            total += skill.bonus(capability) * SkillProgression.bonusMultiplier(level(player, skill), capability);
             if (dark && capability == ItemCapability.MINING_POWER && skill.flag() == AetherSkill.Flag.CAVE_SENSE) {
                 total += 10.0 * scale;
             }
