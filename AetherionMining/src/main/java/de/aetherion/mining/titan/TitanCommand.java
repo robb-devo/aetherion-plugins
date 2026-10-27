@@ -77,7 +77,7 @@ public final class TitanCommand implements CommandExecutor, TabCompleter {
                 if (shape != null) {
                     StringBuilder isles = new StringBuilder();
                     for (TitanShape.Isle isle : shape.isles) {
-                        isles.append(" §f#").append(isle.index()).append("§7@").append(isle.x()).append(',').append(isle.z());
+                        isles.append(" §f").append(isle.name()).append("§7@").append(isle.x()).append(',').append(isle.z());
                     }
                     sender.sendMessage("§7Heart §f" + (int) shape.heartX + " " + (int) shape.heartY + " " + (int) shape.heartZ
                             + " §7· isles" + isles);

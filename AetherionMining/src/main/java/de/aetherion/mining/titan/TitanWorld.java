@@ -112,6 +112,9 @@ public final class TitanWorld {
             saveState();
         }
         Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L * 20L, 20L * 20L);
+        if (camp != null) {
+            camp.refreshBoard();
+        }
         plugin.getLogger().info("[Titan] Swallowed Isles " + (world == null ? "unavailable" : "seed " + seed
                 + ", generation " + generation + (ready ? ", open" : ", pre-generating")) + ".");
     }

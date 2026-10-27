@@ -44,6 +44,7 @@ public class AetherionMining extends JavaPlugin {
                 de.aetherion.mining.titan.Jawcamp hub = camp;
                 veins.bindCamp(() -> hub.ready() ? hub.spawn() : null);
                 getServer().getPluginManager().registerEvents(camp, this);
+                getServer().getPluginManager().registerEvents(new de.aetherion.mining.titan.TitanRelics(this, titan), this);
                 getServer().getPluginManager().registerEvents(
                         new de.aetherion.mining.titan.TitanListener(this, titan, camp), this);
             }
