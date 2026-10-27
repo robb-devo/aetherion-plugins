@@ -145,6 +145,11 @@ public final class MineProfiles {
             return forgeRep;
         }
 
+        /** First time only: sets the mark and returns true (the Swallowed Isles' discoveries use these). */
+        public boolean claimMark(String id) {
+            return marks.putIfAbsent(id, 1) == null;
+        }
+
         public int mark(String id) {
             return marks.getOrDefault(id, 0);
         }
