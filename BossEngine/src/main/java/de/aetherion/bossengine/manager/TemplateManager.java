@@ -30,15 +30,11 @@ public class TemplateManager {
         if (!folder.exists()) {
             folder.mkdirs();
         }
+        // Active bosses only; the ones retired 10-28 are no longer in the jar (see BossEngine#onEnable).
         String[] bundled = {
-                "aether_colossus.yml", "hollow_lurker.yml", "skuldugery.yml", "mcnugget.yml",
-                "bridge_troll.yml", "squidward.yml", "aetherion.yml", "dungeon_sentinel.yml",
-                "dungeon_frostbound.yml", "dungeon_aetherion.yml", "sir_balthazar.yml",
-                "lobby_cleaner.yml", "sparky.yml", "baron_von_wurm.yml", "insolvent_wither.yml",
-                "pathwarden.yml", "helios_herald.yml", "helios_requiem.yml",
-                "test_echo.yml", "test_parity.yml", "test_curator.yml", "test_nullspace.yml",
-                "test_loadbearing.yml", "test_softlock.yml", "test_heartbeat.yml", "test_broker.yml",
-                "test_afterimage.yml", "test_gravity.yml", "test_quiet.yml", "test_petjury.yml"
+                "hollow_lurker.yml", "skuldugery.yml", "mcnugget.yml", "bridge_troll.yml",
+                "dungeon_sentinel.yml", "dungeon_frostbound.yml", "dungeon_aetherion.yml",
+                "pathwarden.yml", "helios_herald.yml", "helios_requiem.yml"
         };
         for (String name : bundled) {
             File target = new File(folder, name);

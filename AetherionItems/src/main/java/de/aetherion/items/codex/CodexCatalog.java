@@ -584,29 +584,21 @@ public final class CodexCatalog {
         }
     }
 
+    /** Active bosses only: the ones retired 10-28 (Sparky, Squidward, ...) are gone from BossEngine too. */
     private static final List<Boss> FALLBACK_BOSSES = List.of(
             new Boss("mcnugget", "McNugget", Material.COOKED_CHICKEN, false),
             new Boss("hollow_lurker", "Hollow Lurker", Material.ENDER_EYE, false),
             new Boss("pathwarden", "Pathwarden", Material.NETHERITE_SWORD, false),
             new Boss("bridge_troll", "Bridge Troll", Material.IRON_AXE, false),
             new Boss("skuldugery", "Skuldugery", Material.BOW, false),
-            new Boss("squidward", "Squidward", Material.INK_SAC, false),
-            new Boss("sir_balthazar", "Sir Balthazar", Material.TOTEM_OF_UNDYING, false),
             new Boss("hollow_sun", "Hollow Sun", Material.SUNFLOWER, false),
             new Boss("hanging_saint", "Hanging Saint", Material.CHAIN, false),
-            new Boss("ashen_sheath", "Ashen Sheath", Material.BLACKSTONE, false),
             new Boss("ashen_chainwarden", "Ashen Chainwarden", Material.CHAIN, false),
             new Boss("cinder_herald", "Cinder Herald", Material.BLAZE_ROD, false),
             new Boss("helios_herald", "Helios Herald", Material.GLOWSTONE_DUST, false),
             new Boss("helios_requiem", "Helios Requiem", Material.GOLD_BLOCK, false),
             new Boss("world_eater", "World Eater", Material.DRAGON_EGG, false),
             new Boss("world_eater_unbroken", "World Eater Unbroken", Material.DRAGON_HEAD, false),
-            new Boss("aether_colossus", "Aether Colossus", Material.END_CRYSTAL, false),
-            new Boss("aetherion", "Aetherion", Material.NETHER_STAR, false),
-            new Boss("lobby_cleaner", "The Lobby Cleaner", Material.HOPPER, false),
-            new Boss("sparky", "Sparky", Material.MAGMA_CREAM, false),
-            new Boss("baron_von_wurm", "Baron von Wurm", Material.STONE, false),
-            new Boss("insolvent_wither", "The Insolvent Wither", Material.NETHER_STAR, false),
             new Boss("dungeon_sentinel", "Prototype Sentinel", Material.TOTEM_OF_UNDYING, true),
             new Boss("dungeon_frostbound", "The Frostbound", Material.PACKED_ICE, true),
             new Boss("dungeon_aetherion", "Aetherion (Floor)", Material.NETHER_STAR, true)
