@@ -108,6 +108,11 @@ public final class AetherionCore extends JavaPlugin {
             wipe.setTabCompleter(wipeCommand);
         }
 
+        PluginCommand report = getCommand("report");
+        if (report != null) {
+            report.setExecutor(new de.aetherion.core.command.ReportCommand(this));
+        }
+
         NetworkRestartCommand restartCommand = new NetworkRestartCommand(this);
         PluginCommand aenet = getCommand("aenet");
         if (aenet != null) {

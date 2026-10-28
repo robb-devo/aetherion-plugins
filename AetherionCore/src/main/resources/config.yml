@@ -140,3 +140,9 @@ particles:
   long-range: false
   # Vanilla sprays one dark heart per two health a melee hit takes; capped per hit (0 = vanilla). Always on with ProtocolLib.
   damage-hearts-max: 3
+
+# /report: every report goes to plugins/AetherionCore/reports.log and to staff online (aetherion.report.notify).
+# Set a Discord webhook URL in the live config to post reports to a channel (never commit one here).
+report:
+  discord-webhook: ""
+  cooldown-seconds: 60
