@@ -109,6 +109,12 @@ public final class TradeMenu {
             return;
         }
         if (raw >= 54) {
+            // A double click in your own inventory collects matching stacks from the trade window too: those are
+            // only copies of the offers, so taking them would duplicate the item.
+            if (event.getAction() == org.bukkit.event.inventory.InventoryAction.COLLECT_TO_CURSOR) {
+                event.setCancelled(true);
+                return;
+            }
             if (event.isShiftClick()) {
                 event.setCancelled(true);
                 ItemStack clicked = event.getCurrentItem();

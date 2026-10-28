@@ -561,6 +561,7 @@ public class AetherionItems extends JavaPlugin {
                 new RecipeBookListener(recipeBookGUI, itemManager),
                 this
         );
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.MenuCollectGuard(), this);
     }
 
     private void registerIntegrations() {
