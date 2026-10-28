@@ -134,6 +134,10 @@ loot:
         item-id: deepsong_conch
         amount: 1
         chance: 0.08
+      - source: AETHERION
+        item-id: squids_boot
+        amount: 1
+        chance: 0.12
     2:
       - source: AETHERION
         item-id: warped_blade
@@ -143,6 +147,10 @@ loot:
         item-id: deepsong_conch
         amount: 1
         chance: 0.04
+      - source: AETHERION
+        item-id: squids_boot
+        amount: 1
+        chance: 0.07
     3:
       - source: AETHERION
         item-id: warped_blade
@@ -152,6 +160,10 @@ loot:
         item-id: deepsong_conch
         amount: 1
         chance: 0.02
+      - source: AETHERION
+        item-id: squids_boot
+        amount: 1
+        chance: 0.04
 
   top-damagers:
     count: 3

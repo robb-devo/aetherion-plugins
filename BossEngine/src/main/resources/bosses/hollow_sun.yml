@@ -117,6 +117,10 @@ loot:
         item-id: stormcaller_maul
         amount: 1
         chance: 0.08
+      - source: AETHERION
+        item-id: thermal_core
+        amount: 1
+        chance: 0.12
     2:
       - source: AETHERION
         item-id: random_booster
@@ -134,6 +138,10 @@ loot:
         item-id: stormcaller_maul
         amount: 1
         chance: 0.04
+      - source: AETHERION
+        item-id: thermal_core
+        amount: 1
+        chance: 0.07
     3:
       - source: AETHERION
         item-id: random_booster
@@ -151,6 +159,10 @@ loot:
         item-id: stormcaller_maul
         amount: 1
         chance: 0.02
+      - source: AETHERION
+        item-id: thermal_core
+        amount: 1
+        chance: 0.04
 
   top-damagers:
     count: 3
