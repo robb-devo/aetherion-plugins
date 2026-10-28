@@ -466,12 +466,11 @@ public final class WeFx {
     /* ------------------------------------------------------------------ text */
 
     public void title(String main, String sub, int fadeIn, int stay, int fadeOut) {
-        Title title = Title.title(
-                TextUtil.component(main),
-                TextUtil.component(sub),
-                Title.Times.times(Duration.ofMillis(fadeIn * 50L), Duration.ofMillis(stay * 50L), Duration.ofMillis(fadeOut * 50L)));
+        Title.Times times = Title.Times.times(Duration.ofMillis(fadeIn * 50L), Duration.ofMillis(stay * 50L),
+                Duration.ofMillis(fadeOut * 50L));
         for (Player p : audience()) {
-            p.showTitle(title);
+            // German clients read the German line (BossTitlesDe).
+            p.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(p, main, sub, times));
         }
     }
 

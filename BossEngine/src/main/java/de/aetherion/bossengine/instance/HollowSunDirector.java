@@ -2674,7 +2674,7 @@ final class HollowSunDirector {
                 out = new Vector(0.01, 0, 0);
             }
             player.setVelocity(out.normalize().multiply(0.9).setY(0.5));
-            player.showTitle(Title.title(TextUtil.component("&f&lNOVA"), TextUtil.component("&7Crack the core faster next time."), titleTimes()));
+            player.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(player, "&f&lNOVA", "&7Crack the core faster next time.", titleTimes()));
         }
         coreBoost = -0.3;
     }
@@ -3149,8 +3149,7 @@ final class HollowSunDirector {
             if (r <= impactR && Math.abs(pl.getY() - floorY) < 6.0) {
                 BossHits.crush(player, entity, 90);
                 player.setVelocity(out.normalize().multiply(0.9).setY(1.05));
-                player.showTitle(Title.title(TextUtil.component("&4CRUSHED"),
-                        TextUtil.component("&7Starfall: leave the red disc."), titleTimes()));
+                player.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(player, "&4CRUSHED", "&7Starfall: leave the red disc.", titleTimes()));
             } else {
                 player.setVelocity(player.getVelocity().add(new Vector(0, 0.28, 0)));
             }
@@ -4866,10 +4865,11 @@ final class HollowSunDirector {
         if (origin == null || origin.getWorld() == null) {
             return;
         }
-        Title title = Title.title(TextUtil.component(main), TextUtil.component(sub), titleTimes());
+        Title.Times times = titleTimes();
         for (Player player : origin.getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(origin) <= 56 * 56) {
-                player.showTitle(title);
+                // German clients read the German line (BossTitlesDe).
+                player.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(player, main, sub, times));
             }
         }
     }
