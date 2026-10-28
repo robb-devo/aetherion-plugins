@@ -2,6 +2,7 @@ package de.aetherion.pit.npc;
 
 import de.aetherion.core.npc.FancyNpcFacade;
 import de.aetherion.pit.AetherionPit;
+import de.aetherion.pit.hub.HubHolograms;
 import de.aetherion.pit.menu.PitShopGUI;
 
 import net.kyori.adventure.text.Component;
@@ -11,6 +12,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -30,13 +32,34 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Lobby FancyNPCs: Aetherion transfer, Discord invite, Pit shop placeholder.
+ * The five lobby stations on the pedestals west of spawn: Aetherion (travel to the MMO), Modpack &amp; Shader,
+ * The Pit, Discord and the Pit Shop. FancyNpcs draws the bodies with no name tag; the plates above them are
+ * {@link de.aetherion.pit.hub.HubGuide} signs.
  */
 public final class HubNpcService implements PluginMessageListener {
 
     public static final String FANCY_AETHERION = "ae_hub_aetherion";
     public static final String FANCY_DISCORD = "ae_hub_discord";
     public static final String FANCY_SHOP = "ae_hub_shop";
+    public static final String FANCY_MODPACK = "ae_hub_modpack";
+    public static final String FANCY_PIT = "ae_hub_pit";
+
+    /** {@code profession} is a FancyNpcs villager attribute; {@code glow} a NamedTextColor name or null. */
+    public record Station(String key, String fancyName, EntityType type, String profession, String glow) {
+    }
+
+    public static final List<Station> STATIONS = List.of(
+            new Station("aetherion", FANCY_AETHERION, EntityType.PLAYER, null, "light_purple"),
+            new Station("modpack", FANCY_MODPACK, EntityType.VILLAGER, "librarian", null),
+            new Station("pit", FANCY_PIT, EntityType.VINDICATOR, null, "red"),
+            new Station("discord", FANCY_DISCORD, EntityType.PLAYER, null, null),
+            new Station("shop", FANCY_SHOP, EntityType.VILLAGER, "weaponsmith", null)
+    );
+
+    private static final String DEFAULT_AETHERION_SKIN =
+            "https://textures.minecraft.net/texture/f163d98f20f7b8dec6ecc7a314f82e33f4d4105919dfd287080627979a957933";
+    private static final String DEFAULT_DISCORD_SKIN =
+            "https://textures.minecraft.net/texture/ed1e52092b09bc2495d0ed1a2e8e6279548a120dd27e4955963d75e820a181c6";
 
     private final AetherionPit plugin;
     private final Map<String, Integer> proxyCounts = new ConcurrentHashMap<>();
@@ -54,14 +77,33 @@ public final class HubNpcService implements PluginMessageListener {
 
     public void ensureAll() {
         int vis = plugin.getConfig().getInt("npc-visibility-distance", 64);
-        String aetherionSkin = plugin.getConfig().getString("npcs.aetherion.skin",
-                "https://textures.minecraft.net/texture/f163d98f20f7b8dec6ecc7a314f82e33f4d4105919dfd287080627979a957933");
-        String discordSkin = plugin.getConfig().getString("npcs.discord.skin",
-                "https://textures.minecraft.net/texture/ed1e52092b09bc2495d0ed1a2e8e6279548a120dd27e4955963d75e820a181c6");
-        // FancyNpcs 2.x prefers MiniMessage — &/§ in nametags often shows as Â on clients.
-        ensureOne("aetherion", FANCY_AETHERION, "<light_purple><bold>Aetherion</bold></light_purple>", aetherionSkin, true, vis);
-        ensureOne("discord", FANCY_DISCORD, "<blue><bold>Discord</bold></blue>", discordSkin, false, vis);
-        ensureOne("shop", FANCY_SHOP, "<gold><bold>Pit Shop</bold></gold>", null, false, vis);
+        for (Station station : STATIONS) {
+            Location loc = locationOf(station.key());
+            if (loc == null) {
+                continue;
+            }
+            if (!spawnFancy(station, skinOf(station), loc, vis)) {
+                plugin.getLogger().warning("Hub NPC " + station.fancyName() + " could not spawn (FancyNpcs?).");
+            }
+        }
+        plugin.guide().placePlates();
+    }
+
+    private String skinOf(Station station) {
+        return switch (station.key()) {
+            case "aetherion" -> plugin.getConfig().getString("npcs.aetherion.skin", DEFAULT_AETHERION_SKIN);
+            case "discord" -> plugin.getConfig().getString("npcs.discord.skin", DEFAULT_DISCORD_SKIN);
+            default -> null;
+        };
+    }
+
+    public static Station station(String key) {
+        for (Station station : STATIONS) {
+            if (station.key().equalsIgnoreCase(key)) {
+                return station;
+            }
+        }
+        return null;
     }
 
     public void place(String id, Location location) {
@@ -84,30 +126,38 @@ public final class HubNpcService implements PluginMessageListener {
             return;
         }
         if (FANCY_AETHERION.equalsIgnoreCase(fancyName)) {
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.6f, 1.4f);
             plugin.transfer().toAetherion(player);
-            return;
-        }
-        if (FANCY_DISCORD.equalsIgnoreCase(fancyName)) {
+        } else if (FANCY_DISCORD.equalsIgnoreCase(fancyName)) {
+            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.2f);
             openDiscord(player);
-            return;
-        }
-        if (FANCY_SHOP.equalsIgnoreCase(fancyName)) {
-            de.aetherion.pit.util.Msg.send(player, "&6Pit Shop &8- &7Gear up for the arena outside the red line.");
+        } else if (FANCY_SHOP.equalsIgnoreCase(fancyName)) {
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 0.7f, 1.0f);
             PitShopGUI.open(player);
+        } else if (FANCY_MODPACK.equalsIgnoreCase(fancyName)) {
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.9f, 1.0f);
+            plugin.guide().modpackCard(player);
+        } else if (FANCY_PIT.equalsIgnoreCase(fancyName)) {
+            plugin.guide().enterPit(player);
         }
     }
 
     public static boolean isHubNpc(String fancyName) {
-        return FANCY_AETHERION.equalsIgnoreCase(fancyName)
-                || FANCY_DISCORD.equalsIgnoreCase(fancyName)
-                || FANCY_SHOP.equalsIgnoreCase(fancyName);
+        for (Station station : STATIONS) {
+            if (station.fancyName().equalsIgnoreCase(fancyName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    private void openDiscord(Player player) {
+    public void openDiscord(Player player) {
         String url = resolveDiscordInvite();
+        boolean german = HubHolograms.german(player);
         if (url == null || url.isBlank() || url.contains("changethis")) {
-            player.sendMessage(de.aetherion.pit.util.Msg.amp(
-                    "&9Discord &8- &7Invite not ready yet - staff can set discord-invite in config."));
+            player.sendMessage(de.aetherion.pit.util.Msg.amp(german
+                    ? "&9Discord &8- &7Die Einladung kommt bald."
+                    : "&9Discord &8- &7The invite is coming soon."));
             return;
         }
         // Persist discovered invite for next time.
@@ -117,13 +167,14 @@ public final class HubNpcService implements PluginMessageListener {
         }
         player.sendMessage(Component.text("Discord", NamedTextColor.BLUE, TextDecoration.BOLD)
                 .append(Component.text(" - ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("Click to join", NamedTextColor.AQUA, TextDecoration.UNDERLINED)
+                .append(Component.text(german ? "Klicken zum Beitreten" : "Click to join", NamedTextColor.AQUA,
+                                TextDecoration.UNDERLINED)
                         .clickEvent(ClickEvent.openUrl(url)))
                 .append(Component.text("  " + url, NamedTextColor.GRAY)));
     }
 
     /** Config → DiscordSRV invite link → create permanent invite via DiscordSRV bot. */
-    private String resolveDiscordInvite() {
+    public String resolveDiscordInvite() {
         String configured = plugin.getConfig().getString("discord-invite", "").trim();
         if (!configured.isEmpty() && !configured.contains("changethis")) {
             return configured;
@@ -158,20 +209,15 @@ public final class HubNpcService implements PluginMessageListener {
         return configured;
     }
 
-    private void ensureOne(String configKey, String fancyName, String display, String skin,
-                           boolean glow, int visibility) {
-        Location loc = locationOf(configKey);
-        if (loc == null) {
-            return;
-        }
-        if (!spawnFancy(fancyName, display, skin, loc, glow, visibility)) {
-            plugin.getLogger().warning("Hub NPC " + fancyName + " could not spawn (FancyNpcs?).");
-        }
+    /** Players on the MMO backend, or -1 before the proxy answered. */
+    public int aetherionOnline() {
+        String server = plugin.getConfig().getString("aetherion-server", "mmo-r");
+        return proxyCounts.getOrDefault(server.toLowerCase(Locale.ROOT), -1);
     }
 
     private void tickCounts() {
         requestPlayerCount(plugin.getConfig().getString("aetherion-server", "mmo-r"));
-        updateAetherionLabel();
+        plugin.guide().refreshAetherionPlate();
     }
 
     private void requestPlayerCount(String server) {
@@ -189,16 +235,6 @@ public final class HubNpcService implements PluginMessageListener {
         }
     }
 
-    private void updateAetherionLabel() {
-        String server = plugin.getConfig().getString("aetherion-server", "mmo-r");
-        int count = proxyCounts.getOrDefault(server.toLowerCase(Locale.ROOT), -1);
-        String label = count >= 0
-                ? "<light_purple><bold>Aetherion</bold></light_purple> <dark_gray>-</dark_gray> <white>"
-                + count + " online</white>"
-                : "<light_purple><bold>Aetherion</bold></light_purple> <dark_gray>-</dark_gray> <gray>click to play</gray>";
-        setFancyDisplayName(FANCY_AETHERION, label);
-    }
-
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] message) {
         if (!"BungeeCord".equals(channel) && !"bungeecord:main".equalsIgnoreCase(channel)) {
@@ -212,12 +248,12 @@ public final class HubNpcService implements PluginMessageListener {
             String server = in.readUTF();
             int count = in.readInt();
             proxyCounts.put(server.toLowerCase(Locale.ROOT), count);
-            updateAetherionLabel();
+            plugin.guide().refreshAetherionPlate();
         } catch (Exception ignored) {
         }
     }
 
-    private Location locationOf(String key) {
+    public Location locationOf(String key) {
         FileConfiguration cfg = plugin.getConfig();
         ConfigurationSection sec = cfg.getConfigurationSection("npcs." + key);
         if (sec == null) {
@@ -240,24 +276,29 @@ public final class HubNpcService implements PluginMessageListener {
         );
     }
 
-    private boolean spawnFancy(String fancyName, String display, String skin, Location location,
-                               boolean glow, int visibility) {
+    private boolean spawnFancy(Station station, String skin, Location location, int visibility) {
         if (!FancyNpcFacade.isAvailable()) {
             return false;
         }
+        String fancyName = station.fancyName();
         try {
             Object manager = FancyNpcFacade.manager();
             if (!FancyNpcFacade.isManagerLoaded(manager)) {
-                Bukkit.getScheduler().runTaskLater(plugin,
-                        () -> spawnFancy(fancyName, display, skin, location, glow, visibility), 40L);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> spawnFancy(station, skin, location, visibility), 40L);
                 return true;
             }
             Object existing = FancyNpcFacade.getNpc(manager, fancyName);
+            if (existing != null && station.type() != typeOf(FancyNpcFacade.data(existing))) {
+                // Body type changed (the shop used to be a skinless player): rebuild it.
+                FancyNpcFacade.removeForAll(existing);
+                FancyNpcFacade.unregister(manager, existing);
+                existing = null;
+            }
             if (existing != null) {
                 Object data = FancyNpcFacade.data(existing);
                 FancyNpcFacade.setLocation(data, location.clone());
-                FancyNpcFacade.invoke(data, "setDisplayName", String.class, display);
-                applyGlowAndVisibility(data, glow, visibility);
+                FancyNpcFacade.invoke(data, "setDisplayName", String.class, "<empty>");
+                applyGlowAndVisibility(data, station.glow(), visibility);
                 applySkin(data, skin);
                 FancyNpcFacade.setSaveToFile(existing, true);
                 FancyNpcFacade.moveForAll(existing);
@@ -268,17 +309,26 @@ public final class HubNpcService implements PluginMessageListener {
             }
             UUID creator = new UUID(0L, Math.abs(fancyName.hashCode()));
             Object data = FancyNpcFacade.createNpcData(fancyName, creator, location.clone());
-            FancyNpcFacade.invoke(data, "setDisplayName", String.class, display);
-            FancyNpcFacade.invoke(data, "setType", EntityType.class, EntityType.PLAYER);
+            FancyNpcFacade.invoke(data, "setDisplayName", String.class, "<empty>");
+            FancyNpcFacade.invoke(data, "setType", EntityType.class, station.type());
             FancyNpcFacade.invoke(data, "setShowInTab", boolean.class, false);
             FancyNpcFacade.invoke(data, "setCollidable", boolean.class, false);
             FancyNpcFacade.invoke(data, "setTurnToPlayer", boolean.class, true);
-            applyGlowAndVisibility(data, glow, visibility);
+            applyGlowAndVisibility(data, station.glow(), visibility);
             applySkin(data, skin);
             FancyNpcFacade.invokeQuiet(data, "setSpawnEntity", boolean.class, true);
+            Object attribute = station.profession() == null ? null : villagerAttribute("profession");
+            if (attribute != null) {
+                data.getClass().getMethod("addAttribute", Class.forName("de.oliver.fancynpcs.api.NpcAttribute"),
+                        String.class).invoke(data, attribute, station.profession());
+            }
             Object npc = FancyNpcFacade.adapt(data);
             FancyNpcFacade.setSaveToFile(npc, true);
             FancyNpcFacade.create(npc);
+            if (attribute != null) {
+                attribute.getClass().getMethod("apply", FancyNpcFacade.npcClass(), String.class)
+                        .invoke(attribute, npc, station.profession());
+            }
             FancyNpcFacade.register(manager, npc);
             FancyNpcFacade.spawnForAll(npc);
             FancyNpcFacade.saveNpcs(manager, true);
@@ -286,6 +336,27 @@ public final class HubNpcService implements PluginMessageListener {
         } catch (Throwable ex) {
             plugin.getLogger().warning("Hub FancyNPC " + fancyName + ": " + ex.getMessage());
             return false;
+        }
+    }
+
+    private static EntityType typeOf(Object data) {
+        try {
+            Object type = data.getClass().getMethod("getType").invoke(data);
+            return type instanceof EntityType entityType ? entityType : EntityType.PLAYER;
+        } catch (ReflectiveOperationException ex) {
+            return EntityType.PLAYER;
+        }
+    }
+
+    private static Object villagerAttribute(String name) {
+        try {
+            Object api = FancyNpcFacade.plugin();
+            Object attributes = api.getClass().getMethod("getAttributeManager").invoke(api);
+            return attributes.getClass()
+                    .getMethod("getAttributeByName", EntityType.class, String.class)
+                    .invoke(attributes, EntityType.VILLAGER, name);
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            return null;
         }
     }
 
@@ -319,17 +390,19 @@ public final class HubNpcService implements PluginMessageListener {
         }
     }
 
-    private static void applyGlowAndVisibility(Object data, boolean glow, int visibility) {
+    private static void applyGlowAndVisibility(Object data, String glow, int visibility) {
         Class<?> dataClass = data.getClass();
+        boolean glowing = glow != null;
         try {
-            dataClass.getMethod("setGlowing", boolean.class).invoke(data, glow);
+            dataClass.getMethod("setGlowing", boolean.class).invoke(data, glowing);
         } catch (Throwable ignored) {
             try {
-                dataClass.getMethod("setGlow", boolean.class).invoke(data, glow);
+                dataClass.getMethod("setGlow", boolean.class).invoke(data, glowing);
             } catch (Throwable ignored2) {
             }
         }
-        if (glow) {
+        if (glowing) {
+            String field = glow.toUpperCase(Locale.ROOT);
             boolean colored = false;
             // FancyNpcs typically wants NamedTextColor / Adventure color name.
             for (String colorClassName : new String[]{
@@ -341,23 +414,24 @@ public final class HubNpcService implements PluginMessageListener {
                 }
                 try {
                     Class<?> named = Class.forName(colorClassName);
-                    Object lightPurple = named.getField("LIGHT_PURPLE").get(null);
+                    Object color = named.getField(field).get(null);
                     try {
-                        dataClass.getMethod("setGlowColor", named).invoke(data, lightPurple);
+                        dataClass.getMethod("setGlowColor", named).invoke(data, color);
                         colored = true;
                     } catch (NoSuchMethodException ex) {
-                        dataClass.getMethod("setGlowingColor", named).invoke(data, lightPurple);
+                        dataClass.getMethod("setGlowingColor", named).invoke(data, color);
                         colored = true;
                     }
                 } catch (Throwable ignored) {
                 }
             }
             if (!colored) {
+                String name = glow.toLowerCase(Locale.ROOT);
                 try {
-                    dataClass.getMethod("setGlowColor", String.class).invoke(data, "light_purple");
+                    dataClass.getMethod("setGlowColor", String.class).invoke(data, name);
                 } catch (Throwable ignored) {
                     try {
-                        dataClass.getMethod("setGlowingColor", String.class).invoke(data, "light_purple");
+                        dataClass.getMethod("setGlowingColor", String.class).invoke(data, name);
                     } catch (Throwable ignored2) {
                     }
                 }
@@ -372,22 +446,4 @@ public final class HubNpcService implements PluginMessageListener {
             }
         }
     }
-
-    private void setFancyDisplayName(String fancyName, String display) {
-        try {
-            if (!FancyNpcFacade.isAvailable()) {
-                return;
-            }
-            Object manager = FancyNpcFacade.manager();
-            Object npc = FancyNpcFacade.getNpc(manager, fancyName);
-            if (npc == null) {
-                return;
-            }
-            Object data = FancyNpcFacade.data(npc);
-            FancyNpcFacade.invoke(data, "setDisplayName", String.class, display);
-            FancyNpcFacade.updateForAll(npc);
-        } catch (Throwable ignored) {
-        }
-    }
-
 }

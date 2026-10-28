@@ -3,6 +3,7 @@ package de.aetherion.pit.command;
 import de.aetherion.pit.AetherionPit;
 import de.aetherion.pit.data.PitDataStore;
 import de.aetherion.pit.menu.PitShopGUI;
+import de.aetherion.pit.npc.HubNpcService;
 
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -34,7 +35,7 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§8§m--------------------------------");
             player.sendMessage("§5Hub Pit §7· Lvl §f" + stats.level()
                     + " §8· §6" + stats.gold() + "g");
-            player.sendMessage("§e/pit spawn §7· §e/pit shop §7· §e/pit play §7(= /aetherion)");
+            player.sendMessage("§e/pit enter §7· §e/pit shop §7· §e/pit top §7· §e/pit play §7(= /aetherion)");
             player.sendMessage("§7Safe box: §f" + plugin.safeZone().describe());
             player.sendMessage("§8§m--------------------------------");
             return true;
@@ -52,6 +53,10 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
             }
             case "shop" -> PitShopGUI.open(player);
             case "play", "aetherion", "mmor" -> plugin.transfer().toAetherion(player);
+            case "enter", "arena" -> plugin.guide().enterPit(player);
+            case "top" -> plugin.guide().topCard(player);
+            case "discord" -> plugin.hubNpcs().openDiscord(player);
+            case "modpack", "shader" -> plugin.guide().modpackCard(player);
             case "stats" -> {
                 PitDataStore.Stats stats = plugin.data().of(player);
                 int need = plugin.levels().xpForNext(stats.level());
@@ -91,12 +96,12 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length < 2) {
-                    player.sendMessage("§c/pit placenpc <aetherion|discord|shop>");
+                    player.sendMessage("§c/pit placenpc <aetherion|modpack|pit|discord|shop>");
                     return true;
                 }
                 String id = args[1].toLowerCase(Locale.ROOT);
-                if (!List.of("aetherion", "discord", "shop").contains(id)) {
-                    player.sendMessage("§cUnknown NPC. Use aetherion, discord, or shop.");
+                if (HubNpcService.station(id) == null) {
+                    player.sendMessage("§cUnknown NPC. Use aetherion, modpack, pit, discord or shop.");
                     return true;
                 }
                 plugin.hubNpcs().place(id, player.getLocation());
@@ -114,7 +119,7 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
                 }
             }
             default -> player.sendMessage(
-                    "§c/pit [spawn|shop|play|stats|setsafebox|placenpc|pasteschem]");
+                    "§c/pit [spawn|enter|shop|play|stats|top|modpack|discord|setsafebox|placenpc|pasteschem]");
         }
         return true;
     }
@@ -122,7 +127,7 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            Stream<String> opts = Stream.of("spawn", "shop", "play", "stats");
+            Stream<String> opts = Stream.of("spawn", "enter", "shop", "play", "stats", "top", "modpack", "discord");
             if (sender.hasPermission("aetherion.pit.admin")) {
                 opts = Stream.concat(opts, Stream.of("setsafebox", "placenpc", "pasteschem"));
             }
@@ -131,7 +136,8 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("placenpc")) {
             String p = args[1].toLowerCase(Locale.ROOT);
-            return Stream.of("aetherion", "discord", "shop").filter(o -> o.startsWith(p)).toList();
+            return HubNpcService.STATIONS.stream().map(HubNpcService.Station::key)
+                    .filter(o -> o.startsWith(p)).toList();
         }
         return List.of();
     }

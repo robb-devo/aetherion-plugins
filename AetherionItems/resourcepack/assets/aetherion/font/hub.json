@@ -1,0 +1,67 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hub/emblem.png",
+      "ascent": 7,
+      "height": 32,
+      "chars": [
+        "\ue000"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hub/emblem.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue001"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:item/gui/island.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue002"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:item/gui/section_combat.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue003"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:item/gui/craft.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue004"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hub/discord.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue005"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:item/gui/shop.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue006"
+      ]
+    }
+  ]
+}

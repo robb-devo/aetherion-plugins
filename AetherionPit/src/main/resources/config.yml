@@ -73,6 +73,48 @@ npcs:
     z: 5.5
     yaw: 180.0
     pitch: 0.0
+  # Hub polish 10-28: the two free pedestals west of spawn (lime / red).
+  modpack:
+    world: world
+    x: -33.5
+    y: 65.0
+    z: -2.5
+    yaw: -90.0
+    pitch: 0.0
+  pit:
+    world: world
+    x: -33.5
+    y: 65.0
+    z: 3.5
+    yaw: -90.0
+    pitch: 0.0
+
+# Signs (text displays, German for German clients). Welcome board floats over the plaza between spawn and
+# the stations; the Pit board and entrance sit at the red line west of the hall.
+welcome-board:
+  world: world
+  x: -9.5
+  y: 66.6
+  z: 0.5
+pit-entrance:
+  world: world
+  x: -74.5
+  y: 56.0
+  z: 0.5
+  yaw: 90.0
+  pitch: 0.0
+pit-board:
+  world: world
+  x: -77.5
+  y: 58.0
+  z: 0.5
+
+# Modpack NPC links (empty = shown as "coming soon").
+modpack:
+  github: "https://github.com/robb-devo/aetherion-launcher/releases/latest"
+  modrinth: ""
+  curseforge: ""
+  shader: ""
 
 # One-shot paste of the medieval spawn schem (set false after success).
 schem-paste:

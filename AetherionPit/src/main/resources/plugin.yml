@@ -11,7 +11,7 @@ softdepend: [WorldEdit, FastAsyncWorldEdit, FancyNpcs, PlaceholderAPI, DiscordSR
 commands:
   pit:
     description: Pit help / spawn / shop / play
-    usage: /pit [spawn|shop|play|stats|setsafebox|placenpc]
+    usage: /pit [spawn|enter|shop|play|stats|top|modpack|discord|setsafebox|placenpc]
   aetherion:
     description: Transfer to Aetherion (mmo-r)
     aliases: [play, mmor]
@@ -20,6 +20,10 @@ commands:
     description: Teleport to hub spawn (0, 64, 0)
     aliases: [lobby, spawn]
     usage: /hub
+  modpack:
+    description: Modpack, launcher and shader links
+    aliases: [shader, mods]
+    usage: /modpack
   dev:
     description: Hub DEV menu (NPC place etc.)
     usage: /dev

@@ -1,11 +1,15 @@
 package de.aetherion.pit.data;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +36,26 @@ public final class PitDataStore {
 
     public Mutable mutable(UUID id) {
         return cache.computeIfAbsent(id, u -> new Mutable(1, 0, 0));
+    }
+
+    public record Ranked(String name, int level, int xp) {
+    }
+
+    /** Best fighters by level, then XP. Players who never scored are left out. */
+    public List<Ranked> top(int limit) {
+        List<Ranked> out = new ArrayList<>();
+        for (Map.Entry<UUID, Mutable> entry : cache.entrySet()) {
+            Mutable m = entry.getValue();
+            if (m.level <= 1 && m.xp <= 0) {
+                continue;
+            }
+            String name = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+            if (name != null) {
+                out.add(new Ranked(name, m.level, m.xp));
+            }
+        }
+        out.sort(Comparator.comparingInt(Ranked::level).thenComparingInt(Ranked::xp).reversed());
+        return out.size() > limit ? List.copyOf(out.subList(0, limit)) : out;
     }
 
     public void saveAll() {
