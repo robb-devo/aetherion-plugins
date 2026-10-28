@@ -16,6 +16,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerRecipeBookSettingsChangeEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
@@ -49,6 +50,35 @@ public class RecipeBookListener implements Listener {
 
         event.setCancelled(true);
         recipeBookGUI.open(event.getPlayer());
+    }
+
+    /**
+     * The green vanilla book (drawn as ours by the pack, gen_vanilla_gui.py) opens the Aetherion recipe book: our
+     * recipes are plugin recipes the vanilla book can't list. Same unlock as /recipe.
+     */
+    @EventHandler
+    public void onVanillaBook(PlayerRecipeBookSettingsChangeEvent event) {
+        if (!event.isOpen() || event.getRecipeBookType() != PlayerRecipeBookSettingsChangeEvent.RecipeBookType.CRAFTING) {
+            return;
+        }
+        Player player = event.getPlayer();
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            var progress = plugin.progress();
+            if (progress != null && !progress.recipeBook(player)) {
+                player.sendMessage(progress.hint(de.aetherion.items.progress.ProgressionService.Flag.WORKBENCH));
+                return;
+            }
+            player.closeInventory();
+            recipeBookGUI.openCategories(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.0f);
+        });
     }
 
     @EventHandler

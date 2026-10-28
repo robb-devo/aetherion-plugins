@@ -52,6 +52,10 @@ COPY = (
     # Hub lobby glyphs (gen_hub_glyphs.py): emblem, station icons, drawn by AetherionPit on the hub.
     'assets/aetherion/font/hub.json',
     'assets/aetherion/textures/font/hub',
+    # Vanilla screens in Aetherion stone and our recipe-book button (gen_vanilla_gui.py).
+    'assets/minecraft/textures/gui/container',
+    'assets/minecraft/textures/gui/recipe_book.png',
+    'assets/minecraft/textures/gui/sprites/recipe_book',
     # The live Oak (Crit Damage) Booster texture is fully transparent; this is the repo's art without its frame.
     'assets/minecraft/textures/item/oak_booster.png',
 )
