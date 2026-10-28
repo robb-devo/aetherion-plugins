@@ -19,7 +19,7 @@ APP=/opt/aetherion-helm
 HOST=panel.donnernet.de
 CF_TOKEN_FILE=""
 TUNNEL=0
-IDS=(proxy hub mmor mmod mmoc mmoi)
+IDS=(proxy hub mmor mmod mmoc mmoi mmom)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -95,7 +95,8 @@ python3 - "$APP/helm.json" "$SERVERS_TSV" "$HOST" <<'PY'
 import json, os, secrets, sys
 path, tsv, host = sys.argv[1:4]
 names = {"proxy": ("Proxy", "Velocity-Proxy"), "hub": ("Hub", "Lobby"), "mmor": ("MMO-R", "Hauptwelt"),
-         "mmod": ("MMO-D", "Dungeons"), "mmoc": ("MMO-C", "Exile & Story"), "mmoi": ("MMO-I", "Inseln")}
+         "mmod": ("MMO-D", "Dungeons"), "mmoc": ("MMO-C", "Exile & Story"), "mmoi": ("MMO-I", "Inseln"),
+         "mmom": ("MMO-M", "Mine")}
 cfg = json.load(open(path)) if os.path.exists(path) else {}
 cfg.setdefault("bind", "127.0.0.1")
 cfg.setdefault("port", 8787)
