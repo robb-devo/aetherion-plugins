@@ -107,6 +107,8 @@ public final class WandListener implements Listener {
 
         if ("heal".equals(type)) {
             castHeal(player, target, world, blast);
+            de.aetherion.core.api.Vfx.wave(player.getLocation().add(0, 0.05, 0), HEAL, 8.0, 14);
+            de.aetherion.core.api.Vfx.spark(hand(player), HEAL, 0.5);
             return;
         }
 
@@ -123,6 +125,7 @@ public final class WandListener implements Listener {
         }
 
         playCast(world, target, type);
+        castLine(player, target, type, blast);
 
         List<LivingEntity> hit = new ArrayList<>();
         for (Entity entity : world.getNearbyEntities(target, blast, blast + 1.2, blast)) {
@@ -196,7 +199,49 @@ public final class WandListener implements Listener {
         return best;
     }
 
+    /**
+     * Wands speak the shape language: a spark on the tip, a line of the element from the wand to the target, and a
+     * ring as wide as the blast where it lands. Damage, range and cooldowns are untouched.
+     */
+    private static void castLine(Player player, Location target, String type, double blast) {
+        org.bukkit.Color c = color(type);
+        Location tip = hand(player);
+        Location at = target.clone().add(0, 1, 0);
+        de.aetherion.core.api.Vfx.spark(tip, c, 0.5);
+        if ("frost".equals(type) || "ember".equals(type)) {
+            de.aetherion.core.api.Vfx.streak(tip, at, c, 0.32, 8);
+        } else {
+            de.aetherion.core.api.Vfx.bolt(tip, at, c, 6);
+        }
+        de.aetherion.core.api.Vfx.burst(at, c, 0.9 + blast * 0.25, 8);
+        de.aetherion.core.api.Vfx.wave(target.clone().add(0, 0.05, 0), c, Math.max(1.2, blast), 12);
+    }
+
+    private static Location hand(Player player) {
+        Location eye = player.getEyeLocation();
+        return eye.clone().add(eye.getDirection().multiply(0.7)).add(0, -0.35, 0);
+    }
+
+    private static org.bukkit.Color color(String type) {
+        if ("frost".equals(type)) {
+            return FROST;
+        }
+        if ("ember".equals(type)) {
+            return EMBER;
+        }
+        return "chain".equals(type) ? CHAIN : SPARK;
+    }
+
+    private static final org.bukkit.Color SPARK = org.bukkit.Color.fromRGB(0xC8E8FF);
+    private static final org.bukkit.Color CHAIN = org.bukkit.Color.fromRGB(0x8FD0FF);
+    private static final org.bukkit.Color FROST = org.bukkit.Color.fromRGB(0xA8F0FF);
+    private static final org.bukkit.Color EMBER = org.bukkit.Color.fromRGB(0xFF8A3C);
+    private static final org.bukkit.Color HEAL = org.bukkit.Color.fromRGB(0x7CFF8A);
+
     private void drawSpark(World world, Location from, Location to) {
+        if (de.aetherion.core.api.Vfx.bolt(from, to, CHAIN, 5)) {
+            return;
+        }
         Vector delta = to.toVector().subtract(from.toVector());
         int steps = 8;
         for (int i = 1; i <= steps; i++) {
