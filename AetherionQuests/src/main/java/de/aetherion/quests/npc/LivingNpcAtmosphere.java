@@ -1,6 +1,9 @@
 package de.aetherion.quests.npc;
 
 import de.aetherion.quests.AetherionQuests;
+import de.aetherion.quests.isle.IsleCast;
+import de.aetherion.quests.manager.QuestManager;
+import de.aetherion.quests.util.QuestStoryGate;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -593,9 +596,11 @@ public final class LivingNpcAtmosphere {
             String bestId = null;
             QuestNPC best = null;
             double bestD = GREET_RANGE * GREET_RANGE;
+            boolean newcomer = newcomer(player);
             for (java.util.Map.Entry<String, Location> spot : spots.entrySet()) {
                 Location at = spot.getValue();
-                if (!at.getWorld().equals(player.getWorld())) {
+                if (!at.getWorld().equals(player.getWorld())
+                        || (newcomer && IsleCast.quietOnArrival(spot.getKey()))) {
                     continue;
                 }
                 double d = at.distanceSquared(player.getLocation());
@@ -653,7 +658,8 @@ public final class LivingNpcAtmosphere {
             for (Player p : at.getWorld().getPlayers()) {
                 double d = p.getLocation().distanceSquared(at);
                 Long heard = lastIdleHeard.get(p.getUniqueId());
-                if (d >= 16.0 && d <= 196.0 && (heard == null || socialTick - heard > 20L * 60L)) {
+                if (d >= 16.0 && d <= 196.0 && (heard == null || socialTick - heard > 20L * 60L)
+                        && !(IsleCast.quietOnArrival(id) && newcomer(p))) {
                     audience.add(p);
                 }
             }
@@ -710,8 +716,15 @@ public final class LivingNpcAtmosphere {
             if (!ready || spots.isEmpty()) {
                 continue;
             }
+            boolean harbourCast = false;
+            for (String id : cast) {
+                harbourCast |= IsleCast.quietOnArrival(id);
+            }
             List<Player> audience = new ArrayList<>();
             for (Player p : spots.get(0).getWorld().getPlayers()) {
+                if (harbourCast && newcomer(p)) {
+                    continue;
+                }
                 for (Location at : spots) {
                     if (at.getWorld().equals(p.getWorld()) && at.distanceSquared(p.getLocation()) <= 18.0 * 18.0) {
                         audience.add(p);
@@ -734,6 +747,17 @@ public final class LivingNpcAtmosphere {
             playBanter(plugin, spoken, audience);
             return;
         }
+    }
+
+    /**
+     * Arrival thinned out (beta 10-28): until Egon's welcome is done the harbour cast doesn't greet, bark or
+     * banter at this player, so the first voice on the quay is Egon's.
+     */
+    private static boolean newcomer(Player player) {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        QuestManager qm = plugin == null ? null : plugin.getQuestManager();
+        return qm != null && !QuestStoryGate.questCompleted(player, qm, "welcome_aboard")
+                && !QuestStoryGate.tutorialDone(player, qm);
     }
 
     /** Shared barks show one text to everyone in range: majority language wins, ties stay English. */

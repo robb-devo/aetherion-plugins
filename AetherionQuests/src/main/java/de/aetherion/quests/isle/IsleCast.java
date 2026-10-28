@@ -50,7 +50,8 @@ public final class IsleCast {
             seat("crane_hand", 327.5, 63, -383.5, -143f, "harbour"),
             seat("lighthouse_keeper", 266.5, 63, -461.5, -90f, "harbour"),
             seat("shanty_busker", 236.5, 64, -366.5, -139f, "harbour"),
-            seat("lamp_lighter", 262.5, 63, -386.5, 0f, "harbour"),
+            // Beta pass 10-28: the lamplighter waits at the west end of his round by day, off the arrival quay.
+            seat("lamp_lighter", 250.5, 64, -383.5, -90f, "harbour"),
             seat("town_crier", 187.5, 64, -432.5, 162f, "harbour"),
             seat("street_sweeper", 210.5, 64, -404.5, -90f, "harbour"),
             seat("stall_crumb", 238.5, 64, -399.5, 0f, "harbour"),
@@ -84,6 +85,28 @@ public final class IsleCast {
             seat("tollkeeper", -261.5, 56, -258.5, 106f, "whisperwood"),
             seat("hermit", -409.5, 58, -238.5, 121f, "whisperwood")
     );
+
+    /** Fish shop and the fishing dock: harbour folk too, but placed from npcs.yml rather than a seat. */
+    private static final Set<String> HARBOUR_EXTRA = Set.of("fishmonger", "fisher");
+
+    /**
+     * Harbour cast that keeps quiet for a player who hasn't finished Egon's welcome yet, so on arrival only
+     * Egon talks (LivingNpcAtmosphere: greetings, idle barks, banter).
+     */
+    public static boolean quietOnArrival(String npcId) {
+        if (npcId == null) {
+            return false;
+        }
+        if (HARBOUR_EXTRA.contains(npcId)) {
+            return true;
+        }
+        for (Seat seat : SEATS) {
+            if (seat.npcId().equals(npcId)) {
+                return "harbour".equals(seat.group());
+            }
+        }
+        return false;
+    }
 
     /** Three blocks of the harbour boardwalk: only the Origin map gets seeded (never a dungeon or test world). */
     private static final int[][] FINGERPRINT = {{316, 62, -382}, {318, 62, -382}, {322, 62, -382}};
@@ -199,7 +222,10 @@ public final class IsleCast {
             {"crane_hand", 324.5, 63.0, -383.5},
             // harbour elevate: the crane went to the pier head, and Quill off Egon's back to tally beside it
             {"crane_hand", 314.5, 63.0, -394.5},
-            {"harbourmaster", 287.5, 63.0, -380.5}
+            {"harbourmaster", 287.5, 63.0, -380.5},
+            // beta pass 10-28 (arrival thinned out): Wick off the quay, Hollis back to his square in town
+            {"lamp_lighter", 262.5, 63.0, -386.5},
+            {"town_crier", 259.5, 63.0, -400.5}
     };
 
     private void relocateMoved(World world, NPCDataStorage storage) {
