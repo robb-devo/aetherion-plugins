@@ -124,6 +124,10 @@ public final class HangingSaintDirector {
     private Act act = Act.NONE;
     private int actTick;
     private Move move = Move.IDLE;
+    /** Moves the combat kit lets you parry (yellow "!"); the rest are red "!!", roll through them. */
+    private static final java.util.Set<Move> PARRYABLE = java.util.EnumSet.of(Move.LUNGE, Move.FIST, Move.GRASP, Move.NEEDLEWORK, Move.STITCHES);
+    /** The mark over the move being wound up; it pops when the move first lands. */
+    private de.aetherion.bossengine.combat.BossTells.Tell moveTell;
     private Move lastMove = Move.IDLE;
     private int moveTick;
     private int cooldown = 40;
@@ -915,6 +919,11 @@ public final class HangingSaintDirector {
     }
 
     private void chooseMove() {
+        if (instance.guard().broken()) {
+            // Guard broken (BossGuard): no new move until it mends.
+            cooldown = 10;
+            return;
+        }
         Player p = currentTarget();
         if (p == null) {
             cooldown = 20;
@@ -988,10 +997,18 @@ public final class HangingSaintDirector {
         target = p == null ? null : p.getUniqueId();
         body.rig.frameStep = phase == 3 ? 2 : 1;
         body.rig.interp = phase == 3 ? 1 : 2;
+        if (m != Move.IDLE) {
+            // Shown on the wind-up; long enough that the white beat never comes before the hit.
+            moveTell = PARRYABLE.contains(m) ? instance.guard().parryTell(60) : instance.guard().rollTell(60);
+        }
     }
 
     private void finish(int cool) {
         endMove();
+        if (moveTell != null) {
+            moveTell.landIn(0);
+            moveTell = null;
+        }
         lastMove = move;
         move = Move.IDLE;
         // Act III keeps its stop-motion frame holds, but the dead air between moves is shorter.
@@ -3220,7 +3237,20 @@ public final class HangingSaintDirector {
             gate.entrySet().removeIf(e -> clock - e.getValue() > 200);
         }
         if (power > 0) {
-            BossHits.hurt(p, instance.getEntity(), power);
+            // Combat kit: the parryable moves are strikes (F on the beat), everything else only a roll escapes.
+            if (PARRYABLE.contains(move)) {
+                BossHits.hurt(p, instance.getEntity(), power);
+                instance.guard().parriedBy(p);
+            } else {
+                BossHits.peril(p, instance.getEntity(), power);
+            }
+            if (moveTell != null) {
+                moveTell.landIn(0);
+                moveTell = null;
+            }
+            if (de.aetherion.bossengine.combat.Parries.avoided(p)) {
+                return false;
+            }
         }
         Vector3f pp = fx.stage(p.getLocation());
         Vector3f dir = new Vector3f(pp.x - from.x, 0, pp.z - from.z);

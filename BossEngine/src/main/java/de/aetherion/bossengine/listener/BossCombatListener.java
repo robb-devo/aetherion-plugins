@@ -361,6 +361,11 @@ public class BossCombatListener implements Listener {
                 && de.aetherion.bossengine.skill.t2.T2Mechanics.hasMiningSkills(player)) {
             power *= 1.30;
         }
+        if (instance.guard().active()) {
+            // Yellow "!": wound up, then parried on the white beat or taken (BossGuard).
+            instance.guard().melee(player, power);
+            return;
+        }
         BossHits.hurt(player, instance.getEntity(), power);
     }
 

@@ -232,7 +232,7 @@ final class RiteDirector {
             Vector ap = p.getLocation().add(0, 1.0, 0).toVector().subtract(a);
             double t = Math.max(0, Math.min(1, ap.dot(ab) / len2));
             if (ap.subtract(ab.clone().multiply(t)).lengthSquared() <= 1.3 * 1.3) {
-                BossHits.hurt(p, boss, instance.scaleDamage(late ? 30 : 26));
+                BossHits.peril(p, boss, instance.scaleDamage(late ? 30 : 26));
             }
         }
         lanceTo = null;

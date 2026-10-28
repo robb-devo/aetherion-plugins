@@ -167,7 +167,7 @@ public final class T2Mechanics {
             boom.getWorld().playSound(boom, Sound.ENTITY_GENERIC_EXPLODE, 1.35f, 0.55f);
             double scaled = instance.scaleDamage(aoePower);
             for (Player player : nearby(instance.getEntity(), 7)) {
-                BossHits.hurt(player, instance.getEntity(), scaled);
+                BossHits.peril(player, instance.getEntity(), scaled);
             }
         }, Math.max(8, delayTicks));
     }
@@ -255,7 +255,7 @@ public final class T2Mechanics {
                     if (player.getLocation().distanceSquared(boomAt) > 4.8 * 4.8) {
                         continue;
                     }
-                    BossHits.hurt(player, source, power);
+                    BossHits.peril(player, source, power);
                     player.setFireTicks(Math.max(player.getFireTicks(), 80));
                 }
             });
@@ -370,7 +370,7 @@ public final class T2Mechanics {
                 continue;
             }
             player.setVelocity(new Vector(0, 1.35, 0));
-            BossHits.hurt(player, live, instance.scaleDamage(burrow.launchPower));
+            BossHits.peril(player, live, instance.scaleDamage(burrow.launchPower));
             player.sendActionBar(net.kyori.adventure.text.Component.text("§8The quarry bites back."));
         }
     }
@@ -719,7 +719,7 @@ public final class T2Mechanics {
                         push.normalize().multiply(0.85).setY(0.28);
                         player.setVelocity(push);
                     }
-                    BossHits.hurt(player, instance.getEntity(), scaled);
+                    BossHits.peril(player, instance.getEntity(), scaled);
                 }
             }, delay);
         }
@@ -858,7 +858,7 @@ public final class T2Mechanics {
                     continue;
                 }
                 if (player.getLocation().distanceSquared(impact) <= 3.4 * 3.4) {
-                    BossHits.hurt(player, instance.getEntity(), scaled);
+                    BossHits.peril(player, instance.getEntity(), scaled);
                     if (de.aetherion.bossengine.fx.CombatTheatrics.meteorBurns(instance)) {
                         player.setFireTicks(Math.max(player.getFireTicks(), 60));
                     }

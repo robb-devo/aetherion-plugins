@@ -1037,7 +1037,11 @@ public final class Encounter {
         }
         iframes.put(k, clock + Math.max(1, iframeTicks));
         LivingEntity source = instance.getEntity();
-        BossHits.hurt(p, source, instance.scaleDamage(power));
+        // Combat kit: every Gnomon move is a zone on the floor (red "!!"), only a roll or leaving it escapes.
+        BossHits.peril(p, source, instance.scaleDamage(power));
+        if (de.aetherion.bossengine.combat.Parries.avoided(p)) {
+            return false;
+        }
         if (knock != null) {
             double h = Math.min(0.95, Math.hypot(knock.getX(), knock.getZ()));
             double hx = knock.getX();

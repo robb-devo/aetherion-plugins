@@ -438,7 +438,7 @@ final class PathwardenDirector {
                 if (dx * dx + dz * dz > VERDICT_RADIUS * VERDICT_RADIUS || Math.abs(l.getY() - at.getY()) > 3.5) {
                     continue;
                 }
-                BossHits.hurt(player, boss, 300);
+                BossHits.peril(player, boss, 300);
                 player.addPotionEffect(new PotionEffect(slowness(), 40, 1, false, true, true));
             }
         });
@@ -510,7 +510,7 @@ final class PathwardenDirector {
                 continue;
             }
             rebukeHit.add(player.getUniqueId());
-            BossHits.hurt(player, entity, 260);
+            BossHits.peril(player, entity, 260);
             Vector away = d < 0.01 ? new Vector(1, 0, 0) : new Vector(dx / d, 0, dz / d);
             player.setVelocity(away.multiply(1.4).setY(0.45));
         }
@@ -1244,7 +1244,7 @@ final class PathwardenDirector {
             if (!vulnerable(player) || player.getLocation().distanceSquared(at) > r2) {
                 continue;
             }
-            BossHits.hurt(player, entity, power);
+            BossHits.peril(player, entity, power);
             Vector push = player.getLocation().toVector().subtract(at.toVector());
             if (push.lengthSquared() < 0.01) {
                 push = new Vector(0, 0.4, 0);

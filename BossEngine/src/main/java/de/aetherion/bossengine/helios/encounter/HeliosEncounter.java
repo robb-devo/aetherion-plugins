@@ -595,7 +595,19 @@ public final class HeliosEncounter {
         double scaled = boss == null ? power : boss.scaleDamage(power);
         scaled *= enrageMultiplier();
         LivingEntity source = boss == null ? null : boss.getEntity();
-        BossHits.hurt(p, source, scaled);
+        // Combat kit: the Herald's blink strikes and blades are strikes you parry; every beam, cage, ring,
+        // meteor and quake only a roll gets you through.
+        if (key != null && (key.startsWith("blink") || key.startsWith("swarm"))) {
+            BossHits.hurt(p, source, scaled);
+            if (boss != null) {
+                boss.guard().parriedBy(p);
+            }
+        } else {
+            BossHits.peril(p, source, scaled);
+        }
+        if (de.aetherion.bossengine.combat.Parries.avoided(p)) {
+            return false;
+        }
         if (knock != null && knock.lengthSquared() > 0.0001) {
             p.setVelocity(p.getVelocity().multiply(0.3).add(tameKnock(p, knock)));
         }

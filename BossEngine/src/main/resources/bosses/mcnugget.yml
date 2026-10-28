@@ -157,6 +157,10 @@ loot:
         item-id: random_booster
         amount: 1
         chance: 1.0
+      - source: AETHERION
+        item-id: parity_gauntlets
+        amount: 1
+        chance: 0.08
     2:
       - source: AETHERION
         item-id: compressed_coal
@@ -166,11 +170,19 @@ loot:
         item-id: random_booster
         amount: 1
         chance: 0.55
+      - source: AETHERION
+        item-id: parity_gauntlets
+        amount: 1
+        chance: 0.04
     3:
       - source: AETHERION
         item-id: compressed_coal
         amount: 3
         chance: 1.0
+      - source: AETHERION
+        item-id: parity_gauntlets
+        amount: 1
+        chance: 0.02
 
   top-damagers:
     count: 3
