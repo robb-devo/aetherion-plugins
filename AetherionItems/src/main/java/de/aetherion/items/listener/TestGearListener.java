@@ -633,15 +633,32 @@ public final class TestGearListener implements Listener {
     private void applyParity(Player player, LivingEntity victim, EntityDamageByEntityEvent event) {
         long now = System.currentTimeMillis();
         SyncHit prev = paritySync.get(player.getUniqueId());
+        Location chest = victim.getLocation().add(0, victim.getHeight() * 0.6, 0);
         if (prev != null && now - prev.timeMs <= 900L && !prev.target.equals(victim.getUniqueId())) {
             event.setDamage(event.getDamage() * 1.55);
             player.sendActionBar(net.kyori.adventure.text.Component.text("§b§lTWIN SYNC"));
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.5f);
-            player.getWorld().spawnParticle(Particle.END_ROD, victim.getLocation().add(0, 1, 0), 14, 0.3, 0.4, 0.3, 0.02);
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.5f, 1.8f);
+            // The show: a bolt snaps from the first mark to the second, both marks flare.
+            org.bukkit.entity.Entity first = Bukkit.getEntity(prev.target);
+            boolean drawn = de.aetherion.core.api.Vfx.burst(chest, PARITY_CYAN, 1.1, 8);
+            if (first instanceof LivingEntity other && other.isValid() && other.getWorld() == victim.getWorld()) {
+                Location from = other.getLocation().add(0, other.getHeight() * 0.6, 0);
+                de.aetherion.core.api.Vfx.bolt(from, chest, PARITY_WHITE, 6);
+                de.aetherion.core.api.Vfx.rune(other.getLocation().add(0, 0.05, 0), PARITY_CYAN, 0.9, 10);
+            }
+            de.aetherion.core.api.Vfx.rune(victim.getLocation().add(0, 0.05, 0), PARITY_CYAN, 0.9, 10);
+            if (!drawn) {
+                player.getWorld().spawnParticle(Particle.END_ROD, chest, 14, 0.3, 0.4, 0.3, 0.02);
+            }
             paritySync.remove(player.getUniqueId());
             return;
         }
         paritySync.put(player.getUniqueId(), new SyncHit(victim.getUniqueId(), now));
+        // First tag: a cyan mark the twin hit will snap to.
+        de.aetherion.core.api.Vfx.spark(chest, PARITY_CYAN, 0.6);
+        de.aetherion.core.api.Vfx.ring(victim.getLocation().add(0, 0.05, 0), PARITY_CYAN, 0.7, 18);
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.6f, 1.6f);
         player.sendActionBar(net.kyori.adventure.text.Component.text("§7Tag another target within §f0.9s"));
     }
 
@@ -658,6 +675,9 @@ public final class TestGearListener implements Listener {
         }
         return itemManager.getItemId(item);
     }
+
+    private static final org.bukkit.Color PARITY_CYAN = org.bukkit.Color.fromRGB(0x6FE7FF);
+    private static final org.bukkit.Color PARITY_WHITE = org.bukkit.Color.fromRGB(0xF2FDFF);
 
     private record SyncHit(UUID target, long timeMs) {
     }

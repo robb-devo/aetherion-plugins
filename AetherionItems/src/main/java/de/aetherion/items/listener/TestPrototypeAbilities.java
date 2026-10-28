@@ -312,6 +312,11 @@ final class TestPrototypeAbilities implements Listener {
         JudgmentVerdict.cast(plugin, player, boom, () -> beamBusy.remove(id));
     }
 
+    private static final Color DASH_SILVER = Color.fromRGB(0xE6F4FF);
+    private static final Color DASH_CYAN = Color.fromRGB(0x7FE3FF);
+    private static final Color PRISM_LIME = Color.fromRGB(0x9CFF5A);
+    private static final Color PRISM_MAGENTA = Color.fromRGB(0xFF5AD8);
+
     /** Real forward dash (~5 blocks), not a teleport. */
     void castDash(Player player) {
         UUID id = player.getUniqueId();
@@ -326,15 +331,27 @@ final class TestPrototypeAbilities implements Listener {
         World world = player.getWorld();
         world.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.5f);
         world.playSound(player.getLocation(), Sound.ENTITY_BREEZE_SLIDE, 0.55f, 1.3f);
+        world.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_1, 0.35f, 1.9f);
         player.sendActionBar(net.kyori.adventure.text.Component.text("§f✦ Dash"));
+        // The show: a cut in the air where you left, a silver afterimage along the dash, a spark where you land.
+        de.aetherion.core.api.Vfx.slash(player.getEyeLocation(), DASH_SILVER, 1.5, (float) (Math.random() * 40 - 20));
+        de.aetherion.core.api.Vfx.ring(player.getLocation().add(0, 0.05, 0), DASH_CYAN, 0.9, 8);
 
         Vector step = flat.clone().multiply(0.95);
+        Vector ahead = flat.clone();
         new BukkitRunnable() {
             int tick = 0;
+            Location last = player.getLocation().add(0, 0.9, 0);
 
             @Override
             public void run() {
                 if (!player.isOnline() || tick >= 7) {
+                    if (player.isOnline()) {
+                        Location land = player.getLocation().add(0, 0.9, 0);
+                        de.aetherion.core.api.Vfx.burst(land, DASH_SILVER, 0.9, 6);
+                        de.aetherion.core.api.Vfx.spark(land.clone().add(ahead.clone().multiply(0.6)), DASH_CYAN, 0.7);
+                        world.playSound(land, Sound.ITEM_TRIDENT_RETURN, 0.5f, 1.7f);
+                    }
                     dashBusy.remove(id);
                     cancel();
                     return;
@@ -343,9 +360,13 @@ final class TestPrototypeAbilities implements Listener {
                 vel.setY(tick == 0 ? 0.22 : 0.06);
                 player.setVelocity(vel);
                 player.setFallDistance(0f);
-                Location at = player.getLocation().add(0, 0.4, 0);
-                world.spawnParticle(Particle.CLOUD, at, 6, 0.15, 0.1, 0.15, 0.01);
-                world.spawnParticle(Particle.SWEEP_ATTACK, at, 1, 0, 0, 0, 0);
+                Location now = player.getLocation().add(0, 0.9, 0);
+                if (!de.aetherion.core.api.Vfx.streak(last, now, tick % 2 == 0 ? DASH_SILVER : DASH_CYAN, 0.42, 7)) {
+                    Location at = player.getLocation().add(0, 0.4, 0);
+                    world.spawnParticle(Particle.CLOUD, at, 6, 0.15, 0.1, 0.15, 0.01);
+                    world.spawnParticle(Particle.SWEEP_ATTACK, at, 1, 0, 0, 0, 0);
+                }
+                last = now;
                 tick++;
             }
         }.runTaskTimer(plugin, 0L, 1L);
@@ -424,7 +445,22 @@ final class TestPrototypeAbilities implements Listener {
 
                 if (tick % 5 == 0) {
                     world.playSound(pivot, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.35f, 0.6f + (float) progress);
-                    world.spawnParticle(Particle.END_ROD, pivot.clone().add(0, 0.8, 0), 4, 0.4, 0.3, 0.4, 0.01);
+                }
+                // Each prism leaves a short tail in its colour; the orbit tightens until they touch.
+                if (tick % 2 == 0) {
+                    double r = radius;
+                    Location la = pivot.clone().add(Math.cos(angle) * r, 0.7, Math.sin(angle) * r);
+                    Location lb = pivot.clone().add(Math.cos(angle + Math.PI) * r, 0.7, Math.sin(angle + Math.PI) * r);
+                    Location ta = pivot.clone().add(Math.cos(angle - 0.35) * r, 0.7, Math.sin(angle - 0.35) * r);
+                    Location tb = pivot.clone().add(Math.cos(angle + Math.PI - 0.35) * r, 0.7, Math.sin(angle + Math.PI - 0.35) * r);
+                    boolean drawn = de.aetherion.core.api.Vfx.streak(ta, la, PRISM_LIME, 0.3 + progress * 0.25, 6);
+                    de.aetherion.core.api.Vfx.streak(tb, lb, PRISM_MAGENTA, 0.3 + progress * 0.25, 6);
+                    if (!drawn && tick % 6 == 0) {
+                        world.spawnParticle(Particle.END_ROD, pivot.clone().add(0, 0.8, 0), 4, 0.4, 0.3, 0.4, 0.01);
+                    }
+                }
+                if (tick == duration - 10) {
+                    de.aetherion.core.api.Vfx.telegraph(pivot, 8.0, 10, PRISM_MAGENTA);
                 }
 
                 if (tick < duration) {
@@ -434,11 +470,20 @@ final class TestPrototypeAbilities implements Listener {
                 Location bang = pivot.clone().add(0, 0.6, 0);
                 a.remove();
                 b.remove();
-                world.spawnParticle(Particle.FLASH, bang, 8, 0.8, 0.5, 0.8, 0);
-                world.spawnParticle(Particle.EXPLOSION_EMITTER, bang, 4, 0.9, 0.4, 0.9, 0);
-                world.spawnParticle(Particle.END_ROD, bang, 50, 1.2, 0.8, 1.2, 0.08);
-                world.spawnParticle(Particle.DUST, bang, 60, 1.5, 0.8, 1.5, 0,
-                        new Particle.DustOptions(Color.fromRGB(255, 255, 255), 2.2f));
+                // Big Bang: white core, then the two colours ring out across the 8-block blast.
+                if (de.aetherion.core.api.Vfx.burst(bang, Color.WHITE, 2.6, 10)) {
+                    de.aetherion.core.api.Vfx.wave(pivot.clone().add(0, 0.1, 0), PRISM_LIME, 8.0, 12);
+                    de.aetherion.core.api.Vfx.wave(pivot.clone().add(0, 0.4, 0), PRISM_MAGENTA, 6.5, 14);
+                    de.aetherion.core.api.Vfx.pillar(pivot, Color.WHITE, 1.2, 6.0, 10);
+                    world.spawnParticle(Particle.FLASH, bang, 1, 0, 0, 0, 0);
+                } else {
+                    world.spawnParticle(Particle.FLASH, bang, 8, 0.8, 0.5, 0.8, 0);
+                    world.spawnParticle(Particle.EXPLOSION_EMITTER, bang, 4, 0.9, 0.4, 0.9, 0);
+                    world.spawnParticle(Particle.END_ROD, bang, 50, 1.2, 0.8, 1.2, 0.08);
+                    world.spawnParticle(Particle.DUST, bang, 60, 1.5, 0.8, 1.5, 0,
+                            new Particle.DustOptions(Color.fromRGB(255, 255, 255), 2.2f));
+                }
+                world.playSound(bang, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.2f, 0.6f);
                 world.playSound(bang, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.55f);
                 world.playSound(bang, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.7f, 0.65f);
                 world.playSound(bang, Sound.BLOCK_BEACON_DEACTIVATE, 0.9f, 0.5f);
