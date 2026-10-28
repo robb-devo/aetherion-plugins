@@ -81,6 +81,10 @@ loot:
         item-id: echo_blade
         amount: 1
         chance: 0.08
+      - source: AETHERION
+        item-id: pickaxe_core_of_the_burrower
+        amount: 1
+        chance: 0.12
 
   top-damagers:
     count: 0

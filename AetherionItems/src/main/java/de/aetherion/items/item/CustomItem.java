@@ -6478,7 +6478,7 @@ public class CustomItem {
 
     public ItemStack createRandomDungeonRelic(DungeonGearTier tier) {
         DungeonGearTier safe = tier == null || tier == DungeonGearTier.T1 ? DungeonGearTier.T2 : tier;
-        String id = DungeonRelic.randomArmorId(safe);
+        String id = DungeonRelic.randomId(safe);
         return createDungeonFromId(id);
     }
 

@@ -139,6 +139,10 @@ loot:
       item-id: dash_dagger
       amount: 1
       chance: 0.06
+    - source: AETHERION
+      item-id: insolvent_ledger
+      amount: 1
+      chance: 0.08
 
   top-damagers:
     count: 3

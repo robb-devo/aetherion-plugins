@@ -108,8 +108,9 @@ public final class DungeonRelic {
         return lore;
     }
 
+    /** A random unidentified relic: one in five is the weapon (it never rolled before 10-28), the rest armor. */
     public static String randomId(DungeonGearTier tier) {
-        return randomArmorId(tier);
+        return ThreadLocalRandom.current().nextInt(5) == 0 ? weaponId(tier) : randomArmorId(tier);
     }
 
     public static String randomArmorId(DungeonGearTier tier) {
