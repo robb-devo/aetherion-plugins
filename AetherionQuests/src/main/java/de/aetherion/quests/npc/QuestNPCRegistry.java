@@ -862,7 +862,7 @@ public class QuestNPCRegistry {
         ));
         registerNPC(new QuestNPC(
                 "stall_brine",
-                "Brine",
+                "Sela",
                 NPCType.FLAVOR,
                 "",
                 "stall_brine_intro",
