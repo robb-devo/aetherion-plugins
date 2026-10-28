@@ -45,7 +45,7 @@ public final class ExileHost implements Listener {
     private final float spawnPitch;
     private final Set<String> keepWorlds;
     /** Boss worlds that live on this backend next to the island (instances / sites). Never retired. */
-    private static final Set<String> BOSS_WORLDS = Set.of("helios_requiem", "world_eater");
+    private static final Set<String> BOSS_WORLDS = Set.of("helios_requiem", "world_eater", "ashen_void");
     private final List<String> retireWorlds;
 
     public ExileHost(AetherionCore plugin, ExileLink link, TransferSnapshotStore snapshots) {
@@ -154,8 +154,28 @@ public final class ExileHost implements Listener {
             doors.build(world);
             lift = new de.aetherion.core.exile.ExileLift(plugin);
             lift.arm(world);
+            loadFinaleWorld();
         }
         retireForeignWorlds();
+    }
+
+    /** Aetherion's Ashen Void (behind the Great Doors) lives here when its folder does; void generator, no Multiverse. */
+    private void loadFinaleWorld() {
+        String name = "ashen_void";
+        if (Bukkit.getWorld(name) != null || !new java.io.File(Bukkit.getWorldContainer(), name).isDirectory()) {
+            return;
+        }
+        World finale = new org.bukkit.WorldCreator(name)
+                .environment(World.Environment.NORMAL)
+                .generator(new de.aetherion.core.world.VoidChunkGenerator())
+                .generateStructures(false)
+                .createWorld();
+        if (finale != null) {
+            finale.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+            finale.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+            finale.setGameRule(GameRule.KEEP_INVENTORY, true);
+            plugin.getLogger().info("[ExileFinale] " + name + " loaded for the Great Doors.");
+        }
     }
 
     private void tuneWorld(World world) {

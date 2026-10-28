@@ -876,13 +876,16 @@ public class ForagingListener implements Listener {
             return;
         }
         if (pulse.hit()) {
-            landChop(pulse);
+            landChop(pulse, false);
         } else {
-            missChop(pulse);
+            // 10-27 (Pit: the core has to always work): off the window the tree still comes down —
+            // a rough fell, no perfect bonus, streak gone, but no locked trunk. Timing is the bonus, not the gate.
+            streaks.reset(pulse.playerId);
+            landChop(pulse, true);
         }
     }
 
-    private void landChop(FellPulse pulse) {
+    private void landChop(FellPulse pulse, boolean rough) {
         if (pulse == null || !pulses.remove(pulse.playerId, pulse)) {
             return;
         }
@@ -903,12 +906,16 @@ public class ForagingListener implements Listener {
         hud.hide(pulse.playerId);
         // Stop dig/swing spam while the tree comes down.
         collapsingPlayers.add(pulse.playerId);
-        boolean perfect = pulse.perfectHit();
-        int streak = streaks.bump(pulse.playerId);
+        boolean perfect = !rough && pulse.perfectHit();
+        int streak = rough ? 0 : streaks.bump(pulse.playerId);
         if (player != null) {
             ensureWoodCap(pulse.job, player);
-            ForagingFx.success(player, at, perfect, streak);
-            announceStreak(player, streak);
+            if (rough) {
+                ForagingFx.rough(player, at);
+            } else {
+                ForagingFx.success(player, at, perfect, streak);
+                announceStreak(player, streak);
+            }
             // Release held dig so the client stops flailing the axe.
             player.clearActiveItem();
             tryForestDragonFromChop(player);
@@ -918,7 +925,7 @@ public class ForagingListener implements Listener {
         fellHook(player, pulse.job, perfect, streak, false);
         int bonus = (perfect ? PERFECT_BONUS_XP : 0)
                 + Math.min(STREAK_BONUS_CAP, Math.max(0, streak - 1) * STREAK_BONUS_STEP);
-        scheduleTally(pulse.job, pulse.playerId, ForagingFx.word(perfect), streak, bonus);
+        scheduleTally(pulse.job, pulse.playerId, rough ? "§eRough fell." : ForagingFx.word(perfect), streak, bonus);
     }
 
     /**

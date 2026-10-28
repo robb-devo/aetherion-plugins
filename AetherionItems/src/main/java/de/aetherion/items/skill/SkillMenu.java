@@ -339,9 +339,9 @@ public final class SkillMenu implements Listener {
                 continue;
             }
             if (skill != AetherSkill.LIFE_ABSORB) {
-                double scale = SkillProgression.effectMultiplier(level);
                 for (var entry : skill.bonuses().entrySet()) {
-                    totals.merge(entry.getKey(), entry.getValue() * scale, Double::sum);
+                    totals.merge(entry.getKey(),
+                            entry.getValue() * SkillProgression.bonusMultiplier(level, entry.getKey()), Double::sum);
                 }
             }
             for (Effect effect : flagEffects(skill, level)) {
@@ -802,10 +802,10 @@ public final class SkillMenu implements Listener {
 
     private static List<Effect> effects(AetherSkill skill, int level) {
         List<Effect> lines = new ArrayList<>();
-        double scale = SkillProgression.effectMultiplier(level);
         for (var entry : skill.bonuses().entrySet()) {
             ItemCapability capability = entry.getKey();
-            lines.add(Effect.stat(label(capability), entry.getValue() * scale, "+", percent(capability) ? "%" : ""));
+            lines.add(Effect.stat(label(capability), entry.getValue() * SkillProgression.bonusMultiplier(level, capability),
+                    "+", percent(capability) ? "%" : ""));
         }
         lines.addAll(flagEffects(skill, level));
         return lines;

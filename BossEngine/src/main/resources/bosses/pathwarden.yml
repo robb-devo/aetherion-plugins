@@ -90,14 +90,26 @@ loot:
         item-id: gravwell_cleaver
         amount: 1
         chance: 0.10
+      - source: AETHERION
+        item-id: judgment_staff
+        amount: 1
+        chance: 0.08
     2:
       - source: AETHERION
         item-id: gravwell_cleaver
         amount: 1
         chance: 0.04
+      - source: AETHERION
+        item-id: judgment_staff
+        amount: 1
+        chance: 0.04
     3:
       - source: AETHERION
         item-id: gravwell_cleaver
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: judgment_staff
         amount: 1
         chance: 0.02
 

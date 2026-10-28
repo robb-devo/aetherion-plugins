@@ -77,6 +77,10 @@ loot:
         item-id: random_booster
         amount: 1
         chance: 0.25
+      - source: AETHERION
+        item-id: echo_blade
+        amount: 1
+        chance: 0.08
 
   top-damagers:
     count: 0

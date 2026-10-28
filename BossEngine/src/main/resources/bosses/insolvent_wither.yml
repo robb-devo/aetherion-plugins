@@ -248,6 +248,10 @@ loot:
         item-id: insolvent_ledger
         amount: 1
         chance: 0.18
+      - source: AETHERION
+        item-id: parity_gauntlets
+        amount: 1
+        chance: 0.08
   top-damagers:
     count: 3
     items:

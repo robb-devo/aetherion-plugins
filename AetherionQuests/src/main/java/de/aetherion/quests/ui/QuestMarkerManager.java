@@ -643,11 +643,15 @@ public class QuestMarkerManager implements Listener {
         purgeNameDisplays(npc.getId());
         TextDisplay kept = nameDisplays.get(npc.getId());
         if (kept != null && (!kept.isValid() || kept.isDead())) {
+            // remove() even when invalid: a plate stranded in an unloaded chunk is still held by the world.
+            kept.remove();
             nameDisplays.remove(npc.getId());
             kept = null;
         }
 
-        if (location == null) {
+        // No plate into a chunk that isn't up with its entities: it would sit there unseen and unticked,
+        // never turn valid, and every refresh would add another (1.1M plates on mmo-r by 10-27).
+        if (location == null || !entitiesLoaded(location)) {
             if (kept != null) {
                 removeDisplay(kept);
                 nameDisplays.remove(npc.getId());
@@ -669,6 +673,13 @@ public class QuestMarkerManager implements Listener {
 
         display.text(nameComponent(npc));
         applyNameStyle(display);
+    }
+
+    private static boolean entitiesLoaded(Location at) {
+        World world = at.getWorld();
+        int cx = at.getBlockX() >> 4;
+        int cz = at.getBlockZ() >> 4;
+        return world != null && world.isChunkLoaded(cx, cz) && world.getChunkAt(cx, cz).isEntitiesLoaded();
     }
 
 

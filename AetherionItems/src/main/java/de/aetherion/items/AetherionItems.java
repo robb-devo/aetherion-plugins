@@ -197,11 +197,7 @@ public class AetherionItems extends JavaPlugin {
         new de.aetherion.items.world.TestArenaGuard(this, testArena);
         new de.aetherion.items.world.ShabbyMineGuard(this);
         new de.aetherion.items.world.NaturalSpawnGuard(this);
-        getServer().getScheduler().runTaskLater(this, () -> {
-            if (testArena != null) {
-                testArena.ensureWorld();
-            }
-        }, 60L);
+        // No boot preload: the test arena world is made on first use, so backends stay free of it.
         new de.aetherion.items.listener.HungerListener(this);
 
         RecipeRegistry recipes = new RecipeRegistry(recipeManager, customItem);

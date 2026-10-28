@@ -178,8 +178,7 @@ public final class CombatTeach {
         }
         return LangPack.dialogs(player, "vex_combat_intro", new String[] {
                 "Sergeant Vex. Fighting here isn't hold-click-and-pray.",
-                "The drill's being rebuilt — footwork, timing, the lot. When it lands, I put you through it.",
-                "Today: armour on — all of Egon's kit — and a blade in your hand. Then look at me."
+                "Armour on — all of Egon's kit — blade in hand. Then look at me."
         });
     }
 

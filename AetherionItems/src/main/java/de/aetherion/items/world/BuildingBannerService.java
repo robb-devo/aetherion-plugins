@@ -41,6 +41,8 @@ public final class BuildingBannerService {
     private final File file;
     private final Map<UUID, PlacedBanner> placed = new ConcurrentHashMap<>();
     private boolean rebuiltArt;
+    /** Banners from the file that sat on cells of an earlier one; their frames go once worlds are up. */
+    private final List<PlacedBanner> duplicates = new ArrayList<>();
 
     public BuildingBannerService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -163,9 +165,16 @@ public final class BuildingBannerService {
                 facing.name(),
                 kind.id()
         );
+        // A banner over the cells of another replaces it: two of them clear each other's frames every pass.
+        for (PlacedBanner old : List.copyOf(placed.values())) {
+            if (old.overlaps(banner)) {
+                removeDisplay(old);
+                placed.remove(old.id());
+            }
+        }
         for (int i = 0; i < BuildingBannerArt.PANELS; i++) {
             Block at = air.getRelative(right, i - mid);
-            ItemFrame frame = spawnPanel(at, facing, kind, i, id);
+            ItemFrame frame = spawnPanel(at, facing, kind, i, banner);
             if (frame != null) {
                 banner.frames().add(frame.getUniqueId());
             }
@@ -207,7 +216,8 @@ public final class BuildingBannerService {
         return true;
     }
 
-    private ItemFrame spawnPanel(Block at, BlockFace facing, BuildingBannerKind kind, int panel, UUID bannerId) {
+    private ItemFrame spawnPanel(Block at, BlockFace facing, BuildingBannerKind kind, int panel, PlacedBanner banner) {
+        UUID bannerId = banner.id();
         World world = at.getWorld();
         if (world == null) {
             return null;
@@ -222,11 +232,7 @@ public final class BuildingBannerService {
                 frame.remove();
             }
         }
-        MapView view = Bukkit.createMap(world);
-        view.getRenderers().forEach(view::removeRenderer);
-        view.addRenderer(new BuildingBannerRenderer(kind, panel));
-        view.setTrackingPosition(false);
-        view.setUnlimitedTracking(false);
+        MapView view = mapFor(banner, panel, world, kind);
 
         ItemStack mapItem = new ItemStack(Material.FILLED_MAP);
         MapMeta meta = (MapMeta) mapItem.getItemMeta();
@@ -258,6 +264,22 @@ public final class BuildingBannerService {
         }
     }
 
+    /** The panel's own map, made once and kept: a new map per respawn leaked 150k maps a day on mmo-r. */
+    @SuppressWarnings("deprecation")
+    private MapView mapFor(PlacedBanner banner, int panel, World world, BuildingBannerKind kind) {
+        int id = banner.mapId(panel);
+        MapView view = id < 0 ? null : Bukkit.getMap(id);
+        if (view == null) {
+            view = Bukkit.createMap(world);
+            banner.setMapId(panel, view.getId());
+        }
+        view.getRenderers().forEach(view::removeRenderer);
+        view.addRenderer(new BuildingBannerRenderer(kind, panel));
+        view.setTrackingPosition(false);
+        view.setUnlimitedTracking(false);
+        return view;
+    }
+
     private void removeDisplay(PlacedBanner banner) {
         for (UUID frameId : List.copyOf(banner.frames())) {
             Entity entity = Bukkit.getEntity(frameId);
@@ -271,7 +293,7 @@ public final class BuildingBannerService {
             return;
         }
         Location at = banner.location(world);
-        if (!at.getChunk().isLoaded()) {
+        if (!at.isChunkLoaded()) {
             return;
         }
         for (Entity entity : world.getNearbyEntities(at, 8, 4, 8)) {
@@ -286,9 +308,14 @@ public final class BuildingBannerService {
     }
 
     private void rebuildAllArt() {
-        for (PlacedBanner banner : placed.values()) {
-            respawn(banner);
+        for (PlacedBanner dropped : duplicates) {
+            removeDisplay(dropped);
         }
+        if (!duplicates.isEmpty()) {
+            plugin.getLogger().info("Dropped " + duplicates.size() + " building banners stacked on another one.");
+        }
+        duplicates.clear();
+        // ensureDisplays reattaches or respawns once the chunks are up with entities; respawning here stacked frames.
         rebuiltArt = true;
         save();
         plugin.getLogger().info("Rebuilt " + placed.size() + " building banners (art v" + BuildingBannerArt.ART_VERSION + ").");
@@ -310,7 +337,7 @@ public final class BuildingBannerService {
         int mid = BuildingBannerArt.PANELS / 2;
         for (int i = 0; i < BuildingBannerArt.PANELS; i++) {
             Block cell = air.getRelative(right, i - mid);
-            ItemFrame frame = spawnPanel(cell, facing, kind, i, banner.id());
+            ItemFrame frame = spawnPanel(cell, facing, kind, i, banner);
             if (frame != null) {
                 banner.frames().add(frame.getUniqueId());
             }
@@ -326,8 +353,7 @@ public final class BuildingBannerService {
             if (world == null) {
                 continue;
             }
-            Location at = banner.location(world);
-            if (!at.getChunk().isLoaded()) {
+            if (!cellsReady(banner, world)) {
                 continue;
             }
             if (framesHealthy(banner)) {
@@ -337,6 +363,20 @@ public final class BuildingBannerService {
             respawn(banner);
             save();
         }
+    }
+
+    /** Both end cells' chunks loaded with entities (a banner can straddle a border). Never loads a chunk. */
+    private static boolean cellsReady(PlacedBanner banner, World world) {
+        BlockFace right = rightOf(banner.facing());
+        int half = BuildingBannerArt.PANELS / 2;
+        for (int side : new int[]{-half, half}) {
+            int cx = (banner.x() + right.getModX() * side) >> 4;
+            int cz = (banner.z() + right.getModZ() * side) >> 4;
+            if (!world.isChunkLoaded(cx, cz) || !world.getChunkAt(cx, cz).isEntitiesLoaded()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean framesHealthy(PlacedBanner banner) {
@@ -451,6 +491,7 @@ public final class BuildingBannerService {
                 frames.add(id.toString());
             }
             config.set(path + "frames", frames);
+            config.set(path + "maps", banner.mapIds());
         }
         try {
             config.save(file);
@@ -490,6 +531,14 @@ public final class BuildingBannerService {
                 } catch (IllegalArgumentException ignored) {
                 }
             }
+            List<Integer> maps = config.getIntegerList(path + "maps");
+            for (int i = 0; i < maps.size(); i++) {
+                banner.setMapId(i, maps.get(i));
+            }
+            if (placed.values().stream().anyMatch(kept -> kept.overlaps(banner))) {
+                duplicates.add(banner);
+                continue;
+            }
             placed.put(id, banner);
         }
     }
@@ -503,6 +552,7 @@ public final class BuildingBannerService {
         private final String face;
         private final String kind;
         private final List<UUID> frames = new ArrayList<>();
+        private final int[] maps = new int[BuildingBannerArt.PANELS];
 
         public PlacedBanner(UUID id, String world, int x, int y, int z, String face, String kind) {
             this.id = id;
@@ -512,6 +562,37 @@ public final class BuildingBannerService {
             this.z = z;
             this.face = face == null || face.isBlank() ? "SOUTH" : face;
             this.kind = kind == null ? "casino" : kind;
+            java.util.Arrays.fill(maps, -1);
+        }
+
+        public int mapId(int panel) {
+            return panel >= 0 && panel < maps.length ? maps[panel] : -1;
+        }
+
+        public void setMapId(int panel, int id) {
+            if (panel >= 0 && panel < maps.length) {
+                maps[panel] = id;
+            }
+        }
+
+        public List<Integer> mapIds() {
+            List<Integer> ids = new ArrayList<>();
+            for (int id : maps) {
+                ids.add(id);
+            }
+            return ids;
+        }
+
+        /** Same wall, same facing, at least one of the 7 cells shared. */
+        public boolean overlaps(PlacedBanner other) {
+            if (other == this || !world.equals(other.world) || y != other.y || facing() != other.facing()) {
+                return false;
+            }
+            BlockFace f = facing();
+            if (f == BlockFace.NORTH || f == BlockFace.SOUTH) {
+                return z == other.z && Math.abs(x - other.x) < BuildingBannerArt.PANELS;
+            }
+            return x == other.x && Math.abs(z - other.z) < BuildingBannerArt.PANELS;
         }
 
         public UUID id() {

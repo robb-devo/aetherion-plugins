@@ -285,6 +285,29 @@ public class RecipeRegistry {
          * =====================================================
          */
 
+        // Simple armour: the very first set, leather stitched with string (vanilla leather shapes stay vanilla).
+        registerSimple("simple_helmet", RecipeCategory.ARMOR, customItem.createSimpleHelmet(), Rarity.COMMON,
+                List.of("LSL", "L L"),
+                createMixedIngredients('L', new ItemStack(Material.LEATHER), 'S', new ItemStack(Material.STRING)));
+        registerSimple("simple_chestplate", RecipeCategory.ARMOR, customItem.createSimpleChestplate(), Rarity.COMMON,
+                List.of("L L", "LSL", "LLL"),
+                createMixedIngredients('L', new ItemStack(Material.LEATHER), 'S', new ItemStack(Material.STRING)));
+        registerSimple("simple_leggings", RecipeCategory.ARMOR, customItem.createSimpleLeggings(), Rarity.COMMON,
+                List.of("LSL", "L L", "L L"),
+                createMixedIngredients('L', new ItemStack(Material.LEATHER), 'S', new ItemStack(Material.STRING)));
+        registerSimple("simple_boots", RecipeCategory.ARMOR, customItem.createSimpleBoots(), Rarity.COMMON,
+                List.of("S S", "L L"),
+                createMixedIngredients('L', new ItemStack(Material.LEATHER), 'S', new ItemStack(Material.STRING)));
+
+        // Movement gear: the hook is midgame (iron + a lot of string), the spools late (membranes + pearls).
+        registerSimple("grappling_hook", RecipeCategory.COMBAT, customItem.createGrapplingHook(), Rarity.RARE,
+                List.of("  I", " S ", "S  "),
+                createMixedIngredients('I', new ItemStack(Material.IRON_INGOT, 16), 'S', new ItemStack(Material.STRING, 32)));
+        registerSimple("skyreaver_spools", RecipeCategory.COMBAT, customItem.createSkyreaverSpools(), Rarity.EPIC,
+                List.of("PSP", "SES", "PSP"),
+                createMixedIngredients('P', new ItemStack(Material.PHANTOM_MEMBRANE, 8),
+                        'S', new ItemStack(Material.STRING, 32), 'E', new ItemStack(Material.ENDER_PEARL, 16)));
+
         registerSimple(
                 "combat_helmet",
                 RecipeCategory.COMBAT,
@@ -2454,6 +2477,23 @@ public class RecipeRegistry {
      * Skill T2 ladders use {@link #registerLadderMix}. Never 2–3× the predecessor.
      * Shape: {@code  X  / XCX /  X }
      */
+    /** Plain vanilla mats on a ladder step count 16 per slot, or a T2 step (2 iron + 2 coal) costs less than T1 (8 coal). */
+    private static final int LADDER_RAW_PER_SLOT = 16;
+
+    private static ItemStack bulk(ItemStack mat) {
+        if (mat == null || mat.getAmount() != 1) {
+            return mat;
+        }
+        org.bukkit.inventory.meta.ItemMeta meta = mat.getItemMeta();
+        if (meta != null && meta.getPersistentDataContainer().has(
+                de.aetherion.items.core.ItemKeys.item(), org.bukkit.persistence.PersistentDataType.STRING)) {
+            return mat;
+        }
+        ItemStack copy = mat.clone();
+        copy.setAmount(Math.min(LADDER_RAW_PER_SLOT, copy.getMaxStackSize()));
+        return copy;
+    }
+
     private void registerLadderPlus(
             String id,
             RecipeCategory category,
@@ -2468,7 +2508,7 @@ public class RecipeRegistry {
                 result,
                 rarity,
                 List.of(" X ", "XCX", " X "),
-                createMixedIngredients('X', surround, 'C', center)
+                createMixedIngredients('X', bulk(surround), 'C', center)
         );
     }
 
@@ -2491,7 +2531,7 @@ public class RecipeRegistry {
                 result,
                 rarity,
                 List.of(" V ", "HCH", " V "),
-                createMixedIngredients('V', vertical, 'H', horizontal, 'C', center)
+                createMixedIngredients('V', bulk(vertical), 'H', bulk(horizontal), 'C', center)
         );
     }
 
@@ -2515,7 +2555,7 @@ public class RecipeRegistry {
                 result,
                 rarity,
                 List.of("A B", " C ", "B A"),
-                createMixedIngredients('A', first, 'B', second, 'C', center)
+                createMixedIngredients('A', bulk(first), 'B', bulk(second), 'C', center)
         );
     }
 
@@ -2539,7 +2579,7 @@ public class RecipeRegistry {
                 result,
                 rarity,
                 List.of(" S ", "SCS", " P "),
-                createMixedIngredients('S', support, 'C', center, 'P', premium)
+                createMixedIngredients('S', bulk(support), 'C', center, 'P', bulk(premium))
         );
     }
 
@@ -2588,7 +2628,7 @@ public class RecipeRegistry {
             ItemStack second,
             ItemStack signature
     ) {
-        Map<Character, ItemStack> ingredients = createMixedIngredients('A', first, 'B', second, 'C', center);
+        Map<Character, ItemStack> ingredients = createMixedIngredients('A', bulk(first), 'B', bulk(second), 'C', center);
         ingredients.put('S', signature.clone());
         registerSimple(
                 id,
@@ -2614,7 +2654,7 @@ public class RecipeRegistry {
             ItemStack support,
             ItemStack signature
     ) {
-        Map<Character, ItemStack> ingredients = createMixedIngredients('S', support, 'C', center, 'P', premium);
+        Map<Character, ItemStack> ingredients = createMixedIngredients('S', bulk(support), 'C', center, 'P', bulk(premium));
         ingredients.put('X', signature.clone());
         registerSimple(
                 id,
@@ -2657,7 +2697,7 @@ public class RecipeRegistry {
             ItemStack extra,
             UnlockRequirement unlock
     ) {
-        Map<Character, ItemStack> ingredients = createMixedIngredients('S', support, 'C', center, 'P', premium);
+        Map<Character, ItemStack> ingredients = createMixedIngredients('S', bulk(support), 'C', center, 'P', bulk(premium));
         ingredients.put('X', signature.clone());
         ingredients.put('E', extra.clone());
         registerSimple(

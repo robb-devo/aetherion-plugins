@@ -433,8 +433,7 @@ dialogs:
     - "Alles andere steckt im §eNether Star§f, Slot 9: dein Manager. §eTeleports§f → Capital, dort wartet §dMiss Ledger§f."
   vex_combat_intro:
     - "Sergeant Vex. Kämpfen heißt hier nicht: Klick halten und beten."
-    - "Der Drill wird gerade neu gebaut — Beinarbeit, Timing, alles. Wenn er steht, jag ich dich durch."
-    - "Heute: Rüstung an — Egons ganzes Kit — und eine Klinge in die Hand. Dann sieh mich an."
+    - "Rüstung an — Egons ganzes Kit — und eine Klinge in die Hand. Dann sieh mich an."
   vex_combat_drill:
     - "Sergeant Vex. Dauerklicken bringt dich da draußen um. Also drillen wir an meinem Golem."
     - "Gelbes §e!§f: parieren, wenn es weiß blitzt. Rotes §c!!§f: rausrollen, wenn es weiß wird."
@@ -452,7 +451,6 @@ dialogs:
   egon_intro:
     - "Egon. Ich rüste Neue aus, {player}. Zehn Eiche, und das Kit gehört dir."
     - "Der §eForager§f oben am Hügel leiht dir eine Axt."
-    - "Deine Antworten schweben neben mir: schau eine an, klick. Der §egelbe Balken§f oben zeigt deinen nächsten Schritt."
   egon_arrival_call:
     - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
   egon_greet_near:
@@ -462,8 +460,7 @@ dialogs:
     - "Die Rüstung ist gebraucht. Vorbesitzer ist in Rente. Größtenteils friedlich."
     - "Der §eQuartermaster§f sitzt hinter dem kleinen Markt. Na los, {player}."
   lumberjack_intro:
-    - "Egon will zehn Eiche. Schlag einen §eleuchtenden Stamm§f mit der Axt, dann nochmal bei grünem §aCHOP§f."
-    - "Verpasst? Der Baum setzt zurück, einfach nochmal."
+    - "Egon will zehn Eiche. Schau mir einmal zu, dann bist du dran."
   quartermaster_intro:
     - "Quartermaster. Ich brauche §e20 Kohle§f vom §eOre Ridge§f, dem Hügel hinter dem kleinen Markt."
     - "Der gelbe Pfeil oben zeigt den Weg."
@@ -487,9 +484,8 @@ dialogs:
     - "Temper. Booster machen deine Ausrüstung stärker. Du steckst sie am §eAmboss§f ein."
     - "Sag ja und such dir deinen ersten aus. Auf jedem steht, was er macht."
   ledger_intro:
-    - "Miss Ledger. Zwei Dinge, {player}: deine Skills und dein Codex."
-    - "Nether Star → §dSkills§f (es blinkt): rüste einen Skill aus. Er levelt, während du sein Handwerk machst."
-    - "Dann öffne deinen §eCodex§f oben links. Er zählt alles und zahlt Münzen für neue Stufen."
+    - "Miss Ledger. Nether Star → §dSkills§f (es blinkt): rüste einen Skill aus, {player}."
+    - "Dann deinen §eCodex§f oben links. Er zählt alles und zahlt Münzen."
   farmer_intro:
     default:
       - "Farmer. Bau Weizen ab, bis du §e48§f hast. Landen Vögel? §eKlick§f sie weg."
@@ -505,10 +501,8 @@ dialogs:
   fishmonger_intro:
     - "Shop. Ruten. Rüstung. Münzen willkommen."
   vex_intro:
-    - "Sergeant Vex. Tor zu den §cBorderlands§f — Ödland hinter der Mauer."
-    - "Erste Lektion: zehn Feinde. Husk, Stray, Crawler — mir egal, welche."
-    - "Checkliste: Rüstung an, Klinge in der Hand, Essen im Beutel. Booster helfen."
-    - "Und jetzt Abmarsch, {player}."
+    - "Sergeant Vex. Zehn Feinde hinter dem Tor zu den §cBorderlands§f, egal welche."
+    - "Rüstung an, Klinge in die Hand. Abmarsch, {player}."
 
   # ---------------------------------------------------------------- Borderlands (Hub pass owns these — unchanged)
   rite_keeper_intro:
@@ -1086,31 +1080,25 @@ dialogs:
 
 completed:
   ledger_spine:
-    - "Loadout steht. Gut. Abgeheftet."
-    - "Als Nächstes: §eTemper§f an der Südstraße, §dLark§f am Feldzaun, dann §cSergeant Vex§f am Tor zu den Borderlands."
-    - "Komm nach allen dreien zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
+    - "Loadout steht. Als Nächstes: §eTemper§f, §dLark§f, dann §cSergeant Vex§f."
+    - "Komm nach allen dreien zurück, {player}."
   default:
     - "Wir sind quitt. Sagt das Klemmbrett."
     - "Geh und mach jemand anderem den Tag ein bisschen schlechter."
   egon:
     orientation:
-      - "Passt das Kit? Gut. Sag's mir nicht, wenn nicht."
       - "Dein nächster Halt steht im §egelben Balken oben§f. Trau ihm mehr als mir."
       - "Verlaufen? Nether Star → §eTeleports§f → Capital. §dMiss Ledger§f regelt den Rest."
     default:
-      - "Passt das Kit? Gut. Sag's mir nicht, wenn nicht."
-      - "Der §eQuartermaster§f hinter dem kleinen Markt will dich als Nächstes."
-      - "§eGelber Pfeil oben§f. Trau ihm mehr als mir."
+      - "Passt das Kit? Gut. Der §eQuartermaster§f hinter dem kleinen Markt will dich als Nächstes."
     after_coal:
       - "Hält das Kit, {player}? Gut. Sag's mir nicht, wenn nicht."
       - "Am Pier ist Ruhe. §bTackle§f angelt ganz vorne, falls du 'ne Rute willst."
   lumberjack:
     - "Egon hat seine Eiche? Gut. Behalt die Axt. Sie mag dich."
-    - "Mal 'nen Nachmittag frei? §aTwigs§f Schleim-Pad ist gleich hinter mir. Forage Isle."
   quartermaster:
     - "Kohle abgeheftet, {player}. Der Mines-Teleport bleibt offen — §e/mines§f."
-    - "Einmal hinlaufen, dann gehört's dir. §e/spawns§f listet alles."
-    - "Der Foreman wohnt immer noch an den Minen. Freiwillig, angeblich."
+    - "Als Nächstes: der §eShaft Foreman§f an den Minen."
   craftsman:
     default:
       - "Schöne Spitzhacke, {player}. Du bist bereit für die Minen."
@@ -1133,9 +1121,8 @@ completed:
       - "In letzter Zeit was Scharfes gefust, {player}?"
       - "Der Anvil ist immer im Manager. Rezepte im §eRecipe Book§f."
   ledger:
-    - "Loadout steht. Gut. Abgeheftet."
-    - "Als Nächstes: §eTemper§f an der Südstraße, §dLark§f am Feldzaun, dann §cSergeant Vex§f am Tor zu den Borderlands."
-    - "Komm nach allen dreien zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
+    - "Loadout steht. Als Nächstes: §eTemper§f, §dLark§f, dann §cSergeant Vex§f."
+    - "Komm nach allen dreien zurück, {player}."
   farmer:
     default:
       - "Weizen erledigt. Die Vögel schmollen. Gute Arbeit, {player}."
@@ -2020,11 +2007,10 @@ cast:
   egon:
     accept: "Zeig mir die Eiche."
     decline: "Später, Egon."
-    on_accept: ["Gut. Der Lumberjack ist oben am Hügel. Lass dich nicht umarmen."]
+    on_accept: ["Gut. Ab zum Forager."]
     on_decline: ["Der Pier läuft nicht weg. Ich auch nicht."]
     returning:
-      - "Wieder da, {player}. Immer noch keine Eiche. Mutige Strategie."
-      - "§eLumberjack§f, oben am Hügel. Der §egelbe Pfeil§f kennt den Weg."
+      - "§eForager§f, oben am Hügel. Zehn Eiche, {player}."
     greet_new: ["He, {player}! Hier rüber — am Pier gibt's Arbeit.", "Neues Gesicht. Pier. Zu mir. Jetzt."]
     greet: ["Hält das Kit, {player}?", "{player}. Noch am Stück. Gutes Kit."]
     greet_grad: ["Schau dich an, {player}. Fast gefährlich.", "Das Kit hat sich bezahlt gemacht. Schön."]
@@ -2046,11 +2032,10 @@ cast:
   lumberjack:
     accept: "Her mit der Axt."
     decline: "Vielleicht später."
-    on_accept: ["Baum fällt! …Sorry. Macht der Gewohnheit. Nur leuchtende Stämme."]
+    on_accept: ["Schau zu."]
     on_decline: ["Die Bäume warten. Können sie gut."]
     returning:
-      - "{player}! Zurück zur Axt-Lektion? Leuchtender Stamm, grünes §aCHOP§f."
-      - "Zehn Eichenstämme → §eEgon am Pier§f. Nicht zu mir. Ich hab genug."
+      - "Leuchtender Stamm, grünes §aCHOP§f. Zehn Eiche für §eEgon§f, {player}."
     greet_new: ["Axt-neugierig, {player}? Egon hat dich geschickt, oder?"]
     greet: ["{player}! In letzter Zeit Bäume fallen hören?", "Schon Muskelkater, {player}? Gut."]
     greet_grad: ["Da ist ja der Holzfäller-Profi. Die Bäume tuscheln immer noch über dich, {player}."]
@@ -2096,8 +2081,7 @@ cast:
     on_accept: ["Mine ist hinter mir. Helm auf. Oh — kein Helm. Mutig."]
     on_decline: ["Die Mine wartet. Tut sie seit Ewigkeiten."]
     returning:
-      - "Zweiunddreißig Erze, {player}. Die Höhle ist hinter mir. Beißt nicht. Kaum."
-      - "Kohle, Kupfer, Eisen. Zählt alles."
+      - "Zweiunddreißig Erze, {player}: Kohle, Kupfer, Eisen. Die Höhle ist hinter mir."
     greet_new: ["Helme retten Leben, {player}. Hab ich gehört."]
     greet: ["{player}! Noch 'ne Schicht?", "Staub steht dir, {player}."]
     greet_grad: ["Guck mal, wer jetzt unter Tage zu Hause ist. Stolz auf dich. Sag's keinem."]
@@ -2209,8 +2193,7 @@ cast:
     on_accept: ["LOS, {player}! Zehn! Abmarsch!"]
     on_decline: ["Dann mach dich bereit. Die Uhr läuft."]
     returning:
-      - "Zehn Feinde, {player}. Borderlands. Die erledigen sich nicht selbst."
-      - "Husk, Stray, Crawler. Mir egal, welche."
+      - "Zehn Feinde hinter dem Borderlands-Tor, {player}. Egal welche."
     greet_new: ["Augen geradeaus, {player}!"]
     greet: ["{player}. Atmest noch. Ausreichend.", "Kinn hoch, {player}. Klinge hoch."]
     greet_grad: ["{player}. Kampfbereit. …Bild dir nichts drauf ein."]

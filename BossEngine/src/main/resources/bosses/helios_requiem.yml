@@ -96,6 +96,14 @@ loot:
         item-id: random_booster
         amount: 2
         chance: 0.8
+      - source: AETHERION
+        item-id: cataclysm_rod
+        amount: 1
+        chance: 0.08
+      - source: AETHERION
+        item-id: cyclone_rod
+        amount: 1
+        chance: 0.08
     2:
       - source: AETHERION
         item-id: helios_solstice
@@ -109,6 +117,14 @@ loot:
         item-id: random_booster
         amount: 1
         chance: 0.6
+      - source: AETHERION
+        item-id: cataclysm_rod
+        amount: 1
+        chance: 0.04
+      - source: AETHERION
+        item-id: cyclone_rod
+        amount: 1
+        chance: 0.04
     3:
       - source: AETHERION
         item-id: helios_solstice
@@ -122,6 +138,14 @@ loot:
         item-id: random_booster
         amount: 1
         chance: 0.4
+      - source: AETHERION
+        item-id: cataclysm_rod
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: cyclone_rod
+        amount: 1
+        chance: 0.02
 
   top-damagers:
     count: 3

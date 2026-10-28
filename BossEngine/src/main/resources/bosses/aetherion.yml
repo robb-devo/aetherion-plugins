@@ -172,16 +172,40 @@ loot:
         item-id: random_aetherion_armor
         amount: 1
         chance: 1.0
+      - source: AETHERION
+        item-id: terminus
+        amount: 1
+        chance: 0.08
+      - source: AETHERION
+        item-id: portal_gun
+        amount: 1
+        chance: 0.08
     2:
       - source: AETHERION
         item-id: random_aetherion_armor
         amount: 1
         chance: 0.70
+      - source: AETHERION
+        item-id: terminus
+        amount: 1
+        chance: 0.04
+      - source: AETHERION
+        item-id: portal_gun
+        amount: 1
+        chance: 0.04
     3:
       - source: AETHERION
         item-id: random_aetherion_armor
         amount: 1
         chance: 0.15
+      - source: AETHERION
+        item-id: terminus
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: portal_gun
+        amount: 1
+        chance: 0.02
 
   top-damagers:
     count: 0

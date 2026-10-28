@@ -42,7 +42,7 @@ public final class GearTraderService implements Listener {
     public static final int INFO_SLOT = 45;
     public static final int CLOSE_SLOT = 49;
 
-    private static final int[] BUY_SLOTS = {10, 11, 12, 13, 14, 15, 16, 4};
+    private static final int[] BUY_SLOTS = {10, 11, 12, 13, 14, 15, 16, 4, 2, 3, 5, 6};
 
     private final AetherionItems plugin;
     private final ItemValueService values;
@@ -414,7 +414,11 @@ public final class GearTraderService implements Listener {
                 new Offer("simple_sword", "Simple Sword", 18L, items::createSimpleSword),
                 new Offer("simple_hoe", "Simple Hoe", 12L, items::createSimpleHoe),
                 new Offer("wooden_rod", "Wooden Rod", 20L, items::createWoodenRod),
-                new Offer("simple_shortbow", "Simple Shortbow", 22L, items::createSimpleShortbow)
+                new Offer("simple_shortbow", "Simple Shortbow", 22L, items::createSimpleShortbow),
+                new Offer("simple_helmet", "Simple Helmet", 14L, items::createSimpleHelmet),
+                new Offer("simple_chestplate", "Simple Chestplate", 22L, items::createSimpleChestplate),
+                new Offer("simple_leggings", "Simple Leggings", 18L, items::createSimpleLeggings),
+                new Offer("simple_boots", "Simple Boots", 12L, items::createSimpleBoots)
         };
     }
 

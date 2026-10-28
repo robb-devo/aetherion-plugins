@@ -109,6 +109,14 @@ loot:
         item-id: random_hollow_sun_armor
         amount: 1
         chance: 1.0
+      - source: AETHERION
+        item-id: meteor_mace
+        amount: 1
+        chance: 0.08
+      - source: AETHERION
+        item-id: stormcaller_maul
+        amount: 1
+        chance: 0.08
     2:
       - source: AETHERION
         item-id: random_booster
@@ -118,6 +126,14 @@ loot:
         item-id: random_hollow_sun_armor
         amount: 1
         chance: 0.70
+      - source: AETHERION
+        item-id: meteor_mace
+        amount: 1
+        chance: 0.04
+      - source: AETHERION
+        item-id: stormcaller_maul
+        amount: 1
+        chance: 0.04
     3:
       - source: AETHERION
         item-id: random_booster
@@ -127,6 +143,14 @@ loot:
         item-id: random_hollow_sun_armor
         amount: 1
         chance: 0.35
+      - source: AETHERION
+        item-id: meteor_mace
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: stormcaller_maul
+        amount: 1
+        chance: 0.02
 
   top-damagers:
     count: 3

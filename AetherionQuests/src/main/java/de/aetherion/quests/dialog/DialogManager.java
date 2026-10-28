@@ -452,6 +452,7 @@ public class DialogManager implements Listener {
         if (lines.length == 0) {
             return;
         }
+        lines = brief(npc, lines);
 
         boolean offerQuest = npc.getType() != de.aetherion.quests.npc.NPCType.FLAVOR
                 && npc.getQuestId() != null
@@ -488,6 +489,7 @@ public class DialogManager implements Listener {
                 npc.getId(),
                 getCompletedLines(npc.getId(), player)
         ));
+        lines = brief(npc, lines);
         if (lines.length == 0) {
             lines = new String[] {
                     de.aetherion.quests.lang.LangPack.msg(
@@ -549,6 +551,25 @@ public class DialogManager implements Listener {
      *
      * =========================================================
      */
+
+    /**
+     * Quest and story NPCs say hello and the job, then let you go (10-27, Pit: half a minute at the Forager
+     * was far too long): the first line plus the one line that carries the task (a highlighted word or a number),
+     * else the last line. Flavor NPCs keep their full lines.
+     */
+    private static String[] brief(QuestNPC npc, String[] lines) {
+        if (npc == null || npc.getType() == de.aetherion.quests.npc.NPCType.FLAVOR || lines.length <= 2) {
+            return lines;
+        }
+        String task = lines[lines.length - 1];
+        for (int i = lines.length - 1; i >= 1; i--) {
+            if (lines[i].matches(".*(§[0-9a-e]|[0-9]).*")) {
+                task = lines[i];
+                break;
+            }
+        }
+        return new String[] {lines[0], task};
+    }
 
     private void playDialog(
             Player player,
@@ -1664,8 +1685,7 @@ public class DialogManager implements Listener {
 
             return new String[] {
                     "Egon. I kit out rookies, {player}. Ten oak and the kit is yours.",
-                    "The §eForager§f up the hill lends you an axe.",
-                    "Your answers float beside me: look at one, click. The §eyellow bar§f up top shows your next step."
+                    "The §eForager§f up the hill lends you an axe."
             };
 
         }
@@ -1700,8 +1720,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("lumberjack_intro")) {
             return new String[] {
-                    "Egon wants ten oak. Hit a §eglowing trunk§f with the axe, then hit again on green §aCHOP§f.",
-                    "Missed it? The tree resets, just try again."
+                    "Egon wants ten oak. Watch me once, then it's your turn."
             };
         }
 
@@ -1859,10 +1878,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("vex_intro")) {
             return new String[] {
-                    "Sergeant Vex. Gate to the §cBorderlands§f — wasteland past the wall.",
-                    "First lesson: ten hostiles. Husk, stray, crawler — I don't care which.",
-                    "Checklist: armour on, blade in hand, food in the bag. Boosters help.",
-                    "Now move, {player}."
+                    "Sergeant Vex. Ten hostiles past the §cBorderlands§f gate, any kind.",
+                    "Armour on, blade in hand. Move, {player}."
             };
         }
 
@@ -1891,9 +1908,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("ledger_intro")) {
             return new String[] {
-                    "Miss Ledger. Two things, {player}: your skills and your Codex.",
-                    "Nether Star → §dSkills§f (it blinks): equip one skill. It levels while you work its trade.",
-                    "Then open your §eCodex§f, top-left. It tracks everything and pays coins for new tiers."
+                    "Miss Ledger. Nether Star → §dSkills§f (it blinks): equip one skill, {player}.",
+                    "Then your §eCodex§f, top-left. It counts everything and pays coins."
             };
         }
 
@@ -2346,16 +2362,14 @@ public class DialogManager implements Listener {
         return switch (npcId.toLowerCase()) {
             case "quartermaster" -> new String[] {
                     "Coal's filed, {player}. Mines teleport stays open — §e/mines§f.",
-                    "Walk somewhere once and it's yours. §e/spawns§f lists the lot.",
-                    "Foreman still lives at the Mines. By choice, allegedly."
+                    "Next: the §eShaft Foreman§f at the Mines."
             };
             case "hunter" -> new String[] {
                     "First blood's filed. Don't get sentimental about it.",
                     "Next time bring bigger problems. Or quieter footsteps."
             };
             case "lumberjack" -> new String[] {
-                    "Egon got his oak? Good. Keep the axe. It likes you.",
-                    "Free afternoon? §aTwig§f's slime pad is just past me. Forage Isle."
+                    "Egon got his oak? Good. Keep the axe. It likes you."
             };
             case "egon" -> QuestStoryGate.questCompleted(player, questManager, "forge_coal")
                     ? de.aetherion.quests.lang.LangPack.completed(player, "egon.after_coal", new String[] {
@@ -2365,20 +2379,16 @@ public class DialogManager implements Listener {
                     // Mid-orientation the Quartermaster's desk is shut (side road after the stamp): point at the spine.
                     : !QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "egon.orientation", new String[] {
-                            "Kit fits? Good. Don't tell me if it doesn't.",
                             "Your next stop's on the §eyellow bar up top§f. Trust it more than me.",
                             "Lost? Nether Star → §eTeleports§f → Capital. §dMiss Ledger§f sorts you out."
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "egon.default", new String[] {
-                            "Kit fits? Good. Don't tell me if it doesn't.",
-                            "§eQuartermaster§f past the little market wants you next.",
-                            "§eYellow arrow up top§f. Trust it more than me."
+                            "Kit fits? Good. §eQuartermaster§f past the little market wants you next."
                     });
             case "farmer" -> farmerCompletedLines(player);
             case "ledger" -> de.aetherion.quests.lang.LangPack.completed(player, "ledger_spine", new String[] {
-                    "Loadout's set. Good. Filed.",
-                    "Next: §eTemper§f on the south road, §dLark§f at the Fields fence, then §cSergeant Vex§f at the Borderlands gate.",
-                    "Come back after all three, {player}. I close orientation — and I keep a help desk."
+                    "Loadout's set. Next: §eTemper§f, §dLark§f, then §cSergeant Vex§f.",
+                    "Come back after all three, {player}."
             });
             case "lark" -> QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "lark.graduate", new String[] {

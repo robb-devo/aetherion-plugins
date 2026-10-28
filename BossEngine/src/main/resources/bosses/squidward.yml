@@ -177,6 +177,10 @@ loot:
       min-amount: 16
       max-amount: 32
       chance: 1.0
+    - source: AETHERION
+      item-id: deepsong_conch
+      amount: 1
+      chance: 0.06
 
   top-damagers:
     count: 3

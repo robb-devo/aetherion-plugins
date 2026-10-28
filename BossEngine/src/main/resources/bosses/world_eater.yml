@@ -122,6 +122,10 @@ loot:
         item-id: random_booster
         amount: 2
         chance: 0.8
+      - source: AETHERION
+        item-id: world_splitter
+        amount: 1
+        chance: 0.08
     2:
       - source: AETHERION
         item-id: worldbite
@@ -135,6 +139,10 @@ loot:
         item-id: random_booster
         amount: 1
         chance: 0.6
+      - source: AETHERION
+        item-id: world_splitter
+        amount: 1
+        chance: 0.04
     3:
       - source: AETHERION
         item-id: worldbite
@@ -148,6 +156,10 @@ loot:
         item-id: random_booster
         amount: 1
         chance: 0.4
+      - source: AETHERION
+        item-id: world_splitter
+        amount: 1
+        chance: 0.02
 
   top-damagers:
     count: 3
