@@ -53,28 +53,22 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("spawners.yml");
         saveResourceIfMissing("items.yml");
         // Never force-overwrite live boss YAMLs — that wiped arena/leash tweaks every restart.
-        saveResourceIfMissing("bosses/aether_colossus.yml");
+        // Retired 10-28 (no spawner, quest or exile door; live copies in plugins/BossEngine/_archived_bosses_20261028):
+        // Sparky, Squidward, Baron von Wurm, Sir Balthazar, Lobby Cleaner, Insolvent Wither, Aether Colossus, the
+        // open-world Aetherion, Eggquelizer, Ashen Sheath and the test_* sandbox rigs. Not shipped any more.
         saveResourceIfMissing("bosses/hollow_lurker.yml");
         saveResourceIfMissing("bosses/skuldugery.yml");
         saveResourceIfMissing("bosses/mcnugget.yml");
         saveResourceIfMissing("bosses/bridge_troll.yml");
-        saveResourceIfMissing("bosses/squidward.yml");
-        saveResourceIfMissing("bosses/aetherion.yml");
         saveResourceIfMissing("bosses/dungeon_sentinel.yml");
         saveResourceIfMissing("bosses/dungeon_frostbound.yml");
         saveResourceIfMissing("bosses/dungeon_aetherion.yml");
-        saveResourceIfMissing("bosses/sir_balthazar.yml");
-        saveResourceIfMissing("bosses/lobby_cleaner.yml");
-        saveResourceIfMissing("bosses/sparky.yml");
-        saveResourceIfMissing("bosses/baron_von_wurm.yml");
-        saveResourceIfMissing("bosses/insolvent_wither.yml");
         saveResourceIfMissing("bosses/pathwarden.yml");
         saveResourceIfMissing("melodies/balkan_bump.nbs");
         saveResourceIfMissing("bosses/hollow_sun.yml");
         saveResourceIfMissing("bosses/ashen_chainwarden.yml");
         saveResourceIfMissing("bosses/cinder_herald.yml");
         saveResourceIfMissing("bosses/hanging_saint.yml");
-        saveResourceIfMissing("bosses/eggquelizer.yml");
         saveResourceIfMissing("bosses/world_eater_unbroken.yml");
         saveResourceIfMissing("bosses/world_eater.yml");
         de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_herald.yml");
