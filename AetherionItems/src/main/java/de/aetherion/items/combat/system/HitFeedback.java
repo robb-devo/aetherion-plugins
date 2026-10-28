@@ -239,10 +239,14 @@ final class HitFeedback {
     /** Sounds, particles, callout and hitstop for a hit that stood (MONITOR). */
     void strike(Player player, LivingEntity victim, Strike kind, boolean boss) {
         double k = intensity();
-        if (k <= 0.0 || kind == Strike.LIGHT || kind == Strike.NORMAL) {
+        if (k <= 0.0 || kind == Strike.LIGHT) {
             return;
         }
         Location at = victim.getLocation().add(0, victim.getHeight() * 0.6, 0);
+        if (kind == Strike.NORMAL) {
+            nick(player, at);
+            return;
+        }
         World world = victim.getWorld();
         slashVfx(player, at, kind, k);
         switch (kind) {
@@ -284,6 +288,25 @@ final class HitFeedback {
                 || kind == Strike.DASH) && victim instanceof Mob mob && !system.protectedEntity(mob)) {
             hitstop(mob, kind == Strike.FINISHER || kind == Strike.RIPOSTE ? 2 : 0);
         }
+    }
+
+    /**
+     * A charged plain hit with an Aetherion weapon: a small crescent in the weapon's rarity colour, so the first
+     * Simple and Combat swords already speak the shape language of the big ones. Vanilla gear and spam clicks stay
+     * bare; the hit's own sound is enough.
+     */
+    private static void nick(Player player, Location at) {
+        de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
+        if (items == null || items.getItemManager() == null) {
+            return;
+        }
+        de.aetherion.items.model.Rarity rarity = items.getItemManager().getRarity(player.getInventory().getItemInMainHand());
+        if (rarity == null) {
+            return;
+        }
+        org.bukkit.Color tint = org.bukkit.Color.fromRGB(rarity.textColor().value());
+        float roll = (float) (java.util.concurrent.ThreadLocalRandom.current().nextDouble(-30.0, 30.0));
+        de.aetherion.core.api.Vfx.slash(at, tint, 0.95, roll);
     }
 
     /** Big hit taken (share of max HP after mitigation): one low thump, no screen effect. */

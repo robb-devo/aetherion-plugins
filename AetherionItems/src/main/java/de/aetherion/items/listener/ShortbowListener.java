@@ -8,6 +8,7 @@ import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.ItemCapability;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.AbstractArrow;
@@ -229,6 +230,7 @@ public class ShortbowListener implements Listener, Runnable {
         }
 
         List<Vector> fan = new ArrayList<>(volley);
+        List<Arrow> plain = new ArrayList<>(volley);
         for (int i = 0; i < volley; i++) {
             double offset = 0.0;
             if (volley == 2) {
@@ -249,6 +251,8 @@ public class ShortbowListener implements Listener, Runnable {
                 fan.add(velocity);
             } else if (cascade) {
                 cascadeFx.track(arrow);
+            } else {
+                plain.add(arrow);
             }
         }
 
@@ -266,15 +270,43 @@ public class ShortbowListener implements Listener, Runnable {
                 0.85f,
                 1.45f
         );
-        player.getWorld().spawnParticle(
-                Particle.FLAME,
-                player.getEyeLocation().add(player.getEyeLocation().getDirection()),
-                3,
-                0.05,
-                0.05,
-                0.05,
-                0.01
-        );
+        // Plain shortbows speak the shape language too: a spark on the string, a thin trail in the bow's rarity colour.
+        org.bukkit.Color tint = rarityTint(bow);
+        Location muzzle = player.getEyeLocation().add(player.getEyeLocation().getDirection());
+        if (!de.aetherion.core.api.Vfx.spark(muzzle, tint, 0.45)) {
+            player.getWorld().spawnParticle(Particle.FLAME, muzzle, 3, 0.05, 0.05, 0.05, 0.01);
+        }
+        trail(plain, tint);
+    }
+
+    private org.bukkit.Color rarityTint(ItemStack bow) {
+        de.aetherion.items.model.Rarity rarity = itemManager.getRarity(bow);
+        return rarity == null ? org.bukkit.Color.WHITE : org.bukkit.Color.fromRGB(rarity.textColor().value());
+    }
+
+    /** Follows each arrow for at most 1.5 s, until it lands. */
+    private static void trail(List<Arrow> arrows, org.bukkit.Color tint) {
+        if (arrows.isEmpty() || !de.aetherion.core.api.Vfx.active()) {
+            return;
+        }
+        de.aetherion.items.AetherionItems plugin = de.aetherion.items.AetherionItems.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        for (Arrow arrow : arrows) {
+            Location[] last = {arrow.getLocation().clone()};
+            int[] age = {0};
+            plugin.getServer().getScheduler().runTaskTimer(plugin, task -> {
+                age[0] += 2;
+                if (!arrow.isValid() || arrow.isInBlock() || arrow.isOnGround() || age[0] > 30) {
+                    task.cancel();
+                    return;
+                }
+                Location now = arrow.getLocation();
+                de.aetherion.core.api.Vfx.streak(last[0], now, tint, 0.14, 5);
+                last[0] = now.clone();
+            }, 2L, 2L);
+        }
     }
 
     private Arrow spawnArrow(Player player, Vector velocity, double damage, boolean crit, int coreTier) {
