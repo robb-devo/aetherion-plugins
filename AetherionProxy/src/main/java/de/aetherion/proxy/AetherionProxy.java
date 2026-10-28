@@ -29,11 +29,16 @@ public final class AetherionProxy {
 
     private final ProxyServer proxy;
     private final ResourcePack pack;
+    private final Logger logger;
+    /** The ops scripts touch this file ({@code ae-proxy-reload.sh}): there is no RCON on Velocity and no Crafty any more. */
+    private final Path reloadRequest;
 
     @Inject
     public AetherionProxy(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
         this.proxy = proxy;
+        this.logger = logger;
         this.pack = new ResourcePack(this, proxy, logger, dataDirectory);
+        this.reloadRequest = dataDirectory.resolve("reload.request");
     }
 
     @Subscribe
@@ -45,6 +50,25 @@ public final class AetherionProxy {
                 .schedule();
         proxy.getCommandManager().register(
                 proxy.getCommandManager().metaBuilder("aepack").plugin(this).build(), new PackCommand(pack));
+        proxy.getScheduler().buildTask(this, this::checkReloadRequest)
+                .delay(5, TimeUnit.SECONDS)
+                .repeat(5, TimeUnit.SECONDS)
+                .schedule();
+    }
+
+    /** A {@code reload.request} file in the plugin folder runs {@code velocity reload} once, then goes away. */
+    private void checkReloadRequest() {
+        try {
+            if (!java.nio.file.Files.deleteIfExists(reloadRequest)) {
+                return;
+            }
+        } catch (java.io.IOException ex) {
+            logger.warn("Could not clear {}: {}", reloadRequest, ex.getMessage());
+            return;
+        }
+        logger.info("reload.request found: running velocity reload");
+        proxy.getCommandManager().executeAsync(proxy.getConsoleCommandSource(), "velocity reload")
+                .thenAccept(ok -> logger.info("velocity reload {}", ok ? "done" : "failed"));
     }
 
     /** First backend of the session only; later switches keep the pack the client already has. */

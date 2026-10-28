@@ -13,7 +13,7 @@ set -uo pipefail
 OPS=/root/aetherion-ops
 BACKUPS=/var/backups/aetherion/snapshots
 HELM_JSON="${HELM_JSON:-/opt/aetherion-helm/helm.json}"
-POWER_IDS=(proxy hub mmor mmod mmoc mmoi)
+POWER_IDS=(proxy hub mmor mmod mmoc mmoi mmom)
 . "$OPS/ae-lib.sh"
 
 power_known() {
