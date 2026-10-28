@@ -53,7 +53,7 @@ public final class BoosterApplier {
             return Status.NO_RARITY;
         }
         ItemStats stats = items.getItemStats(item);
-        if (stats.getTotalBoosters() >= BoosterLimits.MAX_TOTAL) {
+        if (stats.getTotalBoosters() >= stats.boosterCapacity()) {
             return Status.FULL;
         }
         if (type.isCore()) {

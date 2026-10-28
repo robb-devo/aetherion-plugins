@@ -2,11 +2,11 @@
 #
 # network: which Velocity backend this jar is running on.
 # Blank this-server uses the live port map (hub 25566, mmo-r 25567, mmo-d 25568,
-# mmo-c 25569, mmo-i 25570), then the Velocity GetServer reply.
+# mmo-c 25569, mmo-i 25570, mmo-m 25572), then the Velocity GetServer reply.
 # Warps that belong on the main world connect to main-server unless this backend IS mmo-r.
 #
 # Roles (fixed): hub = lobby + pit · mmo-r = main world · mmo-d = dungeons ONLY ·
-# mmo-c = exile (story / ferry) · mmo-i = private + guild islands ONLY.
+# mmo-c = exile (story / ferry) · mmo-i = private + guild islands ONLY · mmo-m = the mines ONLY.
 
 network:
   this-server: ""
@@ -15,6 +15,8 @@ network:
   exile-server: mmo-c
   # Private + guild islands (Velocity name). Port 25570.
   islands-server: mmo-i
+  # The mines (Amethyst Mine and what grows around it). Port 25572 (25571 is the standalone Vanilla server). Mining sends /amethyst & co. there.
+  mines-server: mmo-m
   dungeon-server: mmo-d
   # Empty = Crafty shared/transfer (same folder AetherionDungeons already uses).
   shared-dir: ""

@@ -355,7 +355,8 @@ public final class ItemLore {
         ItemStats safe = stats == null ? new ItemStats() : stats;
         int total = safe.getTotalBoosters();
         List<String> block = new ArrayList<>();
-        block.add("§8Boosters §f" + total + "§8/" + BoosterLimits.MAX_TOTAL);
+        block.add("§8Boosters §f" + total + "§8/" + safe.boosterCapacity()
+                + (safe.getBoneGrafts() > 0 ? " §6☠ Grafted " + roman(safe.getBoneGrafts()) : ""));
         List<BoosterType> open = new ArrayList<>();
         for (BoosterType type : types) {
             int count = safe.boosterCount(type);
@@ -365,13 +366,22 @@ public final class ItemLore {
                 open.add(type);
             }
         }
-        if (total < BoosterLimits.MAX_TOTAL && !open.isEmpty()) {
+        if (total < safe.boosterCapacity() && !open.isEmpty()) {
             block.addAll(fitsLines(open));
         }
         if (!lore.isEmpty() && !isBlank(lore.get(lore.size() - 1))) {
             lore.add("");
         }
         lore.addAll(block);
+    }
+
+    private static String roman(int n) {
+        return switch (n) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            default -> "IV";
+        };
     }
 
     private static List<String> fitsLines(List<BoosterType> open) {

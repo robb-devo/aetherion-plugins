@@ -214,20 +214,16 @@ public final class VeinsListener implements Listener {
 
         if (!hasMiningAccess(player)) {
             playForemanDialog(player, List.of(
-                    "Name's the Foreman. I don't dig. I point.",
-                    "I ship people into §eThe Veins§f — the big mine.",
-                    "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
-                    "§cYou? Not yet. Dig more. Come back when the dirt respects you."
+                    "I ship people down to §eJawcamp§f, the camp in the Isle-Eater's skull.",
+                    "§cMining 30 first. Dig more, then come back."
             ), null);
             return;
         }
 
         playForemanDialog(player, List.of(
-                "Name's the Foreman. I don't dig. I point.",
-                "I ship people into §eThe Veins§f — the big mine.",
-                "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
-                "§aYou're cleared. Try not to become a cautionary tale."
-        ), () -> veins.enter(player));
+                "I ship people down to §eJawcamp§f, the camp in the Isle-Eater's skull.",
+                "§aThe Veins open at Mining 30, the Gullet at 40. Down you go."
+        ), () -> veins.enterCamp(player));
     }
 
     private void playForemanDialog(Player player, List<String> lines, Runnable after) {

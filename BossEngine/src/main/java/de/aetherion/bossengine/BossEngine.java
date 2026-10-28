@@ -119,6 +119,7 @@ public final class BossEngine extends JavaPlugin {
                 new BossProjectileListener(keys),
                 this
         );
+        getServer().getPluginManager().registerEvents(new de.aetherion.bossengine.combat.Parries(), this);
         getServer().getPluginManager().registerEvents(
                 new BossItemUseListener(bossManager, spawnerManager, spawnItemService),
                 this

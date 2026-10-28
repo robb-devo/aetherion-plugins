@@ -439,6 +439,7 @@ public class ItemManager {
         stats.setFishingSpeed(readDouble(pdc, ItemKeys.fishingSpeed()));
         stats.setFishingCatch(readDouble(pdc, ItemKeys.fishingCatch()));
         stats.setCoalBoosters(readInt(pdc, ItemKeys.coalBoosters()));
+        stats.setBoneGrafts(readInt(pdc, ItemKeys.boneGrafts()));
         stats.setIronBoosters(readInt(pdc, ItemKeys.ironBoosters()));
         stats.setGoldBoosters(readInt(pdc, ItemKeys.goldBoosters()));
         stats.setDiamondBoosters(readInt(pdc, ItemKeys.diamondBoosters()));
@@ -494,6 +495,7 @@ public class ItemManager {
         stats.setFishingCatch(readDouble(pdc, ItemKeys.fishingCatch()));
 
         stats.setCoalBoosters(readInt(pdc, ItemKeys.coalBoosters()));
+        stats.setBoneGrafts(readInt(pdc, ItemKeys.boneGrafts()));
         stats.setIronBoosters(readInt(pdc, ItemKeys.ironBoosters()));
         stats.setGoldBoosters(readInt(pdc, ItemKeys.goldBoosters()));
         stats.setDiamondBoosters(readInt(pdc, ItemKeys.diamondBoosters()));
@@ -551,6 +553,11 @@ public class ItemManager {
         pdc.set(ItemKeys.fishingCatch(), PersistentDataType.DOUBLE, stats.getFishingCatch());
 
         pdc.set(ItemKeys.coalBoosters(), PersistentDataType.INTEGER, stats.getCoalBoosters());
+        if (stats.getBoneGrafts() > 0) {
+            pdc.set(ItemKeys.boneGrafts(), PersistentDataType.INTEGER, stats.getBoneGrafts());
+        } else {
+            pdc.remove(ItemKeys.boneGrafts());
+        }
         pdc.set(ItemKeys.ironBoosters(), PersistentDataType.INTEGER, stats.getIronBoosters());
         pdc.set(ItemKeys.goldBoosters(), PersistentDataType.INTEGER, stats.getGoldBoosters());
         pdc.set(ItemKeys.diamondBoosters(), PersistentDataType.INTEGER, stats.getDiamondBoosters());

@@ -16,6 +16,8 @@ public class AetherionMining extends JavaPlugin {
     private VeinsWorld veins;
     private de.aetherion.core.api.MiningAccess miningAccess;
     private de.aetherion.mining.isle.MineIsle isle;
+    private de.aetherion.mining.titan.TitanWorld titan;
+    private de.aetherion.mining.titan.Jawcamp camp;
 
     @Override
     public void onEnable() {
@@ -28,14 +30,38 @@ public class AetherionMining extends JavaPlugin {
         saveConfig();
 
         veins = new VeinsWorld(this);
+        de.aetherion.mining.titan.TitanItems.init(this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.mining.titan.TitanRunes(this), this);
         VeinsNpcs npcs = new VeinsNpcs(this);
         veins.bind(npcs);
+        // The mine server (mmo-m) runs the Amethyst Mine with mmo-r's config copy; the Eldervale isle stays on mmo-r.
+        if (veins.mineServer()) {
+            de.aetherion.mining.isle.MineWorld.isleAway(this, true);
+            new de.aetherion.mining.veins.MinesHost(this, veins);
+            if (getConfig().getBoolean("titan.enabled", true)) {
+                // The Swallowed Isles: Jawcamp in the main world, Ossarath's body regrown every morning.
+                titan = new de.aetherion.mining.titan.TitanWorld(this);
+                de.aetherion.mining.titan.Heartforge forge = new de.aetherion.mining.titan.Heartforge();
+                getServer().getPluginManager().registerEvents(forge, this);
+                camp = new de.aetherion.mining.titan.Jawcamp(this, titan, forge);
+                titan.bind(camp);
+                de.aetherion.mining.titan.Jawcamp hub = camp;
+                veins.bindCamp(() -> hub.ready() ? hub.spawn() : null);
+                getServer().getPluginManager().registerEvents(camp, this);
+                getServer().getPluginManager().registerEvents(new de.aetherion.mining.titan.TitanRelics(this, titan), this);
+                getServer().getPluginManager().registerEvents(
+                        new de.aetherion.mining.titan.TitanListener(this, titan, camp), this);
+            }
+        }
 
         // Mining Eldervale first: its break router must see the strike before MiningListener seals it.
         if (getConfig().getBoolean("mine-isle.enabled", true)) {
             try {
                 isle = new de.aetherion.mining.isle.MineIsle(this);
                 isle.start();
+                // Mastery, ledger, forge rep and mine tallies travel with the character. Left registered on disable
+                // so Core can still pack a player who is online while the server stops.
+                de.aetherion.core.api.AetherServices.registerPlayerData(isle.profiles().part());
                 PluginCommand mineisle = getCommand("mineisle");
                 if (mineisle != null) {
                     de.aetherion.mining.isle.MineCommand isleCommand = new de.aetherion.mining.isle.MineCommand(isle);
@@ -58,6 +84,14 @@ public class AetherionMining extends JavaPlugin {
             amethyst.setExecutor(command);
             amethyst.setTabCompleter(command);
         }
+        de.aetherion.mining.titan.TitanCommand titanCommand = new de.aetherion.mining.titan.TitanCommand(this, veins);
+        for (String name : new String[]{"jawcamp", "titan"}) {
+            PluginCommand titanCmd = getCommand(name);
+            if (titanCmd != null) {
+                titanCmd.setExecutor(titanCommand);
+                titanCmd.setTabCompleter(titanCommand);
+            }
+        }
         PluginCommand deepmines = getCommand("deepmines");
         if (deepmines != null) {
             deepmines.setExecutor(command);
@@ -67,6 +101,10 @@ public class AetherionMining extends JavaPlugin {
         getServer().getScheduler().runTask(this, () -> {
             veins.ensureLoaded();
             npcs.loadEntrance();
+            if (titan != null) {
+                camp.start();
+                titan.start();
+            }
             if (getConfig().getBoolean("eldervale.auto-paste-once", false)) {
                 getConfig().set("eldervale.auto-paste-once", false);
                 saveConfig();
@@ -75,7 +113,9 @@ public class AetherionMining extends JavaPlugin {
             }
         });
         getServer().getScheduler().runTaskTimer(this, veins::tickReset, 20L * 60L, 20L * 60L * 5L);
-        getLogger().info("Amethyst Area dig world ready. Players: /amethyst. Admin: /deepmines.");
+        getLogger().info(veins.hostedHere()
+                ? "Amethyst Area dig world ready. Players: /amethyst. Admin: /deepmines."
+                : "The Amethyst Mine runs on the mine server: /amethyst and the Foreman send players there.");
         miningAccess = new de.aetherion.mining.api.MiningAccessImpl();
         de.aetherion.core.api.AetherServices.registerMining(miningAccess);
     }
@@ -94,6 +134,10 @@ public class AetherionMining extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (titan != null) {
+            titan.shutdown();
+            camp.shutdown();
+        }
         if (isle != null) {
             isle.shutdown();
             isle = null;
@@ -119,6 +163,11 @@ public class AetherionMining extends JavaPlugin {
 
     public VeinsWorld getVeins() {
         return veins;
+    }
+
+    /** The Swallowed Isles, or {@code null} off the mine server. */
+    public de.aetherion.mining.titan.TitanWorld getTitan() {
+        return titan;
     }
 
     /** Mining Eldervale router, or {@code null} when disabled. */

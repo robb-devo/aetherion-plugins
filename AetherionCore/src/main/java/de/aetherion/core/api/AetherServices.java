@@ -31,8 +31,27 @@ public final class AetherServices {
     private static volatile IslandAccess islands;
     private static final java.util.List<java.util.function.Consumer<org.bukkit.entity.Player>> LANG_LISTENERS =
             new java.util.concurrent.CopyOnWriteArrayList<>();
+    private static final java.util.Map<String, PlayerDataPart> PLAYER_DATA =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     private AetherServices() {
+    }
+
+    /** Per-player state that travels with the character (see {@link PlayerDataPart}). */
+    public static void registerPlayerData(PlayerDataPart part) {
+        if (part != null && part.id() != null && !part.id().isBlank()) {
+            PLAYER_DATA.put(part.id(), part);
+        }
+    }
+
+    public static void clearPlayerData(PlayerDataPart part) {
+        if (part != null && part.id() != null) {
+            PLAYER_DATA.remove(part.id(), part);
+        }
+    }
+
+    public static java.util.Map<String, PlayerDataPart> playerData() {
+        return java.util.Map.copyOf(PLAYER_DATA);
     }
 
     public static void registerParty(PartyAccess access) {

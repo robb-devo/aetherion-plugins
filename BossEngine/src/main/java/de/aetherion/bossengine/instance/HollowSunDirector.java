@@ -1,6 +1,9 @@
 package de.aetherion.bossengine.instance;
 
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.combat.BossTells;
+import de.aetherion.bossengine.combat.Openings;
+import de.aetherion.bossengine.combat.Parries;
 import de.aetherion.bossengine.model.BossPhase;
 import de.aetherion.bossengine.util.AttributeUtil;
 import de.aetherion.bossengine.util.TextUtil;
@@ -24,13 +27,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EntityEquipment;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ArmorMeta;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.trim.ArmorTrim;
-import org.bukkit.inventory.meta.trim.TrimMaterial;
-import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.EulerAngle;
@@ -110,7 +107,13 @@ final class HollowSunDirector {
 
     private enum Form { MAIN, GIANT, COLLAPSE }
 
-    private enum Move { NONE, SWIPE, LANCE, SLAM, STARCALL, CORONA, FLARE, PROMINENCE, WELL, FOLD, NOVA }
+    private enum Move { NONE, SWIPE, LANCE, SLAM, STARCALL, CORONA, FLARE, PROMINENCE, WELL, FOLD, NOVA, BROKEN }
+
+    /** Parried mace swings until the guard breaks and the plates fall. */
+    private static final int POSTURE = 3;
+    private static final int BROKEN_TICKS = 110;
+    private static final double BROKEN_TAKEN = 1.3;
+    private static final float TELL_SIZE = 2.6f;
 
     private enum Cinematic { NONE, IGNITION, STARFALL, HOLD }
 
@@ -133,8 +136,6 @@ final class HollowSunDirector {
     private final Set<UUID> whooshHeard = new HashSet<>();
     private final EnumSet<Move> taught = EnumSet.noneOf(Move.class);
     private Well well;
-    /** Collapse-only: red Stormcaller-style cells after STARFALL. Cleared on abort/death. */
-    private final HollowBloodstorm bloodstorm = new HollowBloodstorm();
 
     /* Arena, measured once from the spawn point. */
     private Location center;
@@ -162,6 +163,19 @@ final class HollowSunDirector {
     private boolean maceHeld;
     private Location maceGrip;
     private Vector maceDir = new Vector(0, -1, 0);
+    /** The floating war-plate around the core (replaces the old vanilla armor). */
+    private HollowArmor armor;
+    /** 0..1, both arms up: the slam wind-up, casting. Eases back down by itself. */
+    private double raise;
+
+    /* The combat kit: tells, parried swings, the broken guard. */
+    private BossTells tells;
+    private BossTells.Tell tell;
+    private int posture;
+    private long postureAt;
+    private int swingsLeft;
+    private int swingSide = 1;
+    private boolean chained;
 
     /* Body. */
     private float bodyYaw;
@@ -263,7 +277,7 @@ final class HollowSunDirector {
         if (!isMine() || exposedTicks <= 0) {
             return amount;
         }
-        return amount * exposedMul;
+        return amount * (move == Move.BROKEN ? Math.max(exposedMul, BROKEN_TAKEN) : exposedMul);
     }
 
     void onDamaged(double amount) {
@@ -289,6 +303,9 @@ final class HollowSunDirector {
         clearRig();
         if (center == null) {
             measureArena();
+        }
+        if (tells == null) {
+            tells = new BossTells(instance.getKeys(), instance.getInstanceId(), arenaRadius + 24.0);
         }
         keepHidden(entity, true);
         entity.setGravity(false);
@@ -353,6 +370,9 @@ final class HollowSunDirector {
         }
         clearCombatFx();
         stopWhoosh();
+        if (armor != null && armor.collapsed()) {
+            armor.reassemble();
+        }
         introTick = -1;
         cinematic = Cinematic.NONE;
         exposedTicks = 0;
@@ -426,6 +446,17 @@ final class HollowSunDirector {
         keepHidden(entity, false);
         tickCooldowns();
         tickHazards(entity);
+        if (posture > 0 && clock - postureAt > 500) {
+            // A guard left alone mends, one parry's worth every 25 seconds.
+            posture--;
+            postureAt = clock;
+        }
+        if (tell != null) {
+            tell.move(overHelm(entity));
+        }
+        if (tells != null) {
+            tells.tick();
+        }
         if (move != Move.NONE) {
             tickMove(entity, form);
         } else {
@@ -535,9 +566,6 @@ final class HollowSunDirector {
                 Location stand = entity.getLocation().clone();
                 stand.setY(floorY);
                 teleportBody(entity, stand);
-            }
-            if (center != null) {
-                bloodstorm.start(entity, center, floorY, arenaRadius);
             }
         }
         if (entity != null && entity.isValid()) {
@@ -663,9 +691,9 @@ final class HollowSunDirector {
             Location mid = land.clone().add(0, 0.6, 0);
             de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.FLASH, 1, Math.max(0, 0), null);
             de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
-            de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, 24, Math.max(1.2, 1.2), null);
-            floorBurst(world, land, 60, 1.6);
-            burst(world, mid, Particle.END_ROD, 36, 0.45);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, 8, Math.max(1.2, 1.2), null);
+            floorBurst(world, land, 24, 1.6);
+            burst(world, mid, Particle.END_ROD, 14, 0.45);
             world.playSound(land, Sound.ENTITY_GENERIC_EXPLODE, 1.8f, 0.55f);
             world.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.6f, 0.6f);
             world.playSound(land, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.7f, 0.7f);
@@ -680,6 +708,7 @@ final class HollowSunDirector {
                 }
             }
             spawnCore(entity);
+            spawnArmor(entity, false);
             coreBoost = 0.6;
         }
         if (introTick > INTRO_IMPACT) {
@@ -687,7 +716,9 @@ final class HollowSunDirector {
             int[] at = {38, 42, 46, 50};
             for (int i = 0; i < at.length; i++) {
                 if (introTick == at[i]) {
-                    dressPiece(entity, 3 - i, Form.MAIN);
+                    if (armor != null) {
+                        armor.show(HollowArmor.Group.values()[i], corePos(entity));
+                    }
                     double y = entity.getHeight() * (0.1 + 0.28 * i);
                     Location piece = entity.getLocation().clone().add(0, y, 0);
                     de.aetherion.bossengine.fx.ShapeFx.puff(piece, Particle.ELECTRIC_SPARK, 14, Math.max(0.35, 0.35), null);
@@ -868,6 +899,7 @@ final class HollowSunDirector {
             case WELL -> tickWellCast(entity);
             case FOLD -> tickFold(entity, form);
             case NOVA -> tickNova(entity);
+            case BROKEN -> tickBroken(entity);
             default -> endMove();
         }
     }
@@ -879,6 +911,10 @@ final class HollowSunDirector {
     }
 
     private void endMove() {
+        if (tell != null) {
+            tell.remove();
+            tell = null;
+        }
         move = Move.NONE;
         actionTick = 0;
         maceHeld = false;
@@ -895,6 +931,17 @@ final class HollowSunDirector {
     private void cancelMove(LivingEntity entity) {
         if (entity != null && entity.isValid()) {
             restoreScale(entity);
+        }
+        if (tells != null) {
+            tells.clear();
+        }
+        tell = null;
+        swingsLeft = 0;
+        if (move == Move.BROKEN) {
+            maceShown = true;
+            if (armor != null) {
+                armor.reassemble();
+            }
         }
         folded = false;
         rigScale = 1.0;
@@ -971,6 +1018,8 @@ final class HollowSunDirector {
     private void expose(int ticks, double mul) {
         exposedTicks = Math.max(exposedTicks, ticks);
         exposedMul = mul;
+        // The combat kit's opening too: charged hits land its bonus while he is spent.
+        Openings.open(instance.getEntity(), ticks);
         actionBar("&a✦ OPENING &8| &fhe is spent — hit him now");
         if (center != null && center.getWorld() != null) {
             LivingEntity entity = instance.getEntity();
@@ -1114,11 +1163,27 @@ final class HollowSunDirector {
 
     // ------------------------------------------------------------------ SWIPE
 
+    /**
+     * A mace swing, the parry lesson of this fight: a yellow "!" over the helm, F on the white
+     * beat. A knight's chain: in the Main Sequence one or two swings, in the Collapse two or three,
+     * forehand then backhand, and any follow-up may be held a beat longer than the arm says. The
+     * mark turns white when the swing really comes, not when it looks like it will.
+     */
     private void beginSwipe(LivingEntity entity, Player target) {
         start(Move.SWIPE, target);
+        Form form = form();
         aim = flatDir(entity.getLocation(), target.getLocation(), fwd());
-        windup = form() == Form.COLLAPSE ? 9 : 11;
+        windup = form == Form.COLLAPSE ? 9 : 11;
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        swingsLeft = switch (form) {
+            case MAIN -> r.nextInt(2);
+            case GIANT -> 0;
+            case COLLAPSE -> 1 + r.nextInt(2);
+        };
+        swingSide = 1;
+        chained = false;
         maceHeld = true;
+        tell = tells.parry(overHelm(entity), windup + 1, TELL_SIZE);
         entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_ARMOR_EQUIP_NETHERITE, 0.8f, 0.8f);
     }
 
@@ -1132,7 +1197,7 @@ final class HollowSunDirector {
         }
         face(entity, aim, 14.0f);
         Vector f = aim.clone();
-        Vector r = right(f);
+        Vector r = right(f).multiply(swingSide);
         if (actionTick <= windup) {
             double p = actionTick / (double) windup;
             maceGrip = feet.clone().add(r.clone().multiply(1.0)).add(f.clone().multiply(-0.3 * p)).add(0, h * 0.5 + 0.2 * p, 0);
@@ -1154,23 +1219,113 @@ final class HollowSunDirector {
             world.playSound(feet, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.1f, 0.55f);
             world.playSound(feet, Sound.ITEM_MACE_SMASH_AIR, 1.0f, 1.3f);
             world.playSound(feet, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, 0.9f, 0.6f);
-            double power = power(30, 34, 38);
+            // Follow-ups of a chain hit a little lighter: the chain is the threat, not each link.
+            double power = power(30, 34, 38) * (chained ? 0.85 : 1.0);
             for (Player player : fighters()) {
                 if (!inCone(feet, f, player.getLocation(), 3.9, 72.0)
                         || Math.abs(player.getLocation().getY() - feet.getY()) > 2.8) {
                     continue;
                 }
                 BossHits.hurt(player, entity, power);
-                player.setVelocity(f.clone().multiply(0.65).add(r.clone().multiply(-0.3)).setY(0.32));
+                if (Parries.parried(player)) {
+                    parried(entity, player);
+                } else if (!Parries.avoided(player)) {
+                    player.setVelocity(f.clone().multiply(0.65).add(r.clone().multiply(-0.3)).setY(0.32));
+                }
             }
             return;
         }
-        if (actionTick < windup + 11) {
+        if (actionTick < windup + 8 || swingsLeft <= 0 && actionTick < windup + 11) {
             maceDir = steer(maceDir, new Vector(0, -1, 0), 0.2);
+            return;
+        }
+        if (swingsLeft > 0 && move == Move.SWIPE) {
+            // Next link: the other side, sometimes held a beat longer than the arm promises.
+            swingsLeft--;
+            chained = true;
+            swingSide = -swingSide;
+            actionTick = 0;
+            int base = form == Form.COLLAPSE ? 9 : 11;
+            windup = ThreadLocalRandom.current().nextInt(3) == 0 ? base + 7 : base;
+            tell = tells.parry(overHelm(entity), windup + 1, TELL_SIZE);
+            feet.getWorld().playSound(feet, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 0.8f, 0.95f);
             return;
         }
         endMove();
         swipeCd = form == Form.COLLAPSE ? 26 : 34;
+    }
+
+    /** Where the "!" / "!!" hangs: over the helm. */
+    private Location overHelm(LivingEntity entity) {
+        return entity.getLocation().add(0, entity.getHeight() * 1.45 + 0.6, 0);
+    }
+
+    /**
+     * A swing was parried: the mace is thrown back, the plates ring. Three of these and the guard
+     * breaks ({@link #tickBroken}).
+     */
+    private void parried(LivingEntity entity, Player by) {
+        posture++;
+        postureAt = clock;
+        coreKick = 0.2;
+        maceDir = steer(maceDir, new Vector(0, 1, 0), 0.6);
+        World world = entity.getWorld();
+        Location chest = corePos(entity);
+        world.playSound(chest, Sound.BLOCK_ANVIL_LAND, 1.2f, 0.7f);
+        world.playSound(chest, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.4f, 0.5f);
+        if (posture >= POSTURE) {
+            beginBroken(entity);
+        } else if (posture == 1) {
+            actionBar("&eParried. &7The plates ring. &fThree in a row and his guard breaks.");
+        }
+    }
+
+    /* ------------------------------------------------------------------ the broken guard */
+
+    /**
+     * Three parried swings: the guard breaks. Every plate drops to the floor, the mace falls, the
+     * star hangs bare in the air. Hits on it are worth more and charged hits get the combat kit's
+     * opening bonus, until the plates fly home.
+     */
+    private void beginBroken(LivingEntity entity) {
+        cancelMove(entity);
+        posture = 0;
+        start(Move.BROKEN, null);
+        maceShown = false;
+        if (armor != null) {
+            armor.collapse(floorY);
+        }
+        coreOverride = entity.getLocation().add(0, 0.9, 0);
+        expose(BROKEN_TICKS, BROKEN_TAKEN);
+        Openings.open(entity, BROKEN_TICKS);
+        tells.finisher(corePos(entity));
+        World world = entity.getWorld();
+        Location chest = corePos(entity);
+        world.playSound(chest, Sound.ITEM_SHIELD_BREAK, 1.6f, 0.5f);
+        world.playSound(chest, Sound.BLOCK_NETHERITE_BLOCK_FALL, 1.4f, 0.6f);
+        world.playSound(chest, Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.2f);
+        actionBar("&6&lGUARD BROKEN &7· the plates are down, the star is bare: &ffinish it");
+    }
+
+    private void tickBroken(LivingEntity entity) {
+        actionTick++;
+        if (actionTick % 16 == 0 && actionTick < BROKEN_TICKS) {
+            entity.getWorld().playSound(corePos(entity), Sound.ENTITY_WARDEN_HEARTBEAT, 1.2f, 0.7f);
+        }
+        if (actionTick == BROKEN_TICKS) {
+            if (armor != null) {
+                armor.reassemble();
+            }
+            coreOverride = null;
+            entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.4f, 0.6f);
+            entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.8f);
+        }
+        if (actionTick == BROKEN_TICKS + 8) {
+            maceShown = true;
+        }
+        if (actionTick >= BROKEN_TICKS + 20) {
+            endMove();
+        }
     }
 
     // ------------------------------------------------------------------ SOLAR LANCE
@@ -1191,6 +1346,7 @@ final class HollowSunDirector {
             case COLLAPSE -> 28;
         };
         aim = flatDir(entity.getLocation(), target.getLocation(), fwd());
+        tell = tells.roll(overHelm(entity), windup + 3, TELL_SIZE);
         laneOffsets = form == Form.COLLAPSE ? new double[]{0.0, -22.0, 22.0} : new double[]{0.0};
         lanceLen = form == Form.GIANT ? 20.0 : form == Form.COLLAPSE ? 17.0 : 18.0;
         maceHeld = false;
@@ -1316,7 +1472,7 @@ final class HollowSunDirector {
                     continue;
                 }
                 lance.struck.add(player.getUniqueId());
-                BossHits.hurt(player, entity, lance.power);
+                BossHits.peril(player, entity, lance.power);
                 player.setVelocity(lance.dir.clone().multiply(1.0).setY(0.35));
             }
             if (lance.traveled >= lance.length) {
@@ -1350,6 +1506,7 @@ final class HollowSunDirector {
         aim = flatDir(entity.getLocation(), target.getLocation(), fwd());
         windup = form() == Form.COLLAPSE ? 20 : 24;
         maceHeld = true;
+        tell = tells.roll(overHelm(entity), windup + 1, TELL_SIZE);
         World world = entity.getWorld();
         world.playSound(entity.getLocation(), Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 0.55f);
         world.playSound(entity.getLocation(), Sound.BLOCK_NETHERITE_BLOCK_STEP, 0.8f, 0.5f);
@@ -1371,6 +1528,7 @@ final class HollowSunDirector {
             Vector f = aim.clone();
             Vector r = right(f);
             double lift = easeInOut(p);
+            raise = Math.max(raise, lift * 0.6);
             maceGrip = feet.clone().add(0, h * (0.55 + 0.5 * lift), 0)
                     .add(r.clone().multiply(0.5 - 0.3 * lift)).add(f.clone().multiply(-0.25 * lift));
             maceDir = blend(new Vector(0, -1, 0), f.clone().multiply(-0.5).add(new Vector(0, 0.87, 0)), lift);
@@ -1423,7 +1581,7 @@ final class HollowSunDirector {
         world.playSound(impact, Sound.BLOCK_ANVIL_LAND, 0.5f, 0.5f);
         de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.3, 0), Particle.EXPLOSION, 1, Math.max(0, 0), null);
         de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.4, 0), Particle.FLASH, 1, Math.max(0, 0), null);
-        floorBurst(world, impact, 46, 1.2);
+        floorBurst(world, impact, 18, 1.2);
         de.aetherion.bossengine.fx.ShapeFx.puff(impact, Particle.LAVA, 6, Math.max(0.6, 0.6), null);
         List<Player> viewers = viewers(impact);
         Color crack = form == Form.COLLAPSE ? VIOLET : EMBER;
@@ -1444,8 +1602,10 @@ final class HollowSunDirector {
                     || Math.abs(player.getLocation().getY() - feet.getY()) > 3.0) {
                 continue;
             }
-            BossHits.hurt(player, entity, power);
-            player.setVelocity(f.clone().multiply(0.7).setY(0.62));
+            BossHits.peril(player, entity, power);
+            if (!Parries.avoided(player)) {
+                player.setVelocity(f.clone().multiply(0.7).setY(0.62));
+            }
         }
         if (form == Form.COLLAPSE) {
             waves.add(new Shockwave(impact.clone(), 0.6, 0.45, 9.5, VIOLET, 30.0, 0));
@@ -1623,7 +1783,7 @@ final class HollowSunDirector {
             if (horizontalSq(pl, m.ground) > r2 || Math.abs(pl.getY() - m.ground.getY()) > 2.5) {
                 continue;
             }
-            BossHits.hurt(player, entity, power);
+            BossHits.peril(player, entity, power);
             Vector out = pl.toVector().subtract(m.ground.toVector()).setY(0);
             if (out.lengthSquared() < 0.01) {
                 out = new Vector(0.01, 0, 0);
@@ -1638,6 +1798,7 @@ final class HollowSunDirector {
         start(Move.CORONA, null);
         windup = form() == Form.GIANT ? 22 : 26;
         maceHeld = false;
+        tell = tells.roll(overHelm(entity), windup + 1, TELL_SIZE);
         World world = entity.getWorld();
         world.playSound(entity.getLocation(), Sound.BLOCK_FIRE_AMBIENT, 1.2f, 0.6f);
         world.playSound(entity.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.9f, 0.5f);
@@ -1653,6 +1814,7 @@ final class HollowSunDirector {
             double p = actionTick / (double) w;
             int remaining = w - actionTick;
             coreBoost = 0.55 * p;
+            raise = Math.max(raise, p);
             Color c = remaining <= 6 && remaining % 2 == 0 ? HOT : tellColor(form);
             double start = Math.toRadians(bodyYaw + 90.0);
             if (actionTick % 2 == 0 || remaining <= 6) {
@@ -1693,7 +1855,7 @@ final class HollowSunDirector {
                 if (horizontal(pl, feet) > CORONA_R + 0.3 || Math.abs(pl.getY() - feet.getY()) > 3.5) {
                     continue;
                 }
-                BossHits.hurt(player, entity, power);
+                BossHits.peril(player, entity, power);
                 Vector out = pl.toVector().subtract(feet.toVector()).setY(0);
                 if (out.lengthSquared() < 0.01) {
                     out = fwd();
@@ -1875,7 +2037,7 @@ final class HollowSunDirector {
                 if (!gate("flare", player, 16)) {
                     break;
                 }
-                BossHits.hurt(player, entity, 38);
+                BossHits.peril(player, entity, 38);
                 Vector tangent = new Vector(-Math.sin(pa), 0, Math.cos(pa)).multiply(flareSpin * 0.8);
                 player.setVelocity(tangent.setY(0.45));
                 player.setFireTicks(Math.max(player.getFireTicks(), 40));
@@ -2044,7 +2206,7 @@ final class HollowSunDirector {
             if (horizontalSq(pl, arc.to) > r2 || Math.abs(pl.getY() - arc.to.getY()) > 2.5) {
                 continue;
             }
-            BossHits.hurt(player, entity, 36);
+            BossHits.peril(player, entity, 36);
             player.setFireTicks(Math.max(player.getFireTicks(), 60));
             Vector out = pl.toVector().subtract(arc.to.toVector()).setY(0);
             if (out.lengthSquared() < 0.01) {
@@ -2155,7 +2317,7 @@ final class HollowSunDirector {
                     player.setVelocity(player.getVelocity().multiply(0.93).add(pull));
                 }
                 if (d <= WELL_CORE_R && gate("well", player, 16)) {
-                    BossHits.hurt(player, entity, 34);
+                    BossHits.peril(player, entity, 34);
                     de.aetherion.bossengine.fx.ShapeFx.puff(pl.clone().add(0, 1, 0), Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
                 }
             }
@@ -2315,15 +2477,12 @@ final class HollowSunDirector {
                 if (horizontalSq(pl, foldSigil) > r2 || Math.abs(pl.getY() - foldSigil.getY()) > 3.0) {
                     continue;
                 }
-                BossHits.hurt(player, entity, 46);
+                BossHits.peril(player, entity, 46);
                 Vector out = pl.toVector().subtract(foldSigil.toVector()).setY(0);
                 if (out.lengthSquared() < 0.01) {
                     out = f.clone();
                 }
                 player.setVelocity(out.normalize().multiply(0.6).setY(0.7));
-            }
-            if (bloodstorm.isActive()) {
-                bloodstorm.reanchorNear(entity);
             }
             return;
         }
@@ -2530,9 +2689,6 @@ final class HollowSunDirector {
         tickWell(entity);
         tickAfterglows();
         tickShards();
-        if (bloodstorm.isActive()) {
-            bloodstorm.tick(entity, fighters());
-        }
     }
 
     private void tickWaves(LivingEntity entity) {
@@ -2570,7 +2726,7 @@ final class HollowSunDirector {
                         continue;
                     }
                     wave.struck.add(player.getUniqueId());
-                    BossHits.hurt(player, entity, wave.power);
+                    BossHits.peril(player, entity, wave.power);
                     Vector out = pl.toVector().subtract(wave.center.toVector()).setY(0);
                     if (out.lengthSquared() < 0.01) {
                         out = new Vector(0.01, 0, 0);
@@ -2756,7 +2912,7 @@ final class HollowSunDirector {
                 if (horizontal(pl, feet) > 6.5 || Math.abs(pl.getY() - ground.getY()) > 4.0) {
                     continue;
                 }
-                BossHits.hurt(player, entity, 34);
+                BossHits.peril(player, entity, 34);
                 Vector out = pl.toVector().subtract(feet.toVector()).setY(0);
                 if (out.lengthSquared() < 0.01) {
                     out = new Vector(0.01, 0, 0);
@@ -3052,7 +3208,7 @@ final class HollowSunDirector {
         }
         if (deathTick == 40) {
             de.aetherion.bossengine.fx.ShapeFx.puff(chest, Particle.FLASH, 1, Math.max(0, 0), null);
-            burst(world, chest, Particle.END_ROD, 40, 0.5);
+            burst(world, chest, Particle.END_ROD, 16, 0.5);
             world.playSound(chest, Sound.ENTITY_GENERIC_EXPLODE, 0.9f, 1.3f);
             world.playSound(chest, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
             world.playSound(chest, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.3f, 0.5f);
@@ -3066,6 +3222,9 @@ final class HollowSunDirector {
                 }
             }
             spawnHusks();
+            if (armor != null) {
+                armor.collapse(deathFocus.getY());
+            }
             for (BlockDisplay ray : crown) {
                 if (ray != null && ray.isValid()) {
                     Vector v = randomUnit().multiply(0.3).setY(0.35);
@@ -3116,6 +3275,9 @@ final class HollowSunDirector {
                     }
                 }
                 clearHusks();
+                if (armor != null) {
+                    armor.remove();
+                }
             }
         }
         if (deathTick < DEATH_TICKS) {
@@ -3774,6 +3936,7 @@ final class HollowSunDirector {
 
     private void spawnRig(LivingEntity entity) {
         spawnCore(entity);
+        spawnArmor(entity, true);
         spawnCrown(entity);
         spawnMace(entity);
         crownShown = CROWN_RAYS;
@@ -3847,6 +4010,14 @@ final class HollowSunDirector {
                 glow = GOLD;
             }
         }
+        if (armor != null) {
+            // Snug and gold-trimmed; pushed apart round a swollen star with molten seams; crushed in and trembling.
+            switch (form) {
+                case GIANT -> armor.metal(Material.GILDED_BLACKSTONE, Material.MAGMA_BLOCK, Material.SHROOMLIGHT, FLARE, 1.22f, 0f);
+                case COLLAPSE -> armor.metal(Material.OBSIDIAN, Material.AMETHYST_BLOCK, Material.CRYING_OBSIDIAN, VIOLET, 0.9f, 0.012f);
+                default -> armor.metal(Material.POLISHED_BLACKSTONE, Material.GOLD_BLOCK, Material.SHROOMLIGHT, GOLD, 1f, 0f);
+            }
+        }
         setBlock(coreA, a, form == Form.COLLAPSE ? PHOTON : null);
         setBlock(coreB, b, null);
         setBlock(shell, glass, glow);
@@ -3899,7 +4070,7 @@ final class HollowSunDirector {
         place(coreB, corePos, centered(new Quaternionf().rotateY(-spin * 1.3f).rotateZ(0.785f).rotateX(0.615f), s * 0.9f), 2);
         place(shell, corePos, centered(new Quaternionf().rotateY(spin * 0.4f).rotateX(0.3f), (float) (s * shellRatio)), 2);
 
-        Location crownPos = feet.clone().add(0, h * 1.03, 0);
+        Location crownPos = feet.clone().add(0, h * 1.18, 0);
         double tilt = form == Form.COLLAPSE ? 0.95 : 0.35;
         float rayLen = (float) ((form == Form.GIANT ? 0.8 : 0.55) * rigScale);
         for (int i = 0; i < crown.size(); i++) {
@@ -3923,6 +4094,22 @@ final class HollowSunDirector {
         Quaternionf along = new Quaternionf().rotationTo(new Vector3f(0, 1, 0), axis);
         place(maceHead, head, centered(along, 0.6f * ms), 2);
         place(maceStar, head, centered(new Quaternionf().rotateY(spin * 2.0f).rotateX(0.6f), 0.36f * ms), 2);
+
+        if (armor != null) {
+            Location body = feet.clone();
+            body.setYaw(bodyYaw);
+            armor.tick(body, h, rigScale, bodyPitch, maceShown ? grip : null, raise);
+            raise *= 0.88;
+        }
+    }
+
+    /** The war-plate: dressed at once, or hidden until the arrival puts it on group by group. */
+    private void spawnArmor(LivingEntity entity, boolean dressed) {
+        if (armor == null) {
+            armor = new HollowArmor(instance.getKeys(), instance.getInstanceId());
+        }
+        armor.spawn(corePos(entity), dressed);
+        applyRigMaterials(visualForm);
     }
 
     private Location idleMaceGrip(LivingEntity entity) {
@@ -3943,6 +4130,9 @@ final class HollowSunDirector {
     }
 
     private void clearRig() {
+        if (armor != null) {
+            armor.remove();
+        }
         discardRig(coreA);
         discardRig(coreB);
         discardRig(shell);
@@ -3971,59 +4161,19 @@ final class HollowSunDirector {
         applyRigMaterials(form);
     }
 
+    /** The war-plate is the display rig ({@link HollowArmor}); the body itself wears nothing. */
     private void dress(LivingEntity entity, Form form) {
-        for (int slot = 0; slot < 4; slot++) {
-            dressPiece(entity, slot, form);
-        }
         EntityEquipment eq = entity.getEquipment();
         if (eq != null) {
+            eq.setHelmet(null);
+            eq.setChestplate(null);
+            eq.setLeggings(null);
+            eq.setBoots(null);
             eq.setItemInMainHand(null);
             eq.setItemInOffHand(null);
             eq.setItemInMainHandDropChance(0.0f);
             eq.setItemInOffHandDropChance(0.0f);
         }
-    }
-
-    /** 0 helmet, 1 chest, 2 legs, 3 boots. Trim color is the phase tell: gold, redstone, amethyst. */
-    private void dressPiece(LivingEntity entity, int slot, Form form) {
-        EntityEquipment eq = entity.getEquipment();
-        if (eq == null) {
-            return;
-        }
-        TrimMaterial metal = switch (form) {
-            case MAIN -> TrimMaterial.GOLD;
-            case GIANT -> TrimMaterial.REDSTONE;
-            case COLLAPSE -> TrimMaterial.AMETHYST;
-        };
-        switch (slot) {
-            case 0 -> {
-                eq.setHelmet(trimmed(Material.NETHERITE_HELMET, metal, TrimPattern.EYE));
-                eq.setHelmetDropChance(0.0f);
-            }
-            case 1 -> {
-                eq.setChestplate(trimmed(Material.NETHERITE_CHESTPLATE, metal, TrimPattern.RIB));
-                eq.setChestplateDropChance(0.0f);
-            }
-            case 2 -> {
-                eq.setLeggings(trimmed(Material.NETHERITE_LEGGINGS, metal, TrimPattern.SILENCE));
-                eq.setLeggingsDropChance(0.0f);
-            }
-            default -> {
-                eq.setBoots(trimmed(Material.NETHERITE_BOOTS, metal, TrimPattern.SPIRE));
-                eq.setBootsDropChance(0.0f);
-            }
-        }
-    }
-
-    private static ItemStack trimmed(Material material, TrimMaterial trim, TrimPattern pattern) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta itemMeta = stack.getItemMeta();
-        if (itemMeta instanceof ArmorMeta meta) {
-            meta.setTrim(new ArmorTrim(trim, pattern));
-            meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-            stack.setItemMeta(meta);
-        }
-        return stack;
     }
 
     private void keepHidden(LivingEntity entity, boolean force) {
@@ -4590,7 +4740,6 @@ final class HollowSunDirector {
         windupLances.clear();
         flareBeams.clear();
         well = null;
-        bloodstorm.clear();
         hitGate.clear();
         coreBoost = 0.0;
         coreOverride = null;

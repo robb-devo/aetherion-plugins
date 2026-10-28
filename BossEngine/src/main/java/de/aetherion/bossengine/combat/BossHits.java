@@ -19,23 +19,32 @@ import org.bukkit.plugin.Plugin;
 public final class BossHits {
 
     private static final NamespacedKey APPLYING = new NamespacedKey("bossengine", "applying_hit");
+    private static final NamespacedKey PERIL = new NamespacedKey("bossengine", "peril_hit");
     private static final NamespacedKey TRUE_DAMAGE = AetherKeys.TRUE_DAMAGE;
 
     private BossHits() {
     }
 
+    /** True while a boss hit (strike or peril) is being dealt to this player. */
     public static boolean isApplying(Player player) {
+        return flag(player, APPLYING) || flag(player, PERIL);
+    }
+
+    /** True while a parryable {@link #hurt} strike is being dealt (not a {@link #peril} hit). */
+    public static boolean isStrike(Player player) {
+        return flag(player, APPLYING);
+    }
+
+    private static boolean flag(Player player, NamespacedKey key) {
         if (player == null) {
             return false;
         }
-        Byte flag = player.getPersistentDataContainer().get(APPLYING, PersistentDataType.BYTE);
+        Byte flag = player.getPersistentDataContainer().get(key, PersistentDataType.BYTE);
         return flag != null && flag == (byte) 1;
     }
 
-    public static void hurt(Player player, Entity source, double power) {
-        if (player == null || !player.isValid() || player.isDead() || isApplying(player)) {
-            return;
-        }
+    /** How much of the HP bar a hit of {@code power} takes, after defense. */
+    private static double share(Player player, double power) {
         double max = maxHealth(player);
         double defense = defenseOf(player);
         // High-power bosses (Pathwarden-class) must not softcap into a tickle.
@@ -46,7 +55,34 @@ public final class BossHits {
         taken = Math.max(max * 0.08, taken);
         taken = Math.max(6.0, taken);
         double maxFrac = power >= 200 ? 0.72 : power >= 120 ? 0.58 : 0.45;
-        taken = Math.min(max * maxFrac, taken);
+        return Math.min(max * maxFrac, taken);
+    }
+
+    /**
+     * The red "!!" hit: the same share of the HP bar as {@link #hurt}, but the combat kit (AetherionItems Guard) reads
+     * it as a ground hazard (TRUE_DAMAGE without a strike), so a roll's i-frames avoid it and the guard never catches
+     * it. Use it for anything you cannot parry: bodies, beams, the ground being eaten.
+     */
+    public static void peril(Player player, Entity source, double power) {
+        if (player == null || !player.isValid() || player.isDead() || isApplying(player)) {
+            return;
+        }
+        double taken = share(player, power);
+        player.getPersistentDataContainer().set(PERIL, PersistentDataType.BYTE, (byte) 1);
+        player.getPersistentDataContainer().set(TRUE_DAMAGE, PersistentDataType.BYTE, (byte) 1);
+        try {
+            player.damage(taken, source);
+        } finally {
+            player.getPersistentDataContainer().remove(PERIL);
+            player.getPersistentDataContainer().remove(TRUE_DAMAGE);
+        }
+    }
+
+    public static void hurt(Player player, Entity source, double power) {
+        if (player == null || !player.isValid() || player.isDead() || isApplying(player)) {
+            return;
+        }
+        double taken = share(player, power);
 
         player.getPersistentDataContainer().set(APPLYING, PersistentDataType.BYTE, (byte) 1);
         player.getPersistentDataContainer().set(TRUE_DAMAGE, PersistentDataType.BYTE, (byte) 1);

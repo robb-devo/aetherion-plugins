@@ -145,6 +145,11 @@ public final class MineProfiles {
             return forgeRep;
         }
 
+        /** First time only: sets the mark and returns true (the Swallowed Isles' discoveries use these). */
+        public boolean claimMark(String id) {
+            return marks.putIfAbsent(id, 1) == null;
+        }
+
         public int mark(String id) {
             return marks.getOrDefault(id, 0);
         }
@@ -287,6 +292,68 @@ public final class MineProfiles {
             profiles.remove(id);
             dirty = true;
         }
+    }
+
+    /** This player's profile as YAML text for the character transfer, or null when there is none. */
+    public String exportPlayer(UUID id) {
+        Profile cached = profiles.get(id);
+        if (cached != null) {
+            write(id, cached);
+        }
+        ConfigurationSection section = disk.getConfigurationSection("players." + id);
+        if (section == null) {
+            return null;
+        }
+        YamlConfiguration out = new YamlConfiguration();
+        for (String key : section.getKeys(true)) {
+            Object value = section.get(key);
+            if (!(value instanceof ConfigurationSection)) {
+                out.set(key, value);
+            }
+        }
+        return out.saveToString();
+    }
+
+    /** Arrival from another backend: that profile replaces this one and is read fresh on the next lookup. */
+    public void importPlayer(UUID id, String yaml) {
+        YamlConfiguration in = new YamlConfiguration();
+        try {
+            in.loadFromString(yaml);
+        } catch (org.bukkit.configuration.InvalidConfigurationException ex) {
+            plugin.getLogger().warning("Mining profile for " + id + " arrived unreadable, the local one stays.");
+            return;
+        }
+        String path = "players." + id;
+        disk.set(path, null);
+        ConfigurationSection section = disk.createSection(path);
+        for (String key : in.getKeys(true)) {
+            Object value = in.get(key);
+            if (!(value instanceof ConfigurationSection)) {
+                section.set(key, value);
+            }
+        }
+        profiles.remove(id);
+        dirty = true;
+    }
+
+    /** The profile travels with the character (mine server and back). */
+    public de.aetherion.core.api.PlayerDataPart part() {
+        return new de.aetherion.core.api.PlayerDataPart() {
+            @Override
+            public String id() {
+                return "mining";
+            }
+
+            @Override
+            public String export(UUID player) {
+                return exportPlayer(player);
+            }
+
+            @Override
+            public void importData(UUID player, String yaml) {
+                importPlayer(player, yaml);
+            }
+        };
     }
 
     public void saveIfDirty() {
