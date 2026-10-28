@@ -187,6 +187,13 @@ public abstract class RiteKit {
             int length = begin(boss, near, late());
             if (length > 0) {
                 windup = length;
+                // The combat kit's language over the signature: yellow "!" if it can be parried, red "!!" if only
+                // a roll escapes it. It lands with strike(), length + 1 ticks from now.
+                if (parryable()) {
+                    instance.guard().parryTell(length + 1);
+                } else {
+                    instance.guard().rollTell(length + 1);
+                }
             }
         }
     }
@@ -292,6 +299,21 @@ public abstract class RiteKit {
     protected void cancelMove() {
     }
 
+    /** The signature being wound up can be parried (yellow); default: roll only (red). */
+    protected boolean parryable() {
+        return false;
+    }
+
+    /** Guard broken ({@link de.aetherion.bossengine.combat.BossGuard}): drop the wind-up and hold off the next. */
+    public final void stagger(int ticks) {
+        if (windup >= 0) {
+            windup = -1;
+            cancelMove();
+        }
+        cooldown = Math.max(cooldown, ticks + 20);
+        contactCd = Math.max(contactCd, ticks);
+    }
+
     protected abstract void deathStart(Location core, LivingEntity body);
 
     protected abstract void deathTick(Location core, LivingEntity body, int tick, int duration, double startScale);
@@ -343,7 +365,12 @@ public abstract class RiteKit {
             if (lift > 0) {
                 p.setVelocity(p.getVelocity().setY(lift));
             }
-            BossHits.hurt(p, boss, instance.scaleDamage(power));
+            if (parryable()) {
+                BossHits.hurt(p, boss, instance.scaleDamage(power));
+                instance.guard().parriedBy(p);
+            } else {
+                BossHits.peril(p, boss, instance.scaleDamage(power));
+            }
             hit.add(p);
         }
         return hit;

@@ -59,7 +59,8 @@ final class NuggetKit extends RiteKit {
         if (to.lengthSquared() > 0.01) {
             boss.setVelocity(to.normalize().multiply(0.35).setY(0.18));
         }
-        de.aetherion.bossengine.combat.BossHits.hurt(target, boss, instance.getAttackDamage());
+        // Yellow "!": the peck lands half a second after the lunge, on the white beat (BossGuard).
+        instance.guard().melee(target, instance.getAttackDamage());
         boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_CHICKEN_HURT, 1.1f, 0.5f);
         boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.8f, 0.7f);
     }

@@ -81,6 +81,9 @@ public class BossInstance {
     private final AshenSheathDirector ashenSheathDirector = new AshenSheathDirector(this);
     private int ashenParries;
     private final HollowSunDirector hollowSunDirector = new HollowSunDirector(this);
+    /** Parry / roll / guard break for every boss without a combat director of its own. */
+    private final de.aetherion.bossengine.combat.BossGuard guard = new de.aetherion.bossengine.combat.BossGuard(this);
+    private de.aetherion.bossengine.combat.BossTells.Tell slamTell;
     private final AshenSovereignDirector sovereignDirector = new AshenSovereignDirector(this);
     private final SignatureDirector signatureDirector = new SignatureDirector(this);
     private final RiteDirector riteDirector = new RiteDirector(this);
@@ -483,6 +486,7 @@ public class BossInstance {
         eliteDirector.abort();
         ashenSheathDirector.abort();
         hollowSunDirector.abort();
+        guard.clear();
         sovereignDirector.abort();
         signatureDirector.abort();
         sandboxDirector.abort();
@@ -533,6 +537,7 @@ public class BossInstance {
         spectacles.finish();
         ashenSheathDirector.abort();
         hollowSunDirector.abort();
+        guard.clear();
         sovereignDirector.abort();
         eliteDirector.clearFx();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
@@ -596,6 +601,15 @@ public class BossInstance {
 
     public de.aetherion.bossengine.instance.worldeater.WorldEaterDirector worldEater() {
         return worldEaterDirector;
+    }
+
+    public de.aetherion.bossengine.combat.BossGuard guard() {
+        return guard;
+    }
+
+    /** Hollow Sun, the Sovereign and Nihil run the parry / roll kit in their own directors. */
+    public boolean ownsCombatKit() {
+        return hollowSunDirector.isMine() || sovereignDirector.isMine() || worldEaterDirector.isMine();
     }
 
     public boolean isInternalTeleport() {
@@ -665,6 +679,7 @@ public class BossInstance {
         if (isDamageBlocked()) {
             return false;
         }
+        amount = guard.scaleIncoming(amount);
         amount = hollowSunDirector.scaleIncoming(amount);
         hollowSunDirector.onDamaged(amount);
         amount = sovereignDirector.scaleIncoming(amount);
@@ -731,6 +746,7 @@ public class BossInstance {
      * @return {@code true} when a death cinematic finished and loot should be paid
      */
     public boolean tick() {
+        guard.tick();
         if (script != null) {
             return tickScripted();
         }
@@ -896,6 +912,8 @@ public class BossInstance {
         this.slamDamage = Math.max(1.0, scaleDamage(damage));
         drawSlamTelegraph(entity.getLocation());
         entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.85f, 0.45f);
+        // Red: a slam can't be parried, roll out of the ring. It lands when he does (about a second).
+        slamTell = guard.rollTell(22);
     }
 
     public boolean isSlamPending() {
@@ -1306,7 +1324,7 @@ public class BossInstance {
                 continue;
             }
             if (damage > 0) {
-                BossHits.hurt(player, entity, damage);
+                BossHits.peril(player, entity, damage);
             }
             if (knockback <= 0) {
                 continue;
@@ -1495,7 +1513,7 @@ public class BossInstance {
             if (at.getY() > origin.getY() + 0.4) {
                 continue;
             }
-            BossHits.hurt(player, entity, damage);
+            BossHits.peril(player, entity, damage);
         }
     }
 
@@ -1555,6 +1573,10 @@ public class BossInstance {
             return;
         }
         entity.setFallDistance(0);
+        if (slamTell != null) {
+            slamTell.landIn(0);
+            slamTell = null;
+        }
         Location center = entity.getLocation();
         World world = center.getWorld();
         if (world == null) {
@@ -1575,7 +1597,7 @@ public class BossInstance {
             if (player.getLocation().distanceSquared(center) > radiusSq) {
                 continue;
             }
-            BossHits.hurt(player, entity, slamDamage);
+            BossHits.peril(player, entity, slamDamage);
             Vector away = player.getLocation().toVector().subtract(center.toVector());
             if (away.lengthSquared() < 0.0001) {
                 away = new Vector(0, 0.45, 0);
@@ -1895,7 +1917,7 @@ public class BossInstance {
             if (player.getLocation().distanceSquared(strike) > hitSq) {
                 continue;
             }
-            BossHits.hurt(player, entity, power);
+            BossHits.peril(player, entity, power);
         }
     }
 

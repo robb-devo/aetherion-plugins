@@ -417,7 +417,7 @@ final class TrollKit extends RiteKit {
         Stage.sound(at, Sound.ITEM_ARMOR_EQUIP_GOLD, 1.2f, 0.7f);
         for (Player p : near(boss, 7.5)) {
             if (p.getLocation().distanceSquared(hit) <= SWEEP_HIT * SWEEP_HIT) {
-                toll(boss, p, 22);
+                toll(boss, p, 22, true);
             }
         }
     }
@@ -444,7 +444,7 @@ final class TrollKit extends RiteKit {
         Stage.sound(at, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.2f, 0.5f);
         Stage.sound(at, Sound.ITEM_ARMOR_EQUIP_GOLD, 1.2f, 0.6f);
         for (Player p : near(boss, 5.0)) {
-            toll(boss, p, 26);
+            toll(boss, p, 26, false);
         }
         if (!first) {
             return;
@@ -464,12 +464,29 @@ final class TrollKit extends RiteKit {
         });
     }
 
-    private void toll(LivingEntity boss, Player p, double power) {
+    /** Toll Sweep is one swing and can be parried; Gold Rush is a full circle, roll out of it. */
+    private void toll(LivingEntity boss, Player p, double power, boolean sweep) {
+        if (sweep) {
+            BossHits.hurt(p, boss, instance.scaleDamage(power));
+            if (de.aetherion.bossengine.combat.Parries.avoided(p)) {
+                instance.guard().parriedBy(p);
+                return;
+            }
+        } else {
+            BossHits.peril(p, boss, instance.scaleDamage(power));
+            if (de.aetherion.bossengine.combat.Parries.avoided(p)) {
+                return;
+            }
+        }
         Vector push = p.getLocation().toVector().subtract(boss.getLocation().toVector()).setY(0);
         if (push.lengthSquared() > 0.01) {
             p.setVelocity(push.normalize().multiply(1.2).setY(0.45));
         }
-        BossHits.hurt(p, boss, instance.scaleDamage(power));
+    }
+
+    @Override
+    protected boolean parryable() {
+        return move == Move.SWEEP;
     }
 
     /* ------------------------------------------------------------------ the rolling coin */
@@ -640,7 +657,7 @@ final class TrollKit extends RiteKit {
                     side.multiply(-1);
                 }
                 p.setVelocity(side.multiply(1.1).add(dir.clone().multiply(0.5)).setY(0.5));
-                BossHits.hurt(p, roller, instance.scaleDamage(22));
+                BossHits.peril(p, roller, instance.scaleDamage(22));
                 Stage.sound(l, Sound.ITEM_ARMOR_EQUIP_GOLD, 1.2f, 0.6f);
             }
         }
