@@ -48,16 +48,15 @@ public final class PitZoneListener implements Listener {
         if (spawn != null && plugin.safeZone().isPitWorld(spawn.getWorld())) {
             wasSafe.put(player.getUniqueId(), true);
         }
+        boolean firstJoin = !player.hasPlayedBefore();
+        // 40 ticks: the client has sent its language by then, so title and card come in German for German clients.
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;
             }
             plugin.xpHud().sync(player);
             player.removePotionEffect(PotionEffectType.SPEED);
-            de.aetherion.pit.util.Msg.send(player, "&8&m--------------------------------");
-            de.aetherion.pit.util.Msg.send(player, "&5Hub &7- &e/hub &7-> spawn - red line = safe");
-            de.aetherion.pit.util.Msg.send(player, "&7Outside = &cPvP&7 - starter kit if naked - &e/pit shop");
-            de.aetherion.pit.util.Msg.send(player, "&8&m--------------------------------");
+            plugin.guide().welcome(player, firstJoin);
         }, 40L);
     }
 

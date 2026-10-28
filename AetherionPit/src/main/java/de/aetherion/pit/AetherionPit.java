@@ -2,6 +2,7 @@ package de.aetherion.pit;
 
 import de.aetherion.pit.command.PitCommand;
 import de.aetherion.pit.data.PitDataStore;
+import de.aetherion.pit.hub.HubGuide;
 import de.aetherion.pit.hud.PitXpBarHud;
 import de.aetherion.pit.listener.HubRulesListener;
 import de.aetherion.pit.listener.PitCombatListener;
@@ -25,6 +26,7 @@ public final class AetherionPit extends JavaPlugin {
     private PitLevelService levels;
     private TransferBridge transfer;
     private HubNpcService hubNpcs;
+    private HubGuide guide;
     private PitXpBarHud xpHud;
 
     @Override
@@ -37,6 +39,7 @@ public final class AetherionPit extends JavaPlugin {
         levels = new PitLevelService(this, data);
         transfer = new TransferBridge(this);
         hubNpcs = new HubNpcService(this);
+        guide = new HubGuide(this);
         xpHud = new PitXpBarHud(this);
         new de.aetherion.pit.hud.PitHealthHud(this);
         getServer().getPluginManager().registerEvents(new PitZoneListener(this), this);
@@ -46,6 +49,7 @@ public final class AetherionPit extends JavaPlugin {
         new HubDevMenu(this);
         HubNpcFancyListener.register(this, hubNpcs);
         hubNpcs.start();
+        guide.start();
         PitPlaceholders.tryRegister(this);
         PitCommand cmd = new PitCommand(this);
         var pit = getCommand("pit");
@@ -76,6 +80,15 @@ public final class AetherionPit extends JavaPlugin {
                 }
                 player.teleport(spawn);
                 player.sendMessage("§aBack to hub spawn.");
+                return true;
+            });
+        }
+        var modpack = getCommand("modpack");
+        if (modpack != null) {
+            modpack.setExecutor((sender, c, l, a) -> {
+                if (sender instanceof org.bukkit.entity.Player player) {
+                    guide.modpackCard(player);
+                }
                 return true;
             });
         }
@@ -134,6 +147,7 @@ public final class AetherionPit extends JavaPlugin {
             getConfig().set("discord-invite", "");
             dirty = true;
         }
+        dirty |= hubDefaults();
         if (!getConfig().contains("npc-visibility-distance")) {
             getConfig().set("npc-visibility-distance", 72);
             dirty = true;
@@ -163,8 +177,48 @@ public final class AetherionPit extends JavaPlugin {
         }
     }
 
+    /**
+     * Hub polish (10-28): the two empty pedestals get the Modpack and Pit stations, the welcome board floats over
+     * the plaza, the Pit board stands at the red line west of the hall. Only missing keys are written.
+     */
+    private boolean hubDefaults() {
+        boolean dirty = false;
+        dirty |= place("npcs.modpack", -33.5, 65.0, -2.5, -90.0);
+        dirty |= place("npcs.pit", -33.5, 65.0, 3.5, -90.0);
+        dirty |= place("welcome-board", -9.5, 66.6, 0.5, 90.0);
+        dirty |= place("pit-entrance", -74.5, 56.0, 0.5, 90.0);
+        dirty |= place("pit-board", -77.5, 58.0, 0.5, 90.0);
+        for (String key : new String[]{"modrinth", "curseforge", "shader"}) {
+            if (!getConfig().contains("modpack." + key, true)) {
+                getConfig().set("modpack." + key, "");
+                dirty = true;
+            }
+        }
+        if (!getConfig().contains("modpack.github", true)) {
+            getConfig().set("modpack.github", "https://github.com/robb-devo/aetherion-launcher/releases/latest");
+            dirty = true;
+        }
+        return dirty;
+    }
+
+    private boolean place(String path, double x, double y, double z, double yaw) {
+        if (getConfig().contains(path + ".x", true)) {
+            return false;
+        }
+        getConfig().set(path + ".world", "world");
+        getConfig().set(path + ".x", x);
+        getConfig().set(path + ".y", y);
+        getConfig().set(path + ".z", z);
+        getConfig().set(path + ".yaw", yaw);
+        getConfig().set(path + ".pitch", 0.0);
+        return true;
+    }
+
     @Override
     public void onDisable() {
+        if (guide != null) {
+            guide.stop();
+        }
         if (data != null) {
             data.saveAll();
         }
@@ -193,6 +247,10 @@ public final class AetherionPit extends JavaPlugin {
 
     public HubNpcService hubNpcs() {
         return hubNpcs;
+    }
+
+    public HubGuide guide() {
+        return guide;
     }
 
     public PitXpBarHud xpHud() {

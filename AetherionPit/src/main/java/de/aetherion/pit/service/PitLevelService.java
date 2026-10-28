@@ -3,8 +3,15 @@ package de.aetherion.pit.service;
 import de.aetherion.pit.AetherionPit;
 import de.aetherion.pit.data.PitDataStore;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.title.Title;
+
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+
+import java.time.Duration;
 
 public final class PitLevelService {
 
@@ -70,6 +77,10 @@ public final class PitLevelService {
             m.level++;
             needed = xpForNext(m.level);
             player.sendMessage("§6★ Pit Level §f" + m.level + "§6!");
+            player.showTitle(Title.title(
+                    Component.text("Pit Level " + m.level, NamedTextColor.GOLD, TextDecoration.BOLD),
+                    Component.empty(),
+                    Title.Times.times(Duration.ofMillis(150), Duration.ofMillis(1200), Duration.ofMillis(500))));
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
         }
         plugin.xpHud().sync(player);
