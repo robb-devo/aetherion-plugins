@@ -2440,16 +2440,14 @@ final class AshenSovereignDirector {
         for (Player player : fighters()) {
             Location pl = player.getLocation();
             if (inWard(pl)) {
-                player.showTitle(Title.title(TextUtil.component("&bSHELTERED"),
-                        TextUtil.component("&7The Throne kept you."), titleTimes()));
+                player.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(player, "&bSHELTERED", "&7The Throne kept you.", titleTimes()));
                 de.aetherion.bossengine.fx.ShapeFx.puff(pl.clone().add(0, 1, 0), Particle.SOUL_FIRE_FLAME, 20, Math.max(0.4, 0.4), null);
                 continue;
             }
             BossHits.crush(player, entity, 115);
             player.setFireTicks(Math.max(player.getFireTicks(), 100));
             player.setVelocity(away(pl, center).multiply(1.0).setY(0.8));
-            player.showTitle(Title.title(TextUtil.component("&4BURNED"),
-                    TextUtil.component("&7The Last Sky: shelter in a soul ward."), titleTimes()));
+            player.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(player, "&4BURNED", "&7The Last Sky: shelter in a soul ward.", titleTimes()));
         }
         for (Location ward : wards) {
             de.aetherion.bossengine.fx.ShapeFx.puff(ward.clone().add(0, 1.5, 0), Particle.SOUL_FIRE_FLAME, 60, Math.max(WARD_R * 0.5, WARD_R * 0.5), null);
@@ -4730,10 +4728,11 @@ final class AshenSovereignDirector {
         if (origin == null || origin.getWorld() == null) {
             return;
         }
-        Title title = Title.title(TextUtil.component(main), TextUtil.component(sub), titleTimes());
+        Title.Times times = titleTimes();
         for (Player player : origin.getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(origin) <= 90 * 90) {
-                player.showTitle(title);
+                // German clients read the German line (BossTitlesDe).
+                player.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(player, main, sub, times));
             }
         }
     }
