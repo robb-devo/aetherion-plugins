@@ -3,6 +3,7 @@ import { applyIslandMovements, standingIsSafe, wanderOnIsland } from './safety.j
 import { markError, note, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
 import { maybeOpenBooster } from './minigame.js'
+import { shouldYield } from './mind.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -68,6 +69,7 @@ export function createFishLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended || casting) return
+    if (shouldYield(bot)) return
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
     }
@@ -97,7 +99,9 @@ export function createFishLoop(bot, cfg, log) {
       return
     }
     bot.pathfinder.setGoal(null)
-    if (Date.now() - lastCast < (cfg.recastMs ?? 2200)) return
+    const patience = bot.qaPersona?.patience ?? 0.5
+    const recast = (cfg.recastMs ?? 2200) * (0.55 + patience)
+    if (Date.now() - lastCast < recast) return
     await castAt(water)
     if (Math.random() < 0.12) {
       await maybeOpenBooster(bot)

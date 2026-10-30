@@ -1,7 +1,14 @@
 package de.aetherion.stressbots;
 
+import de.aetherion.stressbots.control.DashboardLinks;
+import de.aetherion.stressbots.control.RunnerControlClient;
 import de.aetherion.stressbots.role.BotRole;
 import de.aetherion.stressbots.role.BotRoleHandler;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -17,7 +24,7 @@ import java.util.Locale;
 public final class StressBotsCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = List.of(
-            "reload", "setup", "list", "start", "stop", "stopall", "report"
+            "reload", "setup", "list", "start", "stop", "stopall", "report", "dashboard", "link"
     );
 
     private final AetherionStressBots plugin;
@@ -72,16 +79,57 @@ public final class StressBotsCommand implements CommandExecutor, TabCompleter {
             }
             case "stopall" -> sender.sendMessage(plugin.getController().stopAll());
             case "report" -> sender.sendMessage(plugin.getController().reportText().split("\n"));
+            case "dashboard", "link" -> sendDashboard(sender);
             default -> help(sender);
         }
         return true;
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage("§e/stressbots <reload|setup|list|start|stop|stopall|report>");
+        sender.sendMessage("§e/stressbots <reload|setup|list|start|stop|stopall|report|dashboard>");
         sender.sendMessage("§7Wave 1: §f/stressbots start mine 3");
         sender.sendMessage("§7Wave 2: §f/stressbots start trade 2 §7· fish · quest · pad · combat");
-        sender.sendMessage("§7Also: §f/botreport");
+        sender.sendMessage("§7Also: §f/botreport §7· §f/stressbots dashboard");
+    }
+
+    private void sendDashboard(CommandSender sender) {
+        String base = plugin.getConfig().getString("testbots.dashboard.public-url", "");
+        String urlBase = DashboardLinks.join(base, "");
+        if (urlBase.isEmpty()) {
+            sender.sendMessage("§eSet §ftestbots.dashboard.public-url §eto a URL you can open, then §f/stressbots reload");
+            sender.sendMessage("§7Example: §fhttp://YOUR_HOST:18765");
+            sender.sendMessage("§7The runner still listens on 127.0.0.1 until §fcontrol.bind §7is changed or a proxy forwards that URL.");
+            sender.sendMessage("§7On the host only: §fhttp://127.0.0.1:"
+                    + plugin.getConfig().getInt("testbots.runner.port", 18765) + "/");
+            return;
+        }
+        int hours = Math.max(1, plugin.getConfig().getInt("testbots.dashboard.session-hours", 12));
+        sender.sendMessage("§7Minting a dashboard link…");
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            RunnerControlClient.Response minted = plugin.getController().runner().mintSession(hours);
+            String token = minted != null && minted.ok()
+                    ? RunnerControlClient.extract(minted.body(), "token")
+                    : "";
+            String url = DashboardLinks.join(base, token);
+            Bukkit.getScheduler().runTask(plugin, () -> deliverLink(sender, url, token.isBlank()));
+        });
+    }
+
+    private void deliverLink(CommandSender sender, String url, boolean missingSession) {
+        if (url == null || url.isBlank()) {
+            sender.sendMessage("§cDashboard URL is not a valid http(s) address.");
+            return;
+        }
+        Component link = Component.text(url, NamedTextColor.AQUA)
+                .clickEvent(ClickEvent.openUrl(url))
+                .hoverEvent(HoverEvent.showText(Component.text("Open the stress-bot dashboard")));
+        Component line = Component.text("Stress bots dashboard: ", NamedTextColor.YELLOW).append(link);
+        sender.sendMessage(line);
+        if (missingSession) {
+            sender.sendMessage("§7Runner did not mint a session token. If the page asks for a token, check the runner is up and §ftestbots.runner.token §7matches.");
+        } else {
+            sender.sendMessage("§7This link token is new. Run §f/stressbots dashboard §7again to rotate it. Old links keep working until they expire.");
+        }
     }
 
     private static int parseInt(String raw, int fallback) {
