@@ -516,10 +516,10 @@ PAGES = {
     'manager': dict(seals=MANAGER_TILES, captions=MANAGER_TILES),
     # StatsOverviewGUI: 14 stats, rows 0, 2, 4; the last row sits right so no caption runs over Back (45)
     'stats': dict(seals=STATS_TILES, captions=STATS_TILES, buttons=[(5, 0)], ribbon=139),
-    # Hub SpawnMenu: short names four to a row, long names three to a row, the help compass on the nav row
+    # Hub SpawnMenu: short names four to a row, long names three to a row, the help compass on the nav row, Back
     'spawns': dict(seals=[(0, 1), (0, 3), (0, 5), (0, 7), (2, 1), (2, 4), (2, 7), (4, 1), (4, 4), (4, 7), (5, 4)],
                    captions=[(0, 1), (0, 3), (0, 5), (0, 7), (2, 1), (2, 4), (2, 7), (4, 1), (4, 4), (4, 7)],
-                   ribbon=158),
+                   buttons=[(5, 0)], ribbon=158),
     # ShardShopMenu: the balance on top, three shelves (four for materials) with the price under each
     'shop': dict(seals=SHOP_TILES, captions=SHOP_TILES, buttons=[(4, 0)], ribbon=158),
     'shop_boosts': dict(seals=SHOP_TILES, captions=SHOP_TILES, buttons=[(4, 0), (4, 4)], ribbon=158),

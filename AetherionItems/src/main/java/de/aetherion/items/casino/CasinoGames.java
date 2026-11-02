@@ -14,6 +14,7 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -93,6 +94,9 @@ final class CasinoGames {
     private static final int[] ROULETTE_WOOD = {11, 15, 20, 24, 29, 33};
     private static final int[] ROULETTE_FELT = {12, 13, 14, 21, 23, 30, 31, 32};
     static final int[] LOBBY_LIGHTS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 17, 26, 25, 24, 23, 21, 20, 19, 18, 9};
+    /** Book-page marks of the two tables (after the slot arrays they are built from). */
+    private static final Map<Integer, ChromePage.Mark> SLOTS_MARKS = slotsMarks();
+    private static final Map<Integer, ChromePage.Mark> ROULETTE_MARKS = rouletteMarks();
 
     private static final ItemStack BULB_OFF = GuiItems.named(Material.BLACK_STAINED_GLASS_PANE, " ");
     private static final ItemStack BULB_GOLD = GuiItems.named(Material.YELLOW_STAINED_GLASS_PANE, " ");
@@ -149,7 +153,7 @@ final class CasinoGames {
         }
         Inventory inventory = Bukkit.createInventory(holder, 54, SLOTS_TITLE);
         paintSlots(player, inventory, holder);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.CASINO, SLOTS_TITLE, SLOTS_MARKS, false);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1.35f);
         player.playSound(player.getLocation(), Sound.BLOCK_PISTON_EXTEND, 0.25f, 1.6f);
         if (holder.freeSpinsLeft > 0) {
@@ -161,7 +165,7 @@ final class CasinoGames {
         RouletteHolder holder = new RouletteHolder(betFor(player));
         Inventory inventory = Bukkit.createInventory(holder, 54, ROULETTE_TITLE);
         paintRoulette(player, inventory, holder);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ROULETTE, ROULETTE_TITLE, ROULETTE_MARKS, false);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 0.8f);
         player.playSound(player.getLocation(), Sound.BLOCK_WOODEN_BUTTON_CLICK_ON, 0.4f, 0.7f);
     }
@@ -207,7 +211,7 @@ final class CasinoGames {
         }
         Inventory inventory = Bukkit.createInventory(holder, 54, SLOTS_TITLE);
         paintSlots(player, inventory, holder);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.CASINO, SLOTS_TITLE, SLOTS_MARKS, false);
         CasinoService.say(player, "Spin's live. ESC doesn't void the table — wait it out, then Back.");
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.45f, 0.8f);
     }
@@ -224,7 +228,7 @@ final class CasinoGames {
         }
         Inventory inventory = Bukkit.createInventory(holder, 54, ROULETTE_TITLE);
         paintRoulette(player, inventory, holder);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ROULETTE, ROULETTE_TITLE, ROULETTE_MARKS, false);
         CasinoService.say(player, "Ball's still rolling. ESC doesn't void the spin.");
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.45f, 0.8f);
     }
@@ -966,7 +970,7 @@ final class CasinoGames {
 
     private void paintSlots(Player player, Inventory inventory, SlotsHolder holder) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, BULB_OFF.clone());
+            inventory.setItem(slot, ChromePage.spacer());
         }
         for (int row = 0; row < REEL_ROWS; row++) {
             Payline line = lineForRow(row);
@@ -1023,7 +1027,8 @@ final class CasinoGames {
             glow(spin);
         }
         inventory.setItem(SLOTS_SPIN, spin);
-        inventory.setItem(SLOTS_BACK, GuiItems.named(Material.ARROW, "§eBack", "§7To the casino floor."));
+        inventory.setItem(SLOTS_BACK, ChromePage.icon(GuiItems.named(Material.ARROW, "§eBack", "§7To the casino floor."),
+                ChromePage.BACK));
         inventory.setItem(SLOTS_AUTO, autoButton(holder));
         if (isDev(player)) {
             inventory.setItem(SLOTS_RIGGER, holder.rigged
@@ -1088,7 +1093,7 @@ final class CasinoGames {
 
     private void paintRoulette(Player player, Inventory inventory, RouletteHolder holder) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, BULB_OFF.clone());
+            inventory.setItem(slot, ChromePage.spacer());
         }
         ItemStack wood = GuiItems.named(Material.BROWN_STAINED_GLASS_PANE, " ");
         for (int slot : ROULETTE_WOOD) {
@@ -1114,7 +1119,8 @@ final class CasinoGames {
         }
         int shown = holder.highlight >= 0 ? RING_NUMBERS[holder.highlight] : -1;
         inventory.setItem(BALL, ballIcon(shown, holder.landed >= 0));
-        inventory.setItem(ROULETTE_BACK, GuiItems.named(Material.ARROW, "§eBack", "§7To the casino floor."));
+        inventory.setItem(ROULETTE_BACK, ChromePage.icon(GuiItems.named(Material.ARROW, "§eBack", "§7To the casino floor."),
+                ChromePage.BACK));
         inventory.setItem(ROULETTE_RED, colorButton(holder, WheelColor.RED, Material.RED_WOOL, "§c", "RED", "§f2x"));
         inventory.setItem(ROULETTE_BLACK, colorButton(holder, WheelColor.BLACK, Material.BLACK_WOOL, "§8", "BLACK", "§f2x"));
         inventory.setItem(ROULETTE_GREEN, colorButton(holder, WheelColor.GREEN, Material.LIME_WOOL, "§a", "GREEN", "§a14x §8· only zero"));
@@ -1234,6 +1240,44 @@ final class CasinoGames {
             }
         }
         return -1;
+    }
+
+    /**
+     * Book pages (ChromePage): the bulbs and buttons of the top and bottom rows in small sockets; Slots keeps the
+     * payline lamps in sockets beside a ledger of reels, Roulette draws the wheel (ring, wood, felt, ball) as one
+     * ledger block with its lamps round it. Slots that are neither hold spacers.
+     */
+    private static Map<Integer, ChromePage.Mark> slotsMarks() {
+        Map<Integer, ChromePage.Mark> marks = new java.util.HashMap<>();
+        ChromePage.block(marks, 0, 8, ChromePage.Mark.BUTTON);
+        ChromePage.block(marks, 45, 53, ChromePage.Mark.BUTTON);
+        for (int row = 0; row < REEL_ROWS; row++) {
+            marks.put(edgeSlot(row, true), ChromePage.Mark.BUTTON);
+            marks.put(edgeSlot(row, false), ChromePage.Mark.BUTTON);
+            for (int col = 0; col < REEL_COLS; col++) {
+                marks.put(reelSlot(row, col), ChromePage.Mark.POCKET);
+            }
+        }
+        return Map.copyOf(marks);
+    }
+
+    private static Map<Integer, ChromePage.Mark> rouletteMarks() {
+        Map<Integer, ChromePage.Mark> marks = new java.util.HashMap<>();
+        for (int slot : ROULETTE_LIGHTS) {
+            marks.put(slot, ChromePage.Mark.BUTTON);
+        }
+        ChromePage.block(marks, 45, 53, ChromePage.Mark.BUTTON);
+        for (int slot : RING_SLOTS) {
+            marks.put(slot, ChromePage.Mark.POCKET);
+        }
+        for (int slot : ROULETTE_WOOD) {
+            marks.put(slot, ChromePage.Mark.POCKET);
+        }
+        for (int slot : ROULETTE_FELT) {
+            marks.put(slot, ChromePage.Mark.POCKET);
+        }
+        marks.put(BALL, ChromePage.Mark.POCKET);
+        return Map.copyOf(marks);
     }
 
     private static int reelSlot(int row, int col) {

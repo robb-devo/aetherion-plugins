@@ -1,5 +1,6 @@
 package de.aetherion.items.farm;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.economy.CompressedResource;
 
 import org.bukkit.Bukkit;
@@ -48,11 +49,11 @@ public final class MillstoneGUI implements InventoryHolder {
         if (hit != null) {
             at = hit.getLocation();
         }
-        player.openInventory(new MillstoneGUI(ritual, stationId, at).getInventory());
+        ChromePage.open(player, new MillstoneGUI(ritual, stationId, at).getInventory(), ChromePage.Theme.FARM);
     }
 
     private void paint() {
-        ItemStack glass = pane(Material.LIME_STAINED_GLASS_PANE, " ");
+        ItemStack glass = ChromePage.spacer();
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, glass);
         }

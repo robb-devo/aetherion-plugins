@@ -1,5 +1,6 @@
 package de.aetherion.pit.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.pit.AetherionPit;
 import de.aetherion.pit.data.PitDataStore;
 
@@ -33,7 +34,7 @@ public final class PitShopGUI implements Listener {
         AetherionPit plugin = AetherionPit.getInstance();
         PitDataStore.Stats stats = plugin.data().of(player);
         Inventory inv = Bukkit.createInventory(new Holder(), 27, de.aetherion.pit.util.Msg.amp(TITLE_AMP));
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int i = 0; i < 27; i++) {
             inv.setItem(i, pane.clone());
         }
@@ -49,7 +50,7 @@ public final class PitShopGUI implements Listener {
         inv.setItem(15, offer(Material.DIAMOND_SWORD, "&bSharp I Diamond", 90, true));
         inv.setItem(16, offer(Material.DIAMOND_CHESTPLATE, "&bProt I Diamond", 110, true));
         inv.setItem(22, named(Material.BARRIER, "&cClose"));
-        player.openInventory(inv);
+        ChromePage.open(player, inv, ChromePage.Theme.TRADE);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.5f, 1.2f);
     }
 

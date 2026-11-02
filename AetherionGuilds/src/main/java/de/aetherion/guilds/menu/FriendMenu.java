@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.GuildRank;
 import de.aetherion.guilds.service.FriendService;
@@ -35,7 +36,7 @@ public final class FriendMenu {
 
     public void open(Player player) {
         Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE);
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -69,7 +70,7 @@ public final class FriendMenu {
         }
         inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack"));
         inventory.setItem(CLOSE_SLOT, named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.AETHER);
     }
 
     public void handle(Player player, int slot, ItemStack clicked, boolean shift) {

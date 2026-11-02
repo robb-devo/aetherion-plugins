@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.model.IslandBiome;
 import de.aetherion.guilds.service.PersonalIslandService;
 import de.aetherion.guilds.util.AetherionItemsAccess;
@@ -38,7 +39,7 @@ public final class BiomeSelectMenu {
             return;
         }
         Inventory inventory = Bukkit.createInventory(new Holder(), 27, TITLE);
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -53,7 +54,7 @@ public final class BiomeSelectMenu {
         putBiome(inventory, FOREST_SLOT, IslandBiome.FOREST);
         putBiome(inventory, DESERT_SLOT, IslandBiome.DESERT);
         inventory.setItem(CLOSE_SLOT, named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
     }
 
     public void handle(Player player, int slot) {

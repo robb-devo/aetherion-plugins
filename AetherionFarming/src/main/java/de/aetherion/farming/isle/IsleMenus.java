@@ -1,5 +1,6 @@
 package de.aetherion.farming.isle;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.farming.FarmingSkills;
 import de.aetherion.farming.FeaturedCropService;
 
@@ -203,7 +204,7 @@ public final class IsleMenus implements Listener {
         }
 
         set(holder, 49, Material.BARRIER, "§cClose", List.of(), Player::closeInventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FARM);
         isle.cast().say(player, IsleRole.WARDEN, "Here's how the isle's treating you.");
     }
 
@@ -335,7 +336,7 @@ public final class IsleMenus implements Listener {
                 "§7Coins on hand: §6" + IsleText.coins(FarmingSkills.balance(player))
         ), null);
         set(holder, 40, Material.BARRIER, "§cClose", List.of(), Player::closeInventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FARM);
     }
 
     // ------------------------------------------------------------------ Oven House
@@ -391,7 +392,7 @@ public final class IsleMenus implements Listener {
         }
         set(holder, 31, Material.CAKE, "§eYour Buff", now, null);
         set(holder, 40, Material.BARRIER, "§cClose", List.of(), Player::closeInventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FARM);
     }
 
     // ------------------------------------------------------------------ Crop Mastery ledger
@@ -436,7 +437,7 @@ public final class IsleMenus implements Listener {
             }
         }
         set(holder, 49, Material.BARRIER, "§cClose", List.of(), Player::closeInventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FARM);
     }
 
     // ------------------------------------------------------------------ Beekeeper
@@ -464,7 +465,7 @@ public final class IsleMenus implements Listener {
                 "§8Pair it with Blue Ribbon and a Golden Pie."
         ), null);
         set(holder, 22, Material.BARRIER, "§cClose", List.of(), Player::closeInventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FARM);
     }
 
     // ------------------------------------------------------------------ plumbing

@@ -1,5 +1,6 @@
 package de.aetherion.items.farm;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.economy.CompressedResource;
@@ -104,7 +105,7 @@ public final class MarketStallGUI implements InventoryHolder {
         if (player == null) {
             return;
         }
-        player.openInventory(new MarketStallGUI(player).getInventory());
+        ChromePage.open(player, new MarketStallGUI(player).getInventory(), ChromePage.Theme.FARM);
     }
 
     /** Buys one trade worth of seeds; false when the Compacted crop is missing. */
@@ -162,7 +163,7 @@ public final class MarketStallGUI implements InventoryHolder {
     }
 
     private void paint(Player viewer) {
-        ItemStack glass = GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack glass = ChromePage.spacer();
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, glass.clone());
         }

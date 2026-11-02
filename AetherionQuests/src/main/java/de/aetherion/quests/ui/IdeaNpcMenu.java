@@ -1,5 +1,6 @@
 package de.aetherion.quests.ui;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.quests.listener.NpcAnchorListener;
 import de.aetherion.quests.npc.LivingNpcProfile;
 import de.aetherion.quests.npc.QuestNPC;
@@ -54,7 +55,7 @@ public final class IdeaNpcMenu implements Listener {
 
     public static void open(Player player) {
         Inventory inv = Bukkit.createInventory(new Holder(), 36, TITLE);
-        ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, pane);
         }
@@ -66,7 +67,7 @@ public final class IdeaNpcMenu implements Listener {
         fill(inv, IDEA_SLOTS, QuestNPCRegistry.ideaNpcIds());
         fill(inv, STORY_SLOTS, QuestNPCRegistry.storyNpcIds());
         inv.setItem(CLOSE_SLOT, item(Material.BARRIER, "§cClose"));
-        player.openInventory(inv);
+        ChromePage.open(player, inv, ChromePage.Theme.QUEST);
     }
 
     private static void fill(Inventory inv, int[] slots, List<String> ids) {

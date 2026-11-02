@@ -1,5 +1,6 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.CustomItem;
@@ -97,7 +98,7 @@ public final class GearTraderService implements Listener {
         stockShop(inventory);
         inventory.setItem(CLOSE_SLOT, button(Material.BARRIER, "§cClose", "§7Unsold gear comes back."));
         refresh(player, inventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.TRADE);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -505,7 +506,7 @@ public final class GearTraderService implements Listener {
     }
 
     private static void fill(Inventory inventory) {
-        ItemStack pane = button(Material.GRAY_STAINED_GLASS_PANE, " ", new String[0]);
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             if (!isSellSlot(slot)) {
                 inventory.setItem(slot, pane.clone());

@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.logistics.LogisticsService;
@@ -139,7 +140,7 @@ public final class ProductionMenu implements MenuKit.Menu {
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, host.isGuild() ? "§eBack to the guild" : "§eBack to your island"));
         inventory.setItem(BUILD, MenuKit.named(Material.CRAFTING_TABLE, "§6Build", "§7Build more, lay belts."));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
     }
 
     private org.bukkit.inventory.ItemStack buildingTile(Player player, PlacedStructure structure) {

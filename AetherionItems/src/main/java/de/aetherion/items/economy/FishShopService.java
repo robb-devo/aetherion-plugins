@@ -1,5 +1,6 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.CustomItem;
@@ -55,7 +56,7 @@ public final class FishShopService implements Listener {
                 "§7No fish. Catch your own.",
                 "§7Balance: §e" + format(coins.get(player)) + " coins"));
         inventory.setItem(CLOSE_SLOT, button(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FISH);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 0.55f, 1.15f);
     }
 
@@ -154,7 +155,7 @@ public final class FishShopService implements Listener {
     }
 
     private static void fill(Inventory inventory) {
-        ItemStack pane = button(Material.LIGHT_BLUE_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }

@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.GuildRank;
@@ -71,7 +72,7 @@ public final class GuildMenu {
     public void open(Player player) {
         Guild guild = guilds.byPlayer(player.getUniqueId());
         Inventory inventory = Bukkit.createInventory(new Holder(), 27, TITLE);
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -99,7 +100,7 @@ public final class GuildMenu {
                     "§eClick"
             ));
             inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack", "§7Return to the Aetherion Manager."));
-            player.openInventory(inventory);
+            ChromePage.open(player, inventory, ChromePage.Theme.GUILD);
             return;
         }
 
@@ -215,7 +216,7 @@ public final class GuildMenu {
             ));
         }
         inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack", "§7Return to the Aetherion Manager."));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.GUILD);
     }
 
     public void handle(Player player, int slot) {

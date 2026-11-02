@@ -1,5 +1,6 @@
 package de.aetherion.dungeons.menu;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -23,7 +24,7 @@ public final class DungeonMenu {
 
     public static void open(Player player) {
         Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE);
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -87,7 +88,7 @@ public final class DungeonMenu {
         ));
 
         inventory.setItem(CLOSE_SLOT, named(Material.BARRIER, "§cClose", "§7Close this menu."));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.DUNGEON);
     }
 
     private static String remoteHint() {

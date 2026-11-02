@@ -1,5 +1,6 @@
 package de.aetherion.mining.isle;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -144,7 +145,7 @@ public final class MineMenus implements Listener {
         set(holder, 45, Material.BOOK, "§6Mining Journal", lines("§7Everything you've done down here.", "§8/mineisle"),
                 (viewer, click) -> openJournal(viewer));
         crewRow(holder, 46);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     private void crewRow(Holder holder, int slot) {
@@ -224,7 +225,7 @@ public final class MineMenus implements Listener {
             }
         });
         set(holder, 36, Material.LANTERN, "§8« Old Wick", lines("§7Map, depth and the crew."), (viewer, click) -> openWick(viewer));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     // ------------------------------------------------------------------ The Hearth
@@ -269,7 +270,7 @@ public final class MineMenus implements Listener {
             }
         }
         set(holder, 36, Material.LANTERN, "§8« Old Wick", lines("§7Map, depth and the crew."), (viewer, click) -> openWick(viewer));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     // ------------------------------------------------------------------ Assay Office
@@ -370,7 +371,7 @@ public final class MineMenus implements Listener {
                     });
         }
         set(holder, 45, Material.LANTERN, "§8« Old Wick", lines("§7Map, depth and the crew."), (viewer, click) -> openWick(viewer));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     // ------------------------------------------------------------------ The Deep Forge
@@ -458,7 +459,7 @@ public final class MineMenus implements Listener {
             }
         });
         set(holder, 45, Material.LANTERN, "§8« Old Wick", lines("§7Map, depth and the crew."), (viewer, click) -> openWick(viewer));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     // ------------------------------------------------------------------ The Last Lamp
@@ -553,7 +554,7 @@ public final class MineMenus implements Listener {
             });
         }
         set(holder, 36, Material.LANTERN, "§8« Old Wick", lines("§7Map, depth and the crew."), (viewer, click) -> openWick(viewer));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     // ------------------------------------------------------------------ Journal
@@ -654,7 +655,7 @@ public final class MineMenus implements Listener {
                     isle.profiles().markDirty();
                     openJournal(viewer);
                 });
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     // ------------------------------------------------------------------ helpers

@@ -6,6 +6,7 @@ import de.aetherion.beta.Texts;
 import de.aetherion.beta.data.BetaPlayerData;
 import de.aetherion.beta.item.BetaBook;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -42,7 +43,7 @@ public final class LanguageMenu {
                 "§7Checkliste + Buchseiten auf Deutsch.",
                 "§8Klicken zum Auswählen"
         ));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.BETA);
     }
 
     public static void handle(AetherionBeta plugin, Player player, int slot) {

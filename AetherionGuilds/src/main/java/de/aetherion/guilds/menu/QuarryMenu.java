@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.logistics.LogisticsService;
@@ -97,7 +98,7 @@ public final class QuarryMenu {
             }
         }
         Inventory inventory = Bukkit.createInventory(holder, 27, "§8" + type.display());
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -193,7 +194,7 @@ public final class QuarryMenu {
                 ));
             }
         }
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.MINE);
     }
 
     public void handle(Player player, Holder holder, int slot) {

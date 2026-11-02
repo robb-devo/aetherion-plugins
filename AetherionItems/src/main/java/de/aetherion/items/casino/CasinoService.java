@@ -1,5 +1,6 @@
 package de.aetherion.items.casino;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.economy.CoinService;
@@ -149,9 +150,8 @@ public final class CasinoService implements Listener {
 
     void openLobby(Player player) {
         Inventory inventory = Bukkit.createInventory(new LobbyHolder(), 27, LOBBY_TITLE);
-        ItemStack pane = GuiItems.named(Material.BLACK_STAINED_GLASS_PANE, " ");
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
+            inventory.setItem(slot, ChromePage.spacer());
         }
         ItemStack slots = GuiItems.named(
                 Material.JUKEBOX,
@@ -181,9 +181,19 @@ public final class CasinoService implements Listener {
         );
         CasinoGames.glow(roulette);
         inventory.setItem(LOBBY_ROULETTE_SLOT, roulette);
-        inventory.setItem(LOBBY_CLOSE_SLOT, GuiItems.named(Material.BARRIER, "§cLeave", "§7Walk away with dignity."));
+        inventory.setItem(LOBBY_CLOSE_SLOT, ChromePage.icon(
+                GuiItems.named(Material.BARRIER, "§cLeave", "§7Walk away with dignity."), ChromePage.CLOSE));
         games.paintLobbyLights(inventory);
-        player.openInventory(inventory);
+        // Book page: the tables and the purse on seals, the bulbs and Leave in sockets round them.
+        Map<Integer, ChromePage.Mark> marks = new java.util.HashMap<>();
+        for (int slot : CasinoGames.LOBBY_LIGHTS) {
+            marks.put(slot, ChromePage.Mark.BUTTON);
+        }
+        marks.put(LOBBY_CLOSE_SLOT, ChromePage.Mark.BUTTON);
+        marks.put(LOBBY_SLOTS_SLOT, ChromePage.Mark.SEAL);
+        marks.put(LOBBY_INFO_SLOT, ChromePage.Mark.SEAL);
+        marks.put(LOBBY_ROULETTE_SLOT, ChromePage.Mark.SEAL);
+        ChromePage.open(player, inventory, ChromePage.Theme.CASINO, LOBBY_TITLE, marks, false);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.35f, 1.35f);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.3f, 1.7f);
     }

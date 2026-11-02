@@ -1,5 +1,6 @@
 package de.aetherion.dungeons.menu;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -90,7 +91,7 @@ public final class DungeonGuideGUI implements Listener {
                 "§7Die less. Loot more. Don't AFK the portal."
         ));
         inventory.setItem(SLOT_CLOSE, button(Material.BARRIER, "§cGot it", "§7Close the desk."));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.DUNGEON);
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.2f);
     }
 
@@ -99,7 +100,7 @@ public final class DungeonGuideGUI implements Listener {
         fill(inventory);
         inventory.setItem(DETAIL_BOOK, detailItem(topicSlot));
         inventory.setItem(DETAIL_BACK, button(Material.ARROW, "§eBack", "§7Return to topics."));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.DUNGEON);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.3f);
     }
 
@@ -190,7 +191,7 @@ public final class DungeonGuideGUI implements Listener {
     }
 
     private static void fill(Inventory inventory) {
-        ItemStack pane = button(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, pane.clone());
         }

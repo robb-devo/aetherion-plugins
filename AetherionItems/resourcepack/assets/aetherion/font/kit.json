@@ -1,0 +1,1129 @@
+{
+ "providers": [
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_aether_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue101"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_aether_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue102"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_aether_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue103"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_aether_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue104"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_aether_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue105"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_aether_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue106"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_aether.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue300\ue301\ue302\ue303\ue304\ue305\ue306\ue307\ue308\ue309\ue30a\ue30b\ue30c\ue30d\ue30e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_pets_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue109"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_pets_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue10a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_pets_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue10b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_pets_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue10c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_pets_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue10d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_pets_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue10e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_pets.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue310\ue311\ue312\ue313\ue314\ue315\ue316\ue317\ue318\ue319\ue31a\ue31b\ue31c\ue31d\ue31e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_casino_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue111"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_casino_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue112"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_casino_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue113"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_casino_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue114"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_casino_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue115"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_casino_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue116"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_casino.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue320\ue321\ue322\ue323\ue324\ue325\ue326\ue327\ue328\ue329\ue32a\ue32b\ue32c\ue32d\ue32e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_roulette_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue119"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_roulette_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue11a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_roulette_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue11b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_roulette_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue11c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_roulette_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue11d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_roulette_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue11e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_roulette.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue330\ue331\ue332\ue333\ue334\ue335\ue336\ue337\ue338\ue339\ue33a\ue33b\ue33c\ue33d\ue33e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_guild_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue121"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_guild_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue122"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_guild_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue123"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_guild_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue124"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_guild_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue125"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_guild_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue126"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_guild.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue340\ue341\ue342\ue343\ue344\ue345\ue346\ue347\ue348\ue349\ue34a\ue34b\ue34c\ue34d\ue34e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_island_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue129"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_island_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue12a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_island_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue12b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_island_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue12c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_island_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue12d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_island_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue12e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_island.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue350\ue351\ue352\ue353\ue354\ue355\ue356\ue357\ue358\ue359\ue35a\ue35b\ue35c\ue35d\ue35e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_trade_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue131"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_trade_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue132"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_trade_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue133"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_trade_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue134"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_trade_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue135"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_trade_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue136"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_trade.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue360\ue361\ue362\ue363\ue364\ue365\ue366\ue367\ue368\ue369\ue36a\ue36b\ue36c\ue36d\ue36e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_dungeon_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue139"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_dungeon_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue13a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_dungeon_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue13b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_dungeon_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue13c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_dungeon_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue13d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_dungeon_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue13e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_dungeon.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue370\ue371\ue372\ue373\ue374\ue375\ue376\ue377\ue378\ue379\ue37a\ue37b\ue37c\ue37d\ue37e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_quest_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue141"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_quest_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue142"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_quest_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue143"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_quest_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue144"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_quest_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue145"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_quest_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue146"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_quest.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue380\ue381\ue382\ue383\ue384\ue385\ue386\ue387\ue388\ue389\ue38a\ue38b\ue38c\ue38d\ue38e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_farm_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue149"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_farm_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue14a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_farm_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue14b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_farm_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue14c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_farm_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue14d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_farm_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue14e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_farm.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue390\ue391\ue392\ue393\ue394\ue395\ue396\ue397\ue398\ue399\ue39a\ue39b\ue39c\ue39d\ue39e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_fish_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue151"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_fish_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue152"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_fish_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue153"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_fish_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue154"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_fish_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue155"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_fish_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue156"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_fish.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue3a0\ue3a1\ue3a2\ue3a3\ue3a4\ue3a5\ue3a6\ue3a7\ue3a8\ue3a9\ue3aa\ue3ab\ue3ac\ue3ad\ue3ae"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forage_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue159"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forage_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue15a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forage_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue15b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forage_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue15c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forage_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue15d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forage_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue15e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_forage.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue3b0\ue3b1\ue3b2\ue3b3\ue3b4\ue3b5\ue3b6\ue3b7\ue3b8\ue3b9\ue3ba\ue3bb\ue3bc\ue3bd\ue3be"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_mine_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue161"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_mine_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue162"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_mine_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue163"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_mine_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue164"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_mine_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue165"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_mine_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue166"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_mine.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue3c0\ue3c1\ue3c2\ue3c3\ue3c4\ue3c5\ue3c6\ue3c7\ue3c8\ue3c9\ue3ca\ue3cb\ue3cc\ue3cd\ue3ce"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forge_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue169"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forge_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue16a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forge_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue16b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forge_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue16c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forge_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue16d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_forge_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue16e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_forge.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue3d0\ue3d1\ue3d2\ue3d3\ue3d4\ue3d5\ue3d6\ue3d7\ue3d8\ue3d9\ue3da\ue3db\ue3dc\ue3dd\ue3de"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_beta_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue171"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_beta_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue172"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_beta_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue173"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_beta_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue174"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_beta_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue175"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_beta_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue176"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_beta.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue3e0\ue3e1\ue3e2\ue3e3\ue3e4\ue3e5\ue3e6\ue3e7\ue3e8\ue3e9\ue3ea\ue3eb\ue3ec\ue3ed\ue3ee"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_storage_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue179"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_storage_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue17a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_storage_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue17b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_storage_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue17c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_storage_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue17d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/frame_storage_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue17e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/plate_storage.png",
+   "ascent": 21,
+   "height": 24,
+   "chars": [
+    "\ue3f0\ue3f1\ue3f2\ue3f3\ue3f4\ue3f5\ue3f6\ue3f7\ue3f8\ue3f9\ue3fa\ue3fb\ue3fc\ue3fd\ue3fe"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/page_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue181"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/page_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue182"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/page_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue183"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/page_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue184"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/page_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue185"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/page_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue186"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/marks_0.png",
+   "ascent": -3,
+   "height": 20,
+   "chars": [
+    "\ue200\ue201\ue202\ue203\ue204\ue205\ue206\ue207\ue208\ue209\ue20a\ue20b\ue20c\ue20d\ue20e\ue20f\ue210\ue211"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/marks_1.png",
+   "ascent": -21,
+   "height": 20,
+   "chars": [
+    "\ue220\ue221\ue222\ue223\ue224\ue225\ue226\ue227\ue228\ue229\ue22a\ue22b\ue22c\ue22d\ue22e\ue22f\ue230\ue231"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/marks_2.png",
+   "ascent": -39,
+   "height": 20,
+   "chars": [
+    "\ue240\ue241\ue242\ue243\ue244\ue245\ue246\ue247\ue248\ue249\ue24a\ue24b\ue24c\ue24d\ue24e\ue24f\ue250\ue251"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/marks_3.png",
+   "ascent": -57,
+   "height": 20,
+   "chars": [
+    "\ue260\ue261\ue262\ue263\ue264\ue265\ue266\ue267\ue268\ue269\ue26a\ue26b\ue26c\ue26d\ue26e\ue26f\ue270\ue271"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/marks_4.png",
+   "ascent": -75,
+   "height": 20,
+   "chars": [
+    "\ue280\ue281\ue282\ue283\ue284\ue285\ue286\ue287\ue288\ue289\ue28a\ue28b\ue28c\ue28d\ue28e\ue28f\ue290\ue291"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/marks_5.png",
+   "ascent": -93,
+   "height": 20,
+   "chars": [
+    "\ue2a0\ue2a1\ue2a2\ue2a3\ue2a4\ue2a5\ue2a6\ue2a7\ue2a8\ue2a9\ue2aa\ue2ab\ue2ac\ue2ad\ue2ae\ue2af\ue2b0\ue2b1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/letters.png",
+   "ascent": 15,
+   "height": 16,
+   "chars": [
+    "\ue500\ue501\ue502\ue503\ue504\ue505\ue506\ue507\ue508\ue509\ue50a\ue50b\ue50c\ue50d\ue50e\ue50f\ue510\ue511\ue512\ue513\ue514\ue515\ue516\ue517\ue518\ue519\ue51a\ue51b\ue51c\ue51d\ue51e\ue51f\ue520\ue521\ue522\ue523\ue524\ue525\ue526\ue527\ue528\ue529\ue52a\ue52b\ue52c\ue52d\ue52e\ue52f\ue530\ue531\ue532\ue533"
+   ]
+  }
+ ]
+}

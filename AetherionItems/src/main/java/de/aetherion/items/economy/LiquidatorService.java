@@ -1,5 +1,6 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 
@@ -120,7 +121,7 @@ public final class LiquidatorService implements Listener {
         Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE);
         paintChrome(inventory);
         refreshChrome(player, inventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.TRADE);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -370,7 +371,7 @@ public final class LiquidatorService implements Listener {
     }
 
     private void paintChrome(Inventory inventory) {
-        ItemStack pane = button(Material.BLACK_STAINED_GLASS_PANE, " ", "");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }

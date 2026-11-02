@@ -14,6 +14,7 @@ import de.aetherion.aethermobs.pet.PlayerPetCollection;
 import de.aetherion.aethermobs.pet.skill.PetSkill;
 import de.aetherion.items.model.ItemCapability;
 import de.aetherion.items.model.Rarity;
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.util.ManagerChrome;
 
 import org.bukkit.Bukkit;
@@ -34,6 +35,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -324,12 +326,14 @@ public class PetMenu implements Listener {
                             AETHERLEX_LANDS_TITLE;
                 };
 
+        Holder holder = new Holder(Holder.Kind.AETHERLEX);
         Inventory inventory =
                 Bukkit.createInventory(
-                        null,
+                        holder,
                         INVENTORY_SIZE,
                         title
                 );
+        holder.bind(inventory);
 
         fillBackground(
                 inventory
@@ -362,8 +366,14 @@ public class PetMenu implements Listener {
             );
         }
 
-        player.openInventory(
-                inventory
+        // Same page as the collection (ManagerChrome.PETS): 45 pockets, the tab row on small seals.
+        ChromePage.open(
+                player,
+                inventory,
+                ChromePage.Theme.PETS,
+                title,
+                ChromePage.block(ChromePage.block(new HashMap<>(), 0, 44, ChromePage.Mark.POCKET),
+                        45, 53, ChromePage.Mark.BUTTON)
         );
     }
 
@@ -420,12 +430,14 @@ public class PetMenu implements Listener {
                         player
                 );
 
+        Holder holder = new Holder(Holder.Kind.DETAILS);
         Inventory inventory =
                 Bukkit.createInventory(
-                        null,
+                        holder,
                         INVENTORY_SIZE,
                         DETAILS_TITLE
                 );
+        holder.bind(inventory);
 
         fillDetailsBackground(
                 inventory
@@ -508,8 +520,18 @@ public class PetMenu implements Listener {
                 ), de.aetherion.items.util.GuiIcons.BACK)
         );
 
-        player.openInventory(
-                inventory
+        // A book page like the collection: the pet on a seal, Equip and Release on seals, Back on a small one.
+        Map<Integer, ChromePage.Mark> marks = new HashMap<>();
+        marks.put(DETAILS_PET_SLOT, ChromePage.Mark.SEAL);
+        marks.put(EQUIP_SLOT, ChromePage.Mark.SEAL);
+        marks.put(RELEASE_SLOT, ChromePage.Mark.SEAL);
+        marks.put(BACK_SLOT, ChromePage.Mark.BUTTON);
+        ChromePage.open(
+                player,
+                inventory,
+                ChromePage.Theme.PETS,
+                DETAILS_TITLE,
+                marks
         );
     }
 

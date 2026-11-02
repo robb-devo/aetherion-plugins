@@ -1,5 +1,6 @@
 package de.aetherion.quests.ui;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.quests.AetherionQuests;
 import de.aetherion.quests.lang.LangPack;
 import de.aetherion.quests.manager.QuestManager;
@@ -98,7 +99,7 @@ public final class OpenRoadsGUI implements Listener {
                 LangPack.ui(player, "close", "§cClose"),
                 false
         ));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.QUEST);
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.0f);
     }
 
@@ -185,8 +186,8 @@ public final class OpenRoadsGUI implements Listener {
     }
 
     private static void fill(Inventory inventory) {
-        ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ", false);
-        ItemStack rail = item(Material.BLACK_STAINED_GLASS_PANE, " ", false);
+        ItemStack pane = ChromePage.spacer();
+        ItemStack rail = ChromePage.spacer();
         for (int i = 0; i < inventory.getSize(); i++) {
             // Top and bottom rows darker — the road row reads as the page.
             inventory.setItem(i, (i < 9 || i >= 18) ? rail.clone() : pane.clone());

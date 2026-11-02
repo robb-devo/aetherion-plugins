@@ -49,6 +49,10 @@ COPY = (
     # Rank and level badges (gen_rank_badges.py); minecraft:default references them, see add_badge_reference.
     'assets/aetherion/font/badges.json',
     'assets/aetherion/textures/font/badges',
+    # The book-page kit (gen_gui_kit.py): frames, parchment, pockets, seals, plates and caps that ChromePage lays out
+    # in any chest menu's title; minecraft:default references it, see add_font_references.
+    'assets/aetherion/font/kit.json',
+    'assets/aetherion/textures/font/kit',
     # Hub lobby glyphs (gen_hub_glyphs.py): emblem, station icons, drawn by AetherionPit on the hub.
     'assets/aetherion/font/hub.json',
     'assets/aetherion/textures/font/hub',
@@ -64,8 +68,11 @@ PAGE_TEXTURES = tuple(
     ('gui_aetherion_manager.png' if key == 'manager' else 'gui_aetherion_%s.png' % key, glyph)
     for key, _label, _accent, _sigil, _rows, glyph in gen_gui_chrome.THEMES)
 COPY += tuple('assets/minecraft/textures/font/' + name for name, _glyph in PAGE_TEXTURES)
-BADGES = 'aetherion:badges'
-BADGE_RANGE = (0xEA00, 0xEAFF)
+# Fonts every minecraft:default references, with the code points they own there.
+REFERENCES = (
+    ('aetherion:badges', (0xEA00, 0xEAFF)),
+    ('aetherion:kit', (0xE100, 0xE5FF)),
+)
 # The ActionBar status panel the carrier replaced.
 DROP = (
     'assets/aetherion/font/panel.json',
@@ -94,7 +101,7 @@ def main(live, out, vanilla):
             else:
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copyfile(src, dst)
-        add_badge_reference(work)
+        add_font_references(work)
         add_page_glyphs(work)
         merge_gui_overrides.main(work, vanilla)
         newer_clients.main(work)
@@ -117,11 +124,11 @@ def main(live, out, vanilla):
     print('%s  %d files  sha1 %s' % (out, len(files), sha1))
 
 
-def add_badge_reference(work):
-    """Point every minecraft:default font in the pack (base and overlays) at aetherion:badges.
+def add_font_references(work):
+    """Point every minecraft:default font in the pack (base and overlays) at the REFERENCES fonts.
 
-    The rank prefixes are legacy strings, which cannot name a font, so the badge characters have to resolve in
-    the default font. Refuses to build when another provider there already uses U+EA00..U+EAFF.
+    Rank prefixes and kit titles are legacy strings, which cannot name a font, so their characters have to resolve
+    in the default font. Refuses to build when another provider there already uses a reference's code points.
     """
     for root, _, names in os.walk(work):
         if 'default.json' not in names or not root.replace(os.sep, '/').endswith('assets/minecraft/font'):
@@ -130,13 +137,18 @@ def add_badge_reference(work):
         with open(path, encoding='utf-8') as f:
             font = json.load(f)
         providers = font.setdefault('providers', [])
-        for p in providers:
-            chars = ''.join(p.get('chars', [])) + ''.join(p.get('advances', {}))
-            clash = sorted({hex(ord(c)) for c in chars if BADGE_RANGE[0] <= ord(c) <= BADGE_RANGE[1]})
-            if clash:
-                raise SystemExit('%s: %s already uses %s' % (path, p.get('file', p.get('type')), ', '.join(clash[:5])))
-        if not any(p.get('type') == 'reference' and p.get('id') == BADGES for p in providers):
-            providers.append({'type': 'reference', 'id': BADGES})
+        changed = False
+        for ref, (lo, hi) in REFERENCES:
+            for p in providers:
+                chars = ''.join(p.get('chars', [])) + ''.join(p.get('advances', {}))
+                clash = sorted({hex(ord(c)) for c in chars if lo <= ord(c) <= hi})
+                if clash:
+                    raise SystemExit('%s: %s already uses %s' % (path, p.get('file', p.get('type')),
+                                                                 ', '.join(clash[:5])))
+            if not any(p.get('type') == 'reference' and p.get('id') == ref for p in providers):
+                providers.append({'type': 'reference', 'id': ref})
+                changed = True
+        if changed:
             with open(path, 'w', encoding='utf-8', newline='\n') as f:
                 json.dump(font, f, indent=2)
                 f.write('\n')

@@ -1,5 +1,6 @@
 package de.aetherion.items.storage;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.economy.ValueLore;
@@ -72,7 +73,12 @@ public final class SkillSackMenu {
         Inventory inventory = Bukkit.createInventory(holder, rows * 9, SkillSack.displayName(skill, tier));
         holder.bind(inventory);
         paint(holder);
-        player.openInventory(inventory);
+        // A ledger row per form, one pocket per resource; the header and Insert All on seals.
+        java.util.Map<Integer, ChromePage.Mark> marks = ChromePage.marks(inventory);
+        for (int raw : holder.slots.keySet()) {
+            marks.put(raw, ChromePage.Mark.POCKET);
+        }
+        ChromePage.open(player, inventory, ChromePage.Theme.STORAGE, null, marks);
         player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_DROP_CONTENTS, 0.5f, 1.2f);
     }
 
@@ -82,7 +88,7 @@ public final class SkillSackMenu {
         }
         Inventory inventory = holder.inventory;
         int size = inventory.getSize();
-        ItemStack filler = GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack filler = ChromePage.spacer();
         for (int i = 0; i < size; i++) {
             inventory.setItem(i, filler);
         }

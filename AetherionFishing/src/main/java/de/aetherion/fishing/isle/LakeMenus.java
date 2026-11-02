@@ -1,5 +1,6 @@
 package de.aetherion.fishing.isle;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.fishing.FishingSkills;
 import de.aetherion.fishing.LureHead;
 
@@ -205,7 +206,7 @@ public final class LakeMenus implements Listener {
         }
 
         set(holder, 49, Material.BARRIER, "§cClose", List.of(), (viewer, click) -> viewer.closeInventory());
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FISH);
         isle.cast().say(player, LakeRole.HARBOURMASTER, "Here's how the lake's treating you.");
     }
 
@@ -330,7 +331,7 @@ public final class LakeMenus implements Listener {
         tin.add("§8Max " + BaitShack.MAX_CHARGES + " of each.");
         set(holder, 33, Material.CHEST, "§eYour Tin", tin, null);
         set(holder, 40, Material.BARRIER, "§cClose", List.of(), (viewer, click) -> viewer.closeInventory());
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FISH);
     }
 
     // ------------------------------------------------------------------ Trophy House / Angler's Log
@@ -425,7 +426,7 @@ public final class LakeMenus implements Listener {
         });
         set(holder, 51, Material.GOLD_BLOCK, "§6Isle Records", recordLines(), null);
         set(holder, 49, Material.BARRIER, "§cClose", List.of(), (viewer, click) -> viewer.closeInventory());
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FISH);
     }
 
     // ------------------------------------------------------------------ Lakewatcher
@@ -488,7 +489,7 @@ public final class LakeMenus implements Listener {
                 "§7keeps an §5Eldermaw Scale§7."
         ), null);
         set(holder, 22, Material.BARRIER, "§cClose", List.of(), (viewer, click) -> viewer.closeInventory());
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FISH);
     }
 
     // ------------------------------------------------------------------ plumbing

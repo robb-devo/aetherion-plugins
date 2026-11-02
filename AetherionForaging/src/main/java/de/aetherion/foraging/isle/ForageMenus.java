@@ -1,5 +1,6 @@
 package de.aetherion.foraging.isle;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.foraging.isle.ForageItems.Find;
 import de.aetherion.foraging.isle.ForageItems.Grade;
 import de.aetherion.foraging.isle.ForageItems.Tonic;
@@ -156,7 +157,7 @@ public final class ForageMenus implements Listener {
         });
         set(menu, 40, charmsItem(player, profile), null);
         set(menu, 49, button(Material.BARRIER, "§cClose"), click -> player.closeInventory());
-        player.openInventory(menu.inventory);
+        ChromePage.open(player, menu.inventory, ChromePage.Theme.FORAGE);
     }
 
     private int countPlaces(ForageProfile profile) {
@@ -289,7 +290,7 @@ public final class ForageMenus implements Listener {
             set(menu, INNER[i++], tile, null);
         }
         set(menu, 40, button(Material.ARROW, "§eBack"), click -> openJournal(player));
-        player.openInventory(menu.inventory);
+        ChromePage.open(player, menu.inventory, ChromePage.Theme.FORAGE);
     }
 
     // ------------------------------------------------------------------ places
@@ -328,7 +329,7 @@ public final class ForageMenus implements Listener {
             isle.compass().stop(player);
             player.closeInventory();
         });
-        player.openInventory(menu.inventory);
+        ChromePage.open(player, menu.inventory, ChromePage.Theme.FORAGE);
     }
 
     // ------------------------------------------------------------------ Pell: the Lumber Board
@@ -387,7 +388,7 @@ public final class ForageMenus implements Listener {
         });
         set(menu, 18, button(Material.BOOK, "§7Grove Journal"), click -> openJournal(player));
         set(menu, 26, button(Material.BARRIER, "§cClose"), click -> player.closeInventory());
-        player.openInventory(menu.inventory);
+        ChromePage.open(player, menu.inventory, ChromePage.Theme.FORAGE);
     }
 
     // ------------------------------------------------------------------ Tamsin: the bench
@@ -448,7 +449,7 @@ public final class ForageMenus implements Listener {
                 "§7III needs " + WardenStanding.title(2) + ", IV " + WardenStanding.title(4) + ", V " + WardenStanding.title(6) + "."), null);
         set(menu, 36, button(Material.BOOK, "§7Grove Journal"), click -> openJournal(player));
         set(menu, 44, button(Material.BARRIER, "§cClose"), click -> player.closeInventory());
-        player.openInventory(menu.inventory);
+        ChromePage.open(player, menu.inventory, ChromePage.Theme.FORAGE);
     }
 
     // ------------------------------------------------------------------ Juniper: the ledger
@@ -490,7 +491,7 @@ public final class ForageMenus implements Listener {
         set(menu, 33, recordsItem(), null);
         set(menu, 36, button(Material.BOOK, "§7Grove Journal"), click -> openJournal(player));
         set(menu, 44, button(Material.BARRIER, "§cClose"), click -> player.closeInventory());
-        player.openInventory(menu.inventory);
+        ChromePage.open(player, menu.inventory, ChromePage.Theme.FORAGE);
     }
 
     // ------------------------------------------------------------------ the Find Cabinet
@@ -549,7 +550,7 @@ public final class ForageMenus implements Listener {
                 openJournal(player);
             }
         });
-        player.openInventory(menu.inventory);
+        ChromePage.open(player, menu.inventory, ChromePage.Theme.FORAGE);
     }
 
     // ------------------------------------------------------------------ bits

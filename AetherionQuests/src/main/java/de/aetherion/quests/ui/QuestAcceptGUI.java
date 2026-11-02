@@ -1,5 +1,6 @@
 package de.aetherion.quests.ui;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.quests.dialog.DialogManager;
 import de.aetherion.quests.model.Objective;
 import de.aetherion.quests.model.Quest;
@@ -104,7 +105,7 @@ public final class QuestAcceptGUI implements Listener {
             ));
         }
 
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.QUEST);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.55f, 1.15f);
         player.sendActionBar(net.kyori.adventure.text.Component.text(
                 de.aetherion.quests.lang.LangPack.ui(player, "quest_offer_hint", "Quest offer — pick Accept or Decline"),

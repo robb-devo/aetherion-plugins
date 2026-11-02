@@ -1,5 +1,6 @@
 package de.aetherion.dungeons.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.dungeons.instance.DungeonLayout;
 import de.aetherion.dungeons.instance.DungeonSession;
 
@@ -26,7 +27,7 @@ public final class DungeonMapGUI {
 
     public static void open(Player player, DungeonSession session) {
         Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE);
-        ItemStack pane = named(Material.BLACK_STAINED_GLASS_PANE, " ", false);
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -80,7 +81,7 @@ public final class DungeonMapGUI {
                 "§7and delete this instance.");
 
         inventory.setItem(CLOSE_SLOT, named(Material.BARRIER, "§cClose", false, "§7Close the map."));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.DUNGEON);
     }
 
     private static String[] statusLore(DungeonSession session) {

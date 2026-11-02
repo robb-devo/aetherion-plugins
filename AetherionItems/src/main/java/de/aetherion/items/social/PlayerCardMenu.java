@@ -1,5 +1,6 @@
 package de.aetherion.items.social;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.item.ItemLore;
 import de.aetherion.items.manager.ActiveEquipmentStats;
@@ -32,7 +33,7 @@ public final class PlayerCardMenu {
 
     public void open(Player viewer, Player target) {
         Inventory inventory = Bukkit.createInventory(new Holder(target.getUniqueId()), 27, "§8" + target.getName());
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -84,7 +85,7 @@ public final class PlayerCardMenu {
         inventory.setItem(21, copyOrEmpty(target.getInventory().getItemInMainHand(), "§7Main Hand"));
         inventory.setItem(23, copyOrEmpty(target.getInventory().getItemInOffHand(), "§7Off Hand"));
         inventory.setItem(22, named(Material.BARRIER, "§cClose"));
-        viewer.openInventory(inventory);
+        ChromePage.open(viewer, inventory, ChromePage.Theme.AETHER);
     }
 
     public void handle(Player player, int slot) {

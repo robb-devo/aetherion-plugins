@@ -1,5 +1,6 @@
 package de.aetherion.items.social;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -245,7 +246,13 @@ public final class TradeMenu {
     private void open(Player player, Session session) {
         Inventory inventory = Bukkit.createInventory(new Holder(player.getUniqueId()), 54, TITLE);
         draw(inventory, player, session);
-        player.openInventory(inventory);
+        // Both offers are ledgers, also while empty; the rest as the page reads it.
+        java.util.Map<Integer, ChromePage.Mark> marks = ChromePage.marks(inventory);
+        for (int i = 0; i < SELF_SLOTS.length; i++) {
+            marks.put(SELF_SLOTS[i], ChromePage.Mark.POCKET);
+            marks.put(OTHER_SLOTS[i], ChromePage.Mark.POCKET);
+        }
+        ChromePage.open(player, inventory, ChromePage.Theme.TRADE, null, marks);
     }
 
     private void refresh(Session session) {
@@ -260,7 +267,7 @@ public final class TradeMenu {
     }
 
     private void draw(Inventory inventory, Player viewer, Session session) {
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }

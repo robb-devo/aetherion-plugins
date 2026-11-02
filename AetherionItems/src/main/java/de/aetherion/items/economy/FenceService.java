@@ -1,5 +1,6 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.CustomItem;
@@ -99,7 +100,7 @@ public final class FenceService implements Listener {
                 "§7Boss uniques. Receipts required.",
                 "§7Prices are a war crime. On purpose."));
         inventory.setItem(CLOSE_SLOT, button(Material.BARRIER, "§cClose", "§7He keeps the markup."));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.TRADE);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -252,7 +253,7 @@ public final class FenceService implements Listener {
     }
 
     private void fill(Inventory inventory) {
-        ItemStack pane = button(Material.BLACK_STAINED_GLASS_PANE, " ", "");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }

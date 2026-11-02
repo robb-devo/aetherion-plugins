@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -52,7 +53,7 @@ public final class MenuKit {
         Holder holder = new Holder(menu, context);
         Inventory inventory = Bukkit.createInventory(holder, size, title);
         holder.inventory = inventory;
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < size; slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -67,7 +68,7 @@ public final class MenuKit {
         Holder holder = new Holder(menu, context);
         Inventory inventory = Bukkit.createInventory(holder, size, title);
         holder.inventory = inventory;
-        ItemStack frame = named(Material.BLACK_STAINED_GLASS_PANE, " ");
+        ItemStack frame = ChromePage.spacer();
         for (int slot = 0; slot < 9 && slot < size; slot++) {
             inventory.setItem(slot, frame.clone());
             inventory.setItem(size - 9 + slot, frame.clone());

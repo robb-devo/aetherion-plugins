@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.model.BankTiers;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.GuildRank;
@@ -53,7 +54,7 @@ public final class BankMenu {
         Holder holder = new Holder(guild.id());
         Inventory inventory = Bukkit.createInventory(holder, 54, TITLE);
         holder.bind(inventory);
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         int slots = guild.bankSlots();
         for (int slot = 0; slot < 45; slot++) {
             if (slot < slots) {
@@ -83,7 +84,12 @@ public final class BankMenu {
         inventory.setItem(WITHDRAW_10K, named(Material.HOPPER, "§eWithdraw 10,000"));
         inventory.setItem(WITHDRAW_ALL, named(Material.DROPPER, "§eWithdraw all"));
         inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack"));
-        player.openInventory(inventory);
+        // The vault is a ledger, empty slots included; locked slots stay bare parchment.
+        java.util.Map<Integer, ChromePage.Mark> marks = ChromePage.marks(inventory);
+        for (int slot = 0; slot < Math.min(slots, 45); slot++) {
+            marks.put(slot, ChromePage.Mark.POCKET);
+        }
+        ChromePage.open(player, inventory, ChromePage.Theme.GUILD, null, marks);
     }
 
     public void handle(Player player, Holder holder, InventoryClickEvent event) {

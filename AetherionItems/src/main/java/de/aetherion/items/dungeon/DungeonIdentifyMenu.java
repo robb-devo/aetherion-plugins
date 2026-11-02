@@ -1,5 +1,6 @@
 package de.aetherion.items.dungeon;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.item.CustomItem;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.util.GuiItems;
@@ -72,7 +73,7 @@ public final class DungeonIdentifyMenu implements Listener {
     private void openMenu(Player player, Session session) {
         sessions.put(player.getUniqueId(), session);
         Inventory inventory = Bukkit.createInventory(new Holder(), 27, session.schematic ? "§8Dungeon Schematic" : TITLE);
-        ItemStack pane = GuiItems.named(org.bukkit.Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -116,7 +117,7 @@ public final class DungeonIdentifyMenu implements Listener {
                 "§7Walk away. The relic stays unidentified.",
                 "§8You can decide later. The dungeon can wait."
         ));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.DUNGEON);
     }
 
     @EventHandler

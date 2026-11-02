@@ -1,5 +1,6 @@
 package de.aetherion.items.farm;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.util.GuiItems;
 
 import org.bukkit.Bukkit;
@@ -29,11 +30,11 @@ public final class RootCellarHubGUI implements InventoryHolder {
         if (player == null) {
             return;
         }
-        player.openInventory(new RootCellarHubGUI().getInventory());
+        ChromePage.open(player, new RootCellarHubGUI().getInventory(), ChromePage.Theme.FARM);
     }
 
     private void paint() {
-        ItemStack glass = GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack glass = ChromePage.spacer();
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, glass.clone());
         }

@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.island.LandService;
@@ -103,7 +104,7 @@ public final class LandMenu implements MenuKit.Menu {
         inventory.setItem(BORDER, MenuKit.named(Material.SPYGLASS, "§eShow build border",
                 "§7Gold particles trace your land."));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
     }
 
     private ItemStack cell(IslandHost host, int px, int pz, LandService.Status status, boolean youAreHere, long price,

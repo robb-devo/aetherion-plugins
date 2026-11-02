@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.logistics.LogisticsService;
 import de.aetherion.guilds.logistics.Res;
@@ -94,7 +95,7 @@ public final class MachineMenu implements MenuKit.Menu {
                 "§eShift-click §7to confirm"));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
     }
 
     private static List<String> bufferLore(Map<Res, Long> buffer, String note) {

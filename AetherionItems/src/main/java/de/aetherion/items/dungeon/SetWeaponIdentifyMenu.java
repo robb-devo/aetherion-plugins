@@ -1,5 +1,6 @@
 package de.aetherion.items.dungeon;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.item.CustomItem;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.util.GuiItems;
@@ -44,7 +45,7 @@ public final class SetWeaponIdentifyMenu implements Listener {
         }
         sessions.put(player.getUniqueId(), new Session(hand == null ? EquipmentSlot.HAND : hand));
         Inventory inventory = Bukkit.createInventory(new Holder(), 36, TITLE);
-        ItemStack pane = GuiItems.named(org.bukkit.Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = ChromePage.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -64,7 +65,7 @@ public final class SetWeaponIdentifyMenu implements Listener {
                 "§7Walk away. The schematic stays unread.",
                 "§8You can decide later."
         ));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.DUNGEON);
     }
 
     @EventHandler

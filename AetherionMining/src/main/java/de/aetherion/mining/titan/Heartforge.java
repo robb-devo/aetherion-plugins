@@ -1,6 +1,7 @@
 package de.aetherion.mining.titan;
 
 import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.core.api.CoinAccess;
 import de.aetherion.core.api.ItemFactoryAccess;
 
@@ -43,7 +44,7 @@ public final class Heartforge implements Listener {
         holder.inventory = Bukkit.createInventory(holder, 27,
                 LegacyComponentSerializer.legacySection().deserialize("§6The Heartforge"));
         paint(holder, player);
-        player.openInventory(holder.inventory);
+        ChromePage.open(player, holder.inventory, ChromePage.Theme.FORGE);
         player.playSound(player.getLocation(), Sound.BLOCK_BLASTFURNACE_FIRE_CRACKLE, SoundCategory.BLOCKS, 1f, 0.7f);
     }
 
@@ -57,7 +58,7 @@ public final class Heartforge implements Listener {
         ItemStack gear = inv.getItem(GEAR);
         for (int i = 0; i < 27; i++) {
             if (i != GEAR) {
-                inv.setItem(i, icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+                inv.setItem(i, ChromePage.spacer());
             }
         }
         if (gear == null || gear.getType().isAir()) {
