@@ -56,7 +56,7 @@ One build per plugin on every backend that loads it, all from `main` `c5eb105` (
 | BossEngine | `c47cba94` | hub, mmo-r, mmo-d, mmo-c |
 | Foraging / Mining | `a8c46420` / `f2faa59c` | mmo-r, mmo-c |
 | Farming / Fishing | `919d9515` / `c55d270e` | mmo-r, mmo-c |
-| Gnomon | `684013f0` | mmo-r, mmo-c |
+| Gnomon | `684013f0` | mmo-r (mmo-c parked 11-02) |
 | Dungeons / Beta | `07c2c939` / `ed9d1621` | mmo-r, mmo-d |
 | Guilds | `5e72839d` | mmo-i (parked on mmo-r and mmo-d) |
 | Hub | `7a3fa285` | mmo-r; **hub keeps `d1a097e7` (10-05)** |
@@ -180,6 +180,23 @@ Deployed with `deploy-harbour-ferry.ps1` (Core, Quests, Items, BossEngine, Hub; 
   (`tutorial/BoosterPick`). Mining starts at the Shaft Foreman, then the Surveyor's first blueprint tool; the
   Mining pad reads Quests' story flag `mine_road_open` instead of Ledger's stamp (veterans keep it via
   `MiningAccess.knowsIsle`). The Farm Isle road starts at the Farmer.
+
+## Exile boss altars, harbour gaps (2026-11-02)
+
+- Exile boss sites take a **vial** instead of a story talk (`exile/ExileVials`, key `aetherion:exile_vial`, staff:
+  `/exile vial <boss|all> [player] [amount]`; how players earn them is not built yet). Sites: Caedmon's sword
+  (Hollow Sun), the music box (Seraphine), the star ring (Helios), the Maw (Nihil & the Unbroken), the Great Doors
+  (Aetherion; the four lullaby seals and Orrin no longer gate anything). No vial: one action-bar line. A refused
+  spawn or portal gives the vial back.
+- Caedmon's sword is a display prop (`exile/HollowSword`): the vial makes it climb into the sky and flare into the
+  Hollow Sun's falling star; it comes back down a few seconds after the fight. The old block sword stood on the
+  boss's spawn column (its pommel became the arena floor); `/exile tidy apply` removes it and the water curtain
+  the void trim left west of the island (x -160, rows z -190 / 195).
+- Seraphine spawns at -20.5 220 69.5, so her own stage hangs in open air over the Little Theatre (inside the
+  hall it never fit and built itself on the roof). People falling from it are lowered back into the hall.
+- Anker Harbour: `/origin dev underside gaps [apply]` fills the air layer between the seabed and the rock under it
+  (bay columns only, natural blocks only).
+- Gnomon and SamuraiBoss run on mmo-r only (Gnomon's mmo-c copy parked in `plugins/_disabled-network`).
 
 ## Content state (verified against live 2026-10-19)
 

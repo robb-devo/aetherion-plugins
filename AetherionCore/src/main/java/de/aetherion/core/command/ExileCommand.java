@@ -101,6 +101,27 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
             de.aetherion.core.exile.ExileQuayPaste.turn(plugin, sender, args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
             return true;
         }
+        // Exile host: old block sword out of the crater, water curtain out of the void. Dry run unless "apply".
+        if ("tidy".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            ExileHost host = plugin.exileHost();
+            de.aetherion.core.exile.ExileTidy.run(plugin, sender, host == null ? null : host.world(),
+                    args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
+            return true;
+        }
+        // Staff: the boss vials the exile altars take (how players earn them comes later).
+        // /exile vial <boss|all> [player] [amount]
+        if ("vial".equals(sub) || "phiole".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            giveVials(sender, args);
+            return true;
+        }
         // Exile host: dig the Iron Ring's approach out of the crater debris (runs once on its own). "undo" puts it back.
         if ("gatecut".equals(sub)) {
             if (!admin) {
@@ -292,8 +313,67 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private void giveVials(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§7/exile vial <" + String.join("|", vialIds()) + "|all> [player] [amount]");
+            return;
+        }
+        List<de.aetherion.core.exile.ExileVials.Vial> which = new ArrayList<>();
+        if ("all".equalsIgnoreCase(args[1])) {
+            which.addAll(de.aetherion.core.exile.ExileVials.ALL);
+        } else {
+            de.aetherion.core.exile.ExileVials.Vial v = de.aetherion.core.exile.ExileVials.byBoss(args[1]);
+            if (v == null) {
+                sender.sendMessage("§cUnknown boss §f" + args[1] + "§c: " + String.join(", ", vialIds()));
+                return;
+            }
+            which.add(v);
+        }
+        Player target = args.length >= 3 ? org.bukkit.Bukkit.getPlayerExact(args[2]) : (sender instanceof Player p ? p : null);
+        if (target == null) {
+            sender.sendMessage("§cPlayer not online here.");
+            return;
+        }
+        int amount = 1;
+        if (args.length >= 4) {
+            try {
+                amount = Math.max(1, Math.min(16, Integer.parseInt(args[3])));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        boolean german = Say.german(target);
+        for (de.aetherion.core.exile.ExileVials.Vial v : which) {
+            for (org.bukkit.inventory.ItemStack rest : target.getInventory()
+                    .addItem(de.aetherion.core.exile.ExileVials.create(v, amount, german)).values()) {
+                target.getWorld().dropItemNaturally(target.getLocation(), rest);
+            }
+        }
+        sender.sendMessage("§a" + which.size() + " vial kind(s) x" + amount + " → §f" + target.getName());
+    }
+
+    private static List<String> vialIds() {
+        List<String> ids = new ArrayList<>();
+        for (de.aetherion.core.exile.ExileVials.Vial v : de.aetherion.core.exile.ExileVials.ALL) {
+            ids.add(v.boss());
+        }
+        return ids;
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 2 && ("vial".equalsIgnoreCase(args[0]) || "phiole".equalsIgnoreCase(args[0]))
+                && sender.hasPermission("aetherion.core.admin")) {
+            List<String> out = new ArrayList<>();
+            for (String id : vialIds()) {
+                if (id.startsWith(args[1].toLowerCase(Locale.ROOT))) {
+                    out.add(id);
+                }
+            }
+            if ("all".startsWith(args[1].toLowerCase(Locale.ROOT))) {
+                out.add("all");
+            }
+            return out;
+        }
         if (args.length != 1) {
             return List.of();
         }
@@ -304,7 +384,7 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
         for (String s : admin
                 ? List.of("go", "return", "replay", "stop", "where", "setquay", "causeway", "paste",
                         "placequay", "quayundo", "clearsaint", "restoremap", "cleararena", "repairquay", "turnquay",
-                        "gatecut")
+                        "gatecut", "tidy", "vial")
                 : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);

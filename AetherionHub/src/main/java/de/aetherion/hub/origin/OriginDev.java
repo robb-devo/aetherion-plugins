@@ -90,7 +90,9 @@ public final class OriginDev {
                 }
                 case "profile" -> profile(player, arg);
                 case "bay" -> isle.bay().dev(arg);
-                case "underside" -> OriginUnderside.run(isle, player, "apply".equals(arg));
+                case "underside" -> "gaps".equals(arg)
+                        ? OriginUnderside.gaps(isle, player, parts.length > 2 && "apply".equalsIgnoreCase(parts[2]))
+                        : OriginUnderside.run(isle, player, "apply".equals(arg));
                 case "props" -> isle.props().dev(player, player, parts);
                 case "tales" -> isle.tales().dev(player, parts);
                 case "curio" -> isle.curiosities().dev(player, parts);
