@@ -465,7 +465,8 @@ public final class MarketService implements Listener {
                     "§8Click another stack in your bag to swap."
             ));
         }
-        inventory.setItem(8, button(Material.BARRIER, "§cCancel", "§7Puts " + what + " §7back in your bag."));
+        inventory.setItem(8, GuiIcons.icon(button(Material.BARRIER, "§cCancel", "§7Puts " + what + " §7back in your bag."),
+                GuiIcons.CLOSE));
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.1f);
     }
