@@ -177,6 +177,7 @@ public final class AetherionCore extends JavaPlugin {
             }
         });
         Bukkit.getPluginManager().registerEvents(new ShutdownCountdown(this), this);
+        Bukkit.getPluginManager().registerEvents(new de.aetherion.core.exile.ExileVials(), this);
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
         getLogger().info("ShutdownCountdown armed (10→8→6→4→2). Bypass: stop now|force.");
         getLogger().info("Exile link → " + exile.exileServer()

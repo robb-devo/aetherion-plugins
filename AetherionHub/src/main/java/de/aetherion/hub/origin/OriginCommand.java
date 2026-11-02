@@ -45,6 +45,9 @@ public final class OriginCommand implements CommandExecutor, TabCompleter {
         if (!(sender instanceof Player player)) {
             if (sub.equals("dev") && args.length > 1 && args[1].equalsIgnoreCase("status")) {
                 sender.sendMessage(isle.running() ? "Origin Isle running." : "Origin Isle stopped.");
+            } else if (sub.equals("dev") && args.length > 2 && args[1].equalsIgnoreCase("underside")
+                    && args[2].equalsIgnoreCase("gaps")) {
+                sender.sendMessage(OriginUnderside.gaps(isle, sender, args.length > 3 && args[3].equalsIgnoreCase("apply")));
             } else if (sub.equals("dev") && args.length > 1 && args[1].equalsIgnoreCase("underside")) {
                 sender.sendMessage(OriginUnderside.run(isle, sender, args.length > 2 && args[2].equalsIgnoreCase("apply")));
             } else if (sub.equals("dev") && args.length > 2 && args[1].equalsIgnoreCase("bay")) {
