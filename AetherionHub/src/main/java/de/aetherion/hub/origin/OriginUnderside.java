@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Water standing directly on air counts as a seabed of 0. Only air is ever replaced, and without physics. A dry run
  * (no {@code apply}) only counts and names a few spots. The box is {@code bay.underside-box} ({@code "x1 z1 x2 z2"}),
  * by default the whole bay around {@code bay.centre}. {@code underside gaps} closes the air layer further down
- * ({@link #gaps}).
+ * ({@link #gaps}), {@code underside rim} the far edge where the sea spilled into the void ({@link #rim}).
  */
 final class OriginUnderside {
 
@@ -426,6 +426,278 @@ final class OriginUnderside {
                  HANGING_ROOTS -> true;
             default -> m.name().endsWith("_ORE");
         };
+    }
+
+    /**
+     * {@code /origin dev underside rim [apply]}: the far end of the bay, where it runs into the island's edge. The
+     * seabed stops short of the edge there, the sea spills over and falls as a curtain of water through the whole
+     * map. Every column with falling water below y {@value #CURTAIN_Y} loses it; the columns where the spill leaves
+     * the bay (moving water near the surface, up to {@value #RIM_NEAR} blocks from that curtain) become a rock lip
+     * level with the water surface, solid down to where the island's underside runs in the columns around it; sea
+     * that stands on open air next to the curtain gets a seabed. Only air and moving water are replaced (the bay's
+     * still sea never), without physics. The box is
+     * {@code bay.rim-box} ({@code "x1 z1 x2 z2"}), by default 170 blocks around the bay centre and 220 out to sea.
+     */
+    static String rim(OriginIsle isle, CommandSender sender, boolean apply) {
+        World world = isle.config().world();
+        ConfigurationSection bay = isle.config().raw().getConfigurationSection("bay");
+        if (world == null || bay == null) {
+            return "§cOrigin world or bay section missing.";
+        }
+        double[] centre = OriginConfig.nums(bay.getString("centre", "300.5 61 -430.5"));
+        double[] box = OriginConfig.nums(bay.getString("rim-box", ""));
+        int x1;
+        int z1;
+        int x2;
+        int z2;
+        if (box != null && box.length >= 4) {
+            x1 = (int) Math.floor(Math.min(box[0], box[2]));
+            x2 = (int) Math.floor(Math.max(box[0], box[2]));
+            z1 = (int) Math.floor(Math.min(box[1], box[3]));
+            z2 = (int) Math.floor(Math.max(box[1], box[3]));
+        } else if (centre != null) {
+            x1 = (int) centre[0] - 170;
+            x2 = (int) centre[0] + 170;
+            z1 = (int) centre[2] - 220;
+            z2 = (int) centre[2] + 170;
+        } else {
+            return "§cbay.centre unreadable.";
+        }
+        int surface = (int) Math.floor(bay.getDouble("surface-y", 60.72d));
+        if (!RUNNING.compareAndSet(false, true)) {
+            return "§7The underside check is already running.";
+        }
+        List<int[]> chunks = new ArrayList<>();
+        for (int cx = x1 >> 4; cx <= x2 >> 4; cx++) {
+            for (int cz = z1 >> 4; cz <= z2 >> 4; cz++) {
+                chunks.add(new int[]{cx, cz});
+            }
+        }
+        String head = "[Underside rim] " + (apply ? "APPLY" : "dry run") + " x " + x1 + ".." + x2 + " z " + z1 + ".." + z2
+                + " (" + chunks.size() + " chunks)";
+        isle.plugin().getLogger().info(head);
+        int w = x2 - x1 + 1;
+        int d = z2 - z1 + 1;
+        int minY = world.getMinHeight();
+        // per column: lowest falling-water y (or MAX), top of flowing water near the surface (or MIN), bottom of the
+        // standing sea when it stands on air (or MIN), lowest solid of the run under the sea (or MIN)
+        int[] curtain = new int[w * d];
+        int[] spill = new int[w * d];
+        int[] openBed = new int[w * d];
+        int[] underside = new int[w * d];
+        Arrays.fill(curtain, Integer.MAX_VALUE);
+        Arrays.fill(spill, Integer.MIN_VALUE);
+        Arrays.fill(openBed, Integer.MIN_VALUE);
+        Arrays.fill(underside, Integer.MIN_VALUE);
+        int[] at = {0};
+        int fx1 = x1;
+        int fz1 = z1;
+        int fx2 = x2;
+        int fz2 = z2;
+        Bukkit.getScheduler().runTaskTimer(isle.plugin(), task -> {
+            try {
+                for (int n = 0; n < CHUNKS_PER_TICK && at[0] < chunks.size(); n++, at[0]++) {
+                    int[] c = chunks.get(at[0]);
+                    if (!world.isChunkGenerated(c[0], c[1])) {
+                        continue;
+                    }
+                    world.getChunkAt(c[0], c[1]);
+                    for (int x = Math.max(fx1, c[0] << 4); x <= Math.min(fx2, (c[0] << 4) + 15); x++) {
+                        for (int z = Math.max(fz1, c[1] << 4); z <= Math.min(fz2, (c[1] << 4) + 15); z++) {
+                            int i = (x - fx1) * d + (z - fz1);
+                            for (int y = surface + 1; y > minY; y--) {
+                                Block b = world.getBlockAt(x, y, z);
+                                if (b.getType() != Material.WATER) {
+                                    continue;
+                                }
+                                boolean flowing = b.getBlockData() instanceof org.bukkit.block.data.Levelled l && l.getLevel() > 0;
+                                if (!flowing) {
+                                    continue;
+                                }
+                                if (y < CURTAIN_Y) {
+                                    curtain[i] = Math.min(curtain[i], y);
+                                } else {
+                                    spill[i] = Math.max(spill[i], y);
+                                }
+                            }
+                            int y = surface;
+                            if (world.getBlockAt(x, y, z).getType() != Material.WATER) {
+                                y--;
+                            }
+                            if (world.getBlockAt(x, y, z).getType() != Material.WATER) {
+                                continue;
+                            }
+                            while (y > minY && wet(world.getBlockAt(x, y, z).getType())) {
+                                y--;
+                            }
+                            if (y >= CURTAIN_Y && world.getBlockAt(x, y, z).getType().isAir()) {
+                                openBed[i] = y + 1;
+                            } else {
+                                while (y > minY && !world.getBlockAt(x, y, z).getType().isAir()) {
+                                    y--;
+                                }
+                                if (y > minY) {
+                                    underside[i] = y + 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable ex) {
+                isle.plugin().getLogger().warning("[Underside rim] stopped: " + ex);
+                task.cancel();
+                RUNNING.set(false);
+                return;
+            }
+            if (at[0] < chunks.size()) {
+                return;
+            }
+            task.cancel();
+            try {
+                planRim(isle, sender, world, apply, fx1, fz1, w, d, surface, curtain, spill, openBed, underside, minY);
+            } catch (Throwable ex) {
+                isle.plugin().getLogger().warning("[Underside rim] stopped: " + ex);
+                RUNNING.set(false);
+            }
+        }, 1L, 1L);
+        return "§7" + head + " §8· result in chat/console when done";
+    }
+
+    private static final int CURTAIN_Y = 44;
+    private static final int RIM_NEAR = 8;
+    private static final int OPEN_NEAR = 6;
+
+    private static void planRim(OriginIsle isle, CommandSender sender, World world, boolean apply, int x1, int z1, int w,
+                                int d, int surface, int[] curtain, int[] spill, int[] openBed, int[] underside, int minY) {
+        // how far each column is from the nearest curtain column (Chebyshev, capped)
+        int[] near = new int[w * d];
+        Arrays.fill(near, Integer.MAX_VALUE);
+        for (int ix = 0; ix < w; ix++) {
+            for (int iz = 0; iz < d; iz++) {
+                if (curtain[ix * d + iz] == Integer.MAX_VALUE) {
+                    continue;
+                }
+                for (int ax = Math.max(0, ix - OPEN_NEAR); ax <= Math.min(w - 1, ix + OPEN_NEAR); ax++) {
+                    for (int az = Math.max(0, iz - OPEN_NEAR); az <= Math.min(d - 1, iz + OPEN_NEAR); az++) {
+                        int k = ax * d + az;
+                        near[k] = Math.min(near[k], Math.max(Math.abs(ax - ix), Math.abs(az - iz)));
+                    }
+                }
+            }
+        }
+        List<int[]> drain = new ArrayList<>(); // x, z, from y (top), to y (bottom): water -> air
+        List<int[]> rock = new ArrayList<>();  // x, z, top y, bottom y: water/air -> rock
+        int[] around = new int[(2 * RADIUS + 1) * (2 * RADIUS + 1)];
+        int curtains = 0;
+        int lips = 0;
+        int beds = 0;
+        List<String> sample = new ArrayList<>();
+        for (int ix = 0; ix < w; ix++) {
+            for (int iz = 0; iz < d; iz++) {
+                int i = ix * d + iz;
+                int x = x1 + ix;
+                int z = z1 + iz;
+                boolean lip = spill[i] != Integer.MIN_VALUE && near[i] <= RIM_NEAR;
+                boolean open = !lip && openBed[i] != Integer.MIN_VALUE && near[i] <= OPEN_NEAR;
+                if (curtain[i] != Integer.MAX_VALUE) {
+                    curtains++;
+                    drain.add(new int[]{x, z, CURTAIN_Y - 1, minY + 1});
+                }
+                if (!lip && !open) {
+                    continue;
+                }
+                // where the island's underside runs around here (median of the solid columns), 8..30 below the lip
+                int count = 0;
+                for (int ax = Math.max(0, ix - RADIUS); ax <= Math.min(w - 1, ix + RADIUS); ax++) {
+                    for (int az = Math.max(0, iz - RADIUS); az <= Math.min(d - 1, iz + RADIUS); az++) {
+                        int j = ax * d + az;
+                        if (underside[j] != Integer.MIN_VALUE) {
+                            around[count++] = underside[j];
+                        }
+                    }
+                }
+                int bottom = surface - 12;
+                if (count >= 6) {
+                    Arrays.sort(around, 0, count);
+                    bottom = around[count / 2];
+                }
+                bottom = Math.max(surface - 30, Math.min(surface - 8, bottom));
+                if (lip) {
+                    lips++;
+                    rock.add(new int[]{x, z, surface, bottom});
+                    if (sample.size() < 4) {
+                        sample.add(x + " " + surface + " " + z);
+                    }
+                } else {
+                    beds++;
+                    rock.add(new int[]{x, z, openBed[i] - 1, Math.min(openBed[i] - 1, Math.max(bottom, openBed[i] - 16))});
+                }
+            }
+        }
+        String what = curtains + " curtain column(s) drained below y " + CURTAIN_Y + ", " + lips + " lip column(s) of rock at the edge, "
+                + beds + " open seabed column(s) closed" + (sample.isEmpty() ? "" : ", e.g. lip " + String.join(" · ", sample));
+        if (!apply || (drain.isEmpty() && rock.isEmpty())) {
+            RUNNING.set(false);
+            done(isle, sender, "[Underside rim] would do: " + what);
+            return;
+        }
+        Map<Material, Integer> used = new EnumMap<>(Material.class);
+        int[] next = {0};
+        int[] drained = {0};
+        int[] placed = {0};
+        List<int[]> work = new ArrayList<>(rock);
+        int rockCount = rock.size();
+        work.addAll(drain);
+        Bukkit.getScheduler().runTaskTimer(isle.plugin(), task -> {
+            try {
+                int budget = SETS_PER_TICK;
+                while (budget > 0 && next[0] < work.size()) {
+                    int idx = next[0]++;
+                    int[] f = work.get(idx);
+                    boolean isRock = idx < rockCount;
+                    for (int y = f[2]; y >= f[3]; y--) {
+                        Block b = world.getBlockAt(f[0], y, f[1]);
+                        Material m = b.getType();
+                        boolean moving = m == Material.WATER
+                                && b.getBlockData() instanceof org.bukkit.block.data.Levelled l && l.getLevel() > 0;
+                        if (isRock) {
+                            if (!m.isAir() && !moving) {
+                                continue;
+                            }
+                            Material r = y == f[2] && f[2] == surface ? lipTop(f[0], f[1]) : rockAround(b);
+                            if (r == Material.STONE && y > f[2] - 3) {
+                                r = lipTop(f[0], f[1] + y);
+                            }
+                            b.setType(r, false);
+                            used.merge(r, 1, Integer::sum);
+                            placed[0]++;
+                        } else {
+                            if (!moving) {
+                                continue;
+                            }
+                            b.setType(Material.AIR, false);
+                            drained[0]++;
+                        }
+                        budget--;
+                    }
+                }
+            } catch (Throwable ex) {
+                isle.plugin().getLogger().warning("[Underside rim] stopped: " + ex);
+                next[0] = work.size();
+            }
+            if (next[0] >= work.size()) {
+                task.cancel();
+                RUNNING.set(false);
+                done(isle, sender, "[Underside rim] done: " + placed[0] + " rock placed, " + drained[0]
+                        + " water drained (" + what + "), rock " + used);
+            }
+        }, 1L, 1L);
+    }
+
+    /** The lip and the top of the new cliff: weathered stone, not one flat colour. */
+    private static Material lipTop(int x, int z) {
+        int h = Math.floorMod(x * 73856093 ^ z * 83492791, 100);
+        return h < 55 ? Material.STONE : h < 80 ? Material.ANDESITE : h < 92 ? Material.COBBLESTONE : Material.MOSSY_COBBLESTONE;
     }
 
     private static void done(OriginIsle isle, CommandSender sender, String line) {
