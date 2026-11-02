@@ -39,13 +39,13 @@ public final class ExileVials implements Listener {
             new Vial("hollow_sun", "caedmon_sword", "The Hollow Sun", "Die Hollow Sun", "§6", Color.fromRGB(255, 170, 40),
                     "Caedmon's sword in the crater", "Caedmons Schwert im Krater"),
             new Vial("hanging_saint", "music_box", "Seraphine", "Seraphine", "§d", Color.fromRGB(230, 120, 220),
-                    "the music box on Elin's stage", "die Spieluhr auf Elins Bühne"),
+                    "the music box on her stage in the Little Theatre", "die Spieluhr auf ihrer Bühne im kleinen Theater"),
             new Vial("helios", "star_ring", "Helios", "Helios", "§e", Color.fromRGB(255, 240, 120),
                     "the star ring in the observatory", "den Sternenring im Observatorium"),
             new Vial("world_eater", "the_maw", "Nihil & the Unbroken", "Nihil & der Unbroken", "§2", Color.fromRGB(70, 160, 70),
                     "the Maw in the Root-Ground", "den Schlund im Wurzelgrund"),
             new Vial("aetherion", "great_doors", "Aetherion", "Aetherion", "§5", Color.fromRGB(150, 70, 220),
-                    "the Great Doors", "die Großen Tore")
+                    "the altar at the Star Court's gate", "den Altar am Tor des Sternplatzes")
     );
 
     public static Vial byBoss(String boss) {

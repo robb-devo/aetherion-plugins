@@ -36,6 +36,12 @@ public final class ExileTidy {
     private static final int[] WATER_MIN = {-161, -64, -191};
     private static final int[] WATER_MAX = {-41, 62, 196};
 
+    /** The Little Theatre's hall inside its walls, from the floor (y 142 stays) to just under the ceiling trim. */
+    private static final int[] HALL_MIN = {-52, 143, 46};
+    private static final int[] HALL_MAX = {5, 171, 92};
+    /** Middle of Seraphine's stage in the hall (floor surface); ExileDoors spawns her here. */
+    public static final int[] THEATRE_STAGE = {-24, 144, 66};
+
     private ExileTidy() {
     }
 
@@ -98,6 +104,50 @@ public final class ExileTidy {
             } catch (Throwable t) {
                 plugin.getLogger().log(Level.WARNING, "[Tidy] water curtain failed", t);
                 Bukkit.getScheduler().runTask(plugin, () -> tell(sender, "§c[Tidy] water curtain failed: §7" + t.getMessage()));
+            }
+        });
+    }
+
+    /**
+     * {@code /exile theatre [apply]}: the Little Theatre becomes Seraphine's arena. The hall is emptied inside its
+     * walls (Elin's old stage, the seat rows, the chandeliers; walls, floor and ceiling stay) and her own Gilded
+     * Proscenium is built into it for good with {@code /boss stage build}: round stage just over the floor, the arch
+     * and curtain against the north wall, the stalls and side boxes around it. Her fights then open on it.
+     */
+    public static void theatre(AetherionCore plugin, CommandSender sender, World world, boolean apply) {
+        if (world == null) {
+            tell(sender, "§cThe exile world is not loaded on this backend.");
+            return;
+        }
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (EditSession edit = WorldEdit.getInstance().newEditSessionBuilder()
+                    .world(BukkitAdapter.adapt(world)).maxBlocks(-1).build()) {
+                try {
+                    edit.setFastMode(true);
+                } catch (Throwable ignored) {
+                }
+                CuboidRegion hall = new CuboidRegion(BlockVector3.at(HALL_MIN[0], HALL_MIN[1], HALL_MIN[2]),
+                        BlockVector3.at(HALL_MAX[0], HALL_MAX[1], HALL_MAX[2]));
+                int count = apply ? edit.setBlocks(hall, BlockTypes.AIR.getDefaultState())
+                        : edit.countBlocks(hall, new com.sk89q.worldedit.function.mask.ExistingBlockMask(edit));
+                String line = "[Tidy] theatre hall: " + count + " block(s) " + (apply ? "cleared" : "inside the walls would go");
+                plugin.getLogger().info(line);
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    tell(sender, "§8" + line);
+                    if (!apply) {
+                        tell(sender, "§8[Tidy] then: /boss stage build " + world.getName() + " " + THEATRE_STAGE[0] + " "
+                                + THEATRE_STAGE[1] + " " + THEATRE_STAGE[2]);
+                        return;
+                    }
+                    String cmd = "boss stage build " + world.getName() + " " + THEATRE_STAGE[0] + " " + THEATRE_STAGE[1]
+                            + " " + THEATRE_STAGE[2];
+                    boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+                    plugin.getLogger().info("[Tidy] theatre stage: /" + cmd + (ok ? "" : " (BossEngine did not answer)"));
+                    tell(sender, ok ? "§8[Tidy] Seraphine's stage built into the hall." : "§c[Tidy] /" + cmd + " failed.");
+                });
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.WARNING, "[Tidy] theatre failed", t);
+                Bukkit.getScheduler().runTask(plugin, () -> tell(sender, "§c[Tidy] theatre failed: §7" + t.getMessage()));
             }
         });
     }

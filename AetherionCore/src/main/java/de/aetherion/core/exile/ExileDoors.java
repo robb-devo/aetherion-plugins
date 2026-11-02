@@ -13,6 +13,7 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -57,10 +58,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li><b>Gates</b> (crater, observatory, theatre, garden): right-click the bars, step through to the other side.</li>
  *   <li><b>Altars</b>: each boss site takes the boss's vial ({@link ExileVials}) and wakes it, no talk, no story
- *   gate. Caedmon's sword (a prop, {@link HollowSword}) climbs into the sky and comes down as the Hollow Sun; the
- *   music box on Elin's stage raises Seraphine's stage above the theatre; the star ring opens the Helios instance;
- *   the Maw takes you down to the Last Seed (World Eater site); the Great Doors open on Aetherion's Ashen Void.
- *   Without the vial a site says, in one line, what it wants.</li>
+ *   gate, and every fight happens on the island itself. Caedmon's sword (a prop, {@link HollowSword}) climbs into
+ *   the sky and comes down as the Hollow Sun in its crater; the music box in the Little Theatre starts Seraphine's
+ *   show on her own stage, built into the hall ({@link ExileTidy}); the altar at the Star Court's gate rings the
+ *   bell five times and Aetherion lands on the court. The star ring and the Maw still open Helios and the Last
+ *   Seed. Without the vial a site says, in one line, what it wants.</li>
  *   <li><b>District tells</b>: the first time you walk into a district, it says its name.</li>
  * </ul>
  */
@@ -104,18 +106,19 @@ public final class ExileDoors implements Listener {
     private static final double[] SWORD = {96.5, 99.0, -111.5};
     /** Crater floor under the sword: the Hollow Sun measures its arena from here. */
     private static final double[] HOLLOW_SUN_SPAWN = {96.5, 99.0, -111.5};
-    private static final double[] MUSIC_BOX = {-35.5, 146.0, 69.5};
+    /** On the front of Seraphine's stage, facing the stalls. */
+    private static final double[] MUSIC_BOX = {-23.5, 144.0, 81.5};
     /**
-     * Seraphine builds her own floating stage at or above her spawn and hauls the audience up. Spawned on Elin's
-     * stage it never fit inside the hall and climbed onto the roof; here it hangs in open air over the theatre, its
-     * keel (20 down) clear of the highest roof block (196).
+     * The middle of Seraphine's own stage, built for good into the Little Theatre's hall ({@link ExileTidy#THEATRE_STAGE}).
+     * Her fights reuse a marked stage in their spawn chunk, so she opens on it instead of building one in the sky.
      */
-    private static final double[] SAINT_SPAWN = {-20.5, 220.0, 69.5};
-    /** Where the threads put people down after Seraphine's stage is struck: the hall, facing Elin's stage. */
-    private static final double[] THEATRE_FLOOR = {-12.5, 144.0, 69.5, 90};
+    private static final double[] SAINT_SPAWN = {-23.5, 144.0, 66.5};
+    /** Just inside the Star Court's south gate, where the road from the castle comes in. */
+    private static final double[] AETHERION_ALTAR = {-15.5, 143.0, -61.5};
+    /** The Star Court's open middle (south of the dais): Aetherion measures his arena from here. */
+    private static final double[] AETHERION_SPAWN = {-22.5, 143.0, -90.5};
     private static final double[] STAR_RING = {-126.5, 157.0, -165.5};
     private static final double[] MAW = {-127.5, 135.0, 86.5};
-    private static final double[] GREAT_DOORS = {-1.5, 143.0, 0.5};
 
     private static final float[] HYMN = {0.749f, 0.841f, 0.944f, 1.122f, 1.26f, 1.498f, 1.682f};
 
@@ -132,7 +135,7 @@ public final class ExileDoors implements Listener {
                     "§e☀ Helios §8· §7hand in the vial", "§e☀ Helios §8· §7Phiole abgeben"),
             new Ritual("the_maw", MAW, 1.6f, 2.2f, "The Maw", "Der Schlund", "§2",
                     "§2❦ Nihil & the Unbroken §8· §7hand in the vial", "§2❦ Nihil & der Unbroken §8· §7Phiole abgeben"),
-            new Ritual("great_doors", GREAT_DOORS, 4.0f, 8.0f, "The Great Doors", "Die Großen Tore", "§5",
+            new Ritual("great_doors", AETHERION_ALTAR, 1.4f, 2.0f, "The Sovereign's Altar", "Der Altar des Souveräns", "§5",
                     "§5⚜ Aetherion §8· §7hand in the vial", "§5⚜ Aetherion §8· §7Phiole abgeben")
     );
 
@@ -152,7 +155,9 @@ public final class ExileDoors implements Listener {
             new District("garden", -124, 44, 38, 128, 150, null,
                     "THE ROOT-GROUND", "DER WURZELGRUND", "a garden someone kept anyway", "ein Garten, den trotzdem jemand gepflegt hat"),
             new District("forecourt", 0, 0, 0, 142, 156, new int[] {13, 142, -28, 35, 156, 28},
-                    "THE FORECOURT", "DER VORHOF", "the doors have not opened in a thousand years", "die Tore sind seit tausend Jahren zu")
+                    "THE FORECOURT", "DER VORHOF", "the doors have not opened in a thousand years", "die Tore sind seit tausend Jahren zu"),
+            new District("starcourt", 0, 0, 0, 140, 170, new int[] {-74, 140, -164, 28, 170, -56},
+                    "THE STAR COURT", "DER STERNPLATZ", "where the Sovereign comes down", "wo der Souverän herabkommt")
     );
 
     private final AetherionCore plugin;
@@ -164,8 +169,6 @@ public final class ExileDoors implements Listener {
     private final Map<UUID, String> interactionRitual = new HashMap<>();
     private World world;
     private HollowSword sword;
-    /** Until when people falling out of the sky over the theatre are caught (Seraphine's stage comes down). */
-    private volatile long saintWatchUntil;
 
     public ExileDoors(AetherionCore plugin) {
         this.plugin = plugin;
@@ -287,6 +290,16 @@ public final class ExileDoors implements Listener {
             label(at.clone().add(0, r.h() + 0.6, 0), r.labelEn(), r.labelDe());
             if (r.id().equals("caedmon_sword") && sword != null) {
                 sword.build();
+            } else if (r.id().equals("music_box")) {
+                // a small gilded music box on the front of the stage
+                piece(at, Material.DARK_OAK_PLANKS, -0.32f, 0f, -0.24f, 0.64f, 0.42f, 0.48f);
+                piece(at, Material.GOLD_BLOCK, -0.36f, 0.42f, -0.28f, 0.72f, 0.08f, 0.56f);
+                piece(at, Material.NOTE_BLOCK, -0.18f, 0.5f, -0.14f, 0.36f, 0.28f, 0.28f);
+            } else if (r.id().equals("great_doors")) {
+                // the Sovereign's altar: a blackstone plinth with a crying-obsidian bowl
+                piece(at, Material.POLISHED_BLACKSTONE_BRICKS, -0.5f, 0f, -0.5f, 1.0f, 0.9f, 1.0f);
+                piece(at, Material.CHISELED_POLISHED_BLACKSTONE, -0.6f, 0.9f, -0.6f, 1.2f, 0.25f, 1.2f);
+                piece(at, Material.CRYING_OBSIDIAN, -0.35f, 1.15f, -0.35f, 0.7f, 0.12f, 0.7f);
             }
         }
         for (Gate g : GATES) {
@@ -307,6 +320,16 @@ public final class ExileDoors implements Listener {
         e.setPersistent(false);
         e.addScoreboardTag(TAG);
         e.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
+    }
+
+    /** One block-display piece of an altar prop, offset and sized in blocks from {@code at}; rebuilt with the chunk. */
+    private void piece(Location at, Material m, float x, float y, float z, float sx, float sy, float sz) {
+        world.spawn(at, org.bukkit.entity.BlockDisplay.class, d -> {
+            mark(d);
+            d.setBlock(m.createBlockData());
+            d.setViewRange(0.8f);
+            d.setTransformation(new Transformation(new Vector3f(x, y, z), new Quaternionf(), new Vector3f(sx, sy, sz), new Quaternionf()));
+        });
     }
 
     private void label(Location at, String en, String de) {
@@ -370,9 +393,6 @@ public final class ExileDoors implements Listener {
         if (sword != null) {
             BossSpawnAccess bosses = AetherServices.bosses();
             sword.tick(() -> bosses != null && bosses.alive("hollow_sun"));
-        }
-        if (System.currentTimeMillis() < saintWatchUntil) {
-            catchFromStage();
         }
         boolean planted = sword != null && sword.state() == HollowSword.State.PLANTED;
         for (Player p : world.getPlayers()) {
@@ -533,18 +553,15 @@ public final class ExileDoors implements Listener {
             }
             case "music_box" -> {
                 if (busyRituals.contains(id) || bosses.alive("hanging_saint")) {
-                    bar(p, Say.t(p, "§dThe music box is already playing. §7Seraphine is on stage above the theatre.",
-                            "§dDie Spieluhr spielt schon. §7Seraphine steht auf der Bühne über dem Theater."));
+                    bar(p, Say.t(p, "§dThe music box is already playing. §7Seraphine is on her stage.",
+                            "§dDie Spieluhr spielt schon. §7Seraphine steht auf ihrer Bühne."));
                     return;
                 }
             }
             case "great_doors" -> {
-                if (Bukkit.getWorld(FINALE_WORLD) == null) {
-                    bar(p, Say.t(p, "§5The Great Doors §7do not open yet. §8(Staff: the Ashen Void is not loaded here.)",
-                            "§5Die Großen Tore §7öffnen sich noch nicht. §8(Team: die Ashen Void ist hier nicht geladen.)"));
-                    return;
-                }
-                if (busyRituals.contains("doors:" + p.getUniqueId())) {
+                if (busyRituals.contains(id) || bosses.alive("dungeon_aetherion")) {
+                    bar(p, Say.t(p, "§5The bell has rung. §7Aetherion is on the Star Court.",
+                            "§5Die Glocke hat geschlagen. §7Aetherion ist auf dem Sternplatz."));
                     return;
                 }
             }
@@ -600,15 +617,15 @@ public final class ExileDoors implements Listener {
             case "music_box" -> windMusicBox(p, r, vial);
             case "star_ring" -> portal(p, r, vial, "helios");
             case "the_maw" -> portal(p, r, vial, "world_eater");
-            case "great_doors" -> open(p, r, vial);
+            case "great_doors" -> sovereign(p, r, vial);
             default -> {
             }
         }
     }
 
     /**
-     * The music box plays the first bars of the hymn while golden threads climb out of it into the sky, then
-     * Seraphine's stage rises over the theatre and the threads haul the hall up to it (her director does that).
+     * The music box plays the first bars of the hymn while golden threads climb from it into the rafters, then
+     * the house lights die and Seraphine's own show starts on her stage (her director runs the curtain).
      */
     private void windMusicBox(Player p, Ritual r, ExileVials.Vial vial) {
         busyRituals.add(r.id());
@@ -622,8 +639,8 @@ public final class ExileDoors implements Listener {
                     world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.RECORDS, 0.5f, HYMN[k / 20] * 0.5f);
                 }
                 world.spawnParticle(Particle.NOTE, at.clone().add(0, 1.3, 0), 1, 0.25, 0.1, 0.25, 0.6);
-                // the threads: three gold lines from the box up through the roof, a little longer every beat
-                double reach = 6 + k * 0.9;
+                // the threads: three gold lines from the box up into the rafters, a little longer every beat
+                double reach = Math.min(26, 3 + k * 0.4);
                 for (int s = 0; s < 3; s++) {
                     double a = s * (Math.PI * 2 / 3) + k * 0.05;
                     for (double y = 1.0; y < reach; y += 1.6) {
@@ -635,7 +652,6 @@ public final class ExileDoors implements Listener {
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             busyRituals.remove(r.id());
-            saintWatchUntil = System.currentTimeMillis() + 30 * 60_000L;
             wake(p, r, vial, "hanging_saint", loc(SAINT_SPAWN));
         }, ticks);
     }
@@ -724,104 +740,48 @@ public final class ExileDoors implements Listener {
         }, 40L);
     }
 
-    private static final String FINALE_WORLD = "ashen_void";
-    private static final double[] FINALE_ARRIVAL = {0.5, 68.0, 0.5, 0, 0};
-    private static final double[] FINALE_BOSS = {0.5, 63.0, 73.5};
+    /** The castle's bell tower, high over the Great Doors: where the five strokes ring from. */
+    private static final double[] BELL = {-41.5, 203.0, 0.5};
 
-    /** Aetherion's vial: five strokes of the bell, the doors part, and Aetherion waits in the Ashen Void beyond. */
-    private void open(Player p, Ritual r, ExileVials.Vial vial) {
-        busyRituals.add("doors:" + p.getUniqueId());
-        Location at = loc(r.at());
+    /**
+     * Aetherion's vial at the Star Court's gate: the castle bell strikes five times while ash starts falling over
+     * the court, the fifth stroke cracks the sky, and the Sovereign comes down onto the court (his own arrival).
+     */
+    private void sovereign(Player p, Ritual r, ExileVials.Vial vial) {
+        busyRituals.add(r.id());
+        Location bell = loc(BELL);
+        Location court = loc(AETHERION_SPAWN);
         for (int i = 0; i < 5; i++) {
             final int k = i;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (p.isOnline()) {
-                    p.playSound(at.clone().add(-40, 60, 0), Sound.BLOCK_BELL_USE, SoundCategory.AMBIENT, 1.0f, k == 4 ? 0.7f : 0.5f);
+                for (Player near : world.getPlayers()) {
+                    if (near.getLocation().distanceSquared(court) < 140 * 140) {
+                        near.playSound(bell, Sound.BLOCK_BELL_USE, SoundCategory.AMBIENT, 2.0f, k == 4 ? 0.7f : 0.5f);
+                        if (k == 4) {
+                            near.playSound(bell, Sound.BLOCK_BELL_RESONATE, SoundCategory.AMBIENT, 1.0f, 0.5f);
+                        }
+                    }
                 }
-            }, 10L + i * 22L);
+                world.spawnParticle(Particle.WHITE_ASH, court.clone().add(0, 18, 0), 120 + k * 80, 26, 6, 26, 0);
+                world.spawnParticle(Particle.ASH, court.clone().add(0, 14, 0), 60 + k * 40, 22, 4, 22, 0);
+            }, 10L + i * 24L);
         }
-        long fifth = 10L + 4 * 22L;
+        long fifth = 10L + 4 * 24L;
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!p.isOnline()) {
-                busyRituals.remove("doors:" + p.getUniqueId());
-                return;
+            for (Player near : world.getPlayers()) {
+                if (near.getLocation().distanceSquared(court) < 140 * 140) {
+                    near.showTitle(Title.title(Component.text(Say.t(near, "The fifth stroke.", "Der fünfte Schlag."), NamedTextColor.WHITE),
+                            Component.text(Say.t(near, "The Sovereign comes down.", "Der Souverän kommt herab."), NamedTextColor.DARK_PURPLE),
+                            Title.Times.times(Duration.ofMillis(400), Duration.ofMillis(2200), Duration.ofMillis(800))));
+                    near.playSound(court, Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.HOSTILE, 1.4f, 0.6f);
+                }
             }
-            p.playSound(at, Sound.BLOCK_IRON_DOOR_OPEN, SoundCategory.AMBIENT, 1.0f, 0.4f);
-            p.showTitle(Title.title(Component.text(Say.t(p, "The fifth stroke.", "Der fünfte Schlag."), NamedTextColor.WHITE),
-                    Component.text(Say.t(p, "The Great Doors open.", "Die Großen Tore öffnen sich."), NamedTextColor.GRAY),
-                    Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(2000), Duration.ofMillis(800))));
+            world.spawnParticle(Particle.FLASH, court.clone().add(0, 40, 0), 3, 4, 2, 4, 0);
         }, fifth);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            busyRituals.remove("doors:" + p.getUniqueId());
-            World finale = Bukkit.getWorld(FINALE_WORLD);
-            if (!p.isOnline()) {
-                return;
-            }
-            if (finale == null) {
-                refund(p, vial);
-                return;
-            }
-            p.teleport(new Location(finale, FINALE_ARRIVAL[0], FINALE_ARRIVAL[1], FINALE_ARRIVAL[2]));
-            bar(p, Say.t(p, "§8/exile takes you back to the island.", "§8/exile bringt dich zurück auf die Insel."));
-            BossSpawnAccess bosses = AetherServices.bosses();
-            if (bosses == null || bosses.alive("dungeon_aetherion")) {
-                return;
-            }
-            de.aetherion.core.network.ExileHost.unpeaceful(plugin, finale);
-            Location boss = new Location(finale, FINALE_BOSS[0], FINALE_BOSS[1], FINALE_BOSS[2]);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                boolean ok;
-                try {
-                    ok = bosses.spawn("dungeon_aetherion", boss, p.isOnline() ? p : null);
-                } catch (RuntimeException ex) {
-                    ok = false;
-                    plugin.getLogger().warning("Great Doors: dungeon_aetherion failed: " + ex.getMessage());
-                }
-                if (!ok) {
-                    plugin.getLogger().warning("Great Doors: BossEngine refused dungeon_aetherion in " + FINALE_WORLD);
-                    refund(p, vial);
-                }
-            }, 60L);
-        }, fifth + 40L);
-    }
-
-    // ------------------------------------------------------------------ after Seraphine's show
-
-    /**
-     * Seraphine's stage hangs high over the theatre and is struck a while after her curtain. Whoever is falling out
-     * of that sky is lowered back into the hall by the threads instead of landing on the roof.
-     */
-    private void catchFromStage() {
-        for (Player p : world.getPlayers()) {
-            if (overTheatre(p.getLocation()) && !p.isOnGround() && p.getFallDistance() > 2.5f) {
-                lowerIntoHall(p);
-            }
-        }
-    }
-
-    private static boolean overTheatre(Location l) {
-        double dx = l.getX() - SAINT_SPAWN[0];
-        double dz = l.getZ() - SAINT_SPAWN[2];
-        return l.getY() > 170 && dx * dx + dz * dz < 44 * 44;
-    }
-
-    private void lowerIntoHall(Player p) {
-        p.setFallDistance(0f);
-        p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 30, 0, false, false, false));
-        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 60, 0, false, false, false));
-        p.teleport(standable(loc(THEATRE_FLOOR)));
-        p.playSound(p.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, SoundCategory.PLAYERS, 0.8f, 0.6f);
-    }
-
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onStageFall(org.bukkit.event.entity.EntityDamageEvent event) {
-        if (world == null || event.getCause() != org.bukkit.event.entity.EntityDamageEvent.DamageCause.FALL
-                || !(event.getEntity() instanceof Player p) || !p.getWorld().equals(world)
-                || System.currentTimeMillis() >= saintWatchUntil || !overTheatre(p.getLocation())) {
-            return;
-        }
-        event.setCancelled(true);
-        lowerIntoHall(p);
+            busyRituals.remove(r.id());
+            wake(p, r, vial, "dungeon_aetherion", court);
+        }, fifth + 30L);
     }
 
     // ------------------------------------------------------------------ district tells

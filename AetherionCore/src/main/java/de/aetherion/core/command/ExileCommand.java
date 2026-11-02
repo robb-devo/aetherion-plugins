@@ -112,6 +112,17 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                     args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
             return true;
         }
+        // Exile host: the Little Theatre becomes Seraphine's arena (hall emptied, her stage built in). Dry run unless "apply".
+        if ("theatre".equals(sub) || "theater".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            ExileHost host = plugin.exileHost();
+            de.aetherion.core.exile.ExileTidy.theatre(plugin, sender, host == null ? null : host.world(),
+                    args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
+            return true;
+        }
         // Staff: the boss vials the exile altars take (how players earn them comes later).
         // /exile vial <boss|all> [player] [amount]
         if ("vial".equals(sub) || "phiole".equals(sub)) {
@@ -384,7 +395,7 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
         for (String s : admin
                 ? List.of("go", "return", "replay", "stop", "where", "setquay", "causeway", "paste",
                         "placequay", "quayundo", "clearsaint", "restoremap", "cleararena", "repairquay", "turnquay",
-                        "gatecut", "tidy", "vial")
+                        "gatecut", "tidy", "theatre", "vial")
                 : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);
