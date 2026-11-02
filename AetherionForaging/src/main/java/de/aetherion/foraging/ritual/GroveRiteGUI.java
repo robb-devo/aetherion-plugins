@@ -1,5 +1,6 @@
 package de.aetherion.foraging.ritual;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.foraging.AetherionForaging;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.economy.IsleHeartwood;
@@ -69,12 +70,12 @@ public final class GroveRiteGUI implements InventoryHolder, Listener {
         });
         GroveRiteGUI gui = new GroveRiteGUI(plugin, ritual, player, session);
         plugin.getServer().getPluginManager().registerEvents(gui, plugin);
-        player.openInventory(gui.getInventory());
+        ChromePage.open(player, gui.getInventory(), ChromePage.Theme.FORAGE);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.7f, 1.1f);
     }
 
     private void paint() {
-        ItemStack glass = pane(Material.GREEN_STAINED_GLASS_PANE, " ");
+        ItemStack glass = ChromePage.spacer();
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, glass);
         }

@@ -5,6 +5,7 @@ import de.aetherion.beta.BetaLang;
 import de.aetherion.beta.Texts;
 import de.aetherion.beta.data.BetaPlayerData;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -93,7 +94,7 @@ public final class RatingMenu {
                 Texts.t(lang, "§7Saves to the beta board.", "§7Speichert auf dem Beta-Board.")
         ));
 
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.BETA);
     }
 
     public static void handle(AetherionBeta plugin, Player player, int slot) {

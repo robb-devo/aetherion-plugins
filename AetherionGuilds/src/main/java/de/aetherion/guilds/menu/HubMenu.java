@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.FactoryGoals;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.island.IslandHost;
@@ -162,7 +163,7 @@ public final class HubMenu implements MenuKit.Menu {
         }
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, host.isGuild() ? "§eGuild menu" : "§eIsland menu"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.0f);
     }
 

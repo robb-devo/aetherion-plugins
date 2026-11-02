@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.island.IslandGuide;
 import de.aetherion.guilds.island.IslandHost;
@@ -199,7 +200,7 @@ public final class IslandMenu implements MenuKit.Menu {
 
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§7Aetherion Manager"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
     }
 
     // ------------------------------------------------------------------------------------------------

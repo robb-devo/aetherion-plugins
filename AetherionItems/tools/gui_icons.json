@@ -55,10 +55,22 @@
       "aetherion:item/gui/empty"
     ]
   ],
+  "blue_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
   "bone": [
     [
       7706,
       "aetherion:item/gui/bestiary"
+    ]
+  ],
+  "brown_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
     ]
   ],
   "chest": [
@@ -83,6 +95,12 @@
     [
       7717,
       "aetherion:item/gui/craft"
+    ]
+  ],
+  "cyan_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
     ]
   ],
   "ender_chest": [
@@ -181,6 +199,12 @@
       "aetherion:item/gui/empty"
     ]
   ],
+  "green_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
   "iron_pickaxe": [
     [
       7707,
@@ -197,6 +221,12 @@
     [
       7708,
       "aetherion:item/gui/pets"
+    ]
+  ],
+  "light_blue_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
     ]
   ],
   "light_gray_stained_glass_pane": [
@@ -319,6 +349,18 @@
       "aetherion:item/gui/anvil_next"
     ]
   ],
+  "lime_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "magenta_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
   "nether_star": [
     [
       7701,
@@ -331,6 +373,36 @@
       "aetherion:item/gui/skills"
     ]
   ],
+  "orange_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "pink_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "purple_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "red_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "white_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
   "writable_book": [
     [
       7709,
@@ -341,6 +413,12 @@
     [
       7712,
       "aetherion:item/gui/guild"
+    ]
+  ],
+  "yellow_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
     ]
   ]
 }

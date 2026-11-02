@@ -1,5 +1,6 @@
 package de.aetherion.quests.tutorial;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.quests.AetherionQuests;
 import de.aetherion.quests.lang.LangPack;
 import de.aetherion.quests.npc.LivingNpcProfile;
@@ -93,7 +94,7 @@ public final class BoosterPick implements Listener {
             }
             inventory.setItem(SLOTS[i], shown);
         }
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FORGE);
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.35f, 1.6f);
     }
 

@@ -1,6 +1,7 @@
 package de.aetherion.guilds.menu;
 
 import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.core.api.ItemFactoryAccess;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.island.IslandHost;
@@ -136,7 +137,7 @@ public final class MarketMenu implements MenuKit.Menu {
         }
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eBuild"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.TRADE);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package de.aetherion.items.storage;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.item.CustomItem;
 import de.aetherion.items.manager.ItemManager;
@@ -58,7 +59,12 @@ public final class BoosterSackMenu {
         Inventory inventory = Bukkit.createInventory(holder, SIZE, "§dBooster Sack");
         holder.bind(inventory);
         paint(holder);
-        player.openInventory(inventory);
+        // One pocket per booster kind, Insert All on its seal.
+        java.util.Map<Integer, ChromePage.Mark> marks = ChromePage.marks(inventory);
+        for (int i = 0; i < ORDER.length && i < INSERT_ALL_SLOT; i++) {
+            marks.put(i, ChromePage.Mark.POCKET);
+        }
+        ChromePage.open(player, inventory, ChromePage.Theme.STORAGE, null, marks);
     }
 
     /**
@@ -322,13 +328,7 @@ public final class BoosterSackMenu {
     }
 
     private static ItemStack filler() {
-        ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(" ");
-            item.setItemMeta(meta);
-        }
-        return item;
+        return ChromePage.spacer();
     }
 
     private ItemStack createBooster(BoosterType type) {

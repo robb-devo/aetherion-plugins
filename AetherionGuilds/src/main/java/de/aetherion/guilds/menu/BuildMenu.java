@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.FactoryGoals;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.island.IslandHost;
@@ -125,7 +126,7 @@ public final class BuildMenu implements MenuKit.Menu {
                 "§7Gold sparks trace where you", "§7may build, for a few seconds."));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, host.isGuild() ? "§eBack to the guild" : "§eBack to your island"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
     }
 
     public PlacementService placement() {

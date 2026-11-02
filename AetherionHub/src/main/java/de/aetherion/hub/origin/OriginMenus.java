@@ -1,5 +1,6 @@
 package de.aetherion.hub.origin;
 
+import de.aetherion.core.api.ChromePage;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 
@@ -154,7 +155,7 @@ public final class OriginMenus implements Listener {
     }
 
     private static void fill(Holder holder, int from, int to) {
-        ItemStack pane = item(Material.BLACK_STAINED_GLASS_PANE, " ", List.of(), false);
+        ItemStack pane = ChromePage.spacer();
         for (int i = from; i <= to; i++) {
             if (holder.inventory.getItem(i) == null) {
                 holder.inventory.setItem(i, pane);
@@ -277,7 +278,7 @@ public final class OriginMenus implements Listener {
         }
         put(h, 49, item(Material.OAK_DOOR, "§7Close", List.of(), false), "close");
         fill(h, 0, 53);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private static java.util.Set<String> roleIds() {
@@ -317,7 +318,7 @@ public final class OriginMenus implements Listener {
         pager(h, "landmarks", current, pages);
         back(h, 49);
         fill(h, 45, 53);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private void openCurios(Player player, int page) {
@@ -385,7 +386,7 @@ public final class OriginMenus implements Listener {
         pager(h, "curios", current, pages);
         back(h, 49);
         fill(h, 45, 53);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private void openTales(Player player) {
@@ -422,7 +423,7 @@ public final class OriginMenus implements Listener {
         }
         back(h, 49);
         fill(h, 45, 53);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     /** Glowcap travel. {@code fromId} = the glowcap you clicked (null when opened from the journal / the Tender). */
@@ -460,7 +461,7 @@ public final class OriginMenus implements Listener {
             put(h, 31, item(Material.WRITABLE_BOOK, "§6Origin Journal", List.of(), false), "page:journal");
         }
         fill(h, 0, 35);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.6f, 1.2f);
     }
 
@@ -485,7 +486,7 @@ public final class OriginMenus implements Listener {
         }
         put(h, 31, item(Material.ARROW, "§7← Journal", List.of(), false), "page:journal");
         fill(h, 0, 35);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private void openVistas(Player player, boolean board) {
@@ -511,7 +512,7 @@ public final class OriginMenus implements Listener {
         }
         put(h, 31, item(Material.ARROW, "§7← Journal", List.of(), false), "page:journal");
         fill(h, 0, 35);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private void openRides(Player player, boolean board) {
@@ -540,7 +541,7 @@ public final class OriginMenus implements Listener {
         }
         put(h, 40, item(Material.ARROW, "§7← Journal", List.of(), false), "page:journal");
         fill(h, 0, 44);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private void openCast(Player player) {
@@ -558,7 +559,7 @@ public final class OriginMenus implements Listener {
         }
         put(h, 22, item(Material.ARROW, "§7← Journal", List.of(), false), "page:journal");
         fill(h, 0, 26);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private void openSettings(Player player) {
@@ -571,7 +572,7 @@ public final class OriginMenus implements Listener {
         put(h, 15, item(Material.BARRIER, "§cStop pointing", List.of("§7Clears the wayfinder arrow."), false), "stop");
         put(h, 22, item(Material.ARROW, "§7← Journal", List.of(), false), "page:journal");
         fill(h, 0, 26);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     // ------------------------------------------------------------------ townsfolk boards
@@ -609,7 +610,7 @@ public final class OriginMenus implements Listener {
         put(h, 4, item(Material.PAPER, "§7Districts §f" + found + "/" + c.districts().size(),
                 List.of(found >= c.districts().size() ? "§a✔ Wayfarer" : "§7Walk them all: §6Wayfarer"), false), null);
         fill(h, 0, 26);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     private void whereNext(Player player) {
@@ -735,7 +736,7 @@ public final class OriginMenus implements Listener {
                 "§7Tales §f" + isle.tales().placedCount() + "/" + isle.tales().all().size() + " §7in the world",
                 "§7Curiosities §f" + isle.curiosities().all().size(), "§e▸ Open"), false), "page:devx");
         fill(h, 0, 53);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     /** DEV: prop spots (click paste, right-click undo, shift-click TP + outline), tales, curiosities, life. */
@@ -782,7 +783,7 @@ public final class OriginMenus implements Listener {
         put(h, 50, item(Material.HONEYCOMB, "§eAmbient life", life, false), "dev:life");
         put(h, 49, item(Material.OAK_DOOR, "§7Close", List.of(), false), "close");
         fill(h, 0, 53);
-        player.openInventory(h.inventory);
+        ChromePage.open(player, h.inventory, ChromePage.Theme.QUEST);
     }
 
     // ------------------------------------------------------------------ clicks

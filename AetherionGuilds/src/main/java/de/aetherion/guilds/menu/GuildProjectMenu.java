@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.GuildRank;
 import de.aetherion.guilds.project.GuildProjectService;
@@ -123,7 +124,7 @@ public final class GuildProjectMenu implements MenuKit.Menu {
         }
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eBack"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.GUILD);
     }
 
     @Override

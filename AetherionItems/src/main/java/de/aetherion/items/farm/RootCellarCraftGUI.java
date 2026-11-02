@@ -1,5 +1,6 @@
 package de.aetherion.items.farm;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.manager.ItemManager;
@@ -45,7 +46,7 @@ public final class RootCellarCraftGUI implements InventoryHolder {
         if (player == null || category == null) {
             return;
         }
-        player.openInventory(new RootCellarCraftGUI(player, category).getInventory());
+        ChromePage.open(player, new RootCellarCraftGUI(player, category).getInventory(), ChromePage.Theme.FARM);
     }
 
     public RootCellarCrafts.Category category() {
@@ -53,7 +54,7 @@ public final class RootCellarCraftGUI implements InventoryHolder {
     }
 
     private void paint(Player viewer) {
-        ItemStack glass = GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack glass = ChromePage.spacer();
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, glass.clone());
         }

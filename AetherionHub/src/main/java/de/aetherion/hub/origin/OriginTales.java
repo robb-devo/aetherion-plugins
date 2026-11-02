@@ -1,5 +1,6 @@
 package de.aetherion.hub.origin;
 
+import de.aetherion.core.api.ChromePage;
 import net.kyori.adventure.inventory.Book;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -379,7 +380,7 @@ public final class OriginTales implements Listener {
             holder.inventory.setItem(LOOT_SLOTS[1], OriginMenus.item(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§8Nothing else here",
                     List.of("§7You took what there was."), false));
         }
-        player.openInventory(holder.inventory);
+        ChromePage.open(player, holder.inventory, ChromePage.Theme.QUEST);
         lid(block, true);
         Sound sound = block.getType() == Material.BARREL ? Sound.BLOCK_BARREL_OPEN : Sound.BLOCK_CHEST_OPEN;
         player.playSound(block.getLocation().add(0.5, 0.5, 0.5), sound, SoundCategory.BLOCKS, 0.6f, 1.0f);

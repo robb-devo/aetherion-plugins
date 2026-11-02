@@ -1,5 +1,6 @@
 package de.aetherion.items.blueprint;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.manager.ItemManager;
 
 import org.bukkit.Bukkit;
@@ -44,11 +45,11 @@ public final class BlueprintForgeGUI implements InventoryHolder {
                 return;
             }
         }
-        player.openInventory(new BlueprintForgeGUI(itemManager).getInventory());
+        ChromePage.open(player, new BlueprintForgeGUI(itemManager).getInventory(), ChromePage.Theme.FORGE);
     }
 
     private void paint() {
-        ItemStack glass = pane(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack glass = ChromePage.spacer();
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, glass);
         }

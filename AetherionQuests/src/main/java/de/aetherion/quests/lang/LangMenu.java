@@ -1,5 +1,6 @@
 package de.aetherion.quests.lang;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.quests.AetherionQuests;
 import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.ui.QuestProgressDisplay;
@@ -82,7 +83,7 @@ public final class LangMenu implements Listener {
                 "§eKlicken zum Auswählen"
         ));
 
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.AETHER);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.4f, 1.35f);
     }
 
@@ -94,7 +95,7 @@ public final class LangMenu implements Listener {
     }
 
     private static void fill(Inventory inventory) {
-        ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ", "");
+        ItemStack pane = ChromePage.spacer();
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, pane);
         }

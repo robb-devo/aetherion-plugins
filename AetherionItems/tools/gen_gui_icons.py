@@ -589,9 +589,12 @@ TABS = ('bazaar', 'skills', 'auction', 'bestiary', 'collection', 'pets', 'journa
 VARIANTS = (('locked', 7740, 'gray_dye', locked), ('next', 7760, 'lime_dye', next_up),
             ('later', 7780, 'light_gray_stained_glass_pane', later))
 
-# Fillers: the same CMD on every pane colour draws nothing, so the chrome under it shows.
+# Fillers: the same CMD on every pane colour draws nothing, so the chrome under it shows (ChromePage hides any
+# stained pane with a blank name, whatever colour the old menu framed itself in).
 FILLER_CMD = 7700
-FILLERS = ('gray_stained_glass_pane', 'black_stained_glass_pane', 'light_gray_stained_glass_pane')
+FILLERS = tuple('%s_stained_glass_pane' % c for c in (
+    'gray', 'black', 'light_gray', 'white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'cyan',
+    'purple', 'blue', 'brown', 'green', 'red'))
 
 
 def render(fn):

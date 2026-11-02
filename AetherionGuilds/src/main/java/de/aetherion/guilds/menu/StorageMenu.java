@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.guilds.island.HostService;
 import de.aetherion.guilds.logistics.LogisticsService;
 import de.aetherion.guilds.logistics.Res;
@@ -106,7 +107,9 @@ public final class StorageMenu implements MenuKit.Menu {
         }
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        java.util.Map<Integer, ChromePage.Mark> marks = ChromePage.marks(inventory);
+        ChromePage.block(marks, 0, 44, ChromePage.Mark.POCKET);
+        ChromePage.open(player, inventory, ChromePage.Theme.STORAGE, null, marks);
     }
 
     @Override

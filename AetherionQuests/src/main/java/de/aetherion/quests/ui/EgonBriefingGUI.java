@@ -1,5 +1,6 @@
 package de.aetherion.quests.ui;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -120,7 +121,7 @@ public final class EgonBriefingGUI implements Listener {
                 "§cI'm educated now",
                 "§7Close. Go touch grass. Or ore."
         ));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.QUEST);
     }
 
     private static String titleFor(String speaker) {
@@ -162,7 +163,7 @@ public final class EgonBriefingGUI implements Listener {
                 "§a← Back to topics",
                 "§7Pick another. Reluctantly."
         ));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.QUEST);
     }
 
     private static void fillEmpty(Inventory inventory) {

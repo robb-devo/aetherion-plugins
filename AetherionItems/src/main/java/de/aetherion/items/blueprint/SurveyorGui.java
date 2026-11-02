@@ -1,5 +1,6 @@
 package de.aetherion.items.blueprint;
 
+import de.aetherion.core.api.ChromePage;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.CustomItem;
@@ -72,7 +73,7 @@ public final class SurveyorGui implements Listener {
                 "§7Converts the blueprint into its tool.",
                 "§7Adds it to your collection."));
         inventory.setItem(CLOSE_SLOT, button(Material.BARRIER, "§cClose"));
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.FORGE);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.45f, 1.35f);
     }
 

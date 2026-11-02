@@ -8,6 +8,7 @@ import de.aetherion.beta.Milestone;
 import de.aetherion.beta.Texts;
 import de.aetherion.beta.data.BetaPlayerData;
 
+import de.aetherion.core.api.ChromePage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -67,7 +68,7 @@ public final class ChecklistMenu {
         BetaLang lang = data.langOr(BetaLang.EN);
         Inventory inventory = Bukkit.createInventory(new Holder(), 54, Texts.checklistTitle(lang));
         render(plugin, player, inventory);
-        player.openInventory(inventory);
+        ChromePage.open(player, inventory, ChromePage.Theme.BETA);
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.1f);
     }
 
