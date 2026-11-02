@@ -185,15 +185,21 @@ Deployed with `deploy-harbour-ferry.ps1` (Core, Quests, Items, BossEngine, Hub; 
 
 - Exile boss sites take a **vial** instead of a story talk (`exile/ExileVials`, key `aetherion:exile_vial`, staff:
   `/exile vial <boss|all> [player] [amount]`; how players earn them is not built yet). Sites: Caedmon's sword
-  (Hollow Sun), the music box (Seraphine), the star ring (Helios), the Maw (Nihil & the Unbroken), the Great Doors
-  (Aetherion; the four lullaby seals and Orrin no longer gate anything). No vial: one action-bar line. A refused
+  (Hollow Sun), the music box (Seraphine), the star ring (Helios), the Maw (Nihil & the Unbroken), the Star Court
+  altar (Aetherion; the four lullaby seals and Orrin no longer gate anything). No vial: one action-bar line. A refused
   spawn or portal gives the vial back.
 - Caedmon's sword is a display prop (`exile/HollowSword`): the vial makes it climb into the sky and flare into the
   Hollow Sun's falling star; it comes back down a few seconds after the fight. The old block sword stood on the
   boss's spawn column (its pommel became the arena floor); `/exile tidy apply` removes it and the water curtain
   the void trim left west of the island (x -160, rows z -190 / 195).
-- Seraphine spawns at -20.5 220 69.5, so her own stage hangs in open air over the Little Theatre (inside the
-  hall it never fit and built itself on the roof). People falling from it are lowered back into the hall.
+- Every exile boss fights on the island itself (Robb, 11-02: no separate worlds). Seraphine: the Little Theatre's
+  hall was emptied (`/exile theatre apply`) and her Gilded Proscenium built into it for good (stage centre
+  -24 144 66, `/boss stage build <world> <x> <y> <z>` from the console); the music box sits on the stage front, the
+  Hand stays under the ceiling. Aetherion: altar inside the Star Court's south gate (-15.5 143 -61.5), five bell
+  strokes, he lands at -22.5 143 -90.5 (the octagonal court north of the castle). Helios and the Last Seed still
+  run in their own worlds until they are moved (open).
+- Anker Harbour's far edge: `/origin dev underside rim [apply]` drains the water curtain that fell from the bay's
+  edge through the map and closes the edge with a rock lip.
 - Anker Harbour: `/origin dev underside gaps [apply]` fills the air layer between the seabed and the rock under it
   (bay columns only, natural blocks only).
 - Gnomon and SamuraiBoss run on mmo-r only (Gnomon's mmo-c copy parked in `plugins/_disabled-network`).

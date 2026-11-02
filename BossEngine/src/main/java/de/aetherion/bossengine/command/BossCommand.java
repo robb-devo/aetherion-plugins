@@ -204,8 +204,33 @@ public class BossCommand implements CommandExecutor, TabCompleter {
             }
             return;
         }
+        // Console / RCON: /boss stage <build|remove> <world> <x> <y> <z> (a dedicated arena, e.g. the exile theatre).
+        if (args.length >= 6 && ("build".equalsIgnoreCase(args[1]) || "remove".equalsIgnoreCase(args[1]))) {
+            org.bukkit.World world = org.bukkit.Bukkit.getWorld(args[2]);
+            if (world == null) {
+                sender.sendMessage(TextUtil.component("&cWorld not loaded: &f" + args[2]));
+                return;
+            }
+            Location at;
+            try {
+                at = new Location(world, Integer.parseInt(args[3]), Integer.parseInt(args[4]), Integer.parseInt(args[5]));
+            } catch (NumberFormatException ex) {
+                sender.sendMessage(TextUtil.component("&cCoordinates must be whole numbers."));
+                return;
+            }
+            if ("build".equalsIgnoreCase(args[1])) {
+                Location center = SaintStage.buildPermanent(plugin, at);
+                sender.sendMessage(TextUtil.component("&aGilded Proscenium built at &f" + world.getName() + " "
+                        + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ() + " &7(permanent)."));
+            } else {
+                SaintStage.strikePermanent(plugin, at);
+                sender.sendMessage(TextUtil.component("&aStruck the permanent stage at &f" + world.getName() + " "
+                        + at.getBlockX() + " " + at.getBlockY() + " " + at.getBlockZ() + "&a (layout-matched)."));
+            }
+            return;
+        }
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(TextUtil.component("&cPlayers only."));
+            sender.sendMessage(TextUtil.component("&cPlayers only (or /boss stage <build|remove> <world> <x> <y> <z>)."));
             return;
         }
         if (args.length < 2) {
