@@ -412,7 +412,8 @@ class Stage {
     pl.y += (pl.ty - pl.y) * (1 - Math.exp(-dt / 320))
     let eye = c.eye
     let at = c.at
-    const yaw = o.yaw * atTop + pl.x * 0.022
+    // it is alive even when no one touches it: the camera breathes
+    const yaw = o.yaw * atTop + pl.x * 0.022 + Math.sin(this.time * 0.13) * (0.006 + 0.012 * atTop)
     const pitch = o.pitch * atTop
     const dx = eye[0] - at[0], dz = eye[2] - at[2]
     const cs = Math.cos(yaw), sn = Math.sin(yaw)

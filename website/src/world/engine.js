@@ -1,4 +1,4 @@
-import { CLOUD_FS, CLOUD_VS, GLOW_FS, GLOW_VS, SOLID_FS, SOLID_VS } from './shaders.js'
+import { CLOUD_FS, CLOUD_VS, GLOW_FS, GLOW_VS, SOLID_FS, SOLID_VS, BIRD_FS, BIRD_VS } from './shaders.js'
 
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l] }
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
@@ -271,6 +271,8 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
   const solid = program(gl, SOLID_VS, SOLID_FS)
   const cloud = program(gl, CLOUD_VS, CLOUD_FS)
   const glow = program(gl, GLOW_VS, GLOW_FS)
+  const bird = program(gl, BIRD_VS, BIRD_FS)
+  const noAttribs = gl.createVertexArray()
 
   const noiseTex = gl.createTexture()
   gl.activeTexture(gl.TEXTURE2)
@@ -469,6 +471,18 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
         gl.uniform1f(c.uScale, layer.scale)
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
       }
+    }
+
+    // a little life in the open sky, gone before the lamps come on
+    if (day.emis < 0.6) {
+      gl.depthMask(false)
+      gl.useProgram(bird.p)
+      gl.bindVertexArray(noAttribs)
+      gl.uniformMatrix4fv(bird.u.uVP, false, VP)
+      gl.uniform1f(bird.u.uTime, time)
+      gl.uniform1f(bird.u.uPx, h * 1.6)
+      gl.uniform4f(bird.u.uInk, 0.09, 0.1, 0.2, 0.78 * Math.min(1, (0.6 - day.emis) * 3))
+      gl.drawArrays(gl.POINTS, 0, 22)
     }
 
     // lanterns: soft halos, only once it gets dark

@@ -71,8 +71,10 @@ export default function Join() {
         </div>
       </Chapter>
       <section id="finale" data-chapter="finale" className="finale">
-        <h2 className="finale-title">{copy.home.finale.title}</h2>
-        <p className="finale-body">{copy.home.finale.body}</p>
+        <div className="finale-head">
+          <h2 className="finale-title">{copy.home.finale.title}</h2>
+          <p className="finale-body">{copy.home.finale.body}</p>
+        </div>
       </section>
     </>
   )

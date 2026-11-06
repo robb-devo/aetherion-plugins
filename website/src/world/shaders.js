@@ -140,3 +140,35 @@ void main(){
   float g=(1.0-r); g=g*g*g;
   o=vec4(uTint*g*vA,0.0);
 }`
+
+/* Two loose flocks circling the city, no attributes at all: a bird is its own vertex id. */
+export const BIRD_VS = `#version 300 es
+precision highp float;
+uniform mat4 uVP; uniform float uTime, uPx;
+out float vFlap;
+void main(){
+  float id=float(gl_VertexID);
+  float flock=mod(id,2.0);
+  float k=floor(id/2.0);
+  float R=flock<.5?258.0:340.0;
+  float sp=flock<.5?.021:-.016;
+  float a=uTime*sp+flock*2.4-k*.026+sin(k*3.7)*.014;
+  float y=(flock<.5?226.0:258.0)+sin(uTime*.19+flock*2.0)*10.0+sin(k*5.1)*5.0;
+  float r=R+sin(k*9.1)*8.0;
+  vec3 p=vec3(180.0+cos(a)*r,y+k*.4,190.0+sin(a)*r*.86);
+  vec4 c=uVP*vec4(p,1.0);
+  gl_PointSize=clamp(2.0*uPx/max(c.w,1.0),2.5,uPx*.028);
+  float beat=step(.3,fract(uTime*.09+k*.37)); // they glide as much as they flap
+  vFlap=mix(.22,sin(uTime*(8.0+mod(k,3.0))+k*2.0),beat);
+  gl_Position=c;
+}`
+
+export const BIRD_FS = `#version 300 es
+precision highp float;
+in float vFlap; uniform vec4 uInk; out vec4 o;
+void main(){
+  vec2 q=gl_PointCoord*2.0-1.0; q.y=-q.y;
+  float wing=abs(q.x)*vFlap*.7;
+  if(abs(q.y-wing)>.22||abs(q.x)>.95)discard;
+  o=vec4(uInk.rgb*uInk.a,uInk.a);
+}`

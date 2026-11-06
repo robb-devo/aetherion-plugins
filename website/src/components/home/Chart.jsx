@@ -115,6 +115,11 @@ export default function Chart() {
               />
             ))}
           </div>
+          {landmark ? (
+            <p className="chart-note">
+              <strong>{landmark.name}</strong> {landmark.text[lang]}
+            </p>
+          ) : null}
           <span className="chart-scale" aria-hidden="true">
             <i />
             {t.scale}
@@ -144,11 +149,9 @@ export default function Chart() {
                     <button type="button" aria-pressed={mark === m.id} onClick={() => setMark(m.id)}>
                       {m.name}
                     </button>
-                    {mark === m.id ? <p>{m.text[lang]}</p> : null}
                   </li>
                 ))}
               </ul>
-              {landmark ? null : null}
             </>
           ) : (
             <>
