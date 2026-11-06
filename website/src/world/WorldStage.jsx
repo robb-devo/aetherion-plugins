@@ -30,6 +30,8 @@ export default function WorldStage() {
       <div ref={set('sun')} className="w-sun" />
       <div ref={set('moon')} className="w-moon" />
       <canvas ref={set('canvas')} className="w-canvas" />
+      <img ref={set('posterA')} className="w-poster" alt="" />
+      <img ref={set('posterB')} className="w-poster" alt="" />
       <div ref={set('veil')} className="w-veil" />
     </div>
   )

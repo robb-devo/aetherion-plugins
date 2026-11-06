@@ -12,7 +12,7 @@ export default function Isles() {
   const current = t.options.find((o) => o.id === pick)
 
   useEffect(() => {
-    stage.setFocus(ISLE_SPOTS[pick])
+    stage.setFocus(ISLE_SPOTS[pick], pick)
   }, [pick])
 
   return (

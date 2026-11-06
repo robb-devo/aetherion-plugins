@@ -232,3 +232,13 @@ Known gaps:
 
 29 worktrees exist, 14 with uncommitted files. All branches were mirrored to
 `origin/backup/2026-10-02/*` on 10-02.
+
+## Website rebuild (branch `claude/donnernet-overhaul`, not merged, not deployed)
+
+`website/` holds the new donnernet.de: one continuous 3D camera take over one in-game day, EN and DE. Start with `website/README.md`.
+Before it goes live, Robb decides or checks:
+- Hero and night chapters use the Exile city, late-game content. Preferred end state: the main island by day, the Exile only at night. Needs the MMOR `region` folder from `01-hetzner-backup-2026-11-05.7z` and a licence check with OriginBuilds, because every visitor downloads the mesh. `forge/` has no region-file reader yet; it reads schematics and structures.
+- The boss list on the page and in the wiki.
+- Build env for the vanilla address and node ids (see the README's Deploy section).
+- Impressum and Datenschutz: the old site had neither, and a German site with accounts usually needs them.
+- Real-device performance (only tested on a software renderer so far).

@@ -50,6 +50,10 @@ cd website/forge && python3 build_scenes.py <repo root> <exil_gesamt.schem> ../p
 
 Only own builds may be meshed: the geometry is downloaded by every visitor, so purchased maps stay out until their licence is checked.
 
+`forge/views.mjs` plus the baker's view culling (fourth argument of `build_scenes.py`) works, but saves under 1 % on the city, so the shipped mesh does not use it.
+
+After changing the route or a scene, refresh the stills for devices without 3D and the link preview, with the dev server running: `node forge/capture_posters.cjs <dev url> public`.
+
 ## Deploy
 
 Build from a clean `main`, then copy `dist/` into the web root. Keep `launcher/` and the launcher `.exe` that live there: `dist/` does not contain them, so copy, do not mirror-delete.

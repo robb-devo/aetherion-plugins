@@ -93,8 +93,12 @@ class Stage {
     }, { passive: true })
     document.addEventListener('visibilitychange', () => this.kick())
     document.fonts?.ready.then(() => this.remeasure())
+    window.addEventListener('scroll', () => { if (this.mode === 'posters') this.kick() }, { passive: true })
     if (this.world) this.loadCity()
-    else setTimeout(() => this.preloadImages(), 1500)
+    else {
+      this.usePosters()
+      setTimeout(() => this.preloadImages(), 1500)
+    }
     this.kick()
   }
 
@@ -144,7 +148,76 @@ class Stage {
     this.mode = 'posters'
     document.documentElement.dataset.stage = 'posters'
     this.el.canvas.style.display = 'none'
+    this.usePosters()
     this.emit()
+    this.kick()
+  }
+
+  /**
+   * Without 3D, the world is a set of stills from the same camera, transparent where the sky is:
+   * the sky still runs through the day, and the title still stands behind the towers.
+   */
+  async usePosters() {
+    if (this.posterData) return
+    this.posterData = { l: {}, p: {} }
+    this.posterHorizon = 0.56
+    this.posterTop = 'posterA'
+    try {
+      const res = await fetch(asset('posters/posters.json'))
+      if (res.ok) this.posterData = await res.json()
+    } catch (error) {
+      console.warn('world: no posters', error)
+    }
+    this.kick()
+  }
+
+  posterId() {
+    const tops = this.chapterTops
+    if (!tops?.length) return 'hero'
+    const mid = this.scroll + window.innerHeight * 0.5
+    let id = tops[0].id
+    for (const t of tops) if (t.top <= mid) id = t.id
+    if (id === 'dive') return 'prison'
+    if (id === 'rise') return 'night'
+    if (id === 'isle') return `isle_${this.focusId ?? 'starter_grove'}`
+    return id
+  }
+
+  /** Crossfades only once the next image can actually be shown: nothing pops in half-decoded. */
+  showPoster(id) {
+    if (id === this.posterWanted) return
+    this.posterWanted = id
+    const url = asset(`posters/${this.portrait ? 'p' : 'l'}-${id}.webp`)
+    const img = new Image()
+    img.src = url
+    const ready = img.decode ? img.decode().catch(() => {}) : Promise.resolve()
+    ready.then(() => {
+      if (this.posterWanted !== id) return
+      const next = this.posterTop === 'posterA' ? 'posterB' : 'posterA'
+      this.el[next].src = url
+      this.el[next].style.opacity = '1'
+      this.el[this.posterTop].style.opacity = '0'
+      this.posterTop = next
+    })
+  }
+
+  stepPosters(day, dt) {
+    const id = this.posterId()
+    this.showPoster(id)
+    const meta = this.posterData?.[this.portrait ? 'p' : 'l']?.[id]
+    const target = meta?.horizon ?? 0.56
+    this.posterHorizon += (target - this.posterHorizon) * (1 - Math.exp(-dt / 220))
+    this.paintSky(day, this.posterHorizon)
+    const el = this.el
+    const place = (node, at) => {
+      if (at) {
+        node.style.transform = `translate3d(${(at[0] * this.cssW).toFixed(1)}px,${(at[1] * this.cssH).toFixed(1)}px,0)`
+        node.style.opacity = '1'
+      } else node.style.opacity = '0'
+    }
+    place(el.sun, meta?.sun)
+    place(el.moon, meta?.moon)
+    el.stars.style.opacity = day.stars.toFixed(3)
   }
 
   setProgress(p) {
@@ -249,8 +322,10 @@ class Stage {
   }
 
   /** The island picker moves the camera's attention, smoothly, from anywhere inside its chapter. */
-  setFocus(point) {
+  setFocus(point, id) {
     this.focus = point
+    this.focusId = id
+    if (this.mode === 'posters') this.kick()
   }
 
   measureSize() {
@@ -327,7 +402,9 @@ class Stage {
     if (this.active) {
       this.scroll += (window.scrollY - this.scroll) * (1 - Math.exp(-dt / 110))
       this.step(now, dt)
-      this.raf = requestAnimationFrame(this.frame)
+      // stills cost nothing while nobody scrolls
+      const settled = this.mode === 'posters' && Math.abs(window.scrollY - this.scroll) < 0.5 && Math.abs((this.posterData?.[this.portrait ? 'p' : 'l']?.[this.posterWanted]?.horizon ?? 0.56) - (this.posterHorizon ?? 0)) < 0.001
+      if (!settled) this.raf = requestAnimationFrame(this.frame)
     } else {
       this.restFrame(dt)
     }
@@ -460,6 +537,8 @@ class Stage {
       this.paintSky(day, w.horizonY(view) ?? 0.56)
       this.applyCelestial(day, view)
       if (!SHOT) this.govern(dt, now)
+    } else if (this.mode === 'posters') {
+      this.stepPosters(day, dt)
     } else {
       this.paintSky(day, 0.56)
       this.applyCelestial(day, null)

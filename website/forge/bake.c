@@ -111,6 +111,70 @@ static void emitRect(Buf*b,int face,int cx,int cy,int cz,int layer,int u0,int v0
   Quad q={(int16_t)p[0],(int16_t)p[1],(int16_t)p[2],(uint16_t)((du*16)|(face<<13)),(uint16_t)(dv*16),c->color,c->sky01,c->sky23,c->blk01,c->blk23,c->ao,c->sunAB,c->sunC,0};
   push(b,q);
 }
+// ---- view culling: the camera only ever goes along one route, so faces it can never see need not exist
+static uint8_t *vmask; static float *VW; static int NV=0;
+static int clearRay(float ox,float oy,float oz,float tx,float ty,float tz){
+  float dx=tx-ox,dy=ty-oy,dz=tz-oz; float len=sqrtf(dx*dx+dy*dy+dz*dz); if(len<1e-3f)return 1; dx/=len;dy/=len;dz/=len;
+  int x=(int)floorf(ox),y=(int)floorf(oy),z=(int)floorf(oz);
+  int sx=dx>0?1:-1,sy=dy>0?1:-1,sz=dz>0?1:-1;
+  float tdx=dx!=0?fabsf(1/dx):1e9f,tdy=dy!=0?fabsf(1/dy):1e9f,tdz=dz!=0?fabsf(1/dz):1e9f;
+  float mx=dx!=0?((sx>0?(x+1-ox):(ox-x))*tdx):1e9f, my=dy!=0?((sy>0?(y+1-oy):(oy-y))*tdy):1e9f, mz=dz!=0?((sz>0?(z+1-oz):(oz-z))*tdz):1e9f;
+  for(;;){ float t;
+    if(mx<my&&mx<mz){x+=sx;t=mx;mx+=tdx;} else if(my<mz){y+=sy;t=my;my+=tdy;} else {z+=sz;t=mz;mz+=tdz;}
+    if(t>=len) return 1;
+    if(x<0||y<0||z<0||x>=W||y>=H||z>=L) return 1;
+    if(S[g[I(x,y,z)]].flags&FL_FULL) return 0;
+  }
+}
+static inline int anyView(float px,float py,float pz,const int*nd,int *last){
+  for(int i=0;i<NV;i++){ int v=(*last+i)%NV; float *V=&VW[v*3];
+    if(nd&&((V[0]-px)*nd[0]+(V[1]-py)*nd[1]+(V[2]-pz)*nd[2])<=0.0f)continue;
+    if(clearRay(px,py,pz,V[0],V[1],V[2])){*last=v;return 1;} }
+  return 0;
+}
+static void computeVis(int ymin){
+  size_t n=(size_t)W*H*L; vmask=calloc(n,1); size_t seenf=0,tested=0;
+  #pragma omp parallel for schedule(dynamic,1) reduction(+:seenf,tested)
+  for(int y=ymin;y<H;y++){ int last=0; for(int z=0;z<L;z++)for(int x=0;x<W;x++){ size_t k=I(x,y,z); State*s=&S[g[k]];
+      if(s->flags&FL_INVIS&&!s->crossH)continue; if(!s->nb&&!s->crossH)continue;
+      int nearExt=ext[k]; for(int d=0;d<6&&!nearExt;d++) nearExt=isExt(x+DIR[d][0],y+DIR[d][1],z+DIR[d][2]);
+      if(!nearExt)continue;
+      uint8_t m=0;
+      int full=(s->nb==1&&s->b[0].lo[0]==0&&s->b[0].lo[1]==0&&s->b[0].lo[2]==0&&s->b[0].hi[0]==16&&s->b[0].hi[1]==16&&s->b[0].hi[2]==16);
+      if(full){
+        for(int d=0;d<6;d++){ if(fl(x+DIR[d][0],y+DIR[d][1],z+DIR[d][2])&FL_FULL)continue; tested++;
+          int au=AXU[d],av=AXV[d]; float c[3]={x+.5f+DIR[d][0]*.52f,y+.5f+DIR[d][1]*.52f,z+.5f+DIR[d][2]*.52f};
+          static const float SA[5]={0,-.42f,.42f,.42f,-.42f},SB[5]={0,-.42f,-.42f,.42f,.42f}; int vis=0;
+          for(int q=0;q<5&&!vis;q++){ float p[3]={c[0],c[1],c[2]}; p[au]+=SA[q]; p[av]+=SB[q]; vis=anyView(p[0],p[1],p[2],DIR[d],&last); }
+          if(vis){m|=(uint8_t)(1<<d);seenf++;}
+        }
+      } else {
+        tested++;
+        static const float OX[5]={.5f,.2f,.8f,.5f,.5f},OY[5]={.5f,.5f,.5f,.15f,.85f},OZ[5]={.5f,.5f,.5f,.2f,.8f}; int vis=0;
+        for(int q=0;q<5&&!vis;q++) vis=anyView(x+OX[q],y+OY[q],z+OZ[q],NULL,&last);
+        if(vis){m|=64;seenf++;}
+      }
+      vmask[k]=m;
+    }
+  }
+  fprintf(stderr,"view cull: %d views, %zu of %zu faces seen\n",NV,seenf,tested);
+  // a face next to a visible face stays too, so the steps between sampled viewpoints can't open a crack
+  uint8_t *t2=malloc(n);
+  for(int it=0;it<2;it++){ memcpy(t2,vmask,n);
+    #pragma omp parallel for schedule(dynamic,4)
+    for(int y=ymin;y<H;y++)for(int z=0;z<L;z++)for(int x=0;x<W;x++){ uint8_t m=t2[I(x,y,z)]; if(!m)continue;
+      for(int d=0;d<6;d++) if(m&(1<<d)){ int au=AXU[d],av=AXV[d];
+        for(int a=-1;a<=1;a++)for(int b=-1;b<=1;b++){ int p[3]={x,y,z}; p[au]+=a; p[av]+=b; if(inb(p[0],p[1],p[2])){
+          #pragma omp atomic
+          vmask[I(p[0],p[1],p[2])]|=(uint8_t)(1<<d); } } }
+      if(m&64) for(int a=-1;a<=1;a++)for(int b=-1;b<=1;b++)for(int c=-1;c<=1;c++){ if(inb(x+a,y+b,z+c)){
+          #pragma omp atomic
+          vmask[I(x+a,y+b,z+c)]|=64; } }
+    }
+  }
+  free(t2);
+}
+
 int main(int argc,char**argv){
   if(argc<8){fprintf(stderr,"usage: bake grid W H L states out ymin [sun...]\n");return 1;}
   W=atoi(argv[2]);H=atoi(argv[3]);L=atoi(argv[4]); int ymin=atoi(argv[7]); float dropOpen=argc>8?atof(argv[8]):1;
@@ -121,6 +185,7 @@ int main(int argc,char**argv){
   fclose(f);
   float suns[3][3]={{0.85f,0.28f,-0.42f},{-0.80f,0.30f,-0.18f},{0.25f,0.92f,0.30f}}; for(int s=0;s<3;s++){memcpy(SUN[s],suns[s],12);norm(SUN[s]);}
   initDirs(); flood(); blocklight(); size_t n2=n; (void)n2;
+  if(argc>9&&argv[9][0]){ FILE*vf=fopen(argv[9],"r"); if(vf){ VW=malloc(sizeof(float)*3*20000); while(NV<20000&&fscanf(vf,"%f %f %f",&VW[NV*3],&VW[NV*3+1],&VW[NV*3+2])==3)NV++; fclose(vf); computeVis(ymin); } }
   svg=calloc(n,1);
   { size_t need=0;
     #pragma omp parallel for schedule(dynamic,64) reduction(+:need)
@@ -135,8 +200,8 @@ int main(int argc,char**argv){
     fprintf(stderr,"sky cells %zu\n",need); }
   size_t extc=0; for(size_t k=0;k<n;k++)extc+=ext[k]; fprintf(stderr,"ext cells %zu of %zu\n",extc,n);
   int CX=(W+15)/16,CY=(H+15)/16,CZ=(L+15)/16; int nc=CX*CY*CZ; Buf *bufs=calloc(nc,sizeof(Buf));
-  size_t faces=0,dropped=0;
-  #pragma omp parallel for schedule(dynamic,8) reduction(+:faces,dropped)
+  size_t faces=0,dropped=0,culled=0;
+  #pragma omp parallel for schedule(dynamic,8) reduction(+:faces,dropped,culled)
   for(int ci=0;ci<nc;ci++){
     int ccy=ci/(CX*CZ); int r=ci%(CX*CZ); int ccz=r/CX; int ccx=r%CX; int cx=ccx*16,cy=ccy*16,cz=ccz*16; if(cy+16<=ymin)continue;
     Cell *mask=calloc(6*16*16*16,sizeof(Cell)); uint32_t seed=0x9E3779B9u^(uint32_t)(ci*2654435761u)|1u; Buf*B=&bufs[ci]; int any=0;
@@ -149,6 +214,7 @@ int main(int argc,char**argv){
       if(full){
         for(int d=0;d<6;d++){ int nx=x+DIR[d][0],ny=y+DIR[d][1],nz=z+DIR[d][2]; if(s->b[0].fc[d]==0xffff)continue; if(!isExt(nx,ny,nz))continue;
           if(inb(nx,ny,nz)&&g[I(nx,ny,nz)]==g[I(x,y,z)]&&!(s->flags&FL_FULL))continue;
+          if(NV&&!(vmask[I(x,y,z)]&(1<<d))){culled++;continue;}
           float px=x+.5f+DIR[d][0]*.5f,py=y+.5f+DIR[d][1]*.5f,pz=z+.5f+DIR[d][2]*.5f;
           int nl=inb(nx,ny,nz)?lit[I(nx,ny,nz)]:0; LightV lv=shade(px,py,pz,d,&seed,nl); faces++;
           if(lv.open<dropOpen){dropped++;continue;}
@@ -162,6 +228,7 @@ int main(int argc,char**argv){
         }
       } else {
         // partial geometry: one quad per box face
+        if(NV&&!(vmask[I(x,y,z)]&64)){culled++;continue;}
         for(int j=0;j<s->nb;j++){ Box*bx=&s->b[j];
           for(int d=0;d<6;d++){ if(bx->fc[d]==0xffff)continue;
             int an=AXN[d],au=AXU[d],av=AXV[d]; int thick=(bx->hi[an]-bx->lo[an]);
@@ -200,7 +267,7 @@ int main(int argc,char**argv){
     }
     free(mask);
   }
-  size_t total=0; for(int i=0;i<nc;i++)total+=bufs[i].n; fprintf(stderr,"faces %zu dropped %zu quads %zu\n",faces,dropped,total);
+  size_t total=0; for(int i=0;i<nc;i++)total+=bufs[i].n; fprintf(stderr,"faces %zu dropped %zu culled %zu quads %zu\n",faces,dropped,culled,total);
   { size_t band[8]={0}; for(int i=0;i<nc;i++){int cy=i/(CX*CZ); int b=cy*16/50; if(b>7)b=7; band[b]+=bufs[i].n;} for(int b=0;b<8;b++)fprintf(stderr,"y%3d-%3d: %zu\n",b*50,b*50+49,band[b]); }
   // output: u32 nquads, u32 nchunks, then chunk table [cx,cy,cz(u16) offset(u32) count(u32)], quads
   { char lp[512]; snprintf(lp,512,"%s.lights",argv[6]); FILE*lf=fopen(lp,"wb"); for(int y=ymin;y<H;y++)for(int z=0;z<L;z++)for(int x=0;x<W;x++){ int e=S[g[I(x,y,z)]].emit; if(e<8)continue; int nearExt=ext[I(x,y,z)]; for(int d=0;d<6&&!nearExt;d++)nearExt=isExt(x+DIR[d][0],y+DIR[d][1],z+DIR[d][2]); if(!nearExt)continue; int16_t r[4]={(int16_t)x,(int16_t)y,(int16_t)z,(int16_t)e}; fwrite(r,2,4,lf);} fclose(lf);}
