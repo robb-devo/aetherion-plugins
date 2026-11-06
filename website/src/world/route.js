@@ -15,9 +15,9 @@ export const PRISON_ORIGIN = [-60, -360, -40]
 
 export const ROUTE = [
   // Dawn, the fog breaks. Far out, the whole city against the light, title behind its towers.
-  { ch: 'hero', f: 0, t: 0.0, eye: [560, 235, 560], at: [168, 178, 190], fov: 36, sx: 0.15, sy: -0.13,
+  { ch: 'hero', f: 0, t: 0.0, solid: 1, eye: [560, 235, 560], at: [168, 178, 190], fov: 36, sx: 0.15, sy: -0.13,
     p: { eye: [640, 270, 640], at: [176, 190, 190], fov: 46, sy: 0.03, ff: 0.62 } },
-  { ch: 'hero', f: 0.85, t: 0.03, eye: [556, 205, 500], at: [190, 165, 190], fov: 38, sx: 0.1, sy: -0.06,
+  { ch: 'hero', f: 0.85, t: 0.03, solid: 1, eye: [556, 205, 500], at: [190, 165, 190], fov: 38, sx: 0.1, sy: -0.06,
     p: { eye: [630, 240, 590], at: [176, 170, 190], fov: 46, sy: 0.05, ff: 0.7 } },
 
   // Down to the chain that holds the coast. Morning.
@@ -95,9 +95,9 @@ export const ROUTE = [
     p: { eye: [270, 470, -400], at: [180, 170, 190], fov: 44, sy: 0.3 } },
   { ch: 'join', f: 0.9, t: 0.95, eye: [720, 320, 120], at: [180, 170, 190], fov: 34,
     p: { eye: [800, 360, 140], at: [180, 170, 190], fov: 42, sy: 0.3 } },
-  { ch: 'finale', f: 0.1, t: 0.985, eye: [590, 250, 500], at: [172, 178, 190], fov: 36, sy: -0.13,
+  { ch: 'finale', f: 0.1, t: 0.985, solid: 1, eye: [590, 250, 500], at: [172, 178, 190], fov: 36, sy: -0.13,
     p: { eye: [660, 280, 610], at: [176, 188, 190], fov: 46, sy: -0.06, ff: 0.62 } },
-  { ch: 'finale', f: 1, t: 1, eye: [560, 235, 560], at: [168, 178, 190], fov: 36, sy: -0.13,
+  { ch: 'finale', f: 1, t: 1, solid: 1, eye: [560, 235, 560], at: [168, 178, 190], fov: 36, sy: -0.13,
     p: { eye: [640, 270, 640], at: [176, 190, 190], fov: 46, sy: -0.06, ff: 0.62 } },
 ]
 

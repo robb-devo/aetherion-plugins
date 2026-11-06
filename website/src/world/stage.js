@@ -235,7 +235,7 @@ class Stage {
     const A = K[Math.max(0, i - 1)], B = K[i], C = K[Math.min(n, i + 1)], D = K[Math.min(n, i + 2)]
     const v3 = (key) => [0, 1, 2].map((j) => cr(A[key][j], B[key][j], C[key][j], D[key][j], f))
     const v1 = (key) => cr(A[key] || 0, B[key] || 0, C[key] || 0, D[key] || 0, f)
-    return { eye: v3('eye'), at: v3('at'), fov: v1('fov'), sx: v1('sx'), sy: v1('sy'), t: lerp(B.t, C.t, f), ff: lerp(B.ff ?? 1, C.ff ?? 1, f) }
+    return { eye: v3('eye'), at: v3('at'), fov: v1('fov'), sx: v1('sx'), sy: v1('sy'), t: lerp(B.t, C.t, f), ff: lerp(B.ff ?? 1, C.ff ?? 1, f), solid: lerp(B.solid ?? 0, C.solid ?? 0, f) }
   }
 
   /** The hero can be turned by hand. It springs back as soon as you let go and scroll. */
@@ -455,7 +455,7 @@ class Stage {
       const e = 1 - Math.pow(1 - r, 3)
       this.intro = e
       for (const m of w.meshes) m.visible = this.meshVisible(m.name, eye)
-      w.render(view, day, this.time + 40, { intro: e, fogBoost: (1 - e) * 0.0046, haze: day.haze })
+      w.render(view, day, this.time + 40, { intro: e, fogBoost: (1 - e) * 0.0046, haze: day.haze, solidAir: c.solid })
       this.paintSky(day, w.horizonY(view) ?? 0.56)
       this.applyCelestial(day, view)
       if (!SHOT) this.govern(dt, now)

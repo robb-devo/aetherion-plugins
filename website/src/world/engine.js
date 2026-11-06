@@ -379,7 +379,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
   }
 
   /** view: { eye, at, fov, shiftY } · day: dayAt(t) · time: seconds */
-  function render(view, day, time, { intro = 1, fogBoost = 0, haze = [1, 0.9, 0.8], clouds = true } = {}) {
+  function render(view, day, time, { intro = 1, fogBoost = 0, haze = [1, 0.9, 0.8], clouds = true, solidAir = 0 } = {}) {
     const w = canvas.width, h = canvas.height
     gl.viewport(0, 0, w, h)
     gl.depthMask(true)
@@ -408,6 +408,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
     gl.uniform1f(u.uEmis, day.emis)
     gl.uniform1f(u.uFog, day.fog)
     gl.uniform1f(u.uFogBoost, fogBoost)
+    gl.uniform1f(u.uSolid, solidAir)
     gl.uniform1f(u.uMist, day.mist)
     gl.uniform1f(u.uMistY, 92)
     gl.uniform1f(u.uTime, time)

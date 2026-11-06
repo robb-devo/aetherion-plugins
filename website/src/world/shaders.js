@@ -41,7 +41,7 @@ void main(){
 export const SOLID_FS = `#version 300 es
 precision highp float; precision highp int;
 in vec3 vW; in float vAO; in vec3 vCol; in vec3 vL; flat in vec3 vN; flat in vec4 vM; flat in vec3 vSunTint;
-uniform vec3 uCam; uniform sampler2D uPat; uniform sampler2D uNoise; uniform vec3 uSunDir, uHaze, uAmbUp; uniform float uEmis, uFog, uMist, uMistY, uTime, uExposure, uFogBoost;
+uniform vec3 uCam; uniform sampler2D uPat; uniform sampler2D uNoise; uniform vec3 uSunDir, uHaze, uAmbUp; uniform float uEmis, uFog, uMist, uMistY, uTime, uExposure, uFogBoost, uSolid;
 out vec4 o;
 float h31(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
 vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
@@ -79,8 +79,11 @@ void main(){
   float m=texture(uNoise,vW.xz*.0023+uTime*vec2(.0035,.0018)).r;
   float band=smoothstep(uMistY+85.0,uMistY-10.0,vW.y);
   f=max(f,clamp(band*(m*1.4-.25)*uMist,0.,.92));
-  col=mix(col,uHaze,f*.4);
-  float a=1.0-f*f*(3.0-2.0*f);
+  // Far air: f is how much of this surface the air hides. By default that air is see-through, so the world
+  // dissolves into whatever sky is behind it. uSolid makes it lit air in front of a solid thing instead: nothing
+  // shines through a tower, which matters when the page's title stands behind it.
+  col=mix(col,uHaze,f*mix(.4,.9,uSolid));
+  float a=mix(1.0-f*f*(3.0-2.0*f),1.0-smoothstep(.8,1.0,f),uSolid);
   o=vec4(col*a,a);
 }`
 

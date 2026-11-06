@@ -225,7 +225,7 @@ html[data-world="off"] .w-canvas { opacity: 0; }
 @media (min-width: 820px) { .skills-panel { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); } }
 .game { background: rgba(10, 16, 48, 0.92); padding: 0.6rem; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
 .game-stage { position: relative; display: block; width: 100%; padding: 0; border: 0; background: #000; cursor: pointer; touch-action: manipulation; overflow: hidden; }
-.game-canvas { display: block; width: 100%; height: auto; aspect-ratio: 160 / 92; }
+.game-canvas { display: block; width: 100%; height: auto; aspect-ratio: 200 / 115; }
 .game-bar { --m: 50; position: absolute; left: 8%; right: 8%; top: 7%; height: clamp(0.75rem, 2.8vw, 1.1rem); background: #161a2e; box-shadow: 0 0 0 2px #0a1030, 0 0 0 3px rgba(255, 255, 255, 0.3); transition: opacity 0.12s ease; }
 .game-bar[data-hidden="true"] { opacity: 0; }
 .game-bar-green { position: absolute; top: 0; bottom: 0; left: calc(50% - var(--g) * 0.5%); width: calc(var(--g) * 1%); background: #55c95f; }
@@ -234,7 +234,7 @@ html[data-world="off"] .w-canvas { opacity: 0; }
 .game-pips { position: absolute; right: 2%; bottom: 3%; display: flex; gap: 3px; }
 .game-pips i { display: block; width: 0.62rem; height: 0.62rem; background: rgba(10, 16, 48, 0.75); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
 .game-pips i.on { background: var(--color-bell); }
-.game-status { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 0.1rem 0.6rem 0.2rem; background: rgba(10, 16, 48, 0.86); color: #fff; font-family: var(--font-pixel); font-size: clamp(1.15rem, 3.4vw, 1.7rem); line-height: 1.1; white-space: nowrap; pointer-events: none; }
+.game-status { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%); padding: 0.1rem 0.6rem 0.2rem; background: rgba(10, 16, 48, 0.86); color: #fff; font-family: var(--font-pixel); font-size: clamp(1.15rem, 3.4vw, 1.7rem); line-height: 1.1; white-space: nowrap; pointer-events: none; }
 .game-status-win { color: var(--color-bell-hi); font-size: clamp(1.7rem, 5vw, 2.6rem); animation: win-pop 0.34s var(--ease-out-soft) both; }
 .game-status-miss { color: #ff9a8a; font-size: clamp(0.95rem, 2.6vw, 1.3rem); }
 @keyframes win-pop { from { transform: translate(-50%, -50%) scale(0.7); opacity: 0; } }
