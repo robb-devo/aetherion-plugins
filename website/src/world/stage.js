@@ -202,6 +202,7 @@ class Stage {
   }
 
   stepPosters(day, dt) {
+    this.remeasure() // only runs while the page moves, so a fresh measure costs nothing
     const id = this.posterId()
     this.showPoster(id)
     const meta = this.posterData?.[this.portrait ? 'p' : 'l']?.[id]
