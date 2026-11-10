@@ -183,6 +183,16 @@ Die Werte bleiben identisch, es ändert sich keine Balance, Blossom Blade und Gr
 angefasst. Risiko mittel (ein vergessener Auslöser hieße kurz veraltete Werte, deshalb die
 Sekunden-Sicherung). Nutzen wächst mit der Spielerzahl.
 
+*Stand 10.11.: umgesetzt, anders als oben skizziert und ohne das Risiko.* `EquippedGear` merkt sich pro
+Spieler und Ausrüstungsplatz, was aus dem Item gelesen wurde (ID, Werte, Dungeon-Stufe), und wirft es weg,
+sobald das Item im Platz nicht mehr dem gelesenen gleicht. Das ist ein Vergleich statt einer Kopie, braucht
+keinen Auslöser und keine Sekunden-Sicherung: ein Wechsel, ein Upgrade oder ein neuer Booster gilt beim
+nächsten Zugriff, also sofort. Beim Nachzählen kam mehr heraus als geschätzt: mit den Set-Boni
+(`DungeonGearListener` prüft vier Sets mit je vier Teilen bei jeder Abfrage) waren es rund 80 Item-Kopien
+pro Spieler in voller Ausrüstung alle 2 Ticks, dazu zwei Set-Schleifen im 2-Tick-Takt (Aetherion-Set, Hollow Sun). Alle diese
+Wege lesen jetzt aus dem Schnappschuss. Boni, die vom Ort oder von der Zeit abhängen (Skills, Pets, Inseln,
+Events), werden weiter live gerechnet. Gemessen ist das noch nicht: das Spark-Profil steht aus (F).
+
 **C2. 50 Rechtsklick-Handler in Items.**
 Jeder Klick und jeder Schlag läuft durch 50 `PlayerInteractEvent`-Handler in Items (101 im ganzen Netz), ein
 Treffer durch knapp 100 Schadens-Handler. Die meisten Waffen-Listener fragen als Erstes "ist das mein

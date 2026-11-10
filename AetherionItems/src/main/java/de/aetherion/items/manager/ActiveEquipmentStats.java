@@ -14,6 +14,7 @@ public class ActiveEquipmentStats {
     private static final List<StatProvider> statProviders = new ArrayList<>();
 
     private final ItemManager itemManager;
+    private final EquippedGear.StatReader itemStat = this::getItemStat;
 
     public ActiveEquipmentStats(ItemManager itemManager) {
         this.itemManager = itemManager;
@@ -50,13 +51,14 @@ public class ActiveEquipmentStats {
 
         double total = 0.0;
 
-        ItemStack[] slots = getActiveItems(player);
+        // Read off the items once and kept until a piece changes; see EquippedGear.
+        boolean dungeon = de.aetherion.items.dungeon.DungeonArmor.inDungeon(player);
         boolean suppressOffhand = charmsSuppressed(player);
-        for (int i = 0; i < slots.length; i++) {
-            if (i == 1 && suppressOffhand) {
+        for (EquippedGear.Slot slot : EquippedGear.ALL) {
+            if (slot == EquippedGear.Slot.OFF_HAND && suppressOffhand) {
                 continue;
             }
-            total += getItemStat(player, slots[i], capability);
+            total += EquippedGear.stat(player, slot, capability, dungeon, itemStat);
         }
 
         double multiplier = 1.0;
@@ -79,17 +81,6 @@ public class ActiveEquipmentStats {
         return total * multiplier;
     }
 
-    private ItemStack[] getActiveItems(Player player) {
-        return new ItemStack[] {
-                player.getInventory().getItemInMainHand(),
-                player.getInventory().getItemInOffHand(),
-                player.getInventory().getHelmet(),
-                player.getInventory().getChestplate(),
-                player.getInventory().getLeggings(),
-                player.getInventory().getBoots()
-        };
-    }
-
     private static boolean charmsSuppressed(Player player) {
         Long until = player.getPersistentDataContainer().get(
                 de.aetherion.items.core.ItemKeys.charmSuppressedUntil(),
@@ -98,7 +89,11 @@ public class ActiveEquipmentStats {
         return until != null && System.currentTimeMillis() < until;
     }
 
-    private double getItemStat(Player player, ItemStack item, ItemCapability capability) {
+    /**
+     * What one item gives, in the dungeon or in the overworld. Depends on the item alone, which is what lets
+     * {@link EquippedGear} keep the answer until the item changes.
+     */
+    private double getItemStat(ItemStack item, ItemCapability capability, boolean dungeon) {
         if (item == null || item.getType().isAir() || !itemManager.isAetherionItem(item)) {
             return 0.0;
         }
@@ -121,7 +116,6 @@ public class ActiveEquipmentStats {
         if (de.aetherion.items.item.DungeonCore.canInfuse(itemId)) {
             value *= de.aetherion.items.item.DungeonCore.rarityStatMultiplier(itemManager.getRarity(item));
         }
-        boolean dungeon = de.aetherion.items.dungeon.DungeonArmor.inDungeon(player);
         // Dungeon gear stays weaker in the overworld; dungeon power = cores + gear level.
         // Native Floor-I gear x0.38 (unchanged); P3 B2: relic-identified T2 x0.60, T3 x0.70.
         double overworld = de.aetherion.items.dungeon.DungeonArmor.overworldMultiplier(item, itemManager);

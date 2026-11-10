@@ -225,6 +225,26 @@ First round from [CODE_AUDIT_2026-11-10.md](CODE_AUDIT_2026-11-10.md). No behavi
 - Deploy: nearly every plugin changed, so this is one round on all backends. Between 11-09 and the arrival of Robb's
   new PC nothing can be deployed (the ssh key lived on the old one), so the PR stays unmerged until then.
 
+## Cleanup round 2: gear stats (2026-11-10, cloud session, not deployed yet)
+
+Audit item C1. Same PR as round 1. No balance change: every number comes out as before.
+- `de.aetherion.items.manager.EquippedGear` keeps, per player and equipped slot, what was read off the item (id,
+  stats per capability for overworld and dungeon, any other item-only fact). An entry is dropped as soon as the item
+  in the slot no longer equals the one it was read from, so a swap, an upgrade or a new booster counts on the very
+  next read. There is no timer and no event to forget; an unchanged item costs one comparison instead of a meta copy.
+- `ActiveEquipmentStats.getStat` sums the six slots from there. Providers that depend on place or time (skills, pets,
+  isles, events) are still evaluated live.
+- The set checks on the stat path read ids from there too: `UndeadCombat.wearingFullSet` (gear set bonuses),
+  `DungeonArmor.wornPieces` and `DungeonGearProgress.wornLevelMultiplier` (dungeon callings), the coal ring in
+  `ProgressionEffects`, the HUD's held item, and the two 2-tick set loops (`AetherionSetListener`,
+  `HollowSunSetListener`, `DungeonCore.wornAetherionSetTier`).
+- Before: around 80 item meta copies every 2 ticks for a player in full gear who is standing still (counted from the
+  code). Not measured yet; take a spark profile on mmo-r after the deploy.
+- New code that asks "what is this player wearing" should use `EquippedGear.itemId` or `EquippedGear.fact` instead of
+  `itemManager.getItemId(player.getInventory()...)`. Slower set listeners (diving, healer, World Eater, Helios) still
+  read the items directly.
+- Deploy: Items only (mmo-r, mmo-d, mmo-c, mmo-i).
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,

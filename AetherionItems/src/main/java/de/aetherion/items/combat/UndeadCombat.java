@@ -1,5 +1,6 @@
 package de.aetherion.items.combat;
 
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 
 import org.bukkit.entity.Entity;
@@ -7,7 +8,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import java.util.Locale;
 
@@ -46,11 +46,12 @@ public final class UndeadCombat {
         if (player == null || itemManager == null || prefix == null || prefix.isBlank()) {
             return false;
         }
-        PlayerInventory inventory = player.getInventory();
-        return startsWith(itemManager.getItemId(inventory.getHelmet()), prefix)
-                && startsWith(itemManager.getItemId(inventory.getChestplate()), prefix)
-                && startsWith(itemManager.getItemId(inventory.getLeggings()), prefix)
-                && startsWith(itemManager.getItemId(inventory.getBoots()), prefix);
+        for (EquippedGear.Slot slot : EquippedGear.ARMOR) {
+            if (!startsWith(EquippedGear.itemId(player, slot, itemManager), prefix)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean startsWith(String itemId, String prefix) {

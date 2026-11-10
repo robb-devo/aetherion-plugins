@@ -120,6 +120,7 @@ public class AetherionItems extends JavaPlugin {
         saveDefaultConfig();
 
         itemManager = new ItemManager(this);
+        de.aetherion.items.manager.EquippedGear.register(this);
         de.aetherion.items.combat.GearSetBonuses.register(itemManager);
         itemValues = new de.aetherion.items.economy.ItemValueService(this, itemManager);
         coins = new de.aetherion.items.economy.CoinService(this);
@@ -648,6 +649,7 @@ public class AetherionItems extends JavaPlugin {
         }
         // Prevent StatProvider stacking across soft reloads (SPEED / pets / skills).
         de.aetherion.items.manager.ActiveEquipmentStats.clearProviders();
+        de.aetherion.items.manager.EquippedGear.clear();
         if (progress != null) {
             progress.save();
         }

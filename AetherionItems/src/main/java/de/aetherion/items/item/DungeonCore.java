@@ -5,6 +5,7 @@ import de.aetherion.items.dungeon.DungeonArmor;
 import de.aetherion.items.dungeon.DungeonCalling;
 import de.aetherion.items.dungeon.DungeonGearTier;
 import de.aetherion.items.dungeon.DungeonWeaponKind;
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.Rarity;
 
@@ -324,25 +325,24 @@ public final class DungeonCore {
         return max;
     }
 
+    /** Core tier of one worn piece. */
+    private static final EquippedGear.Fact<Integer> WORN_TIER = (item, items) -> Integer.valueOf(tier(item));
+
     public static int wornAetherionSetTier(Player player, ItemManager items) {
         if (player == null || items == null) {
             return 0;
         }
         int max = 0;
-        ItemStack[] slots = {
-                player.getInventory().getHelmet(),
-                player.getInventory().getChestplate(),
-                player.getInventory().getLeggings(),
-                player.getInventory().getBoots()
-        };
-        for (ItemStack slot : slots) {
-            String id = items.getItemId(slot);
+        for (EquippedGear.Slot slot : EquippedGear.ARMOR) {
+            String id = EquippedGear.itemId(player, slot, items);
             if (id == null) {
                 continue;
             }
             switch (id.toLowerCase(Locale.ROOT)) {
-                case "aetherion_helmet", "aetherion_chestplate", "aetherion_leggings", "aetherion_boots" ->
-                        max = Math.max(max, tier(slot));
+                case "aetherion_helmet", "aetherion_chestplate", "aetherion_leggings", "aetherion_boots" -> {
+                    Integer worn = EquippedGear.fact(player, slot, items, WORN_TIER);
+                    max = Math.max(max, worn == null ? 0 : worn);
+                }
                 default -> {
                 }
             }
