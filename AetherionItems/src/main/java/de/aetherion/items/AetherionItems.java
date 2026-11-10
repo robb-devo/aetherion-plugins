@@ -257,6 +257,19 @@ public class AetherionItems extends JavaPlugin {
         getLogger().info("Registered Aetherion recipes: " + recipeManager.getRecipeCount());
     }
 
+    /**
+     * Starts a side feature. If it throws, the error is logged and the rest of the plugin keeps starting:
+     * a broken prop or minigame must not take items, combat and the economy down with it.
+     */
+    private void startSafely(String feature, Runnable start) {
+        try {
+            start.run();
+        } catch (RuntimeException | LinkageError failure) {
+            getLogger().log(java.util.logging.Level.SEVERE,
+                    "[Startup] " + feature + " failed to start; AetherionItems keeps running without it.", failure);
+        }
+    }
+
     /** Combat / unique gear listeners. Order matches the former inline onEnable block. */
     private void registerCombatListeners() {
         getServer().getPluginManager().registerEvents(new AnvilBoosterListener(itemManager), this);
@@ -319,8 +332,8 @@ public class AetherionItems extends JavaPlugin {
                 this
         );
         new de.aetherion.items.world.BorderlandsRiteService(this, mobZones);
-        new de.aetherion.items.world.ColosseumGateService(this);
-        new de.aetherion.items.world.ColosseumEscortService(this);
+        startSafely("Colosseum gate", () -> new de.aetherion.items.world.ColosseumGateService(this));
+        startSafely("Colosseum escort", () -> new de.aetherion.items.world.ColosseumEscortService(this));
         getServer().getPluginManager().registerEvents(
                 new de.aetherion.items.world.NpcRemoverListener(),
                 this
@@ -341,7 +354,7 @@ public class AetherionItems extends JavaPlugin {
                 new de.aetherion.items.world.BuildingBannerListener(buildingBanners),
                 this
         );
-        new de.aetherion.items.world.CryptDiscoverListener(this, mobZones);
+        startSafely("Crypt discovery", () -> new de.aetherion.items.world.CryptDiscoverListener(this, mobZones));
         getServer().getPluginManager().registerEvents(
                 new de.aetherion.items.world.MarkerVisibilityListener(areas, animalZones, mobZones, petHabitats),
                 this
@@ -350,7 +363,7 @@ public class AetherionItems extends JavaPlugin {
         new de.aetherion.items.item.GearTooltip(this, itemManager);
         new de.aetherion.items.item.ArmorLooks(this);
         loreLocaleListener = new de.aetherion.items.item.LoreLocaleListener(this, itemManager);
-        de.aetherion.items.world.WildlifeLooks.register(this);
+        startSafely("Wildlife looks", () -> de.aetherion.items.world.WildlifeLooks.register(this));
         de.aetherion.items.world.BorderlandsLightPass.schedule(this);
     }
 
@@ -369,18 +382,27 @@ public class AetherionItems extends JavaPlugin {
         }, 120L);
         getServer().getPluginManager().registerEvents(market, this);
         getServer().getPluginManager().registerEvents(casino, this);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.casino.CasinoCabinet(), this);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.casino.RouletteCabinet(), this);
+        startSafely("Casino slot cabinets", () ->
+                getServer().getPluginManager().registerEvents(new de.aetherion.items.casino.CasinoCabinet(), this));
+        startSafely("Casino roulette tables", () ->
+                getServer().getPluginManager().registerEvents(new de.aetherion.items.casino.RouletteCabinet(), this));
     }
 
     private void registerFarmStations() {
-        millstoneRitual = new de.aetherion.items.farm.MillstoneRitual(this);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneCabinet(this, millstoneRitual), this);
-        ambientProps = new de.aetherion.items.dev.prop.AmbientProps(this);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneWindmill(this), this);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneListener(), this);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.RootCellarListener(), this);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MarketStallListener(), this);
+        startSafely("Millstone", () -> {
+            millstoneRitual = new de.aetherion.items.farm.MillstoneRitual(this);
+            getServer().getPluginManager().registerEvents(
+                    new de.aetherion.items.farm.MillstoneCabinet(this, millstoneRitual), this);
+        });
+        startSafely("Ambient props", () -> ambientProps = new de.aetherion.items.dev.prop.AmbientProps(this));
+        startSafely("Millstone windmill", () ->
+                getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneWindmill(this), this));
+        startSafely("Millstone tools", () ->
+                getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneListener(), this));
+        startSafely("Root cellar", () ->
+                getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.RootCellarListener(), this));
+        startSafely("Market stall", () ->
+                getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MarketStallListener(), this));
         getServer().getPluginManager().registerEvents(
                 new de.aetherion.items.menu.dev.DevMenuListener(devMenu),
                 this
