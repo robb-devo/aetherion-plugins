@@ -1,7 +1,8 @@
 # Aetherion — Project state (read this first)
 
-Snapshot: **2026-11-10** (module table, CI, cleanup round 1); the live build table is still the 10-25 one and
-older sections keep their dates. One page so a new session does not have to rescan the repo. Update the dated
+Snapshot: **2026-11-10** (module table, CI, cleanup rounds 1 and 2); the live build table is still the 10-25 one
+and older sections keep their dates. Cleanup rounds 1 and 2 are in PR #146 (branch `claude/project-thread-knvhf4`),
+not merged and not deployed; the handover with next steps is at the top of the audit below. One page so a new session does not have to rescan the repo. Update the dated
 sections when they change.
 Code health and cleanup plan: [CODE_AUDIT_2026-11-10.md](CODE_AUDIT_2026-11-10.md). Older beta list:
 [BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).

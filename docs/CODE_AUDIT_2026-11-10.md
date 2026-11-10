@@ -1,8 +1,47 @@
 # Aetherion Code-Audit 2026-11-10: aufräumen, stabilisieren, beschleunigen
 
-Stand: `main` = `df5504e` (PR #144), unverändert seit 02.11. Nur gelesen: kein Code geändert, nichts
-committet, nichts deployt. Das ganze Repo (alle 17 Plugins plus Proxy und Helm) wurde mit Suchmustern
-durchkämmt; Zeile für Zeile gelesen habe ich die Stellen, die dabei auffielen, nicht jede der 1.600 Dateien.
+Audit-Grundlage: `main` = `df5504e` (PR #144), unverändert seit 02.11. Das ganze Repo (alle 17 Plugins plus
+Proxy und Helm) wurde mit Suchmustern durchkämmt; Zeile für Zeile gelesen habe ich die Stellen, die dabei
+auffielen, nicht jede der 1.600 Dateien.
+
+## Übergabe (Stand 10.11.2026 abends): hier weitermachen
+
+**Wo der Code liegt.** Alle Fixes stehen im Branch `claude/project-thread-knvhf4`, PR #146, acht Commits mit je
+einem Thema, CI grün (compile, compile-samurai, test, compile-proxy). Nicht gemergt: `main` ist live, und
+deployt werden kann erst vom neuen PC aus (SSH-Schlüssel lag auf dem alten). Wer weitermacht, arbeitet auf
+diesem Branch oder auf einem neuen Branch von dessen Spitze, nicht auf `main`. Was jeder Punkt technisch
+ändert, steht in `docs/PROJECT_STATE.md` unter "Cleanup round 1" und "Cleanup round 2".
+
+**Erledigt (im PR):** A1 gitattributes, A2 Void-Trim raus, A3 63 Speicherstellen über `AtomicYaml`, A4 CI
+(SamuraiBoss, Tests), A5 Doku, A7 Arena-Befehle nur für Staff, B1 Start-Schutz für die Nebenfunktionen in
+Items, C1 Ausrüstungswerte über `EquippedGear` (nur neu gelesen, wenn sich ein Item ändert), B2 Schritt 1
+(Dungeons-Kopie von `NetworkPlayerDataSync` gelöscht), B3 erster Teil (Speicher-Tasks zeitlich versetzt,
+`SaveSlot`). Die "Stand"-Notizen unter den Punkten unten sagen jeweils, was davon genau umgesetzt ist.
+
+**Nächste Schritte, in dieser Reihenfolge:**
+1. Neuer PC eingerichtet: PR #146 mergen, dann aus dem sauberen Klon von `main` bauen und auf allen Backends
+   deployen (fast jedes Plugin ändert sich), jeder Server einmal neu starten. Klicktest und Prüfung vorher
+   (Symlinks bei den Spielstand-Dateien) stehen in der PR-Beschreibung. Danach Spark-Profil auf mmo-r (F1).
+2. B2 Schritt 2: Dungeons' `TransferSnapshotStore` und Cores `CharacterStore` sind zwei Umsetzungen
+   desselben v6-Charakters; zu einer zusammenlegen. Braucht Test-Sprünge über alle Serverpaare.
+3. B2 Schritt 3: Cores v5-`TransferSnapshotStore` abschalten, nachdem live geprüft ist, dass keine alten
+   Snapshot-Dateien mehr liegen (F3).
+4. B3 Rest: gemeinsame Dateien im Hintergrund schreiben, beim Logout nur den gehenden Spieler sichern.
+5. C3 `teleportAsync` auf den Reisewegen, C4 Wächter-Tasks nur dort, wo es den Inhalt gibt.
+6. B4 Exile-Einmalwerkzeuge raus (Robb sagt, welche bleiben), danach D und E nach Absprache.
+
+**Offen bei Robb:** Ist PR #145 (Exile, 02.11.) live, mergen oder schließen? Wurden SSH-Schlüssel und
+`aetherion-ops` vom alten PC gesichert? Go für das Aufräumen der alten Branches und PRs (A6)? Welche Befehle
+meint er mit "serverübergreifend"? Heute gehen Reisebefehle und der Markt von jedem Backend zur Hauptwelt
+und werden dort ausgeführt, `/island`, `/guild`, `/friend` werden vom Hub und von mmo-r weitergereicht
+(Core `MainCommandRouter` und `RouteBook`).
+
+**Wie arbeiten.** Neue Code-Threads auf der Cloud-Umgebung "aetherion-plugins" starten: nur dort erreicht
+Maven das Paper-Repo, die Standard-Umgebung prüft nur über die GitHub-CI. Die Tests von AetherionItems
+kompilieren nicht, Items hat deshalb keine Unit-Tests in der CI. Gesperrte Systeme (TalkUx-Shell, Blossom
+Blade, Gravwell Cleaver, Boosters, Anvil/BoosterSockets, Ränge, ShutdownCountdown, Borderlands) nicht
+anfassen. Commits als `Robbi <robb@aetherion.local>` über Umgebungsvariablen, vor jedem Push nach
+Zugangsdaten suchen, nichts aus `aetherion-ops` ins Repo.
 
 ## Entscheidungen von Robb (2026-11-10)
 
@@ -12,8 +51,7 @@ durchkämmt; Zeile für Zeile gelesen habe ich die Stellen, die dabei auffielen,
 - **Gnomon ist ein Testboss** (nur ein Konzept-Check), gehört nicht zur Story oder zum Spiel und bekommt
   keine Arbeit. A1 bleibt trotzdem drin, weil es nichts kostet.
 - Ziel insgesamt: ein so sauberes und effizientes Netzwerk wie möglich.
-- Runde 1 (A1, A2, A3, A4, A5, A7 und ein erster Teil von B1) liegt als PR vor; Stand siehe
-  `docs/PROJECT_STATE.md`.
+- Umgesetzt ist, was in der Übergabe oben unter "Erledigt" steht; der Rest wartet auf Build und Testserver.
 
 ## Kurzfassung
 
