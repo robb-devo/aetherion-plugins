@@ -245,6 +245,23 @@ Audit item C1. Same PR as round 1. No balance change: every number comes out as 
   read the items directly.
 - Deploy: Items only (mmo-r, mmo-d, mmo-c, mmo-i).
 
+## Cleanup round 2: transfer and save timers (2026-11-10, cloud session, not deployed yet)
+
+Audit items B2 (step 1) and B3 (first part). Same PR.
+- Transfer: the Dungeons copy of `NetworkPlayerDataSync` is gone. Dungeons' `TransferSnapshotStore` uses
+  `de.aetherion.core.network.NetworkPlayerDataSync`, so the list of files and keys a character carries, and how
+  they are merged on arrival, exists once. The two copies only differed in comments and in when a storage warning
+  is logged. Dungeons calls nothing in Core that the live Core does not already have. Its two own steps (staging
+  files before login, repairing pre-v6 keys) live in `bridge/PendingSnapshotFiles`.
+- Still open on the transfer (needs a build and test hops on every server pair, see the audit, B2): Dungeons'
+  `TransferSnapshotStore` and Core's `CharacterStore` are two implementations of the same v6 character, and Core
+  still starts the v5 `TransferSnapshotStore`.
+- Save timers: the eight shared files in Items (coins, skills, progress, codex, recipes, blueprints, shards, XP
+  boosts) each still save once a minute, but `core/SaveSlot` spreads their first run over 49 seconds so they no
+  longer all write in the same tick. Still open (audit, B3): writing off the main thread and saving only the
+  leaving player on quit.
+- Deploy: Dungeons (mmo-r, mmo-d) and Items (mmo-r, mmo-d, mmo-c, mmo-i).
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,

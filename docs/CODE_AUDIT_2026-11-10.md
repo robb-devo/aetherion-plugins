@@ -138,6 +138,14 @@ dort, plus ein Test. (2) später, eigener PR mit Test-Sprüngen über alle Serve
 Snapshot-Dateien mehr unterwegs sind. Schritt 2 und 3 haben mittleres bis hohes Risiko, deshalb nicht
 zwischen Tür und Angel.
 
+*Stand 10.11., Schritt 1 erledigt, und eine Korrektur:* beim genauen Vergleich der beiden
+`NetworkPlayerDataSync` war die Zusammenführung des Lagers in beiden Kopien dieselbe; verschieden war nur,
+wann die Warnung ins Log geschrieben wird. Auseinandergelaufen war also die Meldung, nicht der Spielstand.
+Die Dungeons-Kopie ist gelöscht (670 Zeilen). Der Dungeons-Store benutzt jetzt die Klasse aus dem Core, und
+zwar nur mit Methoden, die der Core auf den Servern schon hat. Damit gibt es die Dateiliste und die
+Zusammenführung genau einmal. Die zwei Schritte, die nur Dungeons braucht (Dateien vor dem Login
+bereitlegen, alte Schlüssel reparieren), liegen in `PendingSnapshotFiles`.
+
 **B3. Gemeinsame Spielstand-Dateien skalieren nicht.**
 `skills.yml`, `progress.yml`, `coins.yml`, `codex.yml`, `shards.yml`, `recipe_unlocks.yml` und weitere
 enthalten jeweils alle Spieler. Beispiel `SkillService.save()`: liest die ganze Datei von der Platte, trägt
@@ -149,6 +157,11 @@ Minute und pro Logout, der mit jedem neuen Account wächst.
 Fix klein: Speicher-Tasks zeitlich versetzen, das eigentliche Schreiben in einen Hintergrund-Thread, beim
 Logout nur die Daten dieses Spielers sichern. Fix richtig: eine Datei pro Spieler (so machen es Quests und
 Pets schon) oder eine Datenbank, siehe E1. **Vor einer öffentlichen Open Beta nötig, nicht vorher.**
+
+*Stand 10.11.:* der erste Teil ist drin. Die acht Speicher-Tasks in Items laufen weiter jede Minute, starten
+aber versetzt (`core/SaveSlot`), sodass nie zwei im selben Tick schreiben. Offen bleiben das Schreiben im
+Hintergrund und das Sichern nur des einen Spielers beim Logout; beides fasst jeden Spielstand an und gehört
+in eine Runde mit Build und Testserver.
 
 **B4. Einmal-Werkzeuge für die Exile-Welt liegen im Core.**
 `ExileQuayTurn`, `ExileCauseway`, `ExileMapRestore`, `ExileQuayPaste`, `ExileGateCut`, `ExileMapPaste`,
