@@ -38,7 +38,8 @@ public final class RecipeUnlockService {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "recipe_unlocks.yml");
         load();
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty, 20L * 60, 20L * 60);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty,
+                de.aetherion.items.core.SaveSlot.RECIPES.firstRunTicks(), de.aetherion.items.core.SaveSlot.PERIOD_TICKS);
     }
 
     public boolean hasCrafted(Player player, String recipeId) {

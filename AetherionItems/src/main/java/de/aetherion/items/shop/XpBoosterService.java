@@ -40,7 +40,8 @@ public final class XpBoosterService implements Listener, Runnable {
         load();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this, 20L, 20L);
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty, 20L * 60, 20L * 60);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty,
+                de.aetherion.items.core.SaveSlot.XP_BOOSTS.firstRunTicks(), de.aetherion.items.core.SaveSlot.PERIOD_TICKS);
     }
 
     public boolean active(Player player) {
