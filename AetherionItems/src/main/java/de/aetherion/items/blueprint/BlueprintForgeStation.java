@@ -374,7 +374,7 @@ public final class BlueprintForgeStation {
         config.set("station.z", anvilZ);
         config.set("station.hammer-top-y", hammerTopY);
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException ex) {
             plugin.getLogger().warning("Could not save blueprint-forge.yml: " + ex.getMessage());
         }

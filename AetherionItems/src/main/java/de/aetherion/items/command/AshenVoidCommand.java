@@ -40,6 +40,11 @@ public final class AshenVoidCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§5Ashen Void §7player spawn §asaved§7.");
             return true;
         }
+        // A staff shortcut into a boss arena: players reach these fights through the exile altars.
+        if (!player.isOp() && !player.hasPermission("aetherion.dev")) {
+            player.sendMessage("§cDEV / OP only.");
+            return true;
+        }
         if (!arena.teleport(player)) {
             player.sendMessage("§cAshen Void world missing. Import §dashen_void§c first.");
             return true;

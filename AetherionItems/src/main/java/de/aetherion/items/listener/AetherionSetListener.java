@@ -2,6 +2,7 @@ package de.aetherion.items.listener;
 
 import de.aetherion.core.AetherKeys;
 import de.aetherion.items.AetherionItems;
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 
 import org.bukkit.Bukkit;
@@ -32,7 +33,6 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
@@ -480,14 +480,14 @@ public class AetherionSetListener implements Listener, Runnable {
     }
 
     private boolean wearingFullSet(Player player) {
-        return isPiece(player.getInventory().getHelmet(), "aetherion_helmet")
-                && isPiece(player.getInventory().getChestplate(), "aetherion_chestplate")
-                && isPiece(player.getInventory().getLeggings(), "aetherion_leggings")
-                && isPiece(player.getInventory().getBoots(), "aetherion_boots");
+        return isWorn(player, EquippedGear.Slot.HELMET, "aetherion_helmet")
+                && isWorn(player, EquippedGear.Slot.CHESTPLATE, "aetherion_chestplate")
+                && isWorn(player, EquippedGear.Slot.LEGGINGS, "aetherion_leggings")
+                && isWorn(player, EquippedGear.Slot.BOOTS, "aetherion_boots");
     }
 
-    private boolean isPiece(ItemStack item, String id) {
-        return id.equalsIgnoreCase(itemManager.getItemId(item));
+    private boolean isWorn(Player player, EquippedGear.Slot slot, String id) {
+        return id.equalsIgnoreCase(EquippedGear.itemId(player, slot, itemManager));
     }
 
     private boolean isMinion(Entity entity) {

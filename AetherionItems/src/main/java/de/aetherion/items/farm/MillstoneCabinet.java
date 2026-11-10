@@ -106,7 +106,7 @@ public final class MillstoneCabinet implements Listener {
         config.set("station.z", origin.getZ() + 0.5);
         config.set("station.facing", face.name());
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException ex) {
             plugin.getLogger().warning("Could not save millstone.yml: " + ex.getMessage());
         }
@@ -118,7 +118,7 @@ public final class MillstoneCabinet implements Listener {
             YamlConfiguration config = new YamlConfiguration();
             config.set("station.placed", false);
             try {
-                config.save(file);
+                de.aetherion.core.persist.AtomicYaml.save(config, file);
             } catch (IOException ignored) {
             }
         }

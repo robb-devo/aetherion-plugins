@@ -327,7 +327,7 @@ public final class BlueprintForgeRitual implements Listener {
                 : new YamlConfiguration();
         config.set("pending." + id, Base64.getEncoder().encodeToString(item.serializeAsBytes()));
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException ex) {
             plugin.getLogger().warning("Could not save forge pending: " + ex.getMessage());
         }
@@ -358,7 +358,7 @@ public final class BlueprintForgeRitual implements Listener {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         config.set("pending." + id, null);
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException ignored) {
         }
     }

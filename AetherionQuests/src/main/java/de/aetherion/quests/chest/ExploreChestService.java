@@ -395,7 +395,7 @@ public final class ExploreChestService {
             if (!file.getParentFile().exists()) {
                 file.getParentFile().mkdirs();
             }
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save explore-chests.yml: " + exception.getMessage());
         }

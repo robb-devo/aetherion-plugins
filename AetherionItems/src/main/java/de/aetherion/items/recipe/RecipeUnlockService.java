@@ -38,7 +38,8 @@ public final class RecipeUnlockService {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "recipe_unlocks.yml");
         load();
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty, 20L * 60, 20L * 60);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty,
+                de.aetherion.items.core.SaveSlot.RECIPES.firstRunTicks(), de.aetherion.items.core.SaveSlot.PERIOD_TICKS);
     }
 
     public boolean hasCrafted(Player player, String recipeId) {
@@ -319,7 +320,7 @@ public final class RecipeUnlockService {
         Collections.sort(full);
         yaml.set("full-unlock", full);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save recipe_unlocks.yml: " + exception.getMessage());
@@ -419,7 +420,7 @@ public final class RecipeUnlockService {
         Collections.sort(full);
         yaml.set("full-unlock", full);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not wipe recipe unlocks for " + playerId + ": " + exception.getMessage());

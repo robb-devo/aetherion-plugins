@@ -1829,7 +1829,7 @@ public class MobZoneService implements Runnable {
         }
         try {
             plugin.getDataFolder().mkdirs();
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save mob zones: " + exception.getMessage());
         }

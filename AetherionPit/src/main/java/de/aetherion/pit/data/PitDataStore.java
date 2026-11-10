@@ -71,7 +71,7 @@ public final class PitDataStore {
             if (!plugin.getDataFolder().exists()) {
                 plugin.getDataFolder().mkdirs();
             }
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException ex) {
             plugin.getLogger().warning("Could not save pit players: " + ex.getMessage());
         }

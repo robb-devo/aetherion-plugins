@@ -39,7 +39,8 @@ public final class CodexService {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "codex.yml");
         load();
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty, 20L * 60, 20L * 60);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty,
+                de.aetherion.items.core.SaveSlot.CODEX.firstRunTicks(), de.aetherion.items.core.SaveSlot.PERIOD_TICKS);
     }
 
     // ------------------------------------------------------------------ counting
@@ -306,7 +307,7 @@ public final class CodexService {
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save codex.yml: " + exception.getMessage());
@@ -495,7 +496,7 @@ public final class CodexService {
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not wipe codex for " + playerId + ": " + exception.getMessage());

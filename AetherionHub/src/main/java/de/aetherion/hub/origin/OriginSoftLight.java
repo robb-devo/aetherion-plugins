@@ -282,7 +282,7 @@ public final class OriginSoftLight {
         yaml.set("world", isle.config().worldName());
         yaml.set("placed", out);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException exception) {
             isle.plugin().getLogger().warning("Could not save origin-softlight.yml: " + exception.getMessage());
         }

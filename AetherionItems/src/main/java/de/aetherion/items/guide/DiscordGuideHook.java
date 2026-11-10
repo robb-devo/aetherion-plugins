@@ -36,7 +36,7 @@ public final class DiscordGuideHook {
             yml.set("guide-channel-id", "");
             yml.set("comments", "Discord channel ID for #guide. Leave empty to disable Discord guide.");
             try {
-                yml.save(file);
+                de.aetherion.core.persist.AtomicYaml.save(yml, file);
             } catch (Exception ignored) {
                 // ignore
             }

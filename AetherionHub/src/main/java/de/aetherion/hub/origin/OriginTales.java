@@ -304,7 +304,7 @@ public final class OriginTales implements Listener {
 
     private void save() {
         try {
-            state.save(stateFile);
+            de.aetherion.core.persist.AtomicYaml.save(state, stateFile);
         } catch (IOException exception) {
             isle.plugin().getLogger().warning("Origin: could not save " + STATE_FILE + ": " + exception.getMessage());
         }

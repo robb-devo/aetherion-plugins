@@ -2,6 +2,7 @@ package de.aetherion.items.dungeon;
 
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.DungeonCore;
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.Rarity;
 
@@ -114,23 +115,22 @@ public final class DungeonGearProgress {
         return (int) Math.round((dungeonBonusMultiplier(item, items, level) - 1.0d) * 100.0d);
     }
 
+    /** Level multiplier of one worn piece; null for a piece that cannot level. */
+    private static final EquippedGear.Fact<Double> WORN_LEVEL_MULTIPLIER =
+            (item, items) -> canLevel(item, items) ? Double.valueOf(dungeonLevelMultiplier(level(item))) : null;
+
     public static double wornLevelMultiplier(Player player, ItemManager items) {
         if (player == null || items == null) {
             return 1.0d;
         }
-        ItemStack[] slots = {
-                player.getInventory().getHelmet(),
-                player.getInventory().getChestplate(),
-                player.getInventory().getLeggings(),
-                player.getInventory().getBoots()
-        };
         double sum = 0.0d;
         int count = 0;
-        for (ItemStack slot : slots) {
-            if (slot == null || slot.getType().isAir() || !canLevel(slot, items)) {
+        for (EquippedGear.Slot slot : EquippedGear.ARMOR) {
+            Double multiplier = EquippedGear.fact(player, slot, items, WORN_LEVEL_MULTIPLIER);
+            if (multiplier == null) {
                 continue;
             }
-            sum += dungeonLevelMultiplier(level(slot));
+            sum += multiplier;
             count++;
         }
         return count <= 0 ? 1.0d : sum / count;

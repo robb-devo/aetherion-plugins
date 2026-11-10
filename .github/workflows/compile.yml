@@ -17,6 +17,37 @@ jobs:
       - name: Compile
         run: mvn -B -DskipTests compile
 
+  # SamuraiBoss has its own pom outside the root reactor, so the job above never sees it.
+  compile-samurai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Install AetherionCore
+        run: mvn -B -Dmaven.test.skip=true -pl AetherionCore -am install
+      - name: Compile SamuraiBoss
+        run: mvn -B -f SamuraiBoss/pom.xml compile
+
+  # Unit tests of the modules whose tests compile. AetherionItems is left out until its test sources
+  # build again (see docs/PROJECT_STATE.md, "Known gaps").
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Install all modules without tests
+        run: mvn -B -Dmaven.test.skip=true install
+      - name: Test Core, Farming, Fishing
+        run: mvn -B -pl AetherionCore,AetherionFarming,AetherionFishing test
+
   # Velocity 4 ships its API as Java 25 class files, so the proxy plugin builds on its own JDK.
   compile-proxy:
     runs-on: ubuntu-latest

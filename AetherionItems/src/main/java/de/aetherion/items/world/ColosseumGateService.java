@@ -198,7 +198,7 @@ public final class ColosseumGateService implements Listener, Runnable {
         config.set("unlocked", unlocked.stream().map(UUID::toString).sorted().toList());
         config.set("taught", taught.stream().map(UUID::toString).sorted().toList());
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save colosseum-unlock.yml: " + exception.getMessage());
         }

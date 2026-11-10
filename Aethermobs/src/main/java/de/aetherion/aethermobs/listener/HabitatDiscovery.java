@@ -296,7 +296,7 @@ public final class HabitatDiscovery implements Listener, Runnable {
         }
         try {
             plugin.getDataFolder().mkdirs();
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save habitat-discoveries.yml: " + exception.getMessage());
         }

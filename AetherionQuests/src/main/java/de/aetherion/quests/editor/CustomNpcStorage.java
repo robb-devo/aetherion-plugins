@@ -57,7 +57,7 @@ public final class CustomNpcStorage {
                 YamlConfiguration empty = new YamlConfiguration();
                 empty.options().header(HEADER);
                 empty.set("npcs", new LinkedHashMap<String, Object>());
-                empty.save(file);
+                de.aetherion.core.persist.AtomicYaml.save(empty, file);
             } catch (IOException ex) {
                 plugin.getLogger().log(Level.WARNING, "Could not create editor-npcs.yml", ex);
             }
@@ -144,7 +144,7 @@ public final class CustomNpcStorage {
         } catch (IOException ex) {
             // Temp/move can fail when another program holds the file — fall back to a direct write.
             try {
-                yaml.save(file);
+                de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             } catch (IOException again) {
                 plugin.getLogger().log(Level.WARNING, "Could not save editor-npcs.yml", again);
             }

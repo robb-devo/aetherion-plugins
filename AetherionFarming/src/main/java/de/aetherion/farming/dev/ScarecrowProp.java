@@ -245,7 +245,7 @@ public final class ScarecrowProp implements Listener {
             if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
                 plugin.getLogger().warning("Could not create the AetherionFarming data folder.");
             }
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException exception) {
             plugin.getLogger().log(Level.WARNING, "Could not save scarecrows.yml: " + exception.getMessage());
         }

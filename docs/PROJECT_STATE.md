@@ -1,8 +1,11 @@
 # Aetherion — Project state (read this first)
 
-Snapshot: **2026-10-25** (live builds, truth, 10-25 rounds); older sections keep their dates. One page so a new session does not have to rescan the
-repo. Update the dated sections when they change.
-Open work and priorities: [BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).
+Snapshot: **2026-11-10** (module table, CI, cleanup rounds 1 and 2); the live build table is still the 10-25 one
+and older sections keep their dates. Cleanup rounds 1 and 2 are in PR #146 (branch `claude/project-thread-knvhf4`),
+not merged and not deployed; the handover with next steps is at the top of the audit below. One page so a new session does not have to rescan the repo. Update the dated
+sections when they change.
+Code health and cleanup plan: [CODE_AUDIT_2026-11-10.md](CODE_AUDIT_2026-11-10.md). Older beta list:
+[BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).
 Ops, hosting and access details are deliberately **not** in this repo; they live in
 the private `aetherion-ops/` folder on Robb's PC (`docs/OPUS_SESSION_BIBLE.md`,
 `docs/LIVE_STATE_*.md`, `docs/BETA_AUDIT_OPS_*.md`).
@@ -10,27 +13,31 @@ the private `aetherion-ops/` folder on Robb's PC (`docs/OPUS_SESSION_BIBLE.md`,
 ## What this is
 
 Minecraft MMORPG network "Aetherion" on Paper 1.21.1 behind a Velocity proxy.
-17 Maven modules (one plugin each) plus the Velocity plugin AetherionProxy, ~470k lines of Java, 4 unit tests.
-CI (`.github/workflows/compile.yml`) only compiles.
+16 Maven modules in the root reactor (one plugin each), SamuraiBoss and the Velocity plugin AetherionProxy with their
+own poms, and AetherionHelm (staff panel, own builds): ~506k lines of Java, 8 unit test classes.
+CI (`.github/workflows/compile.yml`) compiles the reactor, AetherionProxy and SamuraiBoss and runs the Core, Farming and
+Fishing tests. The AetherionItems tests do not compile yet (see "Known gaps").
 
 | Module | Role | Java LOC |
 |---|---|---|
-| AetherionCore | Shared API, network transfer, persistence, shutdown | 15k |
-| AetherionItems | Items, combat, HUD, economy UI, recipes, resource pack source | 142k |
-| AetherionQuests | Quests, onboarding acts, TalkUx, Codex | 54k |
-| BossEngine | Boss framework + 43 boss YAMLs | 80k |
+| AetherionCore | Shared API, network transfer, persistence, shutdown, exile content | 21k |
+| AetherionItems | Items, combat, HUD, economy UI, recipes, resource pack source | 146k |
+| AetherionQuests | Quests, onboarding acts, TalkUx, Codex | 55k |
+| BossEngine | Boss framework + 43 boss YAMLs | 86k |
 | Aethermobs | Mobs, pets | 37k |
-| AetherionGuilds | Guilds, private/guild islands | 28k |
+| AetherionGuilds | Guilds, private/guild islands | 29k |
 | AetherionDungeons | Dungeon gate (mmo-r) + instances (mmo-d) | 17k |
-| AetherionHub | Hub pads, spawns, warps | 17k |
+| AetherionHub | Hub pads, spawns, warps | 18k |
 | SamuraiBoss | Standalone boss | 16k |
-| AetherionMining / Foraging / Farming / Fishing | Gathering isles (Eldervale) | 15k / 16k / 11k / 9k |
-| AetherionGnomon | Adaptive boss encounter | 9k |
+| AetherionMining / Foraging / Farming / Fishing | Gathering isles (Eldervale) | 20k / 16k / 11k / 9k |
+| AetherionGnomon | Adaptive boss encounter. A test boss to check a concept, not part of the story or the game (Robb, 11-10): no work goes into it | 9k |
 | AetherionBeta / Pit / StressBots | Beta tooling, Pit minigame, QA load bots | 3k / 2k / 4k |
-| AetherionProxy | Velocity plugin: sends the resource pack once per session (own build, JDK 25) | 0.2k |
+| AetherionProxy | Velocity plugin: sends the resource pack once per session (own build, JDK 25) | 0.3k |
 
 Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, market),
-**mmo-d** (dungeons only), **mmo-c** (exile/story), **mmo-i** (private + guild islands).
+**mmo-d** (dungeons only), **mmo-c** (exile/story), **mmo-i** (private + guild islands), and since late October
+**mmo-m** (Titan mine test server, world `jawcamp`). On 11-02 mmo-m was behind `main` on Core, Items and Quests, had no
+Helm agent and lacked the `aetherion-armor` datapack the other backends carry; nothing there is open to players yet.
 
 ## Where the truth lives
 
@@ -45,6 +52,8 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
 
 ## Live plugin builds (sha1 prefix, 2026-10-25 12:00)
 
+This table is the 10-25 snapshot. Every backend has been redeployed since (last: PR #143 and #144 on 11-02), so the
+sha1 values are out of date and need a refresh from the box. Which backend loads which plugin still holds.
 One build per plugin on every backend that loads it, all from `main` `c5eb105` (PR #119) or earlier `main`:
 
 | Plugin | sha1 | Backends |
@@ -198,6 +207,62 @@ Deployed with `deploy-harbour-ferry.ps1` (Core, Quests, Items, BossEngine, Hub; 
   (bay columns only, natural blocks only).
 - Gnomon and SamuraiBoss run on mmo-r only (Gnomon's mmo-c copy parked in `plugins/_disabled-network`).
 
+## Cleanup round 1 (2026-11-10, cloud session, not deployed yet)
+
+First round from [CODE_AUDIT_2026-11-10.md](CODE_AUDIT_2026-11-10.md). No behaviour change for players.
+- Core: `ExileVoidTrim` and its `onLoad` hook are gone, with the three one-off scripts under `tools/deploy/`. A leftover
+  `exile-void-trim.armed` file now does nothing.
+- Every state file that was written with a plain `save` goes through `AtomicYaml` (temp file, then rename), 63 places in
+  Items, Quests, Hub, Mining, AetherMobs, Guilds, Dungeons, BossEngine, Farming, Fishing, Foraging, Pit, Beta and Core:
+  codex, recipe and blueprint unlocks, XP boosts, pets, hub players, friends, mob zones, spawners and more. A kill in
+  the middle of a save can no longer leave a cut-off file. Not converted: the one-off exile tools, three NPC position
+  files and the two dev arena configs.
+- Items: `/bloodstonearena` and `/ashenvoid` need `aetherion.dev` or op for the teleport too (they dropped any player
+  into the boss arenas). Side features (casino cabinets, millstone, root cellar, market stall, ambient props, Colosseum
+  gate and escort, crypt discovery, wildlife looks) start through `startSafely`: a failure is logged as
+  `[Startup] ... failed to start` and the rest of the plugin keeps starting.
+- Repo: binary assets are marked in `.gitattributes` (the `*.nbm` CRLF trap), CI compiles SamuraiBoss and runs the
+  Core, Farming and Fishing tests, the stale `helios-jars` workflow is gone.
+- Deploy: nearly every plugin changed, so this is one round on all backends. Between 11-09 and the arrival of Robb's
+  new PC nothing can be deployed (the ssh key lived on the old one), so the PR stays unmerged until then.
+
+## Cleanup round 2: gear stats (2026-11-10, cloud session, not deployed yet)
+
+Audit item C1. Same PR as round 1. No balance change: every number comes out as before.
+- `de.aetherion.items.manager.EquippedGear` keeps, per player and equipped slot, what was read off the item (id,
+  stats per capability for overworld and dungeon, any other item-only fact). An entry is dropped as soon as the item
+  in the slot no longer equals the one it was read from, so a swap, an upgrade or a new booster counts on the very
+  next read. There is no timer and no event to forget; an unchanged item costs one comparison instead of a meta copy.
+- `ActiveEquipmentStats.getStat` sums the six slots from there. Providers that depend on place or time (skills, pets,
+  isles, events) are still evaluated live.
+- The set checks on the stat path read ids from there too: `UndeadCombat.wearingFullSet` (gear set bonuses),
+  `DungeonArmor.wornPieces` and `DungeonGearProgress.wornLevelMultiplier` (dungeon callings), the coal ring in
+  `ProgressionEffects`, the HUD's held item, and the two 2-tick set loops (`AetherionSetListener`,
+  `HollowSunSetListener`, `DungeonCore.wornAetherionSetTier`).
+- Before: around 80 item meta copies every 2 ticks for a player in full gear who is standing still (counted from the
+  code). Not measured yet; take a spark profile on mmo-r after the deploy.
+- New code that asks "what is this player wearing" should use `EquippedGear.itemId` or `EquippedGear.fact` instead of
+  `itemManager.getItemId(player.getInventory()...)`. Slower set listeners (diving, healer, World Eater, Helios) still
+  read the items directly.
+- Deploy: Items only (mmo-r, mmo-d, mmo-c, mmo-i).
+
+## Cleanup round 2: transfer and save timers (2026-11-10, cloud session, not deployed yet)
+
+Audit items B2 (step 1) and B3 (first part). Same PR.
+- Transfer: the Dungeons copy of `NetworkPlayerDataSync` is gone. Dungeons' `TransferSnapshotStore` uses
+  `de.aetherion.core.network.NetworkPlayerDataSync`, so the list of files and keys a character carries, and how
+  they are merged on arrival, exists once. The two copies only differed in comments and in when a storage warning
+  is logged. Dungeons calls nothing in Core that the live Core does not already have. Its two own steps (staging
+  files before login, repairing pre-v6 keys) live in `bridge/PendingSnapshotFiles`.
+- Still open on the transfer (needs a build and test hops on every server pair, see the audit, B2): Dungeons'
+  `TransferSnapshotStore` and Core's `CharacterStore` are two implementations of the same v6 character, and Core
+  still starts the v5 `TransferSnapshotStore`.
+- Save timers: the eight shared files in Items (coins, skills, progress, codex, recipes, blueprints, shards, XP
+  boosts) each still save once a minute, but `core/SaveSlot` spreads their first run over 49 seconds so they no
+  longer all write in the same tick. Still open (audit, B3): writing off the main thread and saving only the
+  leaving player on quit.
+- Deploy: Dungeons (mmo-r, mmo-d) and Items (mmo-r, mmo-d, mmo-c, mmo-i).
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
@@ -207,7 +272,7 @@ overhaul, GIGA texture pack, German overlay, player HUD + boss bars, HUD frame +
 combat system (guard, cadence, mobility, stamina HUD), SamuraiBoss.
 
 Known gaps:
-- AetherMobs on mmo-c/mmo-i is the 10-04 build without pets; mmo-d runs an old `AetherMobs.jar`.
+- AetherMobs: the status check of 11-02 found every backend on the `main` build (the 10-04 build on mmo-c/mmo-i is gone).
 - 18 newer Quests lines lack German (`validate_de_overlay.py`: `ui.roads.*`,
   `dialogs.amethyst_mines_guide_intro`).
 - `CombatTeach` (tutorial combat beat) is still a stub.
