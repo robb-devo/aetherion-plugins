@@ -514,7 +514,7 @@ public final class LakeCast implements Listener {
             if (!isle.plugin().getDataFolder().exists()) {
                 isle.plugin().getDataFolder().mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException exception) {
             isle.plugin().getLogger().warning("Could not save isle-cast.yml: " + exception.getMessage());
         }

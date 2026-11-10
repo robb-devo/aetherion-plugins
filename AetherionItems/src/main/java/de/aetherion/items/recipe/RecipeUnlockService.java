@@ -319,7 +319,7 @@ public final class RecipeUnlockService {
         Collections.sort(full);
         yaml.set("full-unlock", full);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save recipe_unlocks.yml: " + exception.getMessage());
@@ -419,7 +419,7 @@ public final class RecipeUnlockService {
         Collections.sort(full);
         yaml.set("full-unlock", full);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not wipe recipe unlocks for " + playerId + ": " + exception.getMessage());

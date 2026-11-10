@@ -119,7 +119,7 @@ public final class Jawcamp implements Listener {
                 YamlConfiguration yaml = YamlConfiguration.loadConfiguration(titan.stateFile());
                 yaml.set("jawcamp-built", BUILD);
                 try {
-                    yaml.save(titan.stateFile());
+                    de.aetherion.core.persist.AtomicYaml.save(yaml, titan.stateFile());
                 } catch (IOException ex) {
                     plugin.getLogger().warning("[Jawcamp] Could not save build flag: " + ex.getMessage());
                 }

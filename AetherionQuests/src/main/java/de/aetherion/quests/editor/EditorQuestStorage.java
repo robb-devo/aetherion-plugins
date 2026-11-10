@@ -49,7 +49,7 @@ public final class EditorQuestStorage {
                         Backup this file before editing by hand.
                         """);
                 empty.set("quests", new LinkedHashMap<String, Object>());
-                empty.save(file);
+                de.aetherion.core.persist.AtomicYaml.save(empty, file);
             } catch (IOException ex) {
                 plugin.getLogger().log(Level.WARNING, "Could not create editor-quests.yml", ex);
             }
@@ -139,7 +139,7 @@ public final class EditorQuestStorage {
             write(yaml, quest);
         }
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException ex) {
             plugin.getLogger().log(Level.WARNING, "Could not save editor-quests.yml", ex);
         }

@@ -200,7 +200,7 @@ public final class BlueprintUnlockService {
             }
         }
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save unlocked_blueprints.yml: " + exception.getMessage());
@@ -338,7 +338,7 @@ public final class BlueprintUnlockService {
                 : new YamlConfiguration();
         yaml.set("players." + playerId, null);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not wipe blueprints for " + playerId + ": " + exception.getMessage());

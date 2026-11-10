@@ -170,7 +170,7 @@ public final class XpBoosterService implements Listener, Runnable {
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
             dirty = false;
         } catch (IOException ignored) {
         }
@@ -247,7 +247,7 @@ public final class XpBoosterService implements Listener, Runnable {
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
             dirty = false;
         } catch (IOException ignored) {
             dirty = true;

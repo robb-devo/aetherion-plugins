@@ -306,7 +306,7 @@ public final class CodexService {
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save codex.yml: " + exception.getMessage());
@@ -495,7 +495,7 @@ public final class CodexService {
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not wipe codex for " + playerId + ": " + exception.getMessage());

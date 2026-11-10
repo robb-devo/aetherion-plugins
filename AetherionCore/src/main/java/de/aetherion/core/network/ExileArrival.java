@@ -953,7 +953,7 @@ public final class ExileArrival implements Listener {
         }
         yaml.set("shown", list);
         try {
-            yaml.save(storeFile);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, storeFile);
         } catch (Exception ex) {
             plugin.getLogger().warning("Could not save exile-arrivals.yml: " + ex.getMessage());
         }

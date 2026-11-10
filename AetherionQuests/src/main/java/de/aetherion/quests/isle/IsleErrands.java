@@ -954,7 +954,7 @@ public final class IsleErrands implements Listener {
             }
         }
         try {
-            y.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(y, file);
             dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("isle-errands.yml: " + exception.getMessage());

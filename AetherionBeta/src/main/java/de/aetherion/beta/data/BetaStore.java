@@ -155,7 +155,7 @@ public final class BetaStore {
             yaml.set("answers." + entry.getKey(), entry.getValue());
         }
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             data.clearDirty();
         } catch (IOException exception) {
             plugin.getLogger().log(Level.WARNING, "Failed to save beta data for " + data.uuid(), exception);

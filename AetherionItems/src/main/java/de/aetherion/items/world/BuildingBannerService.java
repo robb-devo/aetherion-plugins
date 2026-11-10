@@ -82,7 +82,7 @@ public final class BuildingBannerService {
         placed.clear();
         try {
             YamlConfiguration empty = new YamlConfiguration();
-            empty.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(empty, file);
         } catch (IOException ignored) {
             if (file.exists()) {
                 file.delete();
@@ -494,7 +494,7 @@ public final class BuildingBannerService {
             config.set(path + "maps", banner.mapIds());
         }
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save building-banners.yml: " + exception.getMessage());
         }
