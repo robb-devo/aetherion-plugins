@@ -1,7 +1,8 @@
 # Aetherion plugins — start here
 
 - Current state (modules, live builds, content, where code lives): `docs/PROJECT_STATE.md`
-- Open beta work, by priority: `docs/BETA_AUDIT_2026-10-19.md`
+- Code health and cleanup plan (what to fix under the hood, in which order): `docs/CODE_AUDIT_2026-11-10.md`
+- Older beta work list: `docs/BETA_AUDIT_2026-10-19.md`
 - Ops, hosting and access details are private: `aetherion-ops/docs/` on Robb's PC. Never commit
   hosts, keys, passwords, ports or server ids here, even though the repo is private.
 
