@@ -15,21 +15,21 @@ const TIER = ['common', 'rare', 'epic', 'legendary', 'mythic']
 /** Five tiers of every trade, then what only drops from a boss. */
 export default function GearData() {
   const { copy, lang } = useLang()
-  const games = copy.home.skills.games
+  const trades = copy.game.trades
   return (
     <>
       <h2 className="wiki-h2">{copy.wiki.gearTiers}</h2>
       <div className="wiki-ladders">
         {LADDERS.map((l) => (
           <section key={l.id}>
-            <h3>{games[l.id].slot}</h3>
+            <h3>{trades[l.id].name}</h3>
             <ol>
               {l.icons.map((icon, i) => (
                 <li key={icon}>
                   <span className="slot tiers-slot">
                     <img src={asset(`items/${icon}.png`)} alt="" />
                   </span>
-                  <span className={`tiers-name r-${TIER[i]}`}>{games[l.id].tools[i]}</span>
+                  <span className={`tiers-name r-${TIER[i]}`}>{trades[l.id].tools[i]}</span>
                 </li>
               ))}
             </ol>
@@ -44,7 +44,7 @@ export default function GearData() {
             <div>
               <p className={`tip-name r-${it.rarity}`}>{it.name[lang]}</p>
               <p className="tip-note">{it.note[lang]}</p>
-              {it.boss ? <p className="tip-from">{interpolate(copy.home.loot.drop, { who: it.boss })}</p> : null}
+              {it.boss ? <p className="tip-from">{interpolate(copy.game.dropFrom, { who: it.boss })}</p> : null}
             </div>
           </li>
         ))}

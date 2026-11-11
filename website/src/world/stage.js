@@ -1,14 +1,14 @@
 import { dayAt, skyStops } from './day.js'
 import { createWorld, loadMesh } from './engine.js'
-import { ISLE_ORIGIN, PRISON_ORIGIN, ROUTE } from './route.js'
+import { CLOUDS, ROUTE, SETS, ZONES } from './route.js'
 import { asset } from '../lib/asset.js'
 
 /**
  * Everything behind the page, as one object that lives outside React: the sky, the sun and moon,
- * the stars and the city. Layers paint in this order, in the root stacking context:
+ * the stars and the world. Layers paint in this order, in the root stacking context:
  *
  *   sky canvas, stars, sun, moon   z -30
- *   the page's <h1>                z -20   (behind the towers)
+ *   the page's <h1>                z -20   (behind the islands)
  *   world canvas                   z -10   (transparent, fog is alpha)
  *   poster, cloud veil             z  -9
  *   normal page content            z   0
@@ -20,7 +20,38 @@ import { asset } from '../lib/asset.js'
 const lerp = (a, b, t) => a + (b - a) * t
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x)
 const smooth = (x) => { const t = clamp01(x); return t * t * (3 - 2 * t) }
-const cr = (a, b, c, d, t) => 0.5 * (2 * b + (c - a) * t + (2 * a - b * 5 + c * 4 - d) * t * t + (3 * b - a - c * 3 + d) * t * t * t)
+
+/**
+ * Monotone cubic tangents (Fritsch-Butland) over uneven spacing. Between two frames that are close
+ * together the camera drifts; across a long gap it eases out, travels and eases in. It never
+ * overshoots a key, which a plain Catmull-Rom spline does as soon as the keys are unevenly spaced.
+ */
+function tangents(x, y) {
+  const n = y.length
+  const m = new Array(n).fill(0)
+  if (n < 2) return m
+  const h = []
+  const d = []
+  for (let i = 0; i < n - 1; i += 1) {
+    h[i] = x[i + 1] - x[i]
+    d[i] = (y[i + 1] - y[i]) / h[i]
+  }
+  m[0] = d[0]
+  m[n - 1] = d[n - 2]
+  for (let i = 1; i < n - 1; i += 1) {
+    if (d[i - 1] * d[i] <= 0) continue
+    const w1 = 2 * h[i] + h[i - 1]
+    const w2 = h[i] + 2 * h[i - 1]
+    m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+  }
+  return m
+}
+const hermite = (y0, y1, m0, m1, h, u) => {
+  const u2 = u * u
+  const u3 = u2 * u
+  return (2 * u3 - 3 * u2 + 1) * y0 + (u3 - 2 * u2 + u) * h * m0 + (-2 * u3 + 3 * u2) * y1 + (u3 - u2) * h * m1
+}
+const CHANNELS = [['eye', 0], ['eye', 1], ['eye', 2], ['at', 0], ['at', 1], ['at', 2], ['fov'], ['sx'], ['sy']]
 
 const SEARCH = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams()
 export const SHOT = SEARCH.has('shot')
@@ -33,28 +64,25 @@ class Stage {
     this.active = false // the home page is on screen
     this.keys = []
     this.anchors = []
+    this.curves = []
     this.scroll = 0
-    this.s = 0
     this.t = 0.8 // night until the home page asks for morning
-    this.scale = 1
     this.intro = 0
     this.introStart = 0
     this.time = 0
     this.tone = ''
-    this.loaded = { city: false, isles: false, prison: false }
+    this.loaded = {}
     this.progress = 0
     this.listeners = new Set()
-    this.orbit = { yaw: 0, pitch: 0, vy: 0, vp: 0, drag: false }
+    this.orbit = { yaw: 0, pitch: 0, drag: false }
     this.parallax = { x: 0, y: 0, tx: 0, ty: 0 }
-    this.focus = null
-    this.focusAt = [0, 0, 0]
-    this.focusSet = false
-    this.pulseAt = 0
+    this.roll = 0
+    this.heading = null
     this.frameMs = 16
     this.slow = 0
     this.rungs = [1, 0.8, 0.66, 0.55, 0.45]
     this.rung = 0
-    this.state = { t: 0.8, tone: 'dark', chapter: 'hero', progress: 0 }
+    this.state = { tone: 'dark', progress: 0 }
     this.raf = 0
     this.last = 0
     this.frame = this.frame.bind(this)
@@ -65,7 +93,6 @@ class Stage {
     if (this.el) return
     this.el = el
     this.skyCtx = el.sky.getContext('2d', { alpha: false })
-    this.sizeLvh = el.lvh
     const motionOff = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const saveData = navigator.connection?.saveData === true
     const canDecode = typeof DecompressionStream !== 'undefined'
@@ -94,54 +121,68 @@ class Stage {
     document.addEventListener('visibilitychange', () => this.kick())
     document.fonts?.ready.then(() => this.remeasure())
     window.addEventListener('scroll', () => { if (this.mode === 'posters') this.kick() }, { passive: true })
-    if (this.world) this.loadCity()
-    else {
-      this.usePosters()
-      setTimeout(() => this.preloadImages(), 1500)
-    }
+    if (this.world) this.loadWorld()
+    else this.usePosters()
     this.kick()
   }
 
-  async loadCity() {
+  /** The first set is the one the page opens on. The others arrive behind it, unseen, in page order. */
+  async loadWorld() {
+    const [first, ...rest] = Object.keys(SETS)
     try {
-      const mesh = await loadMesh(asset('world3d/city.wasm'), (p) => this.setProgress(p))
-      this.world.addMesh(mesh, [0, 0, 0], { name: 'city' })
-      this.loaded.city = true
+      await this.loadSet(first, (p) => this.setProgress(p))
       this.introStart = performance.now()
       this.setProgress(1)
       this.emit()
-      // the rest of the world arrives once the city stands, without anyone waiting for it
-      setTimeout(() => this.loadRest(), 1400)
-      setTimeout(() => this.preloadImages(), 2200)
     } catch (error) {
-      console.warn('world: city failed', error)
+      console.warn('world: first set failed', error)
       this.fallBack()
+      return
+    }
+    await new Promise((resolve) => { setTimeout(resolve, 1400) })
+    for (const name of rest) {
+      try {
+        await this.loadSet(name)
+      } catch (error) {
+        console.warn('world: set failed', name, error)
+      }
     }
   }
 
-  async loadRest() {
-    try {
-      const isles = await loadMesh(asset('world3d/isles.wasm'))
-      this.world.addMesh(isles, ISLE_ORIGIN, { name: 'isles' })
-      this.loaded.isles = true
-      const prison = await loadMesh(asset('world3d/prison.wasm'))
-      this.world.addMesh(prison, PRISON_ORIGIN, { name: 'prison' })
-      this.loaded.prison = true
-    } catch (error) {
-      console.warn('world: scenes failed', error)
+  async loadSet(name, onProgress) {
+    const set = SETS[name]
+    const mesh = await loadMesh(asset(set.url), onProgress)
+    if (!set.place) {
+      this.world.addMesh(mesh, set.origin, { name })
+    } else {
+      // A set made of parts that stand on their own (the islands): each placement draws its part of
+      // the one mesh. The lantern list is regrouped so that every part owns a run of it.
+      const partOf = (x) => Object.keys(set.parts).find((k) => x >= set.parts[k].x[0] && x < set.parts[k].x[1])
+      const runs = {}
+      const sorted = new Float32Array(mesh.lights.length)
+      let n = 0
+      for (const part of Object.keys(set.parts)) {
+        const first = n
+        for (let i = 0; i < mesh.lights.length; i += 4) {
+          if (partOf(mesh.lights[i]) !== part) continue
+          sorted.set(mesh.lights.subarray(i, i + 4), n * 4)
+          n += 1
+        }
+        runs[part] = [first, n - first]
+      }
+      mesh.lights = sorted
+      const stock = this.world.addMesh(mesh, [0, 0, 0], { name, draw: false })
+      for (const [part, x, y, z] of set.place) {
+        const c = set.parts[part].c
+        this.world.addInstance(stock, [x - c[0], y - c[1], z - c[2]], {
+          regions: stock.regions.filter((r) => partOf(r.c[0]) === part),
+          lights: runs[part],
+          center: [x, 0, z],
+        })
+      }
     }
-  }
-
-  /** Pictures further down the page, decoded before anyone gets there: nothing should pop in. */
-  preloadImages() {
-    const big = window.innerWidth > 900
-    const list = [big ? 'world/chart.webp' : 'world/chart-1000.webp', 'world/eldervale.jpg', 'world/amethyst-mines.jpg', 'world/harbour-spawn.jpg', 'world/throne-of-ashes.jpg']
-    for (const src of list) {
-      const im = new Image()
-      im.decoding = 'async'
-      im.src = asset(src)
-      im.decode?.().catch(() => {})
-    }
+    this.loaded[name] = true
+    this.kick()
   }
 
   fallBack() {
@@ -155,7 +196,7 @@ class Stage {
 
   /**
    * Without 3D, the world is a set of stills from the same camera, transparent where the sky is:
-   * the sky still runs through the day, and the title still stands behind the towers.
+   * the sky still runs through the day, and the title still stands behind the islands.
    */
   async usePosters() {
     if (this.posterData) return
@@ -177,9 +218,6 @@ class Stage {
     const mid = this.scroll + window.innerHeight * 0.5
     let id = tops[0].id
     for (const t of tops) if (t.top <= mid) id = t.id
-    if (id === 'dive') return 'prison'
-    if (id === 'rise') return 'night'
-    if (id === 'isle') return `isle_${this.focusId ?? 'starter_grove'}`
     return id
   }
 
@@ -208,7 +246,7 @@ class Stage {
     const meta = this.posterData?.[this.portrait ? 'p' : 'l']?.[id]
     const target = meta?.horizon ?? 0.56
     this.posterHorizon += (target - this.posterHorizon) * (1 - Math.exp(-dt / 220))
-    this.paintSky(day, this.posterHorizon)
+    this.paintSky(day, this.posterHorizon, 0)
     const el = this.el
     const place = (node, at) => {
       if (at) {
@@ -223,8 +261,8 @@ class Stage {
 
   setProgress(p) {
     this.progress = p
-    this.state.progress = p
-    this.el.progress?.(p)
+    this.state = { ...this.state, progress: p }
+    this.emit()
   }
 
   subscribe(fn) {
@@ -237,7 +275,7 @@ class Stage {
     for (const fn of this.listeners) fn(this.state)
   }
 
-  /** On for the home page; elsewhere the night sky stays and the city rests. */
+  /** On for the home page; elsewhere the night sky stays and the world rests. */
   setActive(active) {
     if (this.active === active) return
     this.active = active
@@ -268,7 +306,7 @@ class Stage {
       if (!n) continue
       const o = portrait && k.p ? { ...k, ...k.p } : k
       anchors.push(n.top + k.f * n.h)
-      keys.push({ ...o, sx: o.sx && portrait ? 0 : o.sx || 0, sy: o.sy || 0, ch: k.ch })
+      keys.push({ ...o, fov: o.fov, sx: o.sx && portrait ? 0 : o.sx || 0, sy: o.sy || 0, ch: k.ch })
     }
     if (!keys.length) return
     // the view centre passes the anchor, not the top of the screen
@@ -280,11 +318,15 @@ class Stage {
     for (let i = 1; i < anchors.length; i += 1) if (anchors[i] <= anchors[i - 1]) anchors[i] = anchors[i - 1] + 1
     this.anchors = anchors
     this.keys = keys
+    this.curves = CHANNELS.map(([name, axis]) => {
+      const y = keys.map((k) => (axis === undefined ? k[name] : k[name][axis]))
+      return { y, m: tangents(anchors, y) }
+    })
     this.chapterTops = Object.entries(nodes).map(([id, n]) => ({ id, top: n.top })).sort((a, b) => a.top - b.top)
     this.portrait = portrait
   }
 
-  /** Scroll position to a place on the spline: key index plus fraction. */
+  /** Scroll position to a place on the route: key index plus fraction. */
   locate(y) {
     const a = this.anchors
     if (!a.length) return 0
@@ -305,11 +347,27 @@ class Stage {
     const K = this.keys
     const n = K.length - 1
     const i = Math.max(0, Math.min(n - 1, Math.floor(s)))
-    const f = s - i
-    const A = K[Math.max(0, i - 1)], B = K[i], C = K[Math.min(n, i + 1)], D = K[Math.min(n, i + 2)]
-    const v3 = (key) => [0, 1, 2].map((j) => cr(A[key][j], B[key][j], C[key][j], D[key][j], f))
-    const v1 = (key) => cr(A[key] || 0, B[key] || 0, C[key] || 0, D[key] || 0, f)
-    return { eye: v3('eye'), at: v3('at'), fov: v1('fov'), sx: v1('sx'), sy: v1('sy'), t: lerp(B.t, C.t, f), ff: lerp(B.ff ?? 1, C.ff ?? 1, f), solid: lerp(B.solid ?? 0, C.solid ?? 0, f) }
+    const u = clamp01(s - i)
+    const h = this.anchors[i + 1] - this.anchors[i]
+    const v = this.curves.map((c) => hermite(c.y[i], c.y[i + 1], c.m[i], c.m[i + 1], h, u))
+    const A = K[i]
+    const B = K[i + 1]
+    return {
+      eye: [v[0], v[1], v[2]], at: [v[3], v[4], v[5]], fov: v[6], sx: v[7], sy: v[8],
+      t: lerp(A.t, B.t, u), ff: lerp(A.ff ?? 1, B.ff ?? 1, u), solid: lerp(A.solid ?? 0, B.solid ?? 0, u), i, u,
+    }
+  }
+
+  /**
+   * How much of a zone is present at this point of the route. A zone leaves in the first half of
+   * the gap between two keys and the next one arrives in the second half, so two places are never
+   * on screen together: each dissolves into the air it stands in.
+   */
+  presence(name, i, u) {
+    const a = this.keys[i].z === name ? 1 : 0
+    const b = this.keys[i + 1].z === name ? 1 : 0
+    if (a === b) return a
+    return a ? 1 - smooth((u - 0.1) / 0.36) : smooth((u - 0.54) / 0.36)
   }
 
   /** The hero can be turned by hand. It springs back as soon as you let go and scroll. */
@@ -320,13 +378,6 @@ class Stage {
 
   setOrbitDrag(on) {
     this.orbit.drag = on
-  }
-
-  /** The island picker moves the camera's attention, smoothly, from anywhere inside its chapter. */
-  setFocus(point, id) {
-    this.focus = point
-    this.focusId = id
-    if (this.mode === 'posters') this.kick()
   }
 
   measureSize() {
@@ -365,7 +416,8 @@ class Stage {
     this.el.stars.style.backgroundImage = `url(${c.toDataURL('image/png')})`
   }
 
-  paintSky(day, horizon) {
+  /** `roll` in radians: the sky tips with the camera, about the point where the horizon crosses the middle. */
+  paintSky(day, horizon, roll) {
     const ctx = this.skyCtx
     const h = this.el.sky.height
     const g = ctx.createLinearGradient(0, 0, 0, h)
@@ -384,7 +436,8 @@ class Stage {
     ctx.fillRect(0, 0, this.el.sky.width, h)
     // the canvas is 300 lvh tall; its horizon band sits at 53 %
     const y = horizon * this.cssH - this.cssH * 3 * 0.53
-    this.el.sky.style.transform = `translate3d(0,${y.toFixed(1)}px,0)`
+    const tip = Math.abs(roll) > 0.0004 ? ` rotate(${(-roll * 57.29578).toFixed(3)}deg)` : ''
+    this.el.sky.style.transform = `translate3d(0,${y.toFixed(1)}px,0)${tip}`
   }
 
   kick() {
@@ -416,7 +469,7 @@ class Stage {
     const target = 0.8
     this.t += (target - this.t) * (1 - Math.exp(-dt / 260))
     const day = dayAt(this.t)
-    this.paintSky(day, 0.56)
+    this.paintSky(day, 0.56, 0)
     this.applyCelestial(day, null)
     this.setTone('dark')
     if (Math.abs(target - this.t) > 0.001) this.raf = requestAnimationFrame(this.frame)
@@ -460,22 +513,18 @@ class Stage {
       this.remeasure()
       if (!this.keys.length) return
     }
-    const s = this.locate(this.scroll)
-    const c = this.sample(s)
+    const c = this.peeking || this.sample(this.locate(this.scroll))
     // t runs with the camera, except right after arriving from an inner page
     const dtT = 1 - Math.exp(-dt / 180)
-    this.t = Math.abs(c.t - this.t) > 0.25 ? lerp(this.t, c.t, dtT) : c.t
+    this.t = Math.abs(c.t - this.t) > 0.25 && !SHOT ? lerp(this.t, c.t, dtT) : c.t
     const day = dayAt(this.t)
     day.fog *= c.ff
     day.mist *= c.ff
-    if (this.pulseAt) {
-      const p = Math.exp(-(now - this.pulseAt) / 800)
-      if (p > 0.01) {
-        day.emis += p * 0.42
-        day.block = day.block.map((v) => v * (1 + p * 1.4))
-        day.exposure *= 1 + p * 0.14
-      }
-    }
+
+    // which place this is, and how much of it
+    const zoneName = this.keys[c.u < 0.5 ? c.i : c.i + 1].z
+    const zone = c.zone ? { ...ZONES[zoneName], ...c.zone } : ZONES[zoneName]
+    const here = this.presence(zoneName, c.i, c.u)
 
     // what the user's hands add
     const o = this.orbit
@@ -489,38 +538,33 @@ class Stage {
     pl.x += (pl.tx - pl.x) * (1 - Math.exp(-dt / 320))
     pl.y += (pl.ty - pl.y) * (1 - Math.exp(-dt / 320))
     let eye = c.eye
-    let at = c.at
+    const at = c.at
     // it is alive even when no one touches it: the camera breathes
-    const yaw = o.yaw * atTop + pl.x * 0.022 + Math.sin(this.time * 0.13) * (0.006 + 0.012 * atTop)
+    const still = SHOT ? 0 : 1
+    const yaw = o.yaw * atTop + (pl.x * 0.022 + Math.sin(this.time * 0.13) * (0.006 + 0.012 * atTop)) * still
     const pitch = o.pitch * atTop
     const dx = eye[0] - at[0], dz = eye[2] - at[2]
     const cs = Math.cos(yaw), sn = Math.sin(yaw)
     const dist = Math.hypot(dx, dz)
-    eye = [at[0] + dx * cs - dz * sn, eye[1] + dist * pitch - pl.y * 7, at[2] + dx * sn + dz * cs]
+    eye = [at[0] + dx * cs - dz * sn, eye[1] + dist * pitch - pl.y * 7 * still, at[2] + dx * sn + dz * cs]
 
-    // the island picker: its weight comes from the spline, so it can't swing on its own
-    const i0 = Math.max(0, Math.min(this.keys.length - 2, Math.floor(s)))
-    const fw = smooth(lerp(this.keys[i0].focus ? 1 : 0, this.keys[i0 + 1].focus ? 1 : 0, s - i0))
-    if (this.focus) {
-      if (!this.focusSet) {
-        this.focusSet = true
-        this.focusAt = [...this.focus]
-      }
-      for (let i = 0; i < 3; i += 1) this.focusAt[i] += (this.focus[i] - this.focusAt[i]) * (1 - Math.exp(-dt / 620))
+    // it banks into its turns and levels out when the scrolling stops
+    const head = Math.atan2(c.at[0] - c.eye[0], c.eye[2] - c.at[2])
+    if (this.heading !== null && !SHOT && dt > 0) {
+      let turn = head - this.heading
+      if (turn > Math.PI) turn -= Math.PI * 2
+      if (turn < -Math.PI) turn += Math.PI * 2
+      const want = Math.max(-0.05, Math.min(0.05, (turn / dt) * 1000 * 0.12)) // radians of bank per rad/s of turn
+      this.roll += (want - this.roll) * (1 - Math.exp(-dt / 420))
     }
-    if (fw > 0.001 && this.focus) {
-      const f = this.focusAt
-      const fe = [f[0] - 38, f[1] + (this.portrait ? 70 : 42), f[2] + (this.portrait ? 110 : 88)]
-      at = at.map((v, i) => lerp(v, f[i], fw))
-      eye = eye.map((v, i) => lerp(v, fe[i], fw))
-    }
+    this.heading = head
+    const roll = SHOT ? c.roll || 0 : this.roll
 
-    const view = { eye, at, fov: c.fov, shiftX: -c.sx, shiftY: -c.sy }
+    const view = { eye, at, fov: c.fov, shiftX: -c.sx, shiftY: -c.sy, roll, clouds: c.clouds || this.cloudsFor(zoneName, here) }
     this.setTone(day.tone)
-    this.setClock(this.t)
 
     // the veil: the moment the camera is inside a cloud layer, the screen is cloud
-    const veil = this.veilAt(eye[1], day)
+    const veil = this.veilAt(eye[1], day, view.clouds)
     if (veil !== this.veilLast) {
       this.veilLast = veil
       this.el.veil.style.opacity = veil.toFixed(3)
@@ -528,43 +572,51 @@ class Stage {
     }
 
     const w = this.world
-    if (w && this.mode === 'live' && this.loaded.city) {
+    if (w && this.mode === 'live' && w.meshes.length) {
       if (!SHOT && (this.cssW !== window.innerWidth)) this.measureSize()
-      const r = SHOT ? 1 : clamp01((now - this.introStart) / 4600)
+      const r = SHOT ? 1 : clamp01((now - this.introStart) / 3800)
       const e = 1 - Math.pow(1 - r, 3)
       this.intro = e
-      for (const m of w.meshes) m.visible = this.meshVisible(m.name, eye)
-      w.render(view, day, this.time + 40, { intro: e, fogBoost: (1 - e) * 0.0046, haze: day.haze, solidAir: c.solid })
-      this.paintSky(day, w.horizonY(view) ?? 0.56)
+      for (const m of w.meshes) {
+        m.fade = this.presence(m.name, c.i, c.u)
+        m.visible = m.fade > 0.004
+      }
+      const dusk = clamp01(day.emis * 1.4)
+      w.render(view, day, this.time + 40, {
+        intro: e,
+        fogBoost: (1 - e) * 0.0046,
+        haze: day.haze,
+        solidAir: c.solid,
+        mistY: zone.mistY,
+        flock: zone.flock && here > 0.5 ? zone.flock : null,
+        motes: {
+          tint: zone.motes || [1, lerp(0.96, 0.74, dusk), lerp(0.84, 0.38, dusk)],
+          alpha: lerp(0.3, 0.85, dusk) * here * e,
+          wind: zone.wind || [0.5, 0.06, 0.22],
+        },
+      })
+      this.paintSky(day, w.horizonY(view) ?? 0.56, roll)
       this.applyCelestial(day, view)
       if (!SHOT) this.govern(dt, now)
     } else if (this.mode === 'posters') {
       this.stepPosters(day, dt)
     } else {
-      this.paintSky(day, 0.56)
+      this.paintSky(day, 0.56, 0)
       this.applyCelestial(day, null)
     }
     this.lastView = view
-    this.s = s
   }
 
-  meshVisible(name, eye) {
-    if (name === 'prison') return eye[1] < 40
-    if (name === 'isles') return eye[0] > 330 && eye[1] > -60
-    return true
+  /** The cloud layers of this place. Ones marked with a zone only exist there. */
+  cloudsFor(zoneName, here) {
+    return CLOUDS.map((layer) => (layer.zone ? { ...layer, alpha: layer.zone === zoneName ? layer.alpha * here : 0 } : layer)).filter((layer) => layer.alpha > 0.004)
   }
 
-  veilAt(y, day) {
-    const near = (plane, range) => 1 - smooth(Math.abs(y - plane) / range)
-    const k = Math.max(near(-70, 46), near(18, 20) * 0.45)
+  veilAt(y, day, layers) {
+    let k = 0
+    for (const layer of layers) k = Math.max(k, (1 - smooth(Math.abs(y - layer.y) / layer.thick)) * layer.veil * Math.min(1, layer.alpha * 2))
     this.el.veil.style.background = `radial-gradient(120% 90% at 50% 50%, ${day.veilA}, ${day.veilB})`
     return k
-  }
-
-  setClock(t) {
-    if (Math.abs(t - (this.state.t ?? 0)) < 0.002) return
-    this.state = { ...this.state, t }
-    this.emit()
   }
 
   /** Slower devices lose pixels, then the 3D, never the page. */
@@ -588,20 +640,27 @@ class Stage {
     }
   }
 
-  /** A bell stroke: for a moment every lamp in the city answers. */
-  pulse() {
-    this.pulseAt = performance.now()
-  }
-
   /** Test hook: jump to a scroll position and paint it right now. */
   snap(y) {
     window.scrollTo({ top: y, behavior: 'instant' })
     this.scroll = y
     this.remeasure()
+    this.peeking = null
     this.t = this.sample(this.locate(y)).t
     this.step(performance.now(), 16)
     this.world?.gl.finish()
-    return { s: this.s, t: this.t, stats: this.world ? { ...this.world.stats } : null, keys: this.keys.length }
+    return { t: this.t, stats: this.world ? { ...this.world.stats } : null, keys: this.keys.length }
+  }
+
+  /** Test hook: paint an arbitrary view, to compose a frame before it becomes a key. `z` names its zone. */
+  peek(view) {
+    this.remeasure()
+    const i = Math.max(0, this.keys.findIndex((k) => k.z === (view.z || 'isles')))
+    this.peeking = { sx: 0, sy: 0, fov: 40, t: 0, ff: 1, solid: 0, ...view, i: Math.min(i, this.keys.length - 2), u: i >= this.keys.length - 1 ? 1 : 0 }
+    this.t = this.peeking.t
+    this.step(performance.now(), 16)
+    this.world?.gl.finish()
+    this.peeking = null
   }
 }
 

@@ -7,7 +7,7 @@ const DROPS = { 'The Ashen Sheath': 'ashen_katana', Pathwarden: 'gravwell_cleave
 
 export default function BossData() {
   const { copy, lang } = useLang()
-  const bars = copy.home.gnomon.bars
+  const bars = copy.game.bosses
   return (
     <ul className="wiki-bosses">
       {bars.map((boss) => {

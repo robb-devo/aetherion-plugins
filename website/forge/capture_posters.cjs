@@ -10,8 +10,7 @@ const out = path.join(pub, 'posters')
 fs.mkdirSync(out, { recursive: true })
 const tmp = path.join(out, '_tmp')
 fs.mkdirSync(tmp, { recursive: true })
-const CHAPTERS = ['hero', 'what', 'talk', 'skills', 'chart', 'pets', 'loot', 'prison', 'gnomon', 'night', 'join', 'finale']
-const ISLES = ['starter_grove', 'starter_tide', 'starter_quarry', 'starter_guild']
+const CHAPTERS = ['hero', 'about', 'jobs', 'world', 'isle', 'pets', 'dungeons', 'exile', 'join', 'finale']
 
 ;(async () => {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] })
@@ -20,26 +19,19 @@ const ISLES = ['starter_grove', 'starter_tide', 'starter_quarry', 'starter_guild
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
     const page = await ctx.newPage()
     await page.goto(`${url}/?shot=1`, { waitUntil: 'domcontentloaded' })
-    await page.waitForFunction('window.__stage && window.__stage.loaded.prison', { timeout: 300000 })
+    await page.waitForFunction('window.__stage && window.__stage.loaded.city', { timeout: 300000 })
     await page.waitForTimeout(800)
-    const grab = async (id, chapter, focus) => {
-      const data = await page.evaluate(([ch, f]) => {
+    const grab = async (id) => {
+      const data = await page.evaluate((ch) => {
         const s = window.__stage
         s.remeasure()
-        if (f) {
-          s.setFocus(f, null)
-          s.focusAt = [...f]
-          s.focusSet = true
-        }
         const idx = s.keys.map((k, i) => (k.ch === ch ? i : -1)).filter((i) => i >= 0)
         const y = (s.anchors[idx[0]] + s.anchors[idx[idx.length - 1]]) / 2
         s.snap(y)
         const w = s.world
-        const v = s.lastView
-        const day = { ...w }
         return {
           png: document.querySelector('.w-canvas').toDataURL('image/png'),
-          horizon: w.horizonY(v),
+          horizon: w.horizonY(s.lastView),
           sun: s.el.sun.style.opacity === '1' ? parseT(s.el.sun, s) : null,
           moon: s.el.moon.style.opacity === '1' ? parseT(s.el.moon, s) : null,
         }
@@ -47,25 +39,23 @@ const ISLES = ['starter_grove', 'starter_tide', 'starter_quarry', 'starter_guild
           const m = node.style.transform.match(/translate3d\(([-\d.]+)px, ?([-\d.]+)px/)
           return m ? [Number(m[1]) / st.cssW, Number(m[2]) / st.cssH] : null
         }
-      }, [chapter, focus])
+      }, id)
       fs.writeFileSync(path.join(tmp, `${key}-${id}.png`), Buffer.from(data.png.split(',')[1], 'base64'))
       manifest[key][id] = { horizon: Number((data.horizon ?? 0.56).toFixed(4)), sun: data.sun, moon: data.moon }
       console.log(key, id)
     }
-    for (const ch of CHAPTERS) await grab(ch, ch)
-    const spots = await page.evaluate(() => import('/src/world/route.js').then((m) => m.ISLE_SPOTS))
-    for (const isle of ISLES) await grab(`isle_${isle}`, 'isle', spots[isle])
+    for (const ch of CHAPTERS) await grab(ch)
     await ctx.close()
   }
   fs.writeFileSync(path.join(out, 'posters.json'), JSON.stringify(manifest))
 
-  // link preview: the title behind the towers, nothing else
+  // link preview: the title behind the islands, nothing else
   const og = await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 })
   const page = await og.newPage()
   await page.goto(`${url}/?shot=1`, { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction('window.__stage && window.__stage.loaded.city', { timeout: 300000 })
+  await page.waitForFunction('window.__stage && window.__stage.loaded.isles', { timeout: 300000 })
   await page.waitForTimeout(800)
-  await page.addStyleTag({ content: '.site-nav,.hero-foot,.clock{visibility:hidden!important}' })
+  await page.addStyleTag({ content: '.site-nav,.hero-foot{visibility:hidden!important}' })
   await page.evaluate(() => window.__stage.snap(0))
   await page.waitForTimeout(200)
   await page.screenshot({ path: path.join(pub, 'brand/og-aetherion.jpg'), type: 'jpeg', quality: 88 })

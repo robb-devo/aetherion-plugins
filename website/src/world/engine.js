@@ -1,4 +1,4 @@
-import { CLOUD_FS, CLOUD_VS, GLOW_FS, GLOW_VS, SOLID_FS, SOLID_VS, BIRD_FS, BIRD_VS } from './shaders.js'
+import { BIRD_FS, BIRD_VS, CLOUD_FS, CLOUD_VS, GLOW_FS, GLOW_VS, MOTE_FS, MOTE_VS, SOLID_FS, SOLID_VS } from './shaders.js'
 
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l] }
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
@@ -18,10 +18,17 @@ function perspective(out, fovY, aspect, near, far, shiftY = 0, shiftX = 0) {
   return out
 }
 
-function lookAt(out, eye, at) {
+/** `roll` tips the camera about its own axis (radians, right wing down): it banks into a turn. */
+function lookAt(out, eye, at, roll = 0) {
   const z = norm([eye[0] - at[0], eye[1] - at[1], eye[2] - at[2]])
-  const x = norm(cross([0, 1, 0], z))
-  const y = cross(z, x)
+  let x = norm(cross([0, 1, 0], z))
+  let y = cross(z, x)
+  if (roll) {
+    const c = Math.cos(roll), s = Math.sin(roll)
+    const rx = [x[0] * c - y[0] * s, x[1] * c - y[1] * s, x[2] * c - y[2] * s]
+    y = [y[0] * c + x[0] * s, y[1] * c + x[1] * s, y[2] * c + x[2] * s]
+    x = rx
+  }
   out[0] = x[0]; out[1] = y[0]; out[2] = z[0]; out[3] = 0
   out[4] = x[1]; out[5] = y[1]; out[6] = z[1]; out[7] = 0
   out[8] = x[2]; out[9] = y[2]; out[10] = z[2]; out[11] = 0
@@ -272,6 +279,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
   const cloud = program(gl, CLOUD_VS, CLOUD_FS)
   const glow = program(gl, GLOW_VS, GLOW_FS)
   const bird = program(gl, BIRD_VS, BIRD_FS)
+  const mote = program(gl, MOTE_VS, MOTE_FS)
   const noAttribs = gl.createVertexArray()
 
   const noiseTex = gl.createTexture()
@@ -315,7 +323,8 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
   const frustum = new Float32Array(24)
   const stats = { tris: 0, draws: 0, regions: 0 }
 
-  function addMesh(mesh, origin = [0, 0, 0], { name = '', intro = 1 } = {}) {
+  /** `draw: false` keeps the geometry on the GPU without showing it: a stock that instances are cut from. */
+  function addMesh(mesh, origin = [0, 0, 0], { name = '', intro = 1, draw = true } = {}) {
     const vao = gl.createVertexArray()
     gl.bindVertexArray(vao)
     const vb = gl.createBuffer()
@@ -350,11 +359,25 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
       gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0)
       gl.bindVertexArray(null)
     }
-    const m = { name, vao, lvao, pal, regions: mesh.regions, origin, intro, nl: mesh.lights.length / 4, size: mesh.size, visible: true, cull: null }
-    meshes.push(m)
+    const m = {
+      name, vao, lvao, pal, regions: mesh.regions, origin, intro, visible: true, fade: 1,
+      l0: 0, nl: mesh.lights.length / 4,
+      center: [origin[0] + mesh.size[0] / 2, 0, origin[2] + mesh.size[2] / 2],
+    }
+    if (draw) meshes.push(m)
     // free the CPU copies
     mesh.verts = null; mesh.idx = null; mesh.pal = null
     return m
+  }
+
+  /**
+   * Part of a mesh once more, somewhere else: it costs a draw call, not memory.
+   * `regions` is the subset to draw, `lights` its [first, count] in the mesh's lantern list.
+   */
+  function addInstance(m, origin, { name = m.name, regions = m.regions, lights = [m.l0, m.nl], center = null } = {}) {
+    const copy = { ...m, name, origin, regions, l0: lights[0], nl: lights[1], center: center || [origin[0], 0, origin[2]], visible: true, fade: 1 }
+    meshes.push(copy)
+    return copy
   }
 
   function setFrustum() {
@@ -380,14 +403,14 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
     return true
   }
 
-  /** view: { eye, at, fov, shiftY } · day: dayAt(t) · time: seconds */
-  function render(view, day, time, { intro = 1, fogBoost = 0, haze = [1, 0.9, 0.8], clouds = true, solidAir = 0 } = {}) {
+  /** view: { eye, at, fov, shiftX, shiftY, roll, clouds } · day: dayAt(t) · time: seconds */
+  function render(view, day, time, { intro = 1, fogBoost = 0, haze = [1, 0.9, 0.8], clouds = true, solidAir = 0, mistY = 92, flock = null, motes = null } = {}) {
     const w = canvas.width, h = canvas.height
     gl.viewport(0, 0, w, h)
     gl.depthMask(true)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     perspective(P, (view.fov * Math.PI) / 180, w / h, 2.5, 7000, view.shiftY || 0, view.shiftX || 0)
-    lookAt(V, view.eye, view.at)
+    lookAt(V, view.eye, view.at, view.roll || 0)
     mul(VP, P, V)
     setFrustum()
     const eye = view.eye
@@ -412,7 +435,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
     gl.uniform1f(u.uFogBoost, fogBoost)
     gl.uniform1f(u.uSolid, solidAir)
     gl.uniform1f(u.uMist, day.mist)
-    gl.uniform1f(u.uMistY, 92)
+    gl.uniform1f(u.uMistY, mistY)
     gl.uniform1f(u.uTime, time)
     gl.uniform1f(u.uExposure, day.exposure)
     gl.uniform1i(u.uPal, 0)
@@ -425,7 +448,8 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, m.pal)
       gl.uniform3fv(u.uOrigin, m.origin)
-      gl.uniform3f(u.uCenter, m.origin[0] + m.size[0] / 2, 0, m.origin[2] + m.size[2] / 2)
+      gl.uniform1f(u.uFade, m.fade)
+      gl.uniform3fv(u.uCenter, m.center)
       gl.uniform1f(u.uIntro, Math.min(m.intro, intro))
       list.length = 0
       for (const r of m.regions) {
@@ -474,15 +498,34 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
     }
 
     // a little life in the open sky, gone before the lamps come on
-    if (day.emis < 0.6) {
+    if (flock && day.emis < 0.6) {
       gl.depthMask(false)
       gl.useProgram(bird.p)
       gl.bindVertexArray(noAttribs)
       gl.uniformMatrix4fv(bird.u.uVP, false, VP)
       gl.uniform1f(bird.u.uTime, time)
       gl.uniform1f(bird.u.uPx, h * 1.6)
+      gl.uniform4fv(bird.u.uFlock, flock)
       gl.uniform4f(bird.u.uInk, 0.09, 0.1, 0.2, 0.78 * Math.min(1, (0.6 - day.emis) * 3))
       gl.drawArrays(gl.POINTS, 0, 22)
+    }
+
+    // dust in the light by day, sparks after dark: the air between the camera and the world
+    if (motes && motes.alpha > 0.004) {
+      gl.depthMask(false)
+      gl.blendFunc(gl.ONE, gl.ONE)
+      gl.useProgram(mote.p)
+      gl.bindVertexArray(noAttribs)
+      gl.uniformMatrix4fv(mote.u.uVP, false, VP)
+      gl.uniform3fv(mote.u.uCam, eye)
+      gl.uniform3fv(mote.u.uWind, motes.wind)
+      gl.uniform3fv(mote.u.uTint, motes.tint)
+      gl.uniform1f(mote.u.uAlpha, motes.alpha)
+      gl.uniform1f(mote.u.uTime, time)
+      gl.uniform1f(mote.u.uBox, motes.box || 64)
+      gl.uniform1f(mote.u.uPx, (h * 0.5) / Math.tan((view.fov * Math.PI) / 360))
+      gl.drawArrays(gl.POINTS, 0, motes.n || 110)
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
     }
 
     // lanterns: soft halos, only once it gets dark
@@ -498,10 +541,11 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
       gl.uniform1f(g.uIntro, intro)
       gl.uniform3f(g.uTint, 1.0, 0.68, 0.36)
       for (const m of meshes) {
-        if (!m.visible || !m.lvao) continue
+        if (!m.visible || !m.lvao || !m.nl) continue
         gl.bindVertexArray(m.lvao)
         gl.uniform3fv(g.uOrigin, m.origin)
-        gl.drawArrays(gl.POINTS, 0, m.nl)
+        gl.uniform1f(g.uFade, m.fade)
+        gl.drawArrays(gl.POINTS, m.l0, m.nl)
       }
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
     }
@@ -525,7 +569,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
     return p ? p[1] : null
   }
 
-  return { gl, addMesh, render, projectDir, horizonY, stats, meshes }
+  return { gl, addMesh, addInstance, render, projectDir, horizonY, stats, meshes }
 }
 
 export const DEFAULT_CLOUDS = [

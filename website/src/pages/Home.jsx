@@ -1,23 +1,13 @@
 import { useEffect } from 'react'
-import Bosses from '../components/home/Bosses.jsx'
-import Chart from '../components/home/Chart.jsx'
-import Gnomon from '../components/home/Gnomon.jsx'
+import { About, Dungeons, Exile, Isle, Jobs, Pets, World } from '../components/home/Beats.jsx'
 import Hero from '../components/home/Hero.jsx'
-import Isles from '../components/home/Isles.jsx'
 import Join, { JoinDock } from '../components/home/Join.jsx'
-import Loot from '../components/home/Loot.jsx'
-import Pets from '../components/home/Pets.jsx'
-import Prison from '../components/home/Prison.jsx'
-import Night from '../components/home/Night.jsx'
-import Skills from '../components/home/Skills.jsx'
-import Talk from '../components/home/Talk.jsx'
-import What from '../components/home/What.jsx'
 import { useLang } from '../i18n.jsx'
 
 /**
- * One day over Aetherion, from first light to the next. Each chapter owns a stretch of the scroll;
- * world/route.js pins the camera and the clock to them. Gaps between chapters are on purpose: the
- * camera needs room to fly, and that flight is the point.
+ * One day over Aetherion in a single camera take. Each section is one frame of that take with one
+ * line and a few sentences on it; world/route.js pins the camera and the clock to them. Anything
+ * deeper belongs in the wiki, not here.
  */
 export default function Home() {
   const { copy } = useLang()
@@ -28,19 +18,13 @@ export default function Home() {
   return (
     <main className="home">
       <Hero />
-      <What />
-      <Talk />
-      <Skills />
-      <Chart />
-      <Isles />
+      <About />
+      <Jobs />
+      <World />
+      <Isle />
       <Pets />
-      <Loot />
-      <section data-chapter="dive" className="ch-flight" aria-hidden="true" />
-      <Prison />
-      <Gnomon />
-      <Bosses />
-      <section data-chapter="rise" className="ch-flight" aria-hidden="true" />
-      <Night />
+      <Dungeons />
+      <Exile />
       <Join />
       <JoinDock />
     </main>

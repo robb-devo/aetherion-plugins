@@ -1,9 +1,11 @@
 import { SITE } from './content.js'
+import { GAME } from './copy-game.js'
 import { HOME } from './copy-home.js'
 import { WIKI_PAGES } from './copy-wiki.js'
 
 const en = {
   home: HOME.en,
+  game: GAME.en,
   meta: {
     title: 'Aetherion, a Minecraft MMO in the sky',
     description:
@@ -551,6 +553,7 @@ const en = {
 
 const de = {
   home: HOME.de,
+  game: GAME.de,
   meta: {
     title: 'Aetherion, ein Minecraft-MMO im Himmel',
     description:

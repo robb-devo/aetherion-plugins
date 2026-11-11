@@ -41,7 +41,7 @@ void main(){
 export const SOLID_FS = `#version 300 es
 precision highp float; precision highp int;
 in vec3 vW; in float vAO; in vec3 vCol; in vec3 vL; flat in vec3 vN; flat in vec4 vM; flat in vec3 vSunTint;
-uniform vec3 uCam; uniform sampler2D uPat; uniform sampler2D uNoise; uniform vec3 uSunDir, uHaze, uAmbUp; uniform float uEmis, uFog, uMist, uMistY, uTime, uExposure, uFogBoost, uSolid;
+uniform vec3 uCam; uniform sampler2D uPat; uniform sampler2D uNoise; uniform vec3 uSunDir, uHaze, uAmbUp; uniform float uEmis, uFog, uMist, uMistY, uTime, uExposure, uFogBoost, uSolid, uFade;
 out vec4 o;
 float h31(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
 vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
@@ -79,6 +79,8 @@ void main(){
   float m=texture(uNoise,vW.xz*.0023+uTime*vec2(.0035,.0018)).r;
   float band=smoothstep(uMistY+85.0,uMistY-10.0,vW.y);
   f=max(f,clamp(band*(m*1.4-.25)*uMist,0.,.92));
+  // a place the camera has not reached yet, or has left, is simply more air
+  f=max(f,1.0-uFade);
   // Far air: f is how much of this surface the air hides. By default that air is see-through, so the world
   // dissolves into whatever sky is behind it. uSolid makes it lit air in front of a solid thing instead: nothing
   // shines through a tower, which matters when the page's title stands behind it.
@@ -120,7 +122,7 @@ void main(){
 export const GLOW_VS = `#version 300 es
 precision highp float;
 layout(location=0) in vec4 aP; // xyz, level
-uniform mat4 uVP; uniform vec3 uOrigin; uniform float uPx, uEmis, uTime, uIntro;
+uniform mat4 uVP; uniform vec3 uOrigin; uniform float uPx, uEmis, uTime, uIntro, uFade;
 out float vA;
 void main(){
   vec3 p=aP.xyz+uOrigin; vec4 c=uVP*vec4(p,1.0);
@@ -128,7 +130,7 @@ void main(){
   float fl=.86+.14*sin(uTime*(2.0+fract(p.x*.37)*2.0)+p.y*3.1+p.z*1.7);
   float size=(2.0+lvl*5.5)*uPx/max(c.w,1.0);
   gl_PointSize=clamp(size,1.5,uPx*.09);
-  vA=uEmis*lvl*fl*smoothstep(1.0,.82,uIntro==1.0?0.0:1.0-uIntro)*smoothstep(1400.0,120.0,c.w)*.92;
+  vA=uEmis*lvl*fl*smoothstep(1.0,.82,uIntro==1.0?0.0:1.0-uIntro)*smoothstep(1400.0,120.0,c.w)*.92*uFade*uFade;
   gl_Position=c;
 }`
 
@@ -141,21 +143,22 @@ void main(){
   o=vec4(uTint*g*vA,0.0);
 }`
 
-/* Two loose flocks circling the city, no attributes at all: a bird is its own vertex id. */
+/* Two loose flocks circling wherever the camera is at home, no attributes at all: a bird is its own vertex id.
+   uFlock: centre x, centre z, height, scale. */
 export const BIRD_VS = `#version 300 es
 precision highp float;
-uniform mat4 uVP; uniform float uTime, uPx;
+uniform mat4 uVP; uniform float uTime, uPx; uniform vec4 uFlock;
 out float vFlap;
 void main(){
   float id=float(gl_VertexID);
   float flock=mod(id,2.0);
   float k=floor(id/2.0);
-  float R=flock<.5?258.0:340.0;
+  float R=(flock<.5?258.0:340.0)*uFlock.w;
   float sp=flock<.5?.021:-.016;
-  float a=uTime*sp+flock*2.4-k*.026+sin(k*3.7)*.014;
-  float y=(flock<.5?226.0:258.0)+sin(uTime*.19+flock*2.0)*10.0+sin(k*5.1)*5.0;
+  float a=uTime*sp+flock*2.4-k*.026/uFlock.w+sin(k*3.7)*.014;
+  float y=uFlock.z+(flock<.5?0.0:32.0*uFlock.w)+sin(uTime*.19+flock*2.0)*10.0*uFlock.w+sin(k*5.1)*5.0;
   float r=R+sin(k*9.1)*8.0;
-  vec3 p=vec3(180.0+cos(a)*r,y+k*.4,190.0+sin(a)*r*.86);
+  vec3 p=vec3(uFlock.x+cos(a)*r,y+k*.4,uFlock.y+sin(a)*r*.86);
   vec4 c=uVP*vec4(p,1.0);
   gl_PointSize=clamp(2.0*uPx/max(c.w,1.0),2.5,uPx*.028);
   float beat=step(.3,fract(uTime*.09+k*.37)); // they glide as much as they flap
@@ -171,4 +174,34 @@ void main(){
   float wing=abs(q.x)*vFlap*.7;
   if(abs(q.y-wing)>.22||abs(q.x)>.95)discard;
   o=vec4(uInk.rgb*uInk.a,uInk.a);
+}`
+
+/* Motes: a box of drifting specks that travels with the camera and wraps around it, so the air
+   itself has depth. Positions come from the vertex id alone. */
+export const MOTE_VS = `#version 300 es
+precision highp float;
+uniform mat4 uVP; uniform vec3 uCam, uWind; uniform float uTime, uPx, uBox;
+out float vA;
+float h11(float n){return fract(sin(n*127.1)*43758.5453);}
+void main(){
+  float id=float(gl_VertexID);
+  vec3 base=vec3(h11(id+.13),h11(id*1.7+4.1),h11(id*2.3+9.7))*uBox*2.0;
+  vec3 drift=uWind*uTime+vec3(sin(uTime*.31+id*2.1),sin(uTime*.23+id*1.3)*.6,cos(uTime*.27+id*1.7))*1.6;
+  vec3 p=uCam+mod(base+drift-uCam,uBox*2.0)-uBox;
+  vec4 c=uVP*vec4(p,1.0);
+  float size=.16+.2*h11(id+5.1);
+  gl_PointSize=clamp(uPx*size/max(c.w,1.0),1.25,uPx*.012);
+  float edge=1.0-smoothstep(uBox*.5,uBox*.96,length(p-uCam));
+  float blink=.6+.4*sin(uTime*(.9+h11(id+7.)*1.8)+id*5.);
+  vA=edge*smoothstep(2.5,9.0,c.w)*blink;
+  gl_Position=c;
+}`
+
+export const MOTE_FS = `#version 300 es
+precision highp float;
+in float vA; uniform vec3 uTint; uniform float uAlpha; out vec4 o;
+void main(){
+  vec2 q=gl_PointCoord*2.0-1.0; float r=dot(q,q); if(r>1.0)discard;
+  float g=1.0-r;
+  o=vec4(uTint*g*g*vA*uAlpha,0.0);
 }`

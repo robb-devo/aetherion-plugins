@@ -4,7 +4,7 @@ import { useLang } from '../../i18n.jsx'
 import { stage } from '../../world/stage.js'
 import { JoinLinks, ServerRow } from './Server.jsx'
 
-/** The first screen: the name, behind the city's towers; under it the row you already know from your server list. */
+/** The first screen: the name, behind the world; under it the row you already know from your server list. */
 export default function Hero() {
   const { copy } = useLang()
   const t = copy.home.hero
@@ -45,25 +45,22 @@ export default function Hero() {
     }
   }, [])
 
-  const live = load.mode === 'live'
+  const loading = load.mode === 'live' && load.progress < 1
   return (
     <section id="hero" data-chapter="hero" className="hero" ref={ref}>
       <h1 className="hero-title">Aetherion</h1>
       <div className="hero-foot">
-        <p className="hero-lore">{t.lore}</p>
+        <p className="hero-pitch">{t.pitch}</p>
         <ServerRow className="hero-row" />
         <JoinLinks className="hero-links" />
         <p className="hero-note">
-          {live && load.progress < 1 ? (
+          {loading ? (
             <span className="font-pixel">
               {t.loading} {Math.round(load.progress * 100)}%
             </span>
-          ) : live ? (
-            t.note
           ) : (
-            t.noteStill
-          )}{' '}
-          <span className="hero-version">{interpolate(t.versionLine, SITE_VARS)}</span>
+            interpolate(t.versionLine, SITE_VARS)
+          )}
         </p>
       </div>
     </section>

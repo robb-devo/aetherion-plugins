@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from './auth.jsx'
-import Clock from './components/Clock.jsx'
 import Footer from './components/Footer.jsx'
 import Nav from './components/Nav.jsx'
 import { ToastProvider } from './components/ui.jsx'
@@ -78,7 +77,6 @@ export default function App({ ssrPath = null, ssrLang = 'en' }) {
             <WorldStage />
             <Nav />
             <Routes />
-            <Clock />
             <Footer />
           </ToastProvider>
         </AuthProvider>

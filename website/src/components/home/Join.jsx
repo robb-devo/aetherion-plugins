@@ -4,10 +4,8 @@ import { interpolate, SITE_VARS } from '../../copy.js'
 import { useLang } from '../../i18n.jsx'
 import { useLauncherDownload } from '../../lib/hooks.js'
 import { Link } from '../../router.jsx'
-import { DiscordIcon } from '../icons.jsx'
 import { CopyButton } from '../ui.jsx'
-import Chapter from './Chapter.jsx'
-import { DownloadIcon, ServerRow, VanillaRow } from './Server.jsx'
+import { DownloadIcon, VanillaRow } from './Server.jsx'
 
 export default function Join() {
   const { copy } = useLang()
@@ -15,9 +13,9 @@ export default function Join() {
   const launcher = useLauncherDownload()
   return (
     <>
-      <Chapter id="join" tone="dark" className="ch-join">
+      <section id="join" data-chapter="join" data-mood="dark" className="join">
         <div className="join-in">
-          <h2 className="ch-title">{t.title}</h2>
+          <h2 className="beat-title">{t.title}</h2>
           <ol className="join-steps">
             <li>
               <h3>{t.steps[0].title}</h3>
@@ -39,7 +37,6 @@ export default function Join() {
               <p>{t.steps[2].body}</p>
             </li>
           </ol>
-          <ServerRow />
           <h3 className="join-more">{t.more}</h3>
           <ul className="join-links">
             <li>
@@ -52,7 +49,7 @@ export default function Join() {
             </li>
             <li>
               <a href={SITE.discord} target="_blank" rel="noreferrer">
-                <DiscordIcon className="inline h-4 w-4" /> Discord
+                Discord
               </a>
               <span>{t.discord}</span>
             </li>
@@ -69,12 +66,9 @@ export default function Join() {
           </ul>
           <VanillaRow className="join-vanilla" />
         </div>
-      </Chapter>
+      </section>
       <section id="finale" data-chapter="finale" className="finale">
-        <div className="finale-head">
-          <h2 className="finale-title">{copy.home.finale.title}</h2>
-          <p className="finale-body">{copy.home.finale.body}</p>
-        </div>
+        <p className="finale-title">{copy.home.finale.title}</p>
       </section>
     </>
   )
@@ -89,7 +83,9 @@ export function JoinDock() {
   useEffect(() => {
     const onScroll = () => {
       const past = window.scrollY > window.innerHeight * 0.9
-      const end = window.scrollY + window.innerHeight > document.documentElement.scrollHeight - window.innerHeight * 1.6
+      // the join section has the address itself: the dock steps aside for it
+      const join = document.getElementById('join')
+      const end = join ? join.getBoundingClientRect().top < window.innerHeight * 0.7 : false
       setVisible(past && !end)
     }
     onScroll()

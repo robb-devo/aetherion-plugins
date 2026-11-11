@@ -50,18 +50,20 @@ def scene_isles(repo,out):
     T=os.path.join(repo,'AetherionGuilds/src/main/resources/templates')
     names=['starter_grove','starter_tide','starter_quarry','starter_guild']
     parts=[schem.load(os.path.join(T,n+'.schem')) for n in names]
-    # one palette, placed side by side with room between them
+    # One palette. Each island stands alone in its own slot of two draw regions (export_mesh cuts
+    # the mesh into 64-block cells), far enough from the next that neither shades the other: the
+    # site places every island on its own (src/world/route.js), so no cell may hold parts of two.
     pal=['minecraft:air']; idx={'minecraft:air':0}
-    gap=44; W=sum(p[0].shape[2] for p in parts)+gap*(len(parts)+1); H=max(p[0].shape[0] for p in parts)+8; L=max(p[0].shape[1] for p in parts)+gap*2
-    g=np.zeros((H,L,W),np.int32); x=gap; layout={}
-    for n,(a,p,info) in zip(names,parts):
+    slot=128; gap=44; W=slot*len(parts); H=max(p[0].shape[0] for p in parts)+8; L=max(p[0].shape[1] for p in parts)+gap*2
+    g=np.zeros((H,L,W),np.int32); layout={}
+    for k,(n,(a,p,info)) in enumerate(zip(names,parts)):
         m=np.zeros(len(p),np.int32)
         for i,s in enumerate(p):
             if s not in idx: idx[s]=len(pal); pal.append(s)
             m[i]=idx[s]
-        h,l,w=a.shape; z=(L-l)//2; y=(H-h)//2
+        h,l,w=a.shape; x=k*slot+(slot-w)//2; z=(L-l)//2; y=(H-h)//2
         g[y:y+h,z:z+l,x:x+w]=m[a]
-        layout[n]=dict(c=[x+w/2,y+h/2,z+l/2],size=[w,h,l]); x+=w+gap
+        layout[n]=dict(c=[x+w/2,y+h/2,z+l/2],size=[w,h,l],slot=[k*slot,(k+1)*slot])
     bake('isles',g,pal,out,drop=1)
     return dict(size=[W,H,L],layout=layout)
 
