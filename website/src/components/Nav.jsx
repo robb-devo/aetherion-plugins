@@ -95,7 +95,7 @@ export default function Nav() {
   const solid = scrolled || !isHome || open
   return (
     <>
-      <header className={`site-nav ${solid ? 'site-nav-solid' : ''}`}>
+      <header className={`site-nav ${solid ? 'site-nav-solid' : ''} ${open ? 'site-nav-open' : ''}`}>
         <div className="site-nav-in">
           <Link to="/" className="site-nav-brand" aria-label="Aetherion">
             <BrandImg className="h-8 w-8" />

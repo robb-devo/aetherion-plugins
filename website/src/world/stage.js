@@ -541,8 +541,8 @@ class Stage {
     const at = c.at
     // it is alive even when no one touches it: the camera breathes
     const still = SHOT ? 0 : 1
-    const yaw = o.yaw * atTop + (pl.x * 0.022 + Math.sin(this.time * 0.13) * (0.006 + 0.012 * atTop)) * still
-    const pitch = o.pitch * atTop
+    const yaw = o.yaw * atTop + (pl.x * 0.022 + Math.sin(this.time * 0.13) * (0.011 + 0.008 * atTop)) * still
+    const pitch = o.pitch * atTop + Math.sin(this.time * 0.17 + 1.3) * 0.004 * still
     const dx = eye[0] - at[0], dz = eye[2] - at[2]
     const cs = Math.cos(yaw), sn = Math.sin(yaw)
     const dist = Math.hypot(dx, dz)

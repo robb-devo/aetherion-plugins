@@ -24,14 +24,22 @@ html[data-world="off"] .w-canvas, html[data-world="off"] .w-poster { opacity: 0 
 .dialog-in { animation: toast-in 0.22s var(--ease-out-soft) both; }
 
 /* ---------------------------------------------------------------- nav */
-.site-nav { position: fixed; inset: 0 0 auto 0; z-index: 50; padding-top: env(safe-area-inset-top); transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+.site-nav { --nav-ink: #fff; --nav-hover: var(--color-bell-hi); position: fixed; inset: 0 0 auto 0; z-index: 50; padding-top: env(safe-area-inset-top); transition: background-color 0.35s ease, box-shadow 0.35s ease; }
 .site-nav-solid { background: rgba(10, 16, 48, 0.96); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07); }
+/* by day the bar is the same pale fog the words stand in; after dusk it is night again */
+html[data-world="on"][data-tone="light"] .site-nav-solid:not(.site-nav-open) { --nav-ink: #151c3e; --nav-hover: #8d6415; background: rgba(250, 242, 226, 0.93); box-shadow: 0 1px 0 rgba(23, 32, 74, 0.1); }
 .site-nav-in { display: flex; align-items: center; justify-content: space-between; gap: 1rem; max-width: 80rem; margin: 0 auto; height: 3.75rem; padding: 0 max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left)); }
-.site-nav-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: #fff; }
+.site-nav-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--nav-ink); transition: color 0.35s ease; }
 .site-nav-word { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; transition: opacity 0.3s ease, transform 0.3s ease; }
 .site-nav-word-off { opacity: 0; transform: translateX(-4px); }
-.site-nav-link { color: #fff; text-decoration: none; font-weight: 700; font-size: 1rem; text-shadow: 0 1px 8px rgba(10, 16, 48, 0.55); transition: color 0.15s ease; }
-.site-nav-link:hover, .site-nav-link[aria-current="page"] { color: var(--color-bell-hi); }
+.site-nav-link { color: var(--nav-ink); text-decoration: none; font-weight: 700; font-size: 1rem; text-shadow: 0 1px 8px rgba(10, 16, 48, 0.55); transition: color 0.2s ease; }
+.site-nav-solid .site-nav-link { text-shadow: none; }
+.site-nav-link:hover, .site-nav-link[aria-current="page"] { color: var(--nav-hover); }
+
+.lang { display: inline-flex; padding: 2px; background: color-mix(in oklab, var(--nav-ink, #fff) 8%, transparent); }
+.lang-opt { min-width: 2.25rem; padding: 0.25rem 0.6rem; font: inherit; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.03em; color: color-mix(in oklab, var(--nav-ink, #fff) 60%, transparent); background: none; border: 0; cursor: pointer; transition: color 0.15s ease, background-color 0.15s ease; }
+.lang-opt:hover { color: var(--nav-ink, #fff); }
+.lang-opt-on { color: var(--nav-ink, #fff); background: color-mix(in oklab, var(--nav-ink, #fff) 15%, transparent); }
 
 /* ---------------------------------------------------------------- hero */
 .home { position: relative; overflow-x: clip; }

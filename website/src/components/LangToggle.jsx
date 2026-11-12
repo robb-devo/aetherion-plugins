@@ -10,7 +10,7 @@ export default function LangToggle({ className = '' }) {
 
   return (
     <div
-      className={`notch inline-flex bg-white/[0.06] p-0.5 ${className}`}
+      className={`notch lang ${className}`}
       role="group"
       aria-label={copy.ui.langToggle}
     >
@@ -20,9 +20,7 @@ export default function LangToggle({ className = '' }) {
           <button
             key={option.id}
             type="button"
-            className={`notch min-w-9 cursor-pointer px-2.5 py-1 text-[0.7rem] font-extrabold tracking-wide transition-colors ${
-              active ? 'bg-white/12 text-white' : 'text-ash hover:text-white'
-            }`}
+            className={`notch lang-opt ${active ? 'lang-opt-on' : ''}`}
             aria-pressed={active}
             aria-label={option.id === 'en' ? copy.ui.langEn : copy.ui.langDe}
             onClick={() => setLang(option.id)}

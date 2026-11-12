@@ -236,8 +236,9 @@ Known gaps:
 ## Website rebuild (branch `claude/donnernet-overhaul`, not merged, not deployed)
 
 `website/` holds the new donnernet.de: one continuous 3D camera take over one in-game day, EN and DE. Start with `website/README.md`.
+The home page is a server page, not a game: hero, one statement, six frames with a line each, join. Depth lives in the wiki.
 Before it goes live, Robb decides or checks:
-- Hero and night chapters use the Exile city, late-game content. Preferred end state: the main island by day, the Exile only at night. Needs the MMOR `region` folder from `01-hetzner-backup-2026-11-05.7z` and a licence check with OriginBuilds, because every visitor downloads the mesh. `forge/` has no region-file reader yet; it reads schematics and structures.
+- The page opens on the starter islands (Guilds templates) as a stand-in. The Exile city appears once, at night, as late-game. The real face is the main island: it needs the MMOR world's `region` folder (Hetzner server, or `01-hetzner-backup-2026-11-05.7z`) and a licence check with OriginBuilds, because every visitor downloads the mesh and this repo is public. `forge/` reads region files now (`anvil.py`, `SCENES=island`); the steps are in `website/README.md`.
 - The boss list on the page and in the wiki.
 - Build env for the vanilla address and node ids (see the README's Deploy section).
 - Impressum and Datenschutz: the old site had neither, and a German site with accounts usually needs them.

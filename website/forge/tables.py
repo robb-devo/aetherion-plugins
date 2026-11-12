@@ -187,7 +187,12 @@ class Colors:
 FL_FULL, FL_PASS, FL_RAY, FL_LEAF, FL_INVIS = 1, 2, 4, 8, 16
 CF_GLOW, CF_GLASS, CF_WATER = 1, 2, 4
 
-def build(palette, out_states, colors=None):
+SEA_PLANTS = {'kelp', 'kelp_plant', 'seagrass', 'tall_seagrass'}
+
+def build(palette, out_states, colors=None, sea=False):
+    """`sea`: a world with real bodies of water. Water then seals like a solid block (one surface, nothing
+    drawn beneath it) instead of being a see-through volume, which is right for a pond but costs six
+    faces per block in a sea."""
     colors = colors or Colors()
     unknown = {}
     import io
@@ -220,7 +225,10 @@ def build(palette, out_states, colors=None):
                 if name in LIFT: rgb = tuple(min(255, a * b) for a, b in zip(rgb, LIFT[name]))
                 return colors.get(rgb, pat, con, cf)
 
-            if name in ('water', 'bubble_column'):
+            if sea and (name in ('water', 'bubble_column') or name in SEA_PLANTS):
+                c = colors.get(WATER, 0, 0.05, CF_WATER)
+                boxes.append(([0, 0, 0], [16, 16, 16], [c] * 6))
+            elif name in ('water', 'bubble_column'):
                 c = colors.get(WATER, 0, 0.05, CF_WATER)
                 lvl = int(props.get('level', 0)); h = 14 if lvl == 0 else max(2, 14 - int(lvl * 1.7))
                 boxes.append(([0, 0, 0], [16, h, 16], [c] * 6))
@@ -302,7 +310,7 @@ def build(palette, out_states, colors=None):
             elif re.search(r'_door|_trapdoor|iron_bars|_pane', name): flags |= FL_RAY
             elif re.search(r'stairs|_slab|_wall|^(mud_|)bricks?_wall|piston|chest|barrel|shulker', name): flags |= FL_RAY | FL_PASS
             else: flags |= FL_PASS
-            if name in ('water', 'bubble_column', 'lava'): flags |= FL_PASS
+            if name == 'lava' or (not sea and name in ('water', 'bubble_column')): flags |= FL_PASS
             f.write(struct.pack('<BBBBH', flags, emit, len(boxes), cross[0] if cross else 0, cross[1] if cross else 0xffff))
             for lo, hi, fc in boxes:
                 f.write(struct.pack('<6b', *lo, *hi)); f.write(struct.pack('<6H', *fc))
