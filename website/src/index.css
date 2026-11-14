@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/* Self-hosted type (latin subset covers EN + DE). All SIL OFL. */
+@font-face { font-family: "Texturina"; src: url("/fonts/texturina-latin-wght.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("/fonts/alegreya-sans-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("/fonts/alegreya-sans-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("/fonts/alegreya-sans-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("/fonts/alegreya-sans-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("/fonts/alegreya-sans-latin-800-normal.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "IM Fell English"; src: url("/fonts/im-fell-english-italic-latin.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Jersey 15"; src: url("/fonts/jersey-15-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+
+@theme {
+  /* Texturina: titles, set like an old chart. Alegreya Sans: everything you read to act.
+     IM Fell: the rumour voice. Jersey 15: only where the game's own interface is quoted. */
+  --font-display: "Texturina", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Alegreya Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-lore: "IM Fell English", "Palatino Linotype", Georgia, serif;
+  --font-pixel: "Jersey 15", "Courier New", monospace;
+  --font-mono: "Jersey 15", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* The night the inner pages live in: ultramarine, as the sky is at midnight over the city. */
+  --color-void: #0a1030;
+  --color-obsidian: #0e1638;
+  --color-slate: #141d47;
+  --color-stone: #1c2754;
+  --color-rim: #2d3b74;
+  --color-mist: #e0e5f3;
+  --color-ash: #9aa4c6;
+  --color-parchment: #f7ecd2;
+  --color-ink: #10183a;
+
+  /* The city's own materials: gold leaf, oxidised copper, lava in the crater. */
+  --color-bell: #efbe4a;
+  --color-bell-hi: #ffdc85;
+  --color-bell-deep: #8d6415;
+  --color-tide: #7cc4d4;
+  --color-ember: #ff6a2b;
+  --color-ember-hi: #ffb26a;
+  --color-aether: #56c7aa;
+  --color-aether-hi: #a4ecd8;
+  --color-aether-deep: #1c5a52;
+  --color-arcane: #8e6be0;
+  --color-arcane-hi: #c5aef5;
+  --color-arcane-deep: #2a1a6b;
+  --color-nightshade: #120a26;
+  --color-amethyst: #b48cf0;
+  --color-gold: #efbe4a;
+  --color-emerald: #4ade80;
+  --color-redstone: #f05252;
+  --color-lapis: #60a5fa;
+  --color-chalk: #efeadf;
+  --color-crimson: #e0304a;
+
+  /* In-game rarity colours: only ever on item names. */
+  --color-common: #e4e4e7;
+  --color-uncommon: #6ee06e;
+  --color-rare: #6aa8ff;
+  --color-epic: #b77cff;
+  --color-legendary: #f5b83d;
+  --color-mythic: #ff6ad5;
+  --color-crysis: #ff7a18;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+  background: var(--color-void);
+}
+
+section[id] { scroll-margin-top: 4.5rem; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--color-mist);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+  font-feature-settings: "lnum" 1;
+}
+
+::selection { background: color-mix(in oklab, var(--color-bell) 50%, transparent); color: #fff; }
+#root { min-height: 100vh; }
+:focus-visible { outline: 2px solid var(--color-bell-hi); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; }
+img { max-width: 100%; }
+
+.font-display { font-family: var(--font-display); }
+.font-lore { font-family: var(--font-lore); font-style: italic; font-weight: 400; letter-spacing: 0.005em; }
+.font-pixel { font-family: var(--font-pixel); font-weight: 400; letter-spacing: 0.01em; }
+.pixelated { image-rendering: pixelated; }
+
+@layer components {
+  /* Surfaces */
+  .panel {
+    position: relative;
+    background: linear-gradient(180deg, #161f4c, #111943);
+    border: 1px solid rgba(224, 229, 243, 0.1);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(255, 220, 133, 0.07);
+  }
+  .panel-raised { background: #1b2554; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 3px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+  .hairline { border-color: rgba(255, 255, 255, 0.09); }
+
+  /* Minecraft inventory slot: sunken square with a bevel. */
+  .slot {
+    display: grid;
+    place-items: center;
+    background: #0a1030;
+    border-radius: 2px;
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.5), inset -2px -2px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  }
+  .slot img { image-rendering: pixelated; width: 72%; height: 72%; object-fit: contain; filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.45)); }
+
+  /* Stepped pixel corners, used on controls only. */
+  .notch {
+    clip-path: polygon(
+      0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0,
+      calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px,
+      100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%,
+      4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px)
+    );
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+    min-height: 2.75rem; padding: 0 1.15rem;
+    font-weight: 700; font-size: 1rem; letter-spacing: 0.005em; text-decoration: none;
+    cursor: pointer; border: 0; user-select: none; white-space: nowrap;
+    transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.08s ease, opacity 0.16s ease;
+  }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled, .btn[aria-disabled="true"] { cursor: not-allowed; opacity: 0.45; }
+  .btn-sm { min-height: 2.25rem; padding: 0 0.85rem; font-size: 0.9rem; }
+  .btn-lg { min-height: 3.25rem; padding: 0 1.6rem; font-size: 1.1rem; }
+
+  /* Gold leaf: cast, lit from above. */
+  .btn-primary { color: #2a1c04; background: linear-gradient(180deg, #ffd978, #e9b03c); box-shadow: inset 0 1px 0 rgba(255, 250, 225, 0.65), inset 0 -3px 0 rgba(120, 78, 12, 0.5); }
+  .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffe493, #f2bd4c); }
+  .btn-gold { color: #2a1c04; background: linear-gradient(180deg, #ffd978, #e9b03c); box-shadow: inset 0 1px 0 rgba(255, 250, 225, 0.65), inset 0 -3px 0 rgba(120, 78, 12, 0.5); }
+  .btn-gold:hover:not(:disabled) { background: linear-gradient(180deg, #ffe493, #f2bd4c); }
+  /* Oxidised copper. */
+  .btn-homelab { color: #06281f; background: #7fd9c0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -3px 0 rgba(8, 72, 56, 0.4); }
+  .btn-homelab:hover:not(:disabled) { background: #9be6d0; }
+  .btn-start { color: #062212; background: #45c46b; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -3px 0 rgba(0, 0, 0, 0.25); }
+  .btn-start:hover:not(:disabled) { background: #54d67a; }
+  .btn-danger { color: #fff; background: #d63d3d; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -3px 0 rgba(0, 0, 0, 0.3); }
+  .btn-danger:hover:not(:disabled) { background: #e44b4b; }
+  /* Slate. */
+  .btn-secondary { color: #f1f3fa; background: #222d5e; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 -3px 0 rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.07); }
+  .btn-secondary:hover:not(:disabled) { background: #2b3870; }
+  /* Slate over the sky: a little of the day shows through. */
+  .btn-veil { color: #f5f7fc; background: rgba(16, 24, 58, 0.72); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 0 rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+  .btn-veil:hover:not(:disabled) { background: rgba(28, 39, 84, 0.86); }
+  .btn-ghost { color: var(--color-mist); background: transparent; }
+  .btn-ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+  /* Forms */
+  .field {
+    width: 100%; min-height: 2.9rem; padding: 0 0.9rem; color: #fff;
+    background: #0b1233; border: 1px solid rgba(255, 255, 255, 0.11); border-radius: 3px;
+    box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.3); outline: none;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .field::placeholder { color: #66719a; }
+  .field:focus { border-color: color-mix(in oklab, var(--color-bell) 70%, transparent); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.3), 0 0 0 3px color-mix(in oklab, var(--color-bell) 22%, transparent); }
+  .field[aria-invalid="true"] { border-color: color-mix(in oklab, var(--color-redstone) 70%, transparent); }
+  .field:disabled { opacity: 0.5; cursor: not-allowed; }
+  select.field {
+    appearance: none; padding-right: 2.2rem;
+    background-image: linear-gradient(45deg, transparent 50%, #9aa4c6 50%), linear-gradient(135deg, #9aa4c6 50%, transparent 50%);
+    background-position: calc(100% - 1.05rem) 55%, calc(100% - 0.75rem) 55%;
+    background-size: 5px 5px; background-repeat: no-repeat;
+  }
+  .label { display: block; margin-bottom: 0.45rem; font-size: 0.92rem; font-weight: 700; color: #b4bdd8; }
+  .kicker { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--color-bell); }
+
+  /* Status dots */
+  .dot { position: relative; display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 1px; background: currentColor; }
+  .dot-live::after { content: ""; position: absolute; inset: -4px; border-radius: 2px; background: currentColor; opacity: 0.35; animation: dot-pulse 1.8s ease-out infinite; }
+  @keyframes dot-pulse { 0% { transform: scale(0.6); opacity: 0.45; } 100% { transform: scale(1.5); opacity: 0; } }
+
+  /* Loading */
+  .skeleton { background: linear-gradient(90deg, #141d47 0%, #1f2a5c 50%, #141d47 100%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; border-radius: 3px; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  .spinner { width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 999px; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Console (server dashboard) */
+  .console { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.78rem; line-height: 1.55; background: #070b24; box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.06); border-radius: 3px; }
+  .console-line { white-space: pre-wrap; word-break: break-word; }
+
+  .grain { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.055 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+}
