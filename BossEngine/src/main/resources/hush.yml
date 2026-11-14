@@ -1,0 +1,129 @@
+# ============================================================
+# THE HUSH - the dark in the gap of the fifth dusk toll
+#
+# Encounter config. Boss HP, the phase gates (66 % / 33 %) and loot live in
+#   bosses/the_hush.yml
+# Everything else (entry, timings, damage, dread, the lullaby) is here.
+# /hush reload re-reads this file; running fights keep their snapshot.
+#
+# Damage values are BossEngine "power" (BossHits): a hit takes a share of
+# the player's max HP, reduced by DEFENSE. ~40 = light, ~70 = heavy, ~100 = brutal.
+# ============================================================
+
+enabled: true
+
+world:
+  # Own void world, created the first time somebody enters. The main worlds are never touched.
+  name: aetherion_hush
+  keep-inventory: true
+  arena-y: 100
+  # Instances are this many blocks apart on the X axis (beyond tracking and hearing range).
+  slot-spacing: 512
+  max-instances: 3
+
+entry:
+  # Permission needed for /hush enter and the entry bells (empty = everyone).
+  # Default is staff only (hush.enter is op), until the door has its place in the world.
+  permission: "hush.enter"
+  # Bells in the normal worlds that open the belfry on right-click: "world,x,y,z".
+  # Example: bells: ["world,120,71,-340"]
+  bells: []
+  # Party members (AetherionItems party) within this radius of the leader come along.
+  radius: 16
+  min-players: 1
+  max-players: 5
+  # Seconds after a victory before the same player may enter again.
+  cooldown-seconds: 120
+  # Where people go if their return point is gone ("world,x,y,z"); empty = main world spawn.
+  fallback-return: ""
+
+scaling:
+  # Per player beyond the first.
+  health-per-extra-player: 0.55
+  damage-per-extra-player: 0.08
+  max-players: 5
+
+fight:
+  # Share of a hit that reaches it while it is not in lamplight (0.25 = a quarter).
+  dark-damage-multiplier: 0.25
+  drift-speed: 0.09
+  drift-speed-compline: 0.13
+  # Each player comes back beside a lamp this many times; after that they watch from above
+  # until a teammate lights a lamp by hand (one revive per cooldown) or a lullaby holds.
+  respawns-per-player: 1
+  revive-cooldown-seconds: 15
+  # Compline: decoys that hum. The real one makes no sound.
+  echoes: 2
+  echo-respawn-ticks: 400
+  echo-burst-dread: 18
+  echo-chill-dread: 5
+  # After this long the lamps go out for good and its hits grow.
+  enrage-seconds: 540
+  enrage-damage-multiplier: 1.5
+  # Seconds people keep the lit belfry to themselves after the fifth toll.
+  dawn-seconds: 25
+
+lamps:
+  # A freshly snuffed lamp cannot be lit again for this long.
+  relight-lock-ticks: 100
+
+dread:
+  # Rises in the dark, fades in lamplight. Darkness on screen from 60, a hit at 100.
+  per-second: 4.0
+  fade-per-second: 12.0
+  power: 45
+  compline-factor: 1.4
+  lullaby-factor: 0.6
+
+pacing:
+  # Pause between its moves, per chapter.
+  gap-ticks-vespers: 55
+  gap-ticks-night: 42
+  gap-ticks-compline: 30
+
+moves:
+  touch:
+    power: 22
+  snuff:
+    travel-speed: 0.22
+    windup-ticks: 46
+    # Damage (percent of its max HP) inside the wind-up that staggers it and saves the lamp.
+    stagger-percent: 1.5
+    stagger-ticks: 70
+    cooldown-ticks: 240
+    power: 42
+    wave-radius: 9.0
+  lunge:
+    length: 22.0
+    speed: 1.0
+    power: 62
+  hush:
+    power: 55
+    dread: 30
+  grasp:
+    telegraph-ticks: 28
+    radius: 1.9
+    power: 48
+  toll:
+    telegraph-ticks: 30
+    speed: 0.55
+    power: 44
+
+lullaby:
+  # Seconds to ring the song back (first song: four notes; second: five, the dark hides the fifth).
+  answer-seconds: 30
+  answer-seconds-fifth: 40
+  grasp-every-ticks: 110
+  wrong-note-dread: 12
+  # The song held: it lies open this long and takes this much more.
+  lulled-seconds: 12
+  lulled-damage-multiplier: 1.6
+  # Time ran out.
+  fail-power: 70
+  fail-dread: 45
+
+safety:
+  respawn-grace-ticks: 60
+  kill-plane: 14
+  rescue-power: 30
+  max-knockback: 0.7

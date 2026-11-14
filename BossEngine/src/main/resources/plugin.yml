@@ -39,7 +39,22 @@ commands:
     aliases:
       - requiem
 
+  hush:
+    description: The Hush (enter / leave; admin tools with hush.admin)
+    usage: /hush <enter|leave>
+    aliases:
+      - stille
+
 permissions:
+  hush.enter:
+    description: May open The Hush with /hush enter or at an entry bell (see hush.yml entry.permission)
+    default: op
+  hush.admin:
+    description: The Hush admin tools (start, abort, status, skip, solve, move, lamps, dread, reload)
+    default: op
+  hush.bypass:
+    description: Exempt from The Hush movement rules (pearls, flight, block edits)
+    default: op
   helios.admin:
     description: Helios Requiem admin tools (start, debug, skip, hp, attack, abort, restore)
     default: op

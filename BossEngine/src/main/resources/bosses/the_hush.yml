@@ -1,0 +1,119 @@
+# ============================================================
+# THE HUSH - what grows where the fifth dusk toll should be
+# The whole fight lives in
+#   de.aetherion.bossengine.hush.HushScript
+# This file only supplies HP, the two phase gates, an invisible hitbox
+# and the loot. Timings, damage, dread and the lullaby: hush.yml.
+#
+#   100%  Vespers        Snuff, Grasp, Hush, Veil Lunge
+#    66%  lullaby (4 notes), then the Long Night: + Toll
+#    33%  lullaby (5 notes, the dark hides the fifth), then Compline: + echoes
+#   death                the bells play all seven notes, the dusk toll rings five times
+#
+# Only spawns inside a belfry (/hush enter). A /boss spawn outside one
+# despawns itself.
+# ============================================================
+
+id: the_hush
+display-name: "&8&lThe Hush"
+# Invisible hitbox; the body is ~60 block displays.
+entity-type: ZOMBIE
+model-engine-id: ""
+
+attributes:
+  max-health: 60000
+  movement-speed: 0.0
+  attack-damage: 0
+  # ~1.5 x 4.9 blocks: matches the display body.
+  scale: 2.5
+  follow-range: 48
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  persistent: false
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 8
+  leash-radius: 0
+  leash-action: TELEPORT
+
+phases:
+  - id: vespers
+    health-percent: 100
+    display-name: "&8&lThe Hush"
+    skills: []
+  - id: night
+    health-percent: 66
+    display-name: "&8&lThe Hush &8· &7The Long Night"
+    skills: []
+  - id: compline
+    health-percent: 33
+    display-name: "&8&lThe Hush &8· &7Compline"
+    skills: []
+
+skills: []
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 4.0
+  experience: 12000
+
+  killer-bonus: []
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: vesper_bell
+        amount: 1
+        chance: 0.10
+      - source: AETHERION
+        item-id: random_booster
+        amount: 2
+        chance: 0.8
+    2:
+      - source: AETHERION
+        item-id: vesper_bell
+        amount: 1
+        chance: 0.05
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.6
+    3:
+      - source: AETHERION
+        item-id: vesper_bell
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.4
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.5
+
+  shared:
+    - source: VANILLA
+      material: ECHO_SHARD
+      min-amount: 1
+      max-amount: 3
+      chance: 1.0
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 24
+      chance: 1.0
+      scale-with-damage: true
