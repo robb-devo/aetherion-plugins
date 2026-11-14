@@ -13,10 +13,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 
 /**
- * Core port of AetherionDungeons' {@code TransferLedger} — same file, same format, so mmo-r / mmo-d
- * (Dungeons) and mmo-c / mmo-i (Core) read and write one ledger per player.
- *
- * <p>Per-player transfer ledger in the shared transfer folder ({@code ledger/<uuid>.yml}).
+ * Per-player transfer ledger in the shared transfer folder ({@code ledger/<uuid>.yml}).
  * <p>
  * It answers two questions every backend needs on join:
  * <ul>

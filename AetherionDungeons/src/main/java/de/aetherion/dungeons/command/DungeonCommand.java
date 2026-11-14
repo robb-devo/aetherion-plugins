@@ -160,7 +160,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 var main = AetherionDungeons.getInstance();
-                if (main == null || main.getSnapshots() == null) {
+                if (main == null || main.getCharacterHost() == null) {
                     return true;
                 }
                 java.util.UUID id = player.getUniqueId();
@@ -170,8 +170,8 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                     id = online != null ? online.getUniqueId() : org.bukkit.Bukkit.getOfflinePlayer(args[1]).getUniqueId();
                     who = args[1];
                 }
-                player.sendMessage("§5Transfer §8· §f" + who + " §8@ §7" + main.getSnapshots().serverName());
-                player.sendMessage("§7" + main.getSnapshots().describe(id));
+                player.sendMessage("§5Transfer §8· §f" + who + " §8@ §7" + main.getCharacterHost().serverName());
+                player.sendMessage("§7" + main.getCharacterHost().describe(id));
             }
             case "pool" -> {
                 if (!player.hasPermission("aetherion.dungeon.admin")) {
