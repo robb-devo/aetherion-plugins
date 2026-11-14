@@ -1,5 +1,8 @@
 package de.aetherion.dungeons.bridge;
 
+import de.aetherion.core.network.CharacterHost;
+import de.aetherion.core.network.CharacterStore;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -27,8 +30,7 @@ public final class HubPortalBridge implements Listener {
 
     private final Plugin plugin;
     private final RemoteServerBridge remote;
-    private final TransferSnapshotStore snapshots;
-    private final CharacterSync sync;
+    private final CharacterHost host;
     private final Portal hubPortal;
     private final Portal returnPortal;
     private final Arrival hubArrival;
@@ -37,11 +39,10 @@ public final class HubPortalBridge implements Listener {
     private final Map<UUID, Long> cooldown = new ConcurrentHashMap<>();
     private final Map<UUID, Long> joinGrace = new ConcurrentHashMap<>();
 
-    public HubPortalBridge(Plugin plugin, RemoteServerBridge remote, TransferSnapshotStore snapshots, CharacterSync sync) {
+    public HubPortalBridge(Plugin plugin, RemoteServerBridge remote) {
         this.plugin = plugin;
         this.remote = remote;
-        this.snapshots = snapshots;
-        this.sync = sync;
+        this.host = remote.host();
         this.hubPortal = Portal.fromConfig(plugin, "hub-portal", -1.0, 67.0, -204.0);
         this.returnPortal = Portal.fromConfig(plugin, "return-portal", -1.0, 48.0, -27.0);
         // Land ON mmo-d (dungeon hub) after crossing from capital.
@@ -169,17 +170,10 @@ public final class HubPortalBridge implements Listener {
         if (player == null || !player.isOnline()) {
             return;
         }
-        if (sync != null) {
-            sync.arrive(player, result -> scheduleArrival(player, result));
-            return;
-        }
-        TransferSnapshotStore.ApplyResult result = snapshots.applyOnJoin(player);
-        if (result.applied()) {
-            scheduleArrival(player, result);
-        }
+        host.arrive(player, result -> scheduleArrival(player, result));
     }
 
-    private void scheduleArrival(Player player, TransferSnapshotStore.ApplyResult result) {
+    private void scheduleArrival(Player player, CharacterStore.ApplyResult result) {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;
@@ -188,8 +182,8 @@ public final class HubPortalBridge implements Listener {
         }, 8L);
     }
 
-    private void handleArrival(Player player, TransferSnapshotStore.ApplyResult result) {
-        String here = snapshots == null ? "" : snapshots.serverName();
+    private void handleArrival(Player player, CharacterStore.ApplyResult result) {
+        String here = host.serverName();
         if (result.dcFloor() > 0) {
             // Dungeon session policy: fresh. The run ended when they disconnected.
             if (remote != null && remote.isDungeonRole()) {
@@ -212,7 +206,7 @@ public final class HubPortalBridge implements Listener {
             return;
         }
         if (remote != null && remote.isDungeonRole()) {
-            if (!result.arrivalFromHub()) {
+            if (!cameFrom(result, "hub", remote.returnServer())) {
                 return;
             }
             Location dest = dungeonArrival.toLocation();
@@ -237,7 +231,7 @@ public final class HubPortalBridge implements Listener {
                 }, 15L);
             }
         } else if (remote != null && remote.isHubRole()) {
-            if (!result.returnFromDungeon()) {
+            if (!cameFrom(result, "dungeon", remote.targetServer())) {
                 return;
             }
             Location dest = hubArrival.toLocation();
@@ -246,6 +240,18 @@ public final class HubPortalBridge implements Listener {
             }
             player.sendMessage("§5Capital§7: Welcome back — gear synced.");
         }
+    }
+
+    /**
+     * Whether the applied character came over the gate from the other side: snapshots from the gate carry its
+     * role ({@code hub} / {@code dungeon}) as {@code from-server}, older ones the server name.
+     */
+    private static boolean cameFrom(CharacterStore.ApplyResult result, String role, String server) {
+        if (!result.applied() || result.fromServer() == null) {
+            return false;
+        }
+        String from = result.fromServer().trim();
+        return role.equalsIgnoreCase(from) || (server != null && server.equalsIgnoreCase(from));
     }
 
     /** Teleport (or Velocity-transfer) the player to the dungeon hub. Usable from anywhere. */

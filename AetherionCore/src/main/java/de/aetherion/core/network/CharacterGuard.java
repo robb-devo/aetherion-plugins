@@ -28,10 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Core port of AetherionDungeons' {@code TransferGuard} for backends without the Dungeons jar
- * (mmo-c, mmo-i). Same phases, same freeze.
- *
- * <p>Freezes a player's inventory while their character is between two backends.
+ * Freezes a player's inventory while their character is between two backends.
  * <ul>
  *     <li>{@link Phase#OUTBOUND}: snapshot written, Velocity Connect sent. Anything the player
  *     changed now would exist twice (here and in the snapshot) — so nothing changes.</li>

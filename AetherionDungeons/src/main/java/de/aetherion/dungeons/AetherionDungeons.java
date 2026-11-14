@@ -1,11 +1,9 @@
 package de.aetherion.dungeons;
 
-import de.aetherion.dungeons.bridge.CharacterSync;
+import de.aetherion.core.network.CharacterHost;
 import de.aetherion.dungeons.bridge.DungeonTpsProbe;
 import de.aetherion.dungeons.bridge.HubPortalBridge;
 import de.aetherion.dungeons.bridge.RemoteServerBridge;
-import de.aetherion.dungeons.bridge.TransferGuard;
-import de.aetherion.dungeons.bridge.TransferSnapshotStore;
 import de.aetherion.dungeons.command.DungeonCommand;
 import de.aetherion.dungeons.instance.DungeonProgressHud;
 import de.aetherion.dungeons.instance.DungeonSession;
@@ -41,9 +39,7 @@ public final class AetherionDungeons extends JavaPlugin {
     private DungeonKeeperService keeper;
     private DungeonGuideService guide;
     private RemoteServerBridge remote;
-    private TransferSnapshotStore snapshots;
-    private TransferGuard transferGuard;
-    private CharacterSync characterSync;
+    private CharacterHost characterHost;
     private HubPortalBridge hubPortalBridge;
     private DungeonTpsProbe tpsProbe;
     private DungeonHubService hubService;
@@ -54,15 +50,14 @@ public final class AetherionDungeons extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
-        snapshots = new TransferSnapshotStore(this);
-        transferGuard = new TransferGuard(this);
-        remote = new RemoteServerBridge(this, snapshots, transferGuard);
-        characterSync = new CharacterSync(this, snapshots, transferGuard, remote);
-        remote.setCharacterSync(characterSync);
-        getServer().getPluginManager().registerEvents(transferGuard, this);
-        getServer().getPluginManager().registerEvents(characterSync, this);
+        // One character across the network: Core's host, run here with the gate's policy and config.
+        remote = new RemoteServerBridge(this);
+        characterHost = remote.host();
+        characterHost.runFloor(this::runFloor);
+        getServer().getPluginManager().registerEvents(characterHost.guard(), this);
+        getServer().getPluginManager().registerEvents(characterHost, this);
         int keepDays = Math.max(1, getConfig().getInt("remote-transfer.keep-history-days", 3));
-        getServer().getScheduler().runTaskAsynchronously(this, () -> snapshots.prune(keepDays));
+        getServer().getScheduler().runTaskAsynchronously(this, () -> characterHost.store().prune(keepDays));
         tpsProbe = new DungeonTpsProbe(this);
         instances = new InstanceManager(this);
         keeper = new DungeonKeeperService(this);
@@ -75,10 +70,14 @@ public final class AetherionDungeons extends JavaPlugin {
         tpsProbe.start();
 
         getServer().getPluginManager().registerEvents(new DungeonListener(this, instances, keeper, guide), this);
-        hubPortalBridge = new HubPortalBridge(this, remote, snapshots, characterSync);
+        hubPortalBridge = new HubPortalBridge(this, remote);
         getServer().getPluginManager().registerEvents(hubPortalBridge, this);
         // Plugin reload with players online: hand back characters packed on disable.
-        characterSync.resyncOnlineAfterEnable(hubPortalBridge::arrive);
+        getServer().getScheduler().runTaskLater(this, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                hubPortalBridge.arrive(player);
+            }
+        }, 5L);
         hubService = new DungeonHubService(this, remote);
         hubService.start();
         DungeonKeeperFancyListener.register(this);
@@ -113,8 +112,8 @@ public final class AetherionDungeons extends JavaPlugin {
         dungeonAccess = new de.aetherion.dungeons.api.DungeonAccessImpl(this);
         de.aetherion.core.api.AetherServices.registerDungeons(dungeonAccess);
         // Core's network router (islands / exile / main-world warps) moves characters through this pipeline.
-        if (remote.enabled() && characterSync.enabled()) {
-            characterTransport = new de.aetherion.dungeons.bridge.DungeonCharacterTransport(remote, snapshots, transferGuard);
+        if (remote.enabled() && characterHost.settings().sync()) {
+            characterTransport = characterHost;
             de.aetherion.core.api.AetherServices.registerTransport(characterTransport);
         }
     }
@@ -159,8 +158,8 @@ public final class AetherionDungeons extends JavaPlugin {
         DungeonProgressHud.stop();
         // Pack every online character BEFORE instances evacuate and before Paper saves
         // playerdata (plugins are disabled first, so the quit hook would never run).
-        if (characterSync != null) {
-            characterSync.flushAllOnDisable();
+        if (characterHost != null) {
+            characterHost.flushAllOnDisable();
         }
         if (instances != null) {
             instances.shutdown();
@@ -201,12 +200,23 @@ public final class AetherionDungeons extends JavaPlugin {
         return remote;
     }
 
-    public TransferSnapshotStore getSnapshots() {
-        return snapshots;
+    public CharacterHost getCharacterHost() {
+        return characterHost;
     }
 
-    public CharacterSync getCharacterSync() {
-        return characterSync;
+    /**
+     * The floor of the run the player is in right now (0 = none). A quit or shutdown snapshot carries it, so the
+     * arrival can tell them that run closed (dungeon session policy: fresh).
+     */
+    private int runFloor(Player player) {
+        if (instances == null) {
+            return 0;
+        }
+        DungeonSession session = instances.sessionOf(player);
+        if (session == null || !instances.isDungeonWorld(player.getWorld())) {
+            return 0;
+        }
+        return Math.max(1, session.floorNumber());
     }
 
     public void openDungeonMap(Player player) {
