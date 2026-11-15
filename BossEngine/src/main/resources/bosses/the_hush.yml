@@ -15,7 +15,7 @@
 # ============================================================
 
 id: the_hush
-display-name: "&8&lThe Hush"
+display-name: "&7&lThe Hush"
 # Invisible hitbox; the body is ~60 block displays.
 entity-type: ZOMBIE
 model-engine-id: ""
@@ -46,15 +46,15 @@ conditions:
 phases:
   - id: vespers
     health-percent: 100
-    display-name: "&8&lThe Hush"
+    display-name: "&7&lThe Hush"
     skills: []
   - id: night
     health-percent: 66
-    display-name: "&8&lThe Hush &8· &7The Long Night"
+    display-name: "&7&lThe Hush &8· &7The Long Night"
     skills: []
   - id: compline
     health-percent: 33
-    display-name: "&8&lThe Hush &8· &7Compline"
+    display-name: "&7&lThe Hush &8· &7Compline"
     skills: []
 
 skills: []

@@ -41,7 +41,7 @@ final class HushText {
 
     /* ------------------------------------------------------------------ names */
 
-    static final T NAME = new T("&8&lThe Hush", "&8&lDie Stille");
+    static final T NAME = new T("&7&lThe Hush", "&7&lDie Stille");
     static final T DREAD = new T("&5Dread", "&5Furcht");
 
     /* ------------------------------------------------------------------ entry and exit */

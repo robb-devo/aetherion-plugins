@@ -3,6 +3,10 @@
 Showcase boss, built 2026-11-14 in a cloud session. **Never run on a server yet**: it compiles and CI is
 green, but nobody has fought it. Balance numbers are first guesses. Read the test list before the first deploy.
 
+The only runtime check so far is a headless simulation (the encounter and the script ticked against stand-ins
+for the server, 58 fights: wins, wipes, failed lullabies, quits, admin skips) that ran without an exception.
+It says nothing about how the fight looks, sounds or feels, and it does not cover the listener or the command.
+
 ## What it is
 
 The dusk toll has five strokes. Corvin is forgetting the end of the song, so it rings only four. The Hush is

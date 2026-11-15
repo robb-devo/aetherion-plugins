@@ -696,17 +696,18 @@ final class HushScript implements BossScript {
         // A wrong note plays the opening again, a little faster.
         if (replayFrom >= 0) {
             int rt = clock - replayFrom;
-            if (rt % 14 == 0 && rt / 14 < lullabyGoal) {
-                teach(rt / 14);
-            } else if (rt / 14 >= lullabyGoal) {
+            if (rt >= 0 && rt / 14 >= lullabyGoal) {
                 replayFrom = -1;
+            } else if (rt >= 0 && rt % 14 == 0) {
+                teach(rt / 14);
             }
         }
         if (lullaby == 2 && clock % 4 == 0) {
             shadowBell(bellOfNote[4]);
         }
         // Hands keep coming while the song is unfinished.
-        if ((clock - answerStart) % cfg.i("lullaby.grasp-every-ticks", 110) == 60 && hazards.isEmpty()) {
+        int every = Math.max(40, cfg.i("lullaby.grasp-every-ticks", 110));
+        if ((clock - answerStart) % every == every / 2 && hazards.isEmpty()) {
             hazards.add(new Grasp());
         }
         stepHazards();
@@ -720,7 +721,7 @@ final class HushScript implements BossScript {
         if (k >= 4) {
             Location mouth = arena.bellMouth(bellOfNote[k]);
             world.playSound(mouth, Sound.BLOCK_SCULK_SPREAD, SoundCategory.RECORDS, 3f, 0.5f);
-            world.spawnParticle(Particle.SQUID_INK, mouth, 30, 0.5, 0.6, 0.5, 0.02);
+            world.spawnParticle(Particle.SQUID_INK, mouth, 30, 0.5, 0.6, 0.5, 0.02, null, true);
             return;
         }
         chime(bellOfNote[k], k, 3.5f);
@@ -730,17 +731,19 @@ final class HushScript implements BossScript {
         Location mouth = arena.bellMouth(bell);
         world.playSound(mouth, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.RECORDS, volume, HYMN[note]);
         world.playSound(mouth, Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.RECORDS, volume, HYMN[note]);
-        world.spawnParticle(Particle.NOTE, mouth.clone().add(0, 0.9, 0), 3, 0.3, 0.2, 0.3, 1.0);
+        // Forced: a bell on the far side of the floor is further away than particles normally travel.
+        world.spawnParticle(Particle.NOTE, mouth.clone().add(0, 0.9, 0), 3, 0.3, 0.2, 0.3, 1.0, null, true);
         for (int i = 0; i < 14; i++) {
-            world.spawnParticle(Particle.END_ROD, mouth.clone().add(0, 0.4 + i * 0.6, 0), 1, 0.05, 0.05, 0.05, 0.0);
+            world.spawnParticle(Particle.END_ROD, mouth.clone().add(0, 0.4 + i * 0.6, 0), 1, 0.05, 0.05, 0.05, 0.0, null, true);
         }
-        world.spawnParticle(Particle.DUST, mouth, 16, 0.6, 0.6, 0.6, 0, GOLD);
+        world.spawnParticle(Particle.DUST, mouth, 16, 0.6, 0.6, 0.6, 0, GOLD, true);
     }
 
     private void shadowBell(int bell) {
         Location mouth = arena.bellMouth(bell);
-        world.spawnParticle(Particle.LARGE_SMOKE, mouth, 3, 0.45, 0.5, 0.45, 0.005);
-        world.spawnParticle(Particle.DUST, mouth.clone().add(0, 0.8, 0), 3, 0.4, 0.5, 0.4, 0, PITCH);
+        world.spawnParticle(Particle.LARGE_SMOKE, mouth, 3, 0.45, 0.5, 0.45, 0.005, null, true);
+        world.spawnParticle(Particle.LARGE_SMOKE, mouth.clone().add(0, 1.6, 0), 2, 0.3, 0.6, 0.3, 0.005, null, true);
+        world.spawnParticle(Particle.DUST, mouth.clone().add(0, 0.8, 0), 3, 0.4, 0.5, 0.4, 0, PITCH, true);
     }
 
     /** A participant struck bell {@code bell}. */
@@ -748,10 +751,10 @@ final class HushScript implements BossScript {
         if (clock < bellReadyAt[bell]) {
             return;
         }
-        bellReadyAt[bell] = clock + 8;
+        bellReadyAt[bell] = clock + 12;
         int note = noteOfBell[bell];
-        if (mode != Mode.LULLABY || !answering) {
-            // Outside the song a bell is just a bell: its own note, quietly.
+        // Outside the song, or the bell that was just rung right (a double click): only its own note.
+        if (mode != Mode.LULLABY || !answering || note == lullabyProgress - 1) {
             Location mouth = arena.bellMouth(bell);
             world.playSound(mouth, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.RECORDS, 1.2f, HYMN[note]);
             world.spawnParticle(Particle.NOTE, mouth.clone().add(0, 0.9, 0), 1, 0.2, 0.1, 0.2, 1.0);
