@@ -283,6 +283,25 @@ Audit item B2, step 2. Branch on top of the round 1 and 2 PR.
 - Deploy: Core (all five backends) and Dungeons (mmo-r, mmo-d) together; a new Dungeons jar does not run on an
   old Core. Test hops on every server pair before calling it done.
 
+## Cleanup round 4: chunk loads, travel, leftovers (2026-11-15, cloud session, not deployed yet)
+
+Audit items C3, A3 (one file missed), D6 and a new find. No balance or content change.
+- Timers no longer load chunks. `Location.getChunk()` and `Block.getChunk()` load the chunk, so checks written as
+  `getChunk().isLoaded()` were always true and pulled the chunk in on every run: animal zones, pet habitats, the
+  shabby mine guard and world maps in Items (every 5-10 s, on every backend with Items), the forage isle guide (every
+  4 s) and every merchant chest in Quests (twice a second). They now ask `world.isChunkLoaded`; the Items and
+  Foraging ones also wait for the chunk's entities (`ZoneMarkers.ready`), so nothing is re-spawned next to a
+  marker or display that is still loading. Content in chunks nobody is near now simply waits until someone comes.
+  Startup restores and removal paths still load on purpose (one-off).
+- Hub: spawn travel (`HubService.teleport`, used by the spawn menu and `/spawn goto`) and glowcap travel use
+  `teleportAsync`; sound, message, compass and slow falling run on arrival. Origin profiles are saved through
+  `AtomicYaml`.
+- Removed eight unused classes (Quests `OpenRoadsGUI`, `QuestNPCManager`, `MiningQuestListener`, `QuestConfig`;
+  Items `CraftCurve`; AetherMobs `PetEquipmentChangeEvent`; BossEngine `BossEngineConstants`, `SpawnTriggerFactory`).
+  `TabScoreboardRebind` stays (rank system, has a test).
+- Deploy: Items (mmo-r, mmo-d, mmo-c, mmo-i), Quests (mmo-r), Hub (mmo-r), Foraging (mmo-r), AetherMobs and
+  BossEngine only for the deleted classes (can ride with the next deploy of those).
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
