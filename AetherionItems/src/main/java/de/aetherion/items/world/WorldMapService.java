@@ -350,7 +350,7 @@ public final class WorldMapService {
                 continue;
             }
             Location at = map.location(world);
-            if (!at.getChunk().isLoaded()) {
+            if (!ZoneMarkers.ready(at)) {
                 continue;
             }
             if (framesHealthy(map)) {
