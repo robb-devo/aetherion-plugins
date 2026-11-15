@@ -48,6 +48,19 @@ jobs:
       - name: Test Core, Farming, Fishing
         run: mvn -B -pl AetherionCore,AetherionFarming,AetherionFishing test
 
+  # German overlay of AetherionQuests: every line the code asks for has its German twin (no Maven needed).
+  german:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Check Quests German overlay
+        run: python docs/dialogs/tools/validate_de_overlay.py
+
   # Velocity 4 ships its API as Java 25 class files, so the proxy plugin builds on its own JDK.
   compile-proxy:
     runs-on: ubuntu-latest

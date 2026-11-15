@@ -43,6 +43,10 @@ public final class StoryState implements StoryAccess {
     /** Heard Orrin out in the Observatory (Core's star ring opens for this). */
     public static final String ORRIN_WARNED = "orrin_warned";
     public static final String CROSSED = "exile_crossed";
+    /** Aetherion beaten in the Ashen Void behind the Great Doors: the finale no longer opens without a vial. */
+    public static final String FINALE_WON = "exile_finale_won";
+    /** Aetherion's arena behind the Great Doors (Core ExileDoors); the dungeon copy of the boss elsewhere never counts. */
+    private static final String FINALE_WORLD = "ashen_void";
 
     private static final String[][] STAGES = {
             {LullabyQuests.OLD_TALE, "1"},
@@ -204,6 +208,45 @@ public final class StoryState implements StoryAccess {
     @Override
     public List<String> talk(Player player, String speakerId) {
         return StoryFlow.talkFromElsewhere(player, speakerId);
+    }
+
+    /**
+     * Exile boss sites wake without a vial while the story step that sends the player there is running (also after
+     * a lost fight), and the Great Doors open once after "What the Seed Ate" until Aetherion falls. Vials stay the
+     * way back in afterwards.
+     */
+    @Override
+    public boolean wakesWithoutVial(Player player, String boss) {
+        AetherionQuests quests = AetherionQuests.getInstance();
+        QuestManager qm = quests == null ? null : quests.getQuestManager();
+        if (player == null || boss == null || qm == null) {
+            return false;
+        }
+        String id = boss.toLowerCase(Locale.ROOT);
+        if ("aetherion".equals(id)) {
+            return stateOf(qm, player, LullabyQuests.SEED) == QuestState.COMPLETED && !hasPlayerFlag(player, FINALE_WON);
+        }
+        String step = switch (id) {
+            case "hollow_sun" -> LullabyQuests.CAPTAIN;
+            case "helios" -> LullabyQuests.HEART;
+            case "hanging_saint" -> LullabyQuests.DOLL;
+            case "world_eater" -> LullabyQuests.SEED;
+            default -> null;
+        };
+        return step != null && stateOf(qm, player, step) == QuestState.ACTIVE;
+    }
+
+    private static QuestState stateOf(QuestManager qm, Player player, String questId) {
+        Quest quest = qm.getQuest(questId);
+        return quest == null ? null : qm.getQuestState(player, quest);
+    }
+
+    /** BossEngine kill credit (BossKillCredit): Aetherion falling in the Ashen Void closes the free finale. */
+    public static void onBossKill(Player player, String bossId) {
+        if (player != null && "dungeon_aetherion".equalsIgnoreCase(bossId)
+                && player.getWorld().getName().equalsIgnoreCase(FINALE_WORLD)) {
+            setPlayerFlag(player, FINALE_WON);
+        }
     }
 
     /** The Ferryman's answer before he casts off (null = aboard). */

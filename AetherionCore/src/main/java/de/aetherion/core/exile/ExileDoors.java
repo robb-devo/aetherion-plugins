@@ -4,6 +4,7 @@ import de.aetherion.core.AetherionCore;
 import de.aetherion.core.api.AetherServices;
 import de.aetherion.core.api.BossSpawnAccess;
 import de.aetherion.core.api.QuestProgressAccess;
+import de.aetherion.core.api.StoryAccess;
 import de.aetherion.core.api.TalkAccess;
 
 import net.kyori.adventure.text.Component;
@@ -57,7 +58,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li><b>Gates</b> (crater, observatory, theatre, garden): right-click the bars, step through to the other side.</li>
  *   <li><b>Altars</b>: each boss site takes the boss's vial ({@link ExileVials}) and wakes it, no talk, no story
- *   gate. Caedmon's sword (a prop, {@link HollowSword}) climbs into the sky and comes down as the Hollow Sun; the
+ *   gate. A player whose open story step sends them there needs no vial ({@code StoryAccess#wakesWithoutVial}). Caedmon's sword (a prop, {@link HollowSword}) climbs into the sky and comes down as the Hollow Sun; the
  *   music box on Elin's stage raises Seraphine's stage above the theatre; the star ring opens the Helios instance;
  *   the Maw takes you down to the Last Seed (World Eater site); the Great Doors open on Aetherion's Ashen Void.
  *   Without the vial a site says, in one line, what it wants.</li>
@@ -551,16 +552,36 @@ public final class ExileDoors implements Listener {
             default -> {
             }
         }
-        if (!ExileVials.takeFromHand(p, vial.boss())) {
+        // The open story step wakes its boss on its own; a vial in hand is only used when the story doesn't cover it.
+        boolean story = storyWakes(p, vial);
+        if (!story && !ExileVials.takeFromHand(p, vial.boss())) {
             hint(p, vial);
             return;
+        }
+        if (story) {
+            String name = Say.t(p, vial.nameEn(), vial.nameDe());
+            bar(p, Say.t(p, "§7Your errand is enough. " + vial.color() + name + " §7wakes.",
+                    "§7Dein Auftrag reicht. " + vial.color() + name + " §7erwacht."));
         }
         Location at = loc(r.at());
         world.playSound(at, Sound.ITEM_BOTTLE_EMPTY, SoundCategory.PLAYERS, 1.0f, 0.7f);
         world.playSound(at, Sound.BLOCK_BREWING_STAND_BREW, SoundCategory.PLAYERS, 0.8f, 0.6f);
         world.spawnParticle(Particle.ENTITY_EFFECT, at.clone().add(0, Math.min(r.h(), 2.0), 0), 24, 0.4, 0.4, 0.4, 0,
                 vial.tint());
-        begin(p, r, vial);
+        // Story wakes pass no vial on: nothing was handed in, so a refused spawn has nothing to give back.
+        begin(p, r, story ? null : vial);
+    }
+
+    private static boolean storyWakes(Player p, ExileVials.Vial vial) {
+        StoryAccess story = AetherServices.story();
+        if (story == null) {
+            return false;
+        }
+        try {
+            return story.wakesWithoutVial(p, vial.boss());
+        } catch (RuntimeException | LinkageError ex) {
+            return false;
+        }
     }
 
     /** No vial in hand: one line in the action bar, at most every few seconds, and the site hums. */
@@ -659,13 +680,17 @@ public final class ExileDoors implements Listener {
                 + (bosses != null && bosses.alive(template)) + ", difficulty " + world.getDifficulty() + ")");
         refund(p, vial);
         if (p.isOnline()) {
-            p.sendMessage(Say.t(p, "§8» §7Nothing answers. Your vial is back in your bag. (Staff: see the log.)",
+            p.sendMessage(vial == null
+                    ? Say.t(p, "§8» §7Nothing answers. Try again in a moment. (Staff: see the log.)",
+                    "§8» §7Nichts antwortet. Versuch es gleich noch einmal. (Team: siehe Log.)")
+                    : Say.t(p, "§8» §7Nothing answers. Your vial is back in your bag. (Staff: see the log.)",
                     "§8» §7Nichts antwortet. Deine Phiole ist zurück im Inventar. (Team: siehe Log.)"));
         }
     }
 
+    /** Gives a handed-in vial back; {@code null} (a story wake) gives nothing. */
     private void refund(Player p, ExileVials.Vial vial) {
-        if (!p.isOnline()) {
+        if (vial == null || !p.isOnline()) {
             return;
         }
         for (ItemStack rest : p.getInventory().addItem(ExileVials.create(vial, 1, Say.german(p))).values()) {
@@ -720,7 +745,7 @@ public final class ExileDoors implements Listener {
                         "Er öffnet sich noch nicht. (Team: der Boss-Ort ist auf diesem Backend nicht eingerichtet.)");
                 default -> Say.t(p, "It will not open right now.", "Er öffnet sich gerade nicht.");
             };
-            bar(p, r.color() + Say.t(p, r.nameEn(), r.nameDe()) + " §8» §7" + why + Say.t(p, " §8(vial returned)", " §8(Phiole zurück)"));
+            bar(p, r.color() + Say.t(p, r.nameEn(), r.nameDe()) + " §8» §7" + why + (vial == null ? "" : Say.t(p, " §8(vial returned)", " §8(Phiole zurück)")));
         }, 40L);
     }
 
