@@ -302,6 +302,13 @@ Audit items C3, A3 (one file missed), D6 and a new find. No balance or content c
 - Deploy: Items (mmo-r, mmo-d, mmo-c, mmo-i), Quests (mmo-r), Hub (mmo-r), Foraging (mmo-r), AetherMobs and
   BossEngine only for the deleted classes (can ride with the next deploy of those).
 
+## The Hush, showcase boss (2026-11-14, cloud session, NOT live)
+
+New instanced boss in BossEngine (`bossengine/hush/`, `bosses/the_hush.yml`, `hush.yml`), built without a
+server to test on: it compiles, it has never been fought. Design, entry, admin commands and what is missing:
+`BossEngine/docs/THE_HUSH.md`. `/hush enter` needs `hush.enter` (op by default) until the boss has a place in
+the world. Its void world `aetherion_hush` is only created on the backend where somebody first enters.
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,

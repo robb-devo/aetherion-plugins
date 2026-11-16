@@ -41,6 +41,7 @@ public final class BossEngine extends JavaPlugin {
     private BossEngineAPI api;
     private BossSpawnAccessImpl spawnAccess;
     private de.aetherion.bossengine.helios.HeliosModule helios;
+    private de.aetherion.bossengine.hush.HushModule hush;
 
     @Override
     public void onEnable() {
@@ -73,6 +74,7 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("bosses/world_eater.yml");
         de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_herald.yml");
         de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_requiem.yml");
+        saveResourceIfMissing("bosses/the_hush.yml");
 
         keys = new BossKeys(this);
         skillRegistry = new SkillRegistry(getLogger());
@@ -103,6 +105,13 @@ public final class BossEngine extends JavaPlugin {
             helios.enable();
         } catch (RuntimeException exception) {
             getLogger().log(java.util.logging.Level.SEVERE, "[Helios] Failed to start; the rest of BossEngine keeps running.", exception);
+        }
+
+        hush = new de.aetherion.bossengine.hush.HushModule(this);
+        try {
+            hush.enable();
+        } catch (RuntimeException exception) {
+            getLogger().log(java.util.logging.Level.SEVERE, "[Hush] Failed to start; the rest of BossEngine keeps running.", exception);
         }
 
         getServer().getPluginManager().registerEvents(
@@ -225,6 +234,9 @@ public final class BossEngine extends JavaPlugin {
         if (helios != null) {
             helios.disable();
         }
+        if (hush != null) {
+            hush.disable();
+        }
         if (spawnerManager != null) {
             spawnerManager.stop();
         }
@@ -313,6 +325,10 @@ public final class BossEngine extends JavaPlugin {
 
     public de.aetherion.bossengine.helios.HeliosModule helios() {
         return helios;
+    }
+
+    public de.aetherion.bossengine.hush.HushModule hush() {
+        return hush;
     }
 
     public BossEngineAPI api() {
