@@ -88,7 +88,7 @@ public final class ShabbyMineGuard implements Listener, Runnable {
                 continue;
             }
             Location center = zone.center(world);
-            if (!center.getChunk().isLoaded()) {
+            if (!ZoneMarkers.ready(center)) {
                 continue;
             }
             double r = zone.getRadius() + 2;

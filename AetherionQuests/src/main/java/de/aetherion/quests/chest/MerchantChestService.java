@@ -535,7 +535,10 @@ public final class MerchantChestService {
                 continue;
             }
             Block block = blockOf(id);
-            if (block == null || !block.getChunk().isLoaded() || !isMerchantChest(block)) {
+            // world.isChunkLoaded, not block.getChunk().isLoaded(): getChunk() loads the chunk, so every chest's
+            // chunk was pulled in twice a second whether anyone was there or not.
+            if (block == null || !block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4)
+                    || !isMerchantChest(block)) {
                 continue;
             }
             Location center = block.getLocation().add(0.5, 0.5, 0.5);

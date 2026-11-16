@@ -264,6 +264,13 @@ Rund 360 `teleport`-Aufrufe, kein einziger `teleportAsync`. Ein Teleport in nich
 ganzen Server kurz an. Fix: die zentralen Reisewege (Hub-Spawns und Warps, Sprung-Pads, Arena-Eintritte) auf
 die asynchrone Variante umstellen, also ein Dutzend Stellen, nicht alle 360. Risiko gering bis mittel.
 
+*Stand 15.11.:* die beiden Reisewege auf Origin (Spawn-Menü und `/spawn goto` über `HubService.teleport`,
+Glowcap-Reise) laufen über `teleportAsync`. Die Ankunfts-Teleports nach einem Serverwechsel (Core
+`ExileArrival`, `IslandLink`, `NetworkRouter`) bleiben bewusst synchron: sie hängen am Join und am Transfer und
+gehören in eine Runde mit Testserver. Beim Durchsehen fiel ein größerer Punkt auf: sieben Wächter-Tasks fragten
+`getChunk().isLoaded()`, was den Chunk selbst lädt; die Händlerkisten in Quests taten das zweimal pro Sekunde
+für jede Kiste. Behoben, siehe PROJECT_STATE "Cleanup round 4".
+
 **C4. Wächter-Tasks laufen auch dort, wo es den Inhalt nicht gibt.**
 Rund zehn Dienste in Items suchen alle 10 Sekunden ihre Anzeigen (Krypta-Hologramme, Banner, Gebiets-Marker,
 Weltkarte, Tierzonen, Pet-Habitate; Casino und Mühle durchsuchen dabei alle Display-Entities aller Welten).
@@ -314,6 +321,9 @@ Wirklich toter Code ist wenig: rund 570 Zeilen in neun Klassen (`OpenRoadsGUI`, 
 `CraftCurve`, `QuestNPCManager`, `MiningQuestListener`, `QuestConfig`, `PetEquipmentChangeEvent`,
 `BossEngineConstants`, `SpawnTriggerFactory`). `/aetherion`, `/hub` und `/spawn` werden von zwei Plugins
 gleichzeitig angemeldet (Items oder Hub und Pit); auf dem Hub-Server gewinnt, wer zuerst lädt.
+
+*Stand 15.11.:* die toten Klassen sind gelöscht, bis auf `TabScoreboardRebind` (gehört zu den Rängen und hat
+einen Test). `/hub` und `/spawn` doppelt braucht weiter den Blick auf den Live-Server (F6).
 
 ---
 

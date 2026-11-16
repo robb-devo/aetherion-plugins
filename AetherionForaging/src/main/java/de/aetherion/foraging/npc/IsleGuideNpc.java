@@ -454,7 +454,7 @@ public final class IsleGuideNpc implements Listener {
             return;
         }
         Location at = guideLocation();
-        if (at == null || at.getWorld() == null || !at.getChunk().isLoaded()) {
+        if (at == null || at.getWorld() == null || !loaded(at)) {
             return;
         }
         TextDisplay holo = livingHologram();
@@ -469,6 +469,17 @@ public final class IsleGuideNpc implements Listener {
         cullTaggedNear(want, holo);
     }
 
+    /**
+     * True once the chunk at {@code at} and its entities are loaded. Never loads the chunk itself:
+     * {@code Location.getChunk()} does, so the old check pulled the guide's chunk in every four seconds.
+     */
+    private static boolean loaded(Location at) {
+        org.bukkit.World world = at.getWorld();
+        int cx = at.getBlockX() >> 4;
+        int cz = at.getBlockZ() >> 4;
+        return world != null && world.isChunkLoaded(cx, cz) && world.getChunkAt(cx, cz).isEntitiesLoaded();
+    }
+
     private TextDisplay livingHologram() {
         if (hologramId != null) {
             Entity entity = Bukkit.getEntity(hologramId);
@@ -477,7 +488,7 @@ public final class IsleGuideNpc implements Listener {
             }
         }
         Location at = guideLocation();
-        if (at == null || at.getWorld() == null || !at.getChunk().isLoaded()) {
+        if (at == null || at.getWorld() == null || !loaded(at)) {
             return null;
         }
         TextDisplay found = DisplayEntities.findTagged(at.clone().add(0, 2.15, 0), HOLO_TAG, 4.0);

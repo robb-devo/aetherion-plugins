@@ -234,7 +234,7 @@ public final class PetHabitatZoneService implements Runnable {
                 continue;
             }
             Location center = zone.center(world);
-            if (!center.getChunk().isLoaded()) {
+            if (!ZoneMarkers.ready(center)) {
                 continue;
             }
             ensureMarker(zone);

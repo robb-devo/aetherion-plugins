@@ -44,7 +44,7 @@ public final class OriginProfiles {
 
     private void write(OriginProfile profile) {
         try {
-            profile.write().save(file(profile.id));
+            de.aetherion.core.persist.AtomicYaml.save(profile.write(), file(profile.id), plugin.getLogger());
             profile.dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Origin: could not save profile " + profile.id + ": " + exception.getMessage());
