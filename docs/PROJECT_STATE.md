@@ -263,6 +263,26 @@ Audit items B2 (step 1) and B3 (first part). Same PR.
   leaving player on quit.
 - Deploy: Dungeons (mmo-r, mmo-d) and Items (mmo-r, mmo-d, mmo-c, mmo-i).
 
+## Cleanup round 3: one character host (2026-11-14, cloud session, not deployed yet)
+
+Audit item B2, step 2. Branch on top of the round 1 and 2 PR.
+- The v6 character exists once: Core's `network/CharacterStore` (pack, claim, apply, outbox, quarantine, ledger)
+  and `network/CharacterHost` (hop, quit, shutdown, join wait, redirect, guest). Where the two backend families
+  differ on purpose, `CharacterStore.Policy` says so: `plain()` for mmo-c / mmo-i / mmo-m (travel as SURVIVAL,
+  never merge leftovers, park legacy files), `gate(role)` for mmo-r / mmo-d (role as `from-server`, leftover
+  adoption, legacy v4/v5 apply), exactly as the two copies behaved before.
+- Dungeons builds that host in `bridge/RemoteServerBridge` from its `remote-transfer` config (same keys, same
+  folder, same server name) and registers it as the network transport. `HubPortalBridge` calls `host.arrive` on
+  join and keeps the gate's arrival teleports and pending-floor entry. Dungeons' `TransferSnapshotStore`,
+  `TransferLedger`, `TransferGuard`, `CharacterSync`, `PendingSnapshotFiles` and `DungeonCharacterTransport` are
+  deleted (about 2,000 lines).
+- Small visible changes: the gate says "Crossing to the Dungeon Hub" instead of the server id, and a few error
+  lines use Core's wording. `/aetransfer` on mmo-r / mmo-d shows "v6 via Dungeon Gate" and the guest flag.
+- Still open: Core still starts the v5 `TransferSnapshotStore` (B2 step 3, after checking live that no v5 files
+  are left).
+- Deploy: Core (all five backends) and Dungeons (mmo-r, mmo-d) together; a new Dungeons jar does not run on an
+  old Core. Test hops on every server pair before calling it done.
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,

@@ -22,8 +22,8 @@ Items, C1 Ausrüstungswerte über `EquippedGear` (nur neu gelesen, wenn sich ein
 1. Neuer PC eingerichtet: PR #146 mergen, dann aus dem sauberen Klon von `main` bauen und auf allen Backends
    deployen (fast jedes Plugin ändert sich), jeder Server einmal neu starten. Klicktest und Prüfung vorher
    (Symlinks bei den Spielstand-Dateien) stehen in der PR-Beschreibung. Danach Spark-Profil auf mmo-r (F1).
-2. B2 Schritt 2: Dungeons' `TransferSnapshotStore` und Cores `CharacterStore` sind zwei Umsetzungen
-   desselben v6-Charakters; zu einer zusammenlegen. Braucht Test-Sprünge über alle Serverpaare.
+2. B2 Schritt 2 ist im Code erledigt (14.11., siehe "Stand" unter B2): mit Runde 1 und 2 deployen, dann
+   Test-Sprünge über alle Serverpaare.
 3. B2 Schritt 3: Cores v5-`TransferSnapshotStore` abschalten, nachdem live geprüft ist, dass keine alten
    Snapshot-Dateien mehr liegen (F3).
 4. B3 Rest: gemeinsame Dateien im Hintergrund schreiben, beim Logout nur den gehenden Spieler sichern.
@@ -183,6 +183,14 @@ Die Dungeons-Kopie ist gelöscht (670 Zeilen). Der Dungeons-Store benutzt jetzt 
 zwar nur mit Methoden, die der Core auf den Servern schon hat. Damit gibt es die Dateiliste und die
 Zusammenführung genau einmal. Die zwei Schritte, die nur Dungeons braucht (Dateien vor dem Login
 bereitlegen, alte Schlüssel reparieren), liegen in `PendingSnapshotFiles`.
+
+*Stand 14.11., Schritt 2 erledigt (eigener Branch auf dem PR von Runde 1 und 2, nicht deployt):* den
+v6-Charakter gibt es nur noch einmal, im Core (`CharacterStore` und `CharacterHost`). Die gewollten
+Unterschiede zwischen mmo-r/mmo-d und den übrigen Backends stehen in `CharacterStore.Policy` (`gate` und
+`plain`) und verhalten sich wie vorher. Dungeons baut den Host aus seiner bisherigen Config und behält nur das,
+was zum Tor gehört (Portale, Ankunfts-Teleports, Floor-Start). Die sechs Dungeons-Klassen des Transfers sind
+gelöscht (rund 2.000 Zeilen). Core und Dungeons müssen zusammen deployt werden. Vor dem Abhaken: Test-Sprünge
+über alle Serverpaare (Inventar, Enderkiste, Level, Quit und Rejoin, Absturz in einem Dungeon).
 
 **B3. Gemeinsame Spielstand-Dateien skalieren nicht.**
 `skills.yml`, `progress.yml`, `coins.yml`, `codex.yml`, `shards.yml`, `recipe_unlocks.yml` und weitere

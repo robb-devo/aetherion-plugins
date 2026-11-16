@@ -18,20 +18,20 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 
 /**
- * One character across every character backend — Core's half (mmo-c, mmo-i).
+ * One character across every character backend: the way out, the way in, and the hop between.
  *
- * <p>Port of AetherionDungeons' {@code CharacterSync} + the send pipeline of its
- * {@code RemoteServerBridge}. mmo-r / mmo-d keep running the Dungeons originals; both sides write the
- * same snapshot files and the same ledger, so the character follows the player whichever way they move:
  * <ul>
  *     <li>every way out (hop, quit, shutdown) packs the character; a hop also empties the local copy
  *     once the player has really left;</li>
@@ -40,33 +40,68 @@ import java.util.logging.Level;
  *     joining anywhere else redirects there instead of playing a stale or empty copy.</li>
  * </ul>
  *
- * <p>Arms only on a character backend that has no AetherionDungeons jar (Dungeons owns join/quit where it
- * runs) and never on the hub.
+ * <p>There is one host per backend and one implementation for all of them. Where AetherionDungeons runs
+ * (mmo-r, mmo-d) it builds the host from its own config and calls {@link #arrive} from its join hook, because
+ * the Dungeon Gate has things to do once the character is in place. Everywhere else Core arms it itself
+ * ({@link #createIfApplicable}). Never on the hub: gear does not travel from the lobby.
  */
 public final class CharacterHost implements Listener, CharacterTransport {
 
     public static final String CHANNEL = "BungeeCord";
 
-    private final JavaPlugin plugin;
+    /**
+     * What the owner of a host decides.
+     *
+     * @param sync             pack on quit and shutdown, stage files before login, and follow the ledger on
+     *                         join. Off, only hops move a character (single-server setups).
+     * @param arrivalWaitMs    how long a join waits for a snapshot the ledger says is in flight
+     * @param connectTimeoutMs how long a hop may hang before the snapshot is taken back
+     * @param ownsJoin         the host applies the character on {@code PlayerJoinEvent} itself; off, the
+     *                         owner calls {@link #arrive}
+     * @param peers            backend names that count as character backends besides
+     *                         {@link ServerNames#CHARACTER_BACKENDS}
+     */
+    public record Settings(boolean sync, long arrivalWaitMs, long connectTimeoutMs, boolean ownsJoin,
+                           Collection<String> peers) {
+
+        public Settings {
+            arrivalWaitMs = Math.max(1000L, arrivalWaitMs);
+            connectTimeoutMs = Math.max(3000L, connectTimeoutMs);
+            Set<String> names = new HashSet<>();
+            if (peers != null) {
+                for (String peer : peers) {
+                    if (peer != null && !peer.isBlank()) {
+                        names.add(peer.trim().toLowerCase(Locale.ROOT));
+                    }
+                }
+            }
+            peers = Set.copyOf(names);
+        }
+    }
+
+    private final Plugin plugin;
     private final CharacterStore store;
     private final CharacterGuard guard;
-    private final long arrivalWaitMs;
-    private final long connectTimeoutMs;
+    private final Settings settings;
     private final Set<UUID> guests = ConcurrentHashMap.newKeySet();
     private final Set<UUID> packedOnStop = ConcurrentHashMap.newKeySet();
+    private volatile ToIntFunction<Player> runFloor = player -> 0;
     private volatile File mainWorldFolder;
 
-    private CharacterHost(JavaPlugin plugin, CharacterStore store) {
+    /**
+     * Builds a host; the caller registers {@link #guard()} and the host itself as listeners of {@code plugin}.
+     */
+    public CharacterHost(Plugin plugin, CharacterStore store, Settings settings) {
         this.plugin = plugin;
         this.store = store;
+        this.settings = settings;
         this.guard = new CharacterGuard(plugin);
-        this.arrivalWaitMs = Math.max(1000L, plugin.getConfig().getLong("network.character.arrival-wait-ms", 6000L));
-        this.connectTimeoutMs = Math.max(3000L, plugin.getConfig().getLong("network.character.connect-timeout-ms", 8000L));
+        Bukkit.getMessenger().registerOutgoingPluginChannel(plugin, CHANNEL);
     }
 
     /**
-     * @return the armed host, or null when this backend must not own characters (hub, Dungeons present,
-     *         unknown name, or {@code network.character.host: off})
+     * @return the armed host, or null when this backend must not own characters through Core (hub, Dungeons
+     *         present, unknown name, or {@code network.character.host: off})
      */
     public static CharacterHost createIfApplicable(JavaPlugin plugin, String here, File transferDir) {
         String mode = plugin.getConfig().getString("network.character.host", "auto");
@@ -85,16 +120,20 @@ public final class CharacterHost implements Listener, CharacterTransport {
                     + (ServerNames.isHub(here) ? " (hub: join + pit, gear never travels)." : "."));
             return null;
         }
-        CharacterStore store = new CharacterStore(plugin, transferDir, here);
-        CharacterHost host = new CharacterHost(plugin, store);
+        CharacterStore store = new CharacterStore(plugin, transferDir, here, CharacterStore.Policy.plain());
+        CharacterHost host = new CharacterHost(plugin, store, new Settings(
+                true,
+                plugin.getConfig().getLong("network.character.arrival-wait-ms", 6000L),
+                plugin.getConfig().getLong("network.character.connect-timeout-ms", 8000L),
+                true,
+                List.of()));
         plugin.getServer().getPluginManager().registerEvents(host.guard, plugin);
         plugin.getServer().getPluginManager().registerEvents(host, plugin);
-        Bukkit.getMessenger().registerOutgoingPluginChannel(plugin, CHANNEL);
         int keepDays = Math.max(1, plugin.getConfig().getInt("network.character.keep-history-days", 3));
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> store.prune(keepDays));
         plugin.getLogger().info("[Transfer] Core character host armed · here=" + store.serverName()
                 + " dir=" + transferDir.getAbsolutePath()
-                + " arrivalWait=" + host.arrivalWaitMs + "ms v" + CharacterStore.CHAR_VERSION);
+                + " arrivalWait=" + host.settings.arrivalWaitMs() + "ms v" + CharacterStore.CHAR_VERSION);
         // Core reload with players online: hand back what was packed on disable.
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -110,6 +149,18 @@ public final class CharacterHost implements Listener, CharacterTransport {
 
     public CharacterGuard guard() {
         return guard;
+    }
+
+    public Settings settings() {
+        return settings;
+    }
+
+    /**
+     * Which floor of a dungeon run the player is in right now (0 = none). Written into a quit or shutdown
+     * snapshot so the arriving side can tell them that run is over.
+     */
+    public void runFloor(ToIntFunction<Player> lookup) {
+        this.runFloor = lookup == null ? player -> 0 : lookup;
     }
 
     // ------------------------------------------------------------------ CharacterTransport
@@ -129,15 +180,24 @@ public final class CharacterHost implements Listener, CharacterTransport {
         return guard.phase(id) == CharacterGuard.Phase.WAITING;
     }
 
+    /** Let in on a backend that does not hold their character (holder unreachable). */
     public boolean isGuest(UUID id) {
         return id != null && guests.contains(id);
     }
 
-    /**
-     * The single hop: pack once, freeze, Connect. Returns false when nothing left this server.
-     */
     @Override
     public boolean send(Player player, String server, String reason, String departLine) {
+        return send(player, server, reason, departLine, 0, false);
+    }
+
+    /**
+     * The single hop: pack once, freeze, Connect. Returns false when nothing left this server.
+     *
+     * @param departLine   chat line on departure; null = "Crossing to …", blank = none
+     * @param pendingFloor dungeon floor to open on arrival (0 = none)
+     */
+    public boolean send(Player player, String server, String reason, String departLine,
+                        int pendingFloor, boolean bossOnly) {
         if (player == null || !player.isOnline()) {
             return false;
         }
@@ -160,14 +220,15 @@ public final class CharacterHost implements Listener, CharacterTransport {
             say(player, departLine, target);
             return connect(player, target);
         }
-        CharacterStore.SaveResult saved = store.saveCharacter(player, reason == null ? "travel" : reason, target);
+        CharacterStore.SaveResult saved = store.saveCharacter(player,
+                reason == null || reason.isBlank() ? "travel" : reason, target, pendingFloor, bossOnly, 0);
         if (!saved.ok()) {
             player.sendMessage("§cYour gear could not be packed for the crossing §7(" + saved.error()
                     + ")§c. Nothing moved, nothing was lost.");
             return false;
         }
         String snapshotId = saved.snapshotId();
-        guard.beginOutbound(player, snapshotId, connectTimeoutMs, () -> rollback(player, snapshotId, target));
+        guard.beginOutbound(player, snapshotId, settings.connectTimeoutMs(), () -> rollback(player, snapshotId, target));
         say(player, departLine, target);
         if (!connect(player, target)) {
             rollback(player, snapshotId, target);
@@ -227,7 +288,7 @@ public final class CharacterHost implements Listener, CharacterTransport {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
-        if (event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+        if (!settings.sync() || event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) {
             return;
         }
         store.stageBeforeLogin(event.getUniqueId(), mainWorldFolder());
@@ -239,8 +300,9 @@ public final class CharacterHost implements Listener, CharacterTransport {
     }
 
     /**
-     * Server stop: Paper disables plugins (Core last) before it saves playerdata, so the quit hook never
-     * runs. Pack while the data plugins are still enabled — the first of them going down is the cue.
+     * Server stop: Paper disables plugins before it saves playerdata, so the quit hook never runs. Pack while
+     * the data plugins are still enabled — the first of them going down is the cue. An owner that packs in its
+     * own {@code onDisable} ({@link #flushAllOnDisable}) is covered too: each player is packed once.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPluginDisable(PluginDisableEvent event) {
@@ -276,12 +338,25 @@ public final class CharacterHost implements Listener, CharacterTransport {
                     + store.ledger().holder(id));
             return;
         }
+        if (!settings.sync()) {
+            return;
+        }
         // Same-server quit / shutdown: the snapshot is a backup only. Never empty the live inventory —
         // Paper must keep writing playerdata, otherwise a hard restart (or a missed APPLY) leaves an empty .dat.
-        CharacterStore.SaveResult saved = store.saveCharacter(player, reason, "");
+        CharacterStore.SaveResult saved = store.saveCharacter(player, reason, "", 0, false, currentRunFloor(player));
         if (!saved.ok()) {
             // Keep the playerdata copy; tell the ledger it lives here.
             store.ledger().markHolder(id, store.serverName());
+        }
+    }
+
+    private int currentRunFloor(Player player) {
+        try {
+            return Math.max(0, runFloor.applyAsInt(player));
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("[Transfer] Could not read the dungeon floor of " + player.getName()
+                    + ": " + ex.getMessage());
+            return 0;
         }
     }
 
@@ -309,14 +384,19 @@ public final class CharacterHost implements Listener, CharacterTransport {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
         packedOnStop.remove(event.getPlayer().getUniqueId());
-        arrive(event.getPlayer());
+        if (settings.ownsJoin()) {
+            arrive(event.getPlayer());
+        }
     }
 
     public void arrive(Player player) {
         arrive(player, null);
     }
 
-    /** {@code after} runs once the character is applied (never for a plain local join). */
+    /**
+     * The join path, also for a plugin reload with players online. {@code after} runs once the character is
+     * applied (never for a plain local join).
+     */
     public void arrive(Player player, Consumer<CharacterStore.ApplyResult> after) {
         if (player == null || !player.isOnline()) {
             return;
@@ -324,6 +404,9 @@ public final class CharacterHost implements Listener, CharacterTransport {
         CharacterStore.ApplyResult result = store.applyOnJoin(player);
         if (result.applied()) {
             finish(player, result, after);
+            return;
+        }
+        if (!settings.sync()) {
             return;
         }
         UUID id = player.getUniqueId();
@@ -340,7 +423,7 @@ public final class CharacterHost implements Listener, CharacterTransport {
                 ? holder.substring(CharacterLedger.SNAPSHOT_PREFIX.length())
                 : "";
         guard.beginWaiting(player, expected);
-        long deadline = System.currentTimeMillis() + arrivalWaitMs;
+        long deadline = System.currentTimeMillis() + settings.arrivalWaitMs();
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -402,7 +485,7 @@ public final class CharacterHost implements Listener, CharacterTransport {
                     + "§c — nothing was deleted. You are here as a guest; this visit will not overwrite it.");
             return;
         }
-        if (!ServerNames.isCharacterBackend(holder)) {
+        if (!isCharacterBackend(holder)) {
             plugin.getLogger().warning("[Transfer] Unknown holder '" + holder + "' for " + player.getName()
                     + " — taking over on " + here);
             store.ledger().markHolder(id, here);
@@ -427,6 +510,11 @@ public final class CharacterHost implements Listener, CharacterTransport {
         }, 200L);
     }
 
+    private boolean isCharacterBackend(String holder) {
+        return ServerNames.isCharacterBackend(holder)
+                || (holder != null && settings.peers().contains(holder.trim().toLowerCase(Locale.ROOT)));
+    }
+
     private File mainWorldFolder() {
         File folder = mainWorldFolder;
         if (folder == null && !Bukkit.getWorlds().isEmpty()) {
@@ -436,7 +524,7 @@ public final class CharacterHost implements Listener, CharacterTransport {
         return folder;
     }
 
-    /** Admin readout ({@code /aenet where}). */
+    /** Admin readout ({@code /aetransfer}, {@code /dungeon sync}). */
     public String describe(UUID id) {
         CharacterGuard.Phase phase = guard.phase(id);
         return store.describe(id) + " phase=" + (phase == null ? "-" : phase) + (isGuest(id) ? " guest" : "");

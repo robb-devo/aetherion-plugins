@@ -24,7 +24,7 @@ import java.util.UUID;
  *   route (what they asked for) → transport (their character, v6) → Velocity Connect
  *   arrival: character applied → route finished (warp / replayed command) → route dropped
  * </pre>
- * The transport is Dungeons' pipeline on mmo-r / mmo-d and Core's {@link CharacterHost} on mmo-c / mmo-i.
+ * The transport is a {@link CharacterHost}: registered by Dungeons on mmo-r / mmo-d, Core's own on mmo-c / mmo-i.
  * Without a transport (hub, or a stale jar mix) callers fall back to their old v5 path.
  */
 public final class NetworkRouter implements Listener {
@@ -76,7 +76,7 @@ public final class NetworkRouter implements Listener {
         return link.serverName();
     }
 
-    /** Dungeons' pipeline where it runs, else Core's own host, else null. */
+    /** The host Dungeons registered where it runs, else Core's own host, else null. */
     public CharacterTransport transport() {
         CharacterTransport registered = AetherServices.transport();
         if (registered != null) {

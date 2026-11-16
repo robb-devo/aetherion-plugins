@@ -1,66 +1,86 @@
 package de.aetherion.dungeons.bridge;
 
-import org.bukkit.Bukkit;
+import de.aetherion.core.network.CharacterHost;
+import de.aetherion.core.network.CharacterStore;
+import de.aetherion.core.network.ServerNames;
+
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.messaging.PluginMessageListener;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
+import java.io.File;
+import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
-import java.util.logging.Level;
 
 /**
- * Velocity / BungeeCord server transfer via the legacy {@code BungeeCord} plugin channel.
+ * The Dungeon Gate's side of the network: role, target and return server, and the gate wording.
  * <p>
- * <b>The</b> send pipeline. Portal, {@code /dungeon transfer|enter|boss|home}, {@code /dhub},
- * the Dev Menu floor buttons and the pending-floor auto-enter all end in {@link #send}:
- * flush → pack the character once ({@link TransferSnapshotStore#saveCharacter}) → freeze
- * ({@link TransferGuard}) → Connect. The local copy is only emptied when the player really
- * leaves (quit hook); if the proxy never moves them, the untouched snapshot is taken back.
+ * The character itself moves through Core's {@link CharacterHost}, the same host mmo-c / mmo-i run, built here
+ * from this plugin's {@code remote-transfer} config with {@link CharacterStore.Policy#gate}. Portal,
+ * {@code /dungeon transfer|enter|boss|home}, {@code /dhub}, the Dev Menu floor buttons and the pending-floor
+ * auto-enter all end in {@link #send}: pack the character once, freeze, Connect. The local copy is only emptied
+ * when the player really leaves; if the proxy never moves them, the untouched snapshot is taken back.
  */
-public final class RemoteServerBridge implements PluginMessageListener {
+public final class RemoteServerBridge {
 
-    public static final String CHANNEL = "BungeeCord";
-
-    private final Plugin plugin;
-    private final TransferSnapshotStore snapshots;
-    private final TransferGuard guard;
+    private final CharacterHost host;
     private final boolean enabled;
     private final String targetServer;
     private final String returnServer;
     private final boolean dungeonRole;
     private final boolean skipWarmOnHub;
-    private final long connectTimeoutMs;
-    private CharacterSync sync;
 
-    public RemoteServerBridge(Plugin plugin, TransferSnapshotStore snapshots, TransferGuard guard) {
-        this.plugin = plugin;
-        this.snapshots = snapshots;
-        this.guard = guard;
+    public RemoteServerBridge(Plugin plugin) {
         plugin.saveDefaultConfig();
-        String role = plugin.getConfig().getString("role", "hub");
+        var config = plugin.getConfig();
+        String role = config.getString("role", "hub");
         this.dungeonRole = "dungeon".equalsIgnoreCase(role);
-        this.enabled = plugin.getConfig().getBoolean("remote-transfer.enabled", false);
-        this.targetServer = plugin.getConfig().getString("remote-transfer.target-server", "mmo-d");
-        this.returnServer = plugin.getConfig().getString("remote-transfer.return-server", "mmo-r");
-        this.skipWarmOnHub = plugin.getConfig().getBoolean("remote-transfer.skip-warm-on-hub",
-                plugin.getConfig().getBoolean("remote-transfer.skip-floor2-warm-on-hub", true));
-        this.connectTimeoutMs = Math.max(3000L, plugin.getConfig().getLong("remote-transfer.connect-timeout-ms", 8000L));
+        this.enabled = config.getBoolean("remote-transfer.enabled", false);
+        this.targetServer = config.getString("remote-transfer.target-server", "mmo-d");
+        this.returnServer = config.getString("remote-transfer.return-server", "mmo-r");
+        this.skipWarmOnHub = config.getBoolean("remote-transfer.skip-warm-on-hub",
+                config.getBoolean("remote-transfer.skip-floor2-warm-on-hub", true));
 
-        Bukkit.getMessenger().registerOutgoingPluginChannel(plugin, CHANNEL);
-        Bukkit.getMessenger().registerIncomingPluginChannel(plugin, CHANNEL, this);
+        CharacterStore store = new CharacterStore(plugin, transferDir(plugin), thisServer(plugin, role),
+                CharacterStore.Policy.gate(role));
+        this.host = new CharacterHost(plugin, store, new CharacterHost.Settings(
+                enabled && config.getBoolean("remote-transfer.character-sync", true),
+                config.getLong("remote-transfer.arrival-wait-ms", 6000L),
+                config.getLong("remote-transfer.connect-timeout-ms", 8000L),
+                false,
+                List.of(targetServer, returnServer)));
         plugin.getLogger().info("Dungeon role=" + role
                 + " remoteTransfer=" + enabled
                 + " target=" + targetServer
-                + " here=" + (snapshots == null ? "?" : snapshots.serverName())
-                + " transfer=v" + TransferSnapshotStore.CHAR_VERSION);
+                + " here=" + store.serverName()
+                + " transfer=v" + CharacterStore.CHAR_VERSION
+                + " character-sync=" + host.settings().sync()
+                + " dir=" + store.directory().getAbsolutePath());
     }
 
-    /** Wired after construction (CharacterSync needs this bridge for redirects). */
-    public void setCharacterSync(CharacterSync sync) {
-        this.sync = sync;
+    /** {@code remote-transfer.shared-dir}: absolute, or relative to the plugin folder; blank = own folder. */
+    private static File transferDir(Plugin plugin) {
+        String configured = plugin.getConfig().getString("remote-transfer.shared-dir", "");
+        if (configured == null || configured.isBlank()) {
+            return new File(plugin.getDataFolder(), "transfer-snapshots");
+        }
+        File candidate = new File(configured);
+        return candidate.isAbsolute() ? candidate : new File(plugin.getDataFolder(), configured);
+    }
+
+    /** Velocity name of this backend: {@code remote-transfer.this-server}, else target (dungeon) / return (hub). */
+    private static String thisServer(Plugin plugin, String role) {
+        var config = plugin.getConfig();
+        String configured = config.getString("remote-transfer.this-server", "");
+        String fallback = "dungeon".equalsIgnoreCase(role)
+                ? config.getString("remote-transfer.target-server", "mmo-d")
+                : config.getString("remote-transfer.return-server", "mmo-r");
+        String resolved = configured == null || configured.isBlank() ? fallback : configured;
+        return resolved == null || resolved.isBlank() ? role : resolved.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /** The character host of this backend (pack, apply, freeze, ledger). */
+    public CharacterHost host() {
+        return host;
     }
 
     public boolean isDungeonRole() {
@@ -125,16 +145,10 @@ public final class RemoteServerBridge implements PluginMessageListener {
 
     /**
      * The single hop: pack once, freeze, Connect. Returns false when nothing left this server.
+     *
+     * @param pendingFloor dungeon floor to open on arrival (0 = none)
      */
     public boolean send(Player player, String server, int pendingFloor, boolean bossOnly, String reason) {
-        return send(player, server, pendingFloor, bossOnly, reason, null);
-    }
-
-    /**
-     * Same hop for Core's network router (islands, exile, main-world warps): {@code departLine} replaces the
-     * Dungeon Gate chat lines so players never read a server id. Null keeps the gate wording.
-     */
-    public boolean send(Player player, String server, int pendingFloor, boolean bossOnly, String reason, String departLine) {
         if (player == null || !player.isOnline()) {
             return false;
         }
@@ -146,103 +160,8 @@ public final class RemoteServerBridge implements PluginMessageListener {
             player.sendMessage("§cNo target server configured.");
             return false;
         }
-        UUID id = player.getUniqueId();
-        if (guard != null && guard.isHeld(id)) {
-            // Already crossing (double portal tick, double click). One hop only.
-            return true;
-        }
-        if (player.isDead()) {
-            player.sendMessage("§cRespawn first, then use the gate.");
-            return false;
-        }
-        if (sync != null && sync.isGuest(id)) {
-            // Guest session: the real character lives on another backend's playerdata.
-            // Do not pack this copy over it — just walk them over.
-            if (departLine == null) {
-                player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + server + "§7…");
-            } else if (!departLine.isBlank()) {
-                player.sendMessage(departLine);
-            }
-            return connect(player, server);
-        }
-        TransferSnapshotStore.SaveResult saved = snapshots == null
-                ? TransferSnapshotStore.SaveResult.failed("no snapshot store")
-                : snapshots.saveCharacter(player, reason, server, pendingFloor, bossOnly, 0);
-        if (!saved.ok()) {
-            player.sendMessage("§cThe gate refused: your gear could not be packed §7(" + saved.error() + ")§c. Nothing moved, nothing was lost.");
-            return false;
-        }
-        String snapshotId = saved.snapshotId();
-        if (guard != null) {
-            guard.beginOutbound(player, snapshotId, connectTimeoutMs, () -> rollback(player, snapshotId, server));
-        }
-        if (departLine != null) {
-            if (!departLine.isBlank()) {
-                player.sendMessage(departLine);
-            }
-        } else if (pendingFloor > 0) {
-            player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + server
-                    + "§7 · Floor §f" + pendingFloor + "§7…");
-        } else {
-            player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + server + "§7…");
-        }
-        if (!connect(player, server)) {
-            rollback(player, snapshotId, server);
-            return false;
-        }
-        return true;
-    }
-
-    /** Connect never moved the player: take the snapshot back if nobody claimed it. */
-    private void rollback(Player player, String snapshotId, String server) {
-        UUID id = player.getUniqueId();
-        if (!player.isOnline()) {
-            // They left after all — the quit hook owns the rest.
-            if (guard != null) {
-                guard.release(id);
-            }
-            return;
-        }
-        boolean reclaimed = snapshots != null && snapshots.reclaimUnclaimed(id, snapshotId);
-        if (guard != null) {
-            guard.release(id);
-        }
-        if (reclaimed) {
-            player.sendMessage("§7The way to §f" + de.aetherion.core.network.ServerNames.display(server)
-                    + " §7is closed right now. You stay here — nothing moved.");
-            return;
-        }
-        // Claimed elsewhere, yet the player is still here. Keep the live copy (no deletion);
-        // this backend is the holder again, the next hop overwrites the stale remote copy
-        // (with a quarantine backup).
-        if (snapshots != null) {
-            snapshots.ledger().markHolder(id, snapshots.serverName());
-        }
-        plugin.getLogger().warning("[Transfer] id=" + snapshotId + " was claimed on " + server + " but "
-                + player.getName() + " is still here — keeping the live inventory as the truth.");
-        player.sendMessage("§5Dungeon Gate§7: The crossing stalled. You stay here — your gear is safe.");
-    }
-
-    public boolean connect(Player player, String server) {
-        if (player == null || server == null || server.isBlank()) {
-            return false;
-        }
-        try {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            DataOutputStream out = new DataOutputStream(bytes);
-            out.writeUTF("Connect");
-            out.writeUTF(server.trim().toLowerCase(Locale.ROOT));
-            player.sendPluginMessage(plugin, CHANNEL, bytes.toByteArray());
-            return true;
-        } catch (Exception ex) {
-            plugin.getLogger().log(Level.WARNING, "Failed to transfer " + player.getName() + " → " + server, ex);
-            player.sendMessage("§cCould not transfer to §f" + server + "§c.");
-            return false;
-        }
-    }
-
-    @Override
-    public void onPluginMessageReceived(String channel, Player player, byte[] message) {
-        // No-op — we only send Connect.
+        String line = "§5Dungeon Gate§7: Crossing to §f" + ServerNames.display(server)
+                + (pendingFloor > 0 ? "§7 · Floor §f" + pendingFloor : "") + "§7…";
+        return host.send(player, server, reason, line, pendingFloor, bossOnly);
     }
 }

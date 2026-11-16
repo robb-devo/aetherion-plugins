@@ -12,7 +12,7 @@ remote-transfer:
   skip-floor2-warm-on-hub: true
   shared-dir: "/var/opt/minecraft/crafty/shared/transfer"
   join-grace-ms: 4000
-  # Transfer v6 — one character across mmo-r / mmo-d (see TransferSnapshotStore).
+  # Transfer v6 — one character across the network (Core's CharacterStore / CharacterHost).
   # Every leave (portal, /dungeon transfer, quit, shutdown) packs <uuid>.char.yml once;
   # every join applies it once (ledger/<uuid>.yml keeps the ids). Only active with enabled: true.
   character-sync: true
