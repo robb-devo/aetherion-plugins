@@ -454,11 +454,17 @@ public final class HubService {
             return false;
         }
 
-        player.teleport(location);
-        player.setFallDistance(0f);
-        player.playSound(location, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.1f);
-        player.sendMessage(format("messages.teleported", spawn));
-        de.aetherion.hub.origin.OriginHooks.arrived(player, spawn);
+        // Async: a spawn far out on the isle may sit in an unloaded chunk, and a plain teleport loads it on the
+        // main thread. Paper finishes the future on the main thread, so the arrival runs exactly as before.
+        player.teleportAsync(location).thenAccept(moved -> {
+            if (!moved || !player.isOnline()) {
+                return;
+            }
+            player.setFallDistance(0f);
+            player.playSound(location, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.1f);
+            player.sendMessage(format("messages.teleported", spawn));
+            de.aetherion.hub.origin.OriginHooks.arrived(player, spawn);
+        });
         return true;
     }
 

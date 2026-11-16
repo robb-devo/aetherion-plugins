@@ -22,8 +22,8 @@ Items, C1 Ausrüstungswerte über `EquippedGear` (nur neu gelesen, wenn sich ein
 1. Neuer PC eingerichtet: PR #146 mergen, dann aus dem sauberen Klon von `main` bauen und auf allen Backends
    deployen (fast jedes Plugin ändert sich), jeder Server einmal neu starten. Klicktest und Prüfung vorher
    (Symlinks bei den Spielstand-Dateien) stehen in der PR-Beschreibung. Danach Spark-Profil auf mmo-r (F1).
-2. B2 Schritt 2: Dungeons' `TransferSnapshotStore` und Cores `CharacterStore` sind zwei Umsetzungen
-   desselben v6-Charakters; zu einer zusammenlegen. Braucht Test-Sprünge über alle Serverpaare.
+2. B2 Schritt 2 ist im Code erledigt (14.11., siehe "Stand" unter B2): mit Runde 1 und 2 deployen, dann
+   Test-Sprünge über alle Serverpaare.
 3. B2 Schritt 3: Cores v5-`TransferSnapshotStore` abschalten, nachdem live geprüft ist, dass keine alten
    Snapshot-Dateien mehr liegen (F3).
 4. B3 Rest: gemeinsame Dateien im Hintergrund schreiben, beim Logout nur den gehenden Spieler sichern.
@@ -184,6 +184,14 @@ zwar nur mit Methoden, die der Core auf den Servern schon hat. Damit gibt es die
 Zusammenführung genau einmal. Die zwei Schritte, die nur Dungeons braucht (Dateien vor dem Login
 bereitlegen, alte Schlüssel reparieren), liegen in `PendingSnapshotFiles`.
 
+*Stand 14.11., Schritt 2 erledigt (eigener Branch auf dem PR von Runde 1 und 2, nicht deployt):* den
+v6-Charakter gibt es nur noch einmal, im Core (`CharacterStore` und `CharacterHost`). Die gewollten
+Unterschiede zwischen mmo-r/mmo-d und den übrigen Backends stehen in `CharacterStore.Policy` (`gate` und
+`plain`) und verhalten sich wie vorher. Dungeons baut den Host aus seiner bisherigen Config und behält nur das,
+was zum Tor gehört (Portale, Ankunfts-Teleports, Floor-Start). Die sechs Dungeons-Klassen des Transfers sind
+gelöscht (rund 2.000 Zeilen). Core und Dungeons müssen zusammen deployt werden. Vor dem Abhaken: Test-Sprünge
+über alle Serverpaare (Inventar, Enderkiste, Level, Quit und Rejoin, Absturz in einem Dungeon).
+
 **B3. Gemeinsame Spielstand-Dateien skalieren nicht.**
 `skills.yml`, `progress.yml`, `coins.yml`, `codex.yml`, `shards.yml`, `recipe_unlocks.yml` und weitere
 enthalten jeweils alle Spieler. Beispiel `SkillService.save()`: liest die ganze Datei von der Platte, trägt
@@ -256,6 +264,13 @@ Rund 360 `teleport`-Aufrufe, kein einziger `teleportAsync`. Ein Teleport in nich
 ganzen Server kurz an. Fix: die zentralen Reisewege (Hub-Spawns und Warps, Sprung-Pads, Arena-Eintritte) auf
 die asynchrone Variante umstellen, also ein Dutzend Stellen, nicht alle 360. Risiko gering bis mittel.
 
+*Stand 15.11.:* die beiden Reisewege auf Origin (Spawn-Menü und `/spawn goto` über `HubService.teleport`,
+Glowcap-Reise) laufen über `teleportAsync`. Die Ankunfts-Teleports nach einem Serverwechsel (Core
+`ExileArrival`, `IslandLink`, `NetworkRouter`) bleiben bewusst synchron: sie hängen am Join und am Transfer und
+gehören in eine Runde mit Testserver. Beim Durchsehen fiel ein größerer Punkt auf: sieben Wächter-Tasks fragten
+`getChunk().isLoaded()`, was den Chunk selbst lädt; die Händlerkisten in Quests taten das zweimal pro Sekunde
+für jede Kiste. Behoben, siehe PROJECT_STATE "Cleanup round 4".
+
 **C4. Wächter-Tasks laufen auch dort, wo es den Inhalt nicht gibt.**
 Rund zehn Dienste in Items suchen alle 10 Sekunden ihre Anzeigen (Krypta-Hologramme, Banner, Gebiets-Marker,
 Weltkarte, Tierzonen, Pet-Habitate; Casino und Mühle durchsuchen dabei alle Display-Entities aller Welten).
@@ -306,6 +321,9 @@ Wirklich toter Code ist wenig: rund 570 Zeilen in neun Klassen (`OpenRoadsGUI`, 
 `CraftCurve`, `QuestNPCManager`, `MiningQuestListener`, `QuestConfig`, `PetEquipmentChangeEvent`,
 `BossEngineConstants`, `SpawnTriggerFactory`). `/aetherion`, `/hub` und `/spawn` werden von zwei Plugins
 gleichzeitig angemeldet (Items oder Hub und Pit); auf dem Hub-Server gewinnt, wer zuerst lädt.
+
+*Stand 15.11.:* die toten Klassen sind gelöscht, bis auf `TabScoreboardRebind` (gehört zu den Rängen und hat
+einen Test). `/hub` und `/spawn` doppelt braucht weiter den Blick auf den Live-Server (F6).
 
 ---
 

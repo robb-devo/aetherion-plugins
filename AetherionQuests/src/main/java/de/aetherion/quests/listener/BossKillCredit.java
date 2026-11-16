@@ -59,6 +59,7 @@ public final class BossKillCredit implements Listener {
         }
         for (Player player : credited) {
             objectives.creditBossKill(player, bossId);
+            de.aetherion.quests.story.StoryState.onBossKill(player, bossId);
         }
     }
 }

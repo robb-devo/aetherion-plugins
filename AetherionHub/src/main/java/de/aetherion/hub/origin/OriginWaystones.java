@@ -316,15 +316,20 @@ public final class OriginWaystones implements Listener {
         }
         travelCool.put(player.getUniqueId(), now + TRAVEL_COOLDOWN_MS);
         isle.traversal().grace(player, 4_000L);
-        player.teleport(to);
-        player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 30, 0, false, false, true));
-        World world = to.getWorld();
-        if (world != null) {
-            de.aetherion.core.api.Vfx.puff(to.clone().add(0, 1, 0), Particle.GLOW, 40, Math.max(0.4, 0.4), null);
-            de.aetherion.core.api.Vfx.puff(to.clone().add(0, 1.2, 0), Particle.END_ROD, 16, Math.max(0.3, 0.3), null);
-            world.playSound(to, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.9f, 1.1f);
-        }
-        OriginText.bar(player, "§9✦ " + stone.name() + " §8· §7" + stone.blurb());
+        // Async so a glowcap in an unloaded chunk doesn't stall the server; Paper runs the arrival on the main thread.
+        player.teleportAsync(to).thenAccept(moved -> {
+            if (!moved || !player.isOnline()) {
+                return;
+            }
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 30, 0, false, false, true));
+            World world = to.getWorld();
+            if (world != null) {
+                de.aetherion.core.api.Vfx.puff(to.clone().add(0, 1, 0), Particle.GLOW, 40, Math.max(0.4, 0.4), null);
+                de.aetherion.core.api.Vfx.puff(to.clone().add(0, 1.2, 0), Particle.END_ROD, 16, Math.max(0.3, 0.3), null);
+                world.playSound(to, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.9f, 1.1f);
+            }
+            OriginText.bar(player, "§9✦ " + stone.name() + " §8· §7" + stone.blurb());
+        });
         return null;
     }
 

@@ -38,7 +38,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * Exile hops ({@link ExileLink} / {@link ExileHost}) live here so MMO-C can host the island.
  *
  * <p>Network wiring: {@link NetworkRouter} moves players between mmo-r / mmo-d / mmo-c / mmo-i (character v6 +
- * route). Dungeons provides the character transport where it runs; {@link CharacterHost} is Core's port for
+ * route) through one {@link CharacterHost} per backend: Dungeons builds it where it runs, Core arms its own on
  * mmo-c / mmo-i. {@link IslandLink} sends {@code /island} & co. to mmo-i from backends without Guilds;
  * {@link IslandsHost} lands arrivals on their island there.
  */

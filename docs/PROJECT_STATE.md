@@ -263,6 +263,45 @@ Audit items B2 (step 1) and B3 (first part). Same PR.
   leaving player on quit.
 - Deploy: Dungeons (mmo-r, mmo-d) and Items (mmo-r, mmo-d, mmo-c, mmo-i).
 
+## Cleanup round 3: one character host (2026-11-14, cloud session, not deployed yet)
+
+Audit item B2, step 2. Branch on top of the round 1 and 2 PR.
+- The v6 character exists once: Core's `network/CharacterStore` (pack, claim, apply, outbox, quarantine, ledger)
+  and `network/CharacterHost` (hop, quit, shutdown, join wait, redirect, guest). Where the two backend families
+  differ on purpose, `CharacterStore.Policy` says so: `plain()` for mmo-c / mmo-i / mmo-m (travel as SURVIVAL,
+  never merge leftovers, park legacy files), `gate(role)` for mmo-r / mmo-d (role as `from-server`, leftover
+  adoption, legacy v4/v5 apply), exactly as the two copies behaved before.
+- Dungeons builds that host in `bridge/RemoteServerBridge` from its `remote-transfer` config (same keys, same
+  folder, same server name) and registers it as the network transport. `HubPortalBridge` calls `host.arrive` on
+  join and keeps the gate's arrival teleports and pending-floor entry. Dungeons' `TransferSnapshotStore`,
+  `TransferLedger`, `TransferGuard`, `CharacterSync`, `PendingSnapshotFiles` and `DungeonCharacterTransport` are
+  deleted (about 2,000 lines).
+- Small visible changes: the gate says "Crossing to the Dungeon Hub" instead of the server id, and a few error
+  lines use Core's wording. `/aetransfer` on mmo-r / mmo-d shows "v6 via Dungeon Gate" and the guest flag.
+- Still open: Core still starts the v5 `TransferSnapshotStore` (B2 step 3, after checking live that no v5 files
+  are left).
+- Deploy: Core (all five backends) and Dungeons (mmo-r, mmo-d) together; a new Dungeons jar does not run on an
+  old Core. Test hops on every server pair before calling it done.
+
+## Cleanup round 4: chunk loads, travel, leftovers (2026-11-15, cloud session, not deployed yet)
+
+Audit items C3, A3 (one file missed), D6 and a new find. No balance or content change.
+- Timers no longer load chunks. `Location.getChunk()` and `Block.getChunk()` load the chunk, so checks written as
+  `getChunk().isLoaded()` were always true and pulled the chunk in on every run: animal zones, pet habitats, the
+  shabby mine guard and world maps in Items (every 5-10 s, on every backend with Items), the forage isle guide (every
+  4 s) and every merchant chest in Quests (twice a second). They now ask `world.isChunkLoaded`; the Items and
+  Foraging ones also wait for the chunk's entities (`ZoneMarkers.ready`), so nothing is re-spawned next to a
+  marker or display that is still loading. Content in chunks nobody is near now simply waits until someone comes.
+  Startup restores and removal paths still load on purpose (one-off).
+- Hub: spawn travel (`HubService.teleport`, used by the spawn menu and `/spawn goto`) and glowcap travel use
+  `teleportAsync`; sound, message, compass and slow falling run on arrival. Origin profiles are saved through
+  `AtomicYaml`.
+- Removed eight unused classes (Quests `OpenRoadsGUI`, `QuestNPCManager`, `MiningQuestListener`, `QuestConfig`;
+  Items `CraftCurve`; AetherMobs `PetEquipmentChangeEvent`; BossEngine `BossEngineConstants`, `SpawnTriggerFactory`).
+  `TabScoreboardRebind` stays (rank system, has a test).
+- Deploy: Items (mmo-r, mmo-d, mmo-c, mmo-i), Quests (mmo-r), Hub (mmo-r), Foraging (mmo-r), AetherMobs and
+  BossEngine only for the deleted classes (can ride with the next deploy of those).
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,

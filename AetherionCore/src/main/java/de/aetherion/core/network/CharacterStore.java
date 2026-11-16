@@ -25,31 +25,72 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
- * Transfer v6 for backends without the AetherionDungeons jar (mmo-c, mmo-i): a faithful port of
- * Dungeons' {@code TransferSnapshotStore} character path. Same files in the same shared folder
- * ({@code <uuid>.char.yml}, {@code outbox/}, {@code applied/}, {@code quarantine/}, {@code rollback/},
- * {@code ledger/}), so a character packed on mmo-r applies on mmo-i and the other way round.
+ * The character in flight between two backends (transfer v6). One implementation for every backend that can
+ * hold a character: AetherionDungeons builds one on mmo-r / mmo-d, Core's {@link CharacterHost} on the others.
  *
- * <p>Three deliberate differences to the Dungeons store:
+ * <h2>One character, one owner</h2>
  * <ul>
- *     <li><b>Travel as SURVIVAL, no flight</b> (non-staff). The exile forces ADVENTURE / SPECTATOR and the
- *     isles grant island flight; neither may follow the character to the main world.</li>
- *     <li><b>No leftover adoption.</b> The exile backend used to receive <i>copies</i> of the main inventory
- *     (v5 never emptied the source), so whatever its playerdata still holds is a stale copy, not residue.
- *     A non-empty live inventory is always backed up to {@code quarantine/} and replaced — never merged.</li>
- *     <li><b>No legacy apply.</b> {@code <uuid>.yml} (v5) stays with Core's {@link TransferSnapshotStore};
- *     when a v6 character is applied here, a legacy file addressed to this backend is parked as superseded.</li>
+ *     <li><b>{@code <uuid>.char.yml}</b> is the character in flight. It is written by exactly one place per
+ *     hop: the send pipeline or the quit / shutdown hook. Items are encoded with Paper
+ *     {@link ItemStack#serializeAsBytes()}, so custom PDC survives. If a single item cannot be encoded the
+ *     snapshot is refused and the inventory is not touched.</li>
+ *     <li>Every snapshot has an id. The arriving backend claims the file with an atomic rename, applies it
+ *     once, records the id in the ledger and moves the file to {@code applied/}. Reconnecting with an already
+ *     applied id is a no-op.</li>
+ *     <li>A backup copy goes to {@code outbox/} before Connect, so a missing main file can be recovered
+ *     automatically ({@link #recoverFromOutbox}).</li>
+ *     <li>A non-empty live inventory is never overwritten silently: it is copied to {@code quarantine/} first
+ *     and logged.</li>
  * </ul>
+ *
+ * <p>Policy: <b>full restore</b> of inventory, armor, offhand, ender chest, cursor, level/exp,
+ * food/saturation/exhaustion, effects, gamemode/flight. Health is restored but clamped to [1, max]; fire
+ * ticks are never carried. Where the two backend families differ on purpose, {@link Policy} says so.
  */
 public final class CharacterStore {
 
     public static final int CHAR_VERSION = 6;
     private static final NamespacedKey MANAGER_KEY = new NamespacedKey("aetherionitems", "manager");
-    private static final char NETWORK_SEPARATOR = '\u001F';
+
+    /**
+     * The deliberate differences between the gate backends (mmo-r, mmo-d) and the rest (mmo-c, mmo-i, mmo-m).
+     *
+     * @param fromServerLabel  what {@code from-server} says in a snapshot; blank = this backend's name. The
+     *                         gate writes its role ({@code hub} / {@code dungeon}): its arrival teleports
+     *                         read it.
+     * @param travelAsSurvival non-staff leave as SURVIVAL with their feet on the ground. The exile forces
+     *                         ADVENTURE / SPECTATOR and the isles grant island flight; neither may follow
+     *                         the character home.
+     * @param adoptLeftovers   on the first v6 contact with a backend, keep what its playerdata holds beyond
+     *                         the incoming character (residue of the old per-server model on mmo-r / mmo-d).
+     *                         Off: a non-empty live inventory is always a stale copy; it is backed up to
+     *                         {@code quarantine/} and replaced, never merged.
+     * @param applyLegacy      honour {@code <uuid>.yml} on join (v4 from old Dungeons jars applies, a v5
+     *                         hub handoff only routes). Off: such a file stays with Core's v5 store and is
+     *                         parked once a v6 character was applied here.
+     */
+    public record Policy(String fromServerLabel, boolean travelAsSurvival, boolean adoptLeftovers, boolean applyLegacy) {
+
+        public Policy {
+            fromServerLabel = fromServerLabel == null ? "" : fromServerLabel.trim();
+        }
+
+        /** Backends without the Dungeon Gate: travel as SURVIVAL, never merge, never apply legacy files. */
+        public static Policy plain() {
+            return new Policy("", true, false, false);
+        }
+
+        /** The Dungeon Gate pair. {@code role} is Dungeons' {@code role} config value. */
+        public static Policy gate(String role) {
+            return new Policy(role, false, true, true);
+        }
+    }
 
     private final Plugin plugin;
     private final File dir;
@@ -59,12 +100,19 @@ public final class CharacterStore {
     private final File rollback;
     private final NetworkPlayerDataSync networkData;
     private final CharacterLedger ledger;
+    private final Set<UUID> legacyAppliedThisSession = ConcurrentHashMap.newKeySet();
+    private final Policy policy;
     private final String here;
 
     public CharacterStore(Plugin plugin, File dir, String here) {
+        this(plugin, dir, here, Policy.plain());
+    }
+
+    public CharacterStore(Plugin plugin, File dir, String here, Policy policy) {
         this.plugin = plugin;
         this.dir = dir;
-        this.here = here == null ? "unknown" : here.trim().toLowerCase(Locale.ROOT);
+        this.here = here == null || here.isBlank() ? "unknown" : here.trim().toLowerCase(Locale.ROOT);
+        this.policy = policy == null ? Policy.plain() : policy;
         this.networkData = new NetworkPlayerDataSync(plugin);
         if (!dir.exists() && !dir.mkdirs()) {
             plugin.getLogger().warning("[Transfer] Could not create transfer dir: " + dir.getAbsolutePath());
@@ -92,8 +140,13 @@ public final class CharacterStore {
         return ledger;
     }
 
+    /** Velocity name of this backend, used for routing and the ledger. */
     public String serverName() {
         return here;
+    }
+
+    public Policy policy() {
+        return policy;
     }
 
     // ------------------------------------------------------------------ save
@@ -104,17 +157,26 @@ public final class CharacterStore {
         }
     }
 
+    public SaveResult saveCharacter(Player player, String reason, String toServer) {
+        return saveCharacter(player, reason, toServer, 0, false, 0);
+    }
+
     /**
      * Pack the whole character into {@code <uuid>.char.yml} (+ outbox backup) and mark the ledger.
      * Does NOT clear the live inventory — the caller decides when the handoff is final.
+     *
+     * @param pendingFloor dungeon floor to open on arrival (0 = none)
+     * @param dcFloor      floor of the run the player was in when they left (0 = not in a run)
      */
-    public SaveResult saveCharacter(Player player, String reason, String toServer) {
+    public SaveResult saveCharacter(Player player, String reason, String toServer,
+                                    int pendingFloor, boolean bossOnly, int dcFloor) {
         if (player == null) {
             return SaveResult.failed("no player");
         }
         UUID id = player.getUniqueId();
         String snapshotId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        // Close GUIs + flush progression FIRST: closing a trade/bank GUI can hand items back.
+        // Close GUIs + flush progression FIRST: closing an AH/trade GUI can hand items back
+        // into the inventory, and those must be inside the snapshot.
         player.closeInventory();
         Map<String, Object> network = networkData.exportAll(player);
         PlayerInventory inv = player.getInventory();
@@ -141,13 +203,13 @@ public final class CharacterStore {
         yaml.set("uuid", id.toString());
         yaml.set("name", player.getName());
         yaml.set("saved-at", System.currentTimeMillis());
-        yaml.set("from-server", here);
+        yaml.set("from-server", policy.fromServerLabel().isBlank() ? here : policy.fromServerLabel());
         yaml.set("from-name", here);
         yaml.set("to-server", toServer == null ? "" : toServer.toLowerCase(Locale.ROOT));
         yaml.set("reason", reason == null ? "" : reason);
-        yaml.set("pending-floor", 0);
-        yaml.set("pending-boss-only", false);
-        yaml.set("dc-floor", 0);
+        yaml.set("pending-floor", Math.max(0, pendingFloor));
+        yaml.set("pending-boss-only", bossOnly);
+        yaml.set("dc-floor", Math.max(0, dcFloor));
         Location at = player.getLocation();
         if (at.getWorld() != null) {
             yaml.set("location.world", at.getWorld().getName());
@@ -157,6 +219,7 @@ public final class CharacterStore {
             yaml.set("location.yaw", (double) at.getYaw());
             yaml.set("location.pitch", (double) at.getPitch());
         }
+        // Dot-safe: Bukkit YAML would split "yaml:coins.yml" / "players.<uuid>" on load.
         yaml.set("network-yaml", encodeNetwork(network));
         yaml.set("level", player.getLevel());
         yaml.set("exp", (double) player.getExp());
@@ -170,13 +233,10 @@ public final class CharacterStore {
         yaml.set("food", player.getFoodLevel());
         yaml.set("saturation", (double) player.getSaturation());
         yaml.set("exhaustion", (double) player.getExhaustion());
-        // Exile forces ADVENTURE (and the ferry cutscene SPECTATOR); islands grant island flight. Neither may
-        // follow a player home: non-staff always travel as SURVIVAL, feet on the ground.
-        boolean staff = player.hasPermission("aetherion.core.admin");
-        GameMode travelMode = staff ? player.getGameMode() : GameMode.SURVIVAL;
-        yaml.set("gamemode", travelMode.name());
-        yaml.set("allow-flight", staff && player.getAllowFlight());
-        yaml.set("flying", staff && player.isFlying());
+        boolean asPlayed = !policy.travelAsSurvival() || player.hasPermission("aetherion.core.admin");
+        yaml.set("gamemode", (asPlayed ? player.getGameMode() : GameMode.SURVIVAL).name());
+        yaml.set("allow-flight", asPlayed && player.getAllowFlight());
+        yaml.set("flying", asPlayed && player.isFlying());
         yaml.set("held-slot", inv.getHeldItemSlot());
         yaml.set("inventory-b64", inventory);
         yaml.set("armor-b64", armor);
@@ -216,6 +276,8 @@ public final class CharacterStore {
                 + " reason=" + reason
                 + " from=" + here
                 + " to=" + (toServer == null || toServer.isBlank() ? "any" : toServer)
+                + (pendingFloor > 0 ? " floor=" + pendingFloor : "")
+                + (dcFloor > 0 ? " dcFloor=" + dcFloor : "")
                 + " inv=" + countFilled(inventory)
                 + " ender=" + countFilled(ender)
                 + " lvl=" + player.getLevel()
@@ -261,16 +323,25 @@ public final class CharacterStore {
         }
         deleteQuietly(outboxFile(id, snapshotId));
         ledger.markHolder(id, here);
-        plugin.getLogger().info("[Transfer] ROLLBACK id=" + snapshotId + " uuid=" + id
-                + " — nobody claimed it, character stays on " + here);
+        plugin.getLogger().info("[Transfer] ROLLBACK id=" + snapshotId + " uuid=" + id + " — nobody claimed it, character stays on " + here);
         return true;
     }
 
     // ------------------------------------------------------------------ apply
 
-    public record ApplyResult(boolean applied, String snapshotId, String reason, String fromName) {
+    public record ApplyResult(
+            boolean applied,
+            int pendingFloor,
+            boolean bossOnly,
+            String fromServer,
+            boolean inventoryOmitted,
+            String snapshotId,
+            String reason,
+            int dcFloor,
+            String fromName
+    ) {
         public static ApplyResult none() {
-            return new ApplyResult(false, "", "", "");
+            return new ApplyResult(false, 0, false, "", false, "", "", 0, "");
         }
 
         /** Quit or shutdown snapshot re-applied on the backend that wrote it. */
@@ -284,18 +355,30 @@ public final class CharacterStore {
         return charFile(id).isFile() || claimedCharFile(id).isFile();
     }
 
-    /** Join hook: claim + apply the pending v6 character, once. */
+    /**
+     * Join hook: claim + apply the pending v6 character, once. With {@link Policy#applyLegacy()} a legacy
+     * {@code <uuid>.yml} goes first (routing / old full snapshots).
+     */
     public ApplyResult applyOnJoin(Player player) {
         if (player == null || !player.isOnline()) {
             return ApplyResult.none();
         }
-        File claimed = claimCharacter(player.getUniqueId());
+        UUID id = player.getUniqueId();
+        ApplyResult legacy = policy.applyLegacy() ? processLegacy(player) : ApplyResult.none();
+        File claimed = claimCharacter(id);
         if (claimed == null) {
-            return ApplyResult.none();
+            return legacy;
         }
-        ApplyResult result = applyCharacterFile(player, claimed);
-        if (result.applied()) {
+        ApplyResult result = applyCharacterFile(player, claimed, false);
+        if (result.applied() && !policy.applyLegacy()) {
             parkSupersededLegacy(player);
+        }
+        if (!result.applied() && legacy.applied()) {
+            return legacy;
+        }
+        if (result.applied() && legacy.applied() && legacy.pendingFloor() > 0 && result.pendingFloor() <= 0) {
+            return new ApplyResult(true, legacy.pendingFloor(), legacy.bossOnly(), result.fromServer(),
+                    result.inventoryOmitted(), result.snapshotId(), result.reason(), result.dcFloor(), result.fromName());
         }
         return result;
     }
@@ -322,7 +405,7 @@ public final class CharacterStore {
         }
         plugin.getLogger().warning("[Transfer] RECOVER id=" + snapshotId + " player=" + player.getName()
                 + " — main snapshot file was missing, applying the outbox backup.");
-        return applyCharacterFile(player, claimed);
+        return applyCharacterFile(player, claimed, false);
     }
 
     private File claimCharacter(UUID id) {
@@ -345,7 +428,7 @@ public final class CharacterStore {
         return claimed.isFile() ? claimed : null;
     }
 
-    private ApplyResult applyCharacterFile(Player player, File source) {
+    private ApplyResult applyCharacterFile(Player player, File source, boolean legacyFile) {
         UUID id = player.getUniqueId();
         YamlConfiguration yaml;
         try {
@@ -370,8 +453,13 @@ public final class CharacterStore {
         }
         String fromServer = yaml.getString("from-server", "");
         String fromName = yaml.getString("from-name", fromServer);
-        String reason = yaml.getString("reason", "");
-        boolean sameServer = fromName != null && fromName.equalsIgnoreCase(here);
+        String reason = yaml.getString("reason", legacyFile ? "legacy" : "");
+        int pendingFloor = yaml.getInt("pending-floor", 0);
+        boolean bossOnly = yaml.getBoolean("pending-boss-only", false);
+        int dcFloor = yaml.getInt("dc-floor", 0);
+        boolean omitInventory = legacyFile && shouldOmitInventory(yaml);
+        boolean sameServer = fromName != null && fromName.equalsIgnoreCase(here) && !legacyFile;
+        int decodeFailures = 0;
         ItemStack[] invBackup = cloneAll(player.getInventory().getContents());
         ItemStack[] armorBackup = cloneAll(player.getInventory().getArmorContents());
         ItemStack[] extraBackup = cloneAll(player.getInventory().getExtraContents());
@@ -379,88 +467,120 @@ public final class CharacterStore {
         ItemStack cursorBackup = player.getItemOnCursor() == null ? null : player.getItemOnCursor().clone();
         boolean clearedLive = false;
         try {
-            // Never merge: whatever this backend's playerdata holds is a stale copy at best.
-            backupLiveIfNotEmpty(player, snapshotId);
-            player.closeInventory();
-            player.setItemOnCursor(null);
-            player.getInventory().clear();
-            player.getEnderChest().clear();
-            clearedLive = true;
-            for (PotionEffect effect : player.getActivePotionEffects()) {
-                player.removePotionEffect(effect.getType());
-            }
-            List<String> invRaw = yaml.getStringList("inventory-b64");
-            List<String> armorRaw = yaml.getStringList("armor-b64");
-            List<String> extraRaw = yaml.getStringList("extra-b64");
-            List<String> enderRaw = yaml.getStringList("enderchest-b64");
-            ItemStack[] inventory = decodeItems(invRaw);
-            ItemStack[] armor = decodeItems(armorRaw);
-            ItemStack[] extra = decodeItems(extraRaw);
-            ItemStack[] ender = decodeItems(enderRaw);
-            ItemStack cursor = decodeItem(yaml.getString("cursor-b64"));
-            int decodeFailures = failures(invRaw, inventory) + failures(armorRaw, armor)
-                    + failures(extraRaw, extra) + failures(enderRaw, ender);
-            if (decodeFailures > 0) {
-                restoreLive(player, invBackup, armorBackup, extraBackup, enderBackup, cursorBackup);
-                plugin.getLogger().severe("[Transfer] " + decodeFailures + " item(s) in snapshot " + snapshotId
-                        + " for " + player.getName() + " could not be decoded — live inventory restored, claim kept for retry: "
-                        + source.getAbsolutePath());
-                player.sendMessage("§cYour travel data was damaged. Your inventory was restored — try rejoining or ask staff.");
-                return ApplyResult.none();
-            }
-            if (inventory != null && inventory.length > 0) {
-                player.getInventory().setContents(fit(inventory, player.getInventory().getSize()));
-            }
-            if (armor != null && armor.length > 0) {
-                player.getInventory().setArmorContents(fit(armor, 4));
-            }
-            if (extra != null && extra.length > 0) {
-                player.getInventory().setExtraContents(fit(extra, player.getInventory().getExtraContents().length));
-            }
-            if (ender != null && ender.length > 0) {
-                player.getEnderChest().setContents(fit(ender, player.getEnderChest().getSize()));
-            }
-            if (cursor != null && !cursor.getType().isAir()) {
-                player.getInventory().addItem(cursor).values()
-                        .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
-            }
-            int held = yaml.getInt("held-slot", player.getInventory().getHeldItemSlot());
-            if (held >= 0 && held <= 8) {
-                player.getInventory().setHeldItemSlot(held);
-            }
-            player.setLevel(yaml.getInt("level", player.getLevel()));
-            player.setExp((float) Math.max(0.0, Math.min(0.9999, yaml.getDouble("exp", player.getExp()))));
-            player.setTotalExperience(yaml.getInt("total-exp", player.getTotalExperience()));
-            player.setFoodLevel(yaml.getInt("food", player.getFoodLevel()));
-            player.setSaturation((float) yaml.getDouble("saturation", player.getSaturation()));
-            player.setExhaustion((float) yaml.getDouble("exhaustion", player.getExhaustion()));
-            player.setFireTicks(0);
-            String mode = yaml.getString("gamemode");
-            if (mode != null) {
-                try {
-                    player.setGameMode(GameMode.valueOf(mode));
-                } catch (IllegalArgumentException ignored) {
-                    // keep current
+            ItemStack[] inventory = null;
+            ItemStack[] armor = null;
+            ItemStack[] extra = null;
+            List<ItemStack> leftovers = List.of();
+            if (!omitInventory) {
+                if (policy.adoptLeftovers() && !ledger.isAdopted(id, here)) {
+                    // First v6 contact with this backend: whatever its playerdata still holds is
+                    // residue of the old per-server model (never in any snapshot) — keep it.
+                    leftovers = liveItems(player);
+                } else {
+                    // Anything live here is a stale copy at best: back it up, then replace it.
+                    backupLiveIfNotEmpty(player, snapshotId);
                 }
+                player.closeInventory();
+                player.setItemOnCursor(null);
+                player.getInventory().clear();
+                player.getEnderChest().clear();
+                clearedLive = true;
+                for (PotionEffect effect : player.getActivePotionEffects()) {
+                    player.removePotionEffect(effect.getType());
+                }
+                List<String> invRaw = yaml.getStringList("inventory-b64");
+                List<String> armorRaw = yaml.getStringList("armor-b64");
+                List<String> extraRaw = yaml.getStringList("extra-b64");
+                List<String> enderRaw = yaml.getStringList("enderchest-b64");
+                inventory = decodeItems(invRaw);
+                armor = decodeItems(armorRaw);
+                extra = decodeItems(extraRaw);
+                ItemStack[] ender = decodeItems(enderRaw);
+                ItemStack cursor = decodeItem(yaml.getString("cursor-b64"));
+                decodeFailures = failures(invRaw, inventory) + failures(armorRaw, armor)
+                        + failures(extraRaw, extra) + failures(enderRaw, ender);
+                if (decodeFailures > 0) {
+                    restoreLive(player, invBackup, armorBackup, extraBackup, enderBackup, cursorBackup);
+                    plugin.getLogger().severe("[Transfer] " + decodeFailures + " item(s) in snapshot " + snapshotId
+                            + " for " + player.getName() + " could not be decoded — live inventory restored, claim kept for retry: "
+                            + source.getAbsolutePath());
+                    player.sendMessage("§cYour travel data was damaged. Your inventory was restored — try rejoining or ask staff.");
+                    return ApplyResult.none();
+                }
+                if (inventory != null && inventory.length > 0) {
+                    player.getInventory().setContents(fit(inventory, player.getInventory().getSize()));
+                }
+                if (armor != null && armor.length > 0) {
+                    player.getInventory().setArmorContents(fit(armor, 4));
+                }
+                if (extra != null && extra.length > 0) {
+                    player.getInventory().setExtraContents(fit(extra, player.getInventory().getExtraContents().length));
+                }
+                if (ender != null && ender.length > 0) {
+                    player.getEnderChest().setContents(fit(ender, player.getEnderChest().getSize()));
+                }
+                if (cursor != null && !cursor.getType().isAir()) {
+                    player.getInventory().addItem(cursor).values()
+                            .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+                }
+                int held = yaml.getInt("held-slot", player.getInventory().getHeldItemSlot());
+                if (held >= 0 && held <= 8) {
+                    player.getInventory().setHeldItemSlot(held);
+                }
+                player.setLevel(yaml.getInt("level", player.getLevel()));
+                player.setExp((float) Math.max(0.0, Math.min(0.9999, yaml.getDouble("exp", player.getExp()))));
+                player.setTotalExperience(yaml.getInt("total-exp", player.getTotalExperience()));
+                player.setFoodLevel(yaml.getInt("food", player.getFoodLevel()));
+                player.setSaturation((float) yaml.getDouble("saturation", player.getSaturation()));
+                player.setExhaustion((float) yaml.getDouble("exhaustion", player.getExhaustion()));
+                player.setFireTicks(0);
+                String mode = yaml.getString("gamemode");
+                if (mode != null) {
+                    try {
+                        player.setGameMode(GameMode.valueOf(mode));
+                    } catch (IllegalArgumentException ignored) {
+                        // keep current
+                    }
+                }
+                player.setAllowFlight(yaml.getBoolean("allow-flight", false));
+                if (yaml.getBoolean("flying", false) && player.getAllowFlight()) {
+                    player.setFlying(true);
+                }
+                double maxHealth = yaml.getDouble("max-health", 20.0);
+                if (player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null && maxHealth > 0) {
+                    player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+                }
+                double health = yaml.getDouble("health", player.getHealth());
+                player.setHealth(Math.max(1.0, Math.min(health, player.getMaxHealth())));
+                for (String line : yaml.getStringList("effects")) {
+                    applyEffectLine(player, line);
+                }
+                if (!leftovers.isEmpty()) {
+                    // The old model never emptied ender chests on a hop, so both backends hold stale
+                    // copies. Only what the incoming character does NOT already carry is residue.
+                    List<ItemStack> incoming = new ArrayList<>();
+                    collect(incoming, inventory);
+                    collect(incoming, ender);
+                    collect(incoming, new ItemStack[]{cursor});
+                    List<ItemStack> surplus = surplusOver(leftovers, incoming);
+                    if (totalAmount(surplus) != totalAmount(leftovers)) {
+                        plugin.getLogger().info("[Transfer] ADOPT dedupe for " + player.getName() + ": "
+                                + leftovers.size() + " live stack(s) on " + here + ", "
+                                + surplus.size() + " not already in snapshot " + snapshotId);
+                    }
+                    if (!surplus.isEmpty()) {
+                        adoptLeftovers(player, surplus, snapshotId);
+                    }
+                }
+                player.updateInventory();
+            } else {
+                plugin.getLogger().info("[Transfer] Leaving inventory in place for " + player.getName()
+                        + " — snapshot from " + fromServer + " does not carry hub gear onto MMO.");
             }
-            player.setAllowFlight(yaml.getBoolean("allow-flight", false));
-            if (yaml.getBoolean("flying", false) && player.getAllowFlight()) {
-                player.setFlying(true);
-            }
-            double maxHealth = yaml.getDouble("max-health", 20.0);
-            if (player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null && maxHealth > 0) {
-                player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
-            }
-            double health = yaml.getDouble("health", player.getHealth());
-            player.setHealth(Math.max(1.0, Math.min(health, player.getMaxHealth())));
-            for (String line : yaml.getStringList("effects")) {
-                applyEffectLine(player, line);
-            }
-            player.updateInventory();
 
-            // Progression files only when the snapshot came from ANOTHER backend. On a same-backend
-            // relog the local files are newer and must win.
-            if (!sameServer) {
+            // Progression files: only when the snapshot came from ANOTHER backend. On a same-backend
+            // relog the local files are newer (offline payouts, pet ticks) and must win.
+            if (!omitInventory && !sameServer) {
                 Map<String, Object> networkMap = decodeNetwork(yaml);
                 if (!networkMap.isEmpty()) {
                     networkData.importAll(player, networkMap);
@@ -474,40 +594,56 @@ public final class CharacterStore {
             ledger.markApplied(id, snapshotId, here);
             moveQuietly(source, new File(appliedDir, id + "-" + snapshotId + ".yml"));
             deleteQuietly(outboxFile(id, snapshotId));
+            if (legacyFile) {
+                legacyAppliedThisSession.add(id);
+            }
 
-            // Re-assert after loadout / join hooks (tick 25). The player is frozen until then.
-            final ItemStack[] invCopy = cloneAll(player.getInventory().getContents());
-            final ItemStack[] armorCopy = cloneAll(player.getInventory().getArmorContents());
-            final ItemStack[] extraCopy = cloneAll(player.getInventory().getExtraContents());
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                if (!player.isOnline()) {
-                    return;
-                }
-                networkData.resetLoadoutRuntime(player);
-                if (invCopy != null) {
-                    player.getInventory().setContents(invCopy);
-                }
-                if (armorCopy != null) {
-                    player.getInventory().setArmorContents(armorCopy);
-                }
-                if (extraCopy != null) {
-                    player.getInventory().setExtraContents(fit(extraCopy, player.getInventory().getExtraContents().length));
-                }
-                player.updateInventory();
-                de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
-                if (progress != null) {
-                    progress.refreshManager(player);
-                }
-            }, 25L);
+            if (!omitInventory) {
+                // Copies of what the player holds NOW (snapshot + adopted leftovers).
+                final ItemStack[] invCopy = cloneAll(player.getInventory().getContents());
+                final ItemStack[] armorCopy = cloneAll(player.getInventory().getArmorContents());
+                final ItemStack[] extraCopy = cloneAll(player.getInventory().getExtraContents());
+                // Re-assert after loadout / join hooks (tick 25). The player is frozen until then.
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (!player.isOnline()) {
+                        return;
+                    }
+                    networkData.resetLoadoutRuntime(player);
+                    if (invCopy != null) {
+                        player.getInventory().setContents(invCopy);
+                    }
+                    if (armorCopy != null) {
+                        player.getInventory().setArmorContents(armorCopy);
+                    }
+                    if (extraCopy != null) {
+                        player.getInventory().setExtraContents(fit(extraCopy, player.getInventory().getExtraContents().length));
+                    }
+                    player.updateInventory();
+                    de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+                    if (progress != null) {
+                        progress.refreshManager(player);
+                    }
+                }, 25L);
+            } else {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        networkData.resetLoadoutRuntime(player);
+                    }
+                }, 25L);
+            }
 
             plugin.getLogger().info("[Transfer] APPLY id=" + snapshotId
                     + " player=" + player.getName()
                     + " from=" + (fromName == null || fromName.isBlank() ? "?" : fromName)
                     + " here=" + here
                     + " reason=" + reason
-                    + " inv=" + yaml.getInt("count.inventory", -1)
-                    + (sameServer ? " progress=local" : " progress=imported"));
-            return new ApplyResult(true, snapshotId, reason, fromName == null ? "" : fromName);
+                    + (pendingFloor > 0 ? " floor=" + pendingFloor : "")
+                    + (dcFloor > 0 ? " dcFloor=" + dcFloor : "")
+                    + (omitInventory ? " inv=left-in-place" : " inv=" + yaml.getInt("count.inventory", -1))
+                    + (sameServer ? " progress=local" : " progress=imported")
+                    + (legacyFile ? " legacy=v" + yaml.getInt("version", 4) : ""));
+            return new ApplyResult(true, pendingFloor, bossOnly, fromServer == null ? "" : fromServer,
+                    omitInventory, snapshotId, reason, dcFloor, fromName == null ? "" : fromName);
         } catch (Exception ex) {
             if (clearedLive) {
                 restoreLive(player, invBackup, armorBackup, extraBackup, enderBackup, cursorBackup);
@@ -521,13 +657,56 @@ public final class CharacterStore {
         }
     }
 
+    // ------------------------------------------------------------------ legacy (<uuid>.yml)
+
+    private ApplyResult processLegacy(Player player) {
+        UUID id = player.getUniqueId();
+        File live = legacyFile(id);
+        File claimed = legacyClaimedFile(id);
+        de.aetherion.core.persist.AtomicYaml.recoverTemp(live, plugin.getLogger());
+        File source = null;
+        if (live.isFile()) {
+            legacyAppliedThisSession.remove(id);
+            try {
+                Files.move(live.toPath(), claimed.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                source = claimed;
+            } catch (NoSuchFileException raced) {
+                source = null;
+            } catch (IOException ex) {
+                plugin.getLogger().warning("[Transfer] Could not claim legacy snapshot for " + id + ": " + ex.getMessage());
+                source = live;
+            }
+        } else if (claimed.isFile()) {
+            if (legacyAppliedThisSession.contains(id)) {
+                deleteQuietly(claimed);
+                return ApplyResult.none();
+            }
+            source = claimed;
+        }
+        if (source == null || !source.isFile()) {
+            return ApplyResult.none();
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(source);
+        boolean routingOnly = shouldOmitInventory(yaml);
+        if (!routingOnly && hasPendingCharacter(id)) {
+            // A v6 character is also waiting — it is newer by construction (new jars write only v6).
+            File parked = new File(quarantine, id + "-" + System.currentTimeMillis() + "-legacy-superseded.yml");
+            moveQuietly(source, parked);
+            plugin.getLogger().warning("[Transfer] Legacy v" + yaml.getInt("version", 4) + " snapshot for " + player.getName()
+                    + " parked (a v6 character is pending): " + parked.getName());
+            return ApplyResult.none();
+        }
+        return applyCharacterFile(player, source, true);
+    }
+
     /**
-     * A v5 {@code <uuid>.yml} addressed to this backend is older than the v6 character that was just applied
-     * (new jars only write v6 between character backends). Park it so Core's v5 path cannot apply it on top.
+     * Without {@link Policy#applyLegacy()}: a v5 {@code <uuid>.yml} addressed to this backend is older than
+     * the v6 character that was just applied (new jars only write v6 between character backends). Park it so
+     * Core's v5 path cannot apply it on top.
      */
     private void parkSupersededLegacy(Player player) {
         UUID id = player.getUniqueId();
-        for (File legacy : new File[]{new File(dir, id + ".yml"), new File(dir, id + ".claimed.yml")}) {
+        for (File legacy : new File[]{legacyFile(id), legacyClaimedFile(id)}) {
             if (!legacy.isFile()) {
                 continue;
             }
@@ -542,6 +721,29 @@ public final class CharacterStore {
             plugin.getLogger().warning("[Transfer] Legacy v" + yaml.getInt("version", 4) + " snapshot for "
                     + player.getName() + " parked (v6 character applied): " + parked.getName());
         }
+    }
+
+    private static boolean shouldOmitInventory(YamlConfiguration yaml) {
+        if (yaml.getBoolean("inventory-omitted", false)) {
+            return true;
+        }
+        String from = yaml.getString("from-server", "");
+        if (from == null || !"hub".equalsIgnoreCase(from.trim())) {
+            return false;
+        }
+        int version = yaml.getInt("version", 4);
+        if (version == CHAR_VERSION) {
+            return false;
+        }
+        if (version >= 5) {
+            return true;
+        }
+        String to = yaml.getString("to-server", "");
+        String warp = yaml.getString("pending-warp", "");
+        if (to != null && "mmo-r".equalsIgnoreCase(to.trim())) {
+            return true;
+        }
+        return warp != null && !warp.isBlank();
     }
 
     // ------------------------------------------------------------------ pre-login staging
@@ -660,21 +862,22 @@ public final class CharacterStore {
     /**
      * Guest session (the real character is held elsewhere): whatever this backend's playerdata still holds is a
      * stale copy. Park it in {@code quarantine/} and empty the live inventory, so a guest can never hand out
-     * items that also exist in the real character.
+     * items that also exist in the real character. Not under {@link Policy#adoptLeftovers()}: there the live
+     * items may be the residue that the next real arrival merges back.
      */
     public void stashLiveForGuest(Player player) {
-        if (player == null || !player.isOnline()) {
+        if (player == null || !player.isOnline() || policy.adoptLeftovers()) {
             return;
         }
         backupLiveIfNotEmpty(player, "guest-session");
         clearLocalCharacter(player);
     }
 
+    /** {@code getContents()} of a player inventory already holds the armor and offhand slots. */
     private void backupLiveIfNotEmpty(Player player, String incomingId) {
         List<String> inv = encodeLenient(player.getInventory().getContents());
-        List<String> armor = encodeLenient(player.getInventory().getArmorContents());
         List<String> ender = encodeLenient(player.getEnderChest().getContents());
-        int filled = countFilled(inv) + countFilled(armor) + countFilled(ender);
+        int filled = countFilled(inv) + countFilled(ender);
         if (filled == 0) {
             return;
         }
@@ -685,7 +888,6 @@ public final class CharacterStore {
         backup.set("server", here);
         backup.set("replaced-by", incomingId);
         backup.set("inventory-b64", inv);
-        backup.set("armor-b64", armor);
         backup.set("enderchest-b64", ender);
         backup.set("level", player.getLevel());
         File file = new File(quarantine, player.getUniqueId() + "-" + System.currentTimeMillis() + "-preapply.yml");
@@ -740,6 +942,122 @@ public final class CharacterStore {
         }
         player.updateInventory();
     }
+
+    private static List<ItemStack> liveItems(Player player) {
+        List<ItemStack> out = new ArrayList<>();
+        for (ItemStack[] area : new ItemStack[][]{
+                player.getInventory().getContents(),
+                player.getEnderChest().getContents(),
+                new ItemStack[]{player.getItemOnCursor()}}) {
+            if (area == null) {
+                continue;
+            }
+            for (ItemStack item : area) {
+                if (item != null && !item.getType().isAir() && !isManagerItem(item)) {
+                    out.add(item.clone());
+                }
+            }
+        }
+        return out;
+    }
+
+    private static void collect(List<ItemStack> into, ItemStack[] items) {
+        if (items == null) {
+            return;
+        }
+        for (ItemStack item : items) {
+            if (item != null && !item.getType().isAir()) {
+                into.add(item);
+            }
+        }
+    }
+
+    /**
+     * Multiset difference by {@link ItemStack#isSimilar}: what {@code live} holds beyond
+     * {@code incoming}, amount-aware (32 in the snapshot, 40 live → 8 surplus).
+     */
+    static List<ItemStack> surplusOver(List<ItemStack> live, List<ItemStack> incoming) {
+        List<ItemStack> keys = new ArrayList<>();
+        List<Integer> budget = new ArrayList<>();
+        for (ItemStack item : incoming) {
+            int at = indexOfSimilar(keys, item);
+            if (at < 0) {
+                keys.add(item);
+                budget.add(item.getAmount());
+            } else {
+                budget.set(at, budget.get(at) + item.getAmount());
+            }
+        }
+        List<ItemStack> out = new ArrayList<>();
+        for (ItemStack item : live) {
+            int at = indexOfSimilar(keys, item);
+            int left = item.getAmount();
+            if (at >= 0) {
+                int take = Math.min(left, budget.get(at));
+                budget.set(at, budget.get(at) - take);
+                left -= take;
+            }
+            if (left <= 0) {
+                continue;
+            }
+            ItemStack rest = item.clone();
+            rest.setAmount(left);
+            out.add(rest);
+        }
+        return out;
+    }
+
+    private static int totalAmount(List<ItemStack> items) {
+        int sum = 0;
+        for (ItemStack item : items) {
+            sum += item.getAmount();
+        }
+        return sum;
+    }
+
+    private static int indexOfSimilar(List<ItemStack> keys, ItemStack item) {
+        for (int i = 0; i < keys.size(); i++) {
+            if (keys.get(i).isSimilar(item)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Legacy leftovers go into the bag, then the ender chest; anything beyond waits in quarantine. */
+    private void adoptLeftovers(Player player, List<ItemStack> leftovers, String snapshotId) {
+        List<ItemStack> overflow = new ArrayList<>();
+        for (ItemStack item : leftovers) {
+            overflow.addAll(player.getInventory().addItem(item).values());
+        }
+        List<ItemStack> rest = new ArrayList<>();
+        for (ItemStack item : overflow) {
+            rest.addAll(player.getEnderChest().addItem(item).values());
+        }
+        plugin.getLogger().warning("[Transfer] ADOPT " + leftovers.size() + " legacy item stack(s) from " + here
+                + " playerdata for " + player.getName() + " (snapshot " + snapshotId + ")"
+                + (rest.isEmpty() ? "" : ", " + rest.size() + " did not fit"));
+        if (rest.isEmpty()) {
+            player.sendMessage("§5Dungeon Gate§7: Items you left on §f" + here + "§7 were merged back into your bag.");
+            return;
+        }
+        YamlConfiguration parked = new YamlConfiguration();
+        parked.set("uuid", player.getUniqueId().toString());
+        parked.set("name", player.getName());
+        parked.set("saved-at", System.currentTimeMillis());
+        parked.set("server", here);
+        parked.set("reason", "adopt-overflow");
+        parked.set("inventory-b64", encodeLenient(rest.toArray(new ItemStack[0])));
+        File file = new File(quarantine, player.getUniqueId() + "-" + System.currentTimeMillis() + "-adopt-overflow.yml");
+        try {
+            de.aetherion.core.persist.AtomicYaml.save(parked, file, plugin.getLogger());
+        } catch (IOException ex) {
+            plugin.getLogger().log(Level.SEVERE, "[Transfer] Could not park adopt overflow for " + player.getName(), ex);
+        }
+        player.sendMessage("§5Dungeon Gate§7: " + rest.size() + " old item stack(s) did not fit — staff can hand them back (nothing was deleted).");
+    }
+
+    private static final char NETWORK_SEPARATOR = '\u001F';
 
     static String encodeNetwork(Map<String, Object> network) {
         YamlConfiguration box = new YamlConfiguration();
@@ -966,10 +1284,21 @@ public final class CharacterStore {
         return new File(outbox, id + "-" + snapshotId + ".yml");
     }
 
+    private File legacyFile(UUID id) {
+        return new File(dir, id + ".yml");
+    }
+
+    private File legacyClaimedFile(UUID id) {
+        return new File(dir, id + ".claimed.yml");
+    }
+
     /** For admin/debug output. */
     public String describe(UUID id) {
-        return "holder=" + ledger.holder(id)
-                + " lastSent=" + ledger.lastSentId(id) + "→" + ledger.lastSentTo(id)
-                + " pending=" + hasPendingCharacter(id);
+        StringBuilder out = new StringBuilder();
+        out.append("holder=").append(ledger.holder(id));
+        out.append(" lastSent=").append(ledger.lastSentId(id)).append("→").append(ledger.lastSentTo(id));
+        out.append(" pending=").append(hasPendingCharacter(id));
+        out.append(" legacyPending=").append(legacyFile(id).isFile() || legacyClaimedFile(id).isFile());
+        return out.toString();
     }
 }

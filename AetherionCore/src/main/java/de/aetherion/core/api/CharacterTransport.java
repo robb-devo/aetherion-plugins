@@ -8,8 +8,8 @@ import java.util.UUID;
  * The one way a character leaves this backend for another one (transfer v6: one character,
  * one owner, ledger in the shared transfer folder).
  *
- * <p>mmo-r / mmo-d register AetherionDungeons' pipeline (it owns join + quit there).
- * mmo-c / mmo-i have no Dungeons jar; Core's own port ({@code CharacterHost}) serves them.
+ * <p>Every character backend runs the same {@code CharacterHost}: AetherionDungeons builds and registers it on
+ * mmo-r / mmo-d (it owns join there, for the gate's arrival teleports), Core arms its own on mmo-c / mmo-i.
  * Hub has no transport on purpose (join + pit, gear never travels from there).
  */
 public interface CharacterTransport {

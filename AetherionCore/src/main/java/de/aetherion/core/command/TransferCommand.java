@@ -76,11 +76,12 @@ public final class TransferCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         CharacterTransport transport = router.transport();
-        CharacterHost host = plugin.characterHost();
+        CharacterHost host = transport instanceof CharacterHost h ? h : plugin.characterHost();
         File dir = plugin.snapshots().directory();
         sender.sendMessage("§8[§5Transfer§8] §7here §f" + router.here()
                 + " §8· §7transport §f" + (transport == null ? "none (v5 fallback)"
-                : (transport == host ? "core v6" : "plugin v6 (" + transport.getClass().getSimpleName() + ")")));
+                : (transport == plugin.characterHost() ? "core v6"
+                : (transport instanceof CharacterHost ? "v6 via Dungeon Gate" : "plugin v6 (" + transport.getClass().getSimpleName() + ")"))));
         File ledger = new File(new File(dir, "ledger"), id + ".yml");
         if (ledger.isFile()) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(ledger);

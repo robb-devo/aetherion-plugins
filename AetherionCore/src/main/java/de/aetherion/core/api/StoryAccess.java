@@ -56,4 +56,12 @@ public interface StoryAccess {
     default String ferryBlock(Player player) {
         return null;
     }
+
+    /**
+     * The player's open story step sends them to this Exile boss ({@code ExileVials} boss id), so its site wakes
+     * without a vial, again after a lost fight, until the step is done. {@code false} = the site wants the vial.
+     */
+    default boolean wakesWithoutVial(Player player, String boss) {
+        return false;
+    }
 }
