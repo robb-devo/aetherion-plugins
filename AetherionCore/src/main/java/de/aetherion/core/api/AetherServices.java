@@ -29,6 +29,7 @@ public final class AetherServices {
     private static volatile LangAccess lang;
     private static volatile CharacterTransport transport;
     private static volatile IslandAccess islands;
+    private static volatile WorldAccess world;
     private static final java.util.List<java.util.function.Consumer<org.bukkit.entity.Player>> LANG_LISTENERS =
             new java.util.concurrent.CopyOnWriteArrayList<>();
     private static final java.util.Map<String, PlayerDataPart> PLAYER_DATA =
@@ -135,6 +136,11 @@ public final class AetherServices {
         islands = access;
     }
 
+    /** The world wire (Core itself, on every backend). */
+    public static void registerWorld(WorldAccess access) {
+        world = access;
+    }
+
     public static PartyAccess party() {
         return party;
     }
@@ -218,6 +224,11 @@ public final class AetherServices {
     /** Island homes (AetherionGuilds, island backend only), or null. */
     public static IslandAccess islands() {
         return islands;
+    }
+
+    /** Network news and tallies (Core). Null only while Core is down. */
+    public static WorldAccess world() {
+        return world;
     }
 
     /** True when the player chose German and a language provider is registered. */
@@ -364,6 +375,12 @@ public final class AetherServices {
     public static void clearIslands(IslandAccess access) {
         if (islands == access) {
             islands = null;
+        }
+    }
+
+    public static void clearWorld(WorldAccess access) {
+        if (world == access) {
+            world = null;
         }
     }
 }

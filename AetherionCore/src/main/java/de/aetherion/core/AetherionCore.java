@@ -22,6 +22,7 @@ import de.aetherion.core.shutdown.ShutdownCountdown;
 import de.aetherion.core.wipe.BetaWipe;
 import de.aetherion.core.wipe.NetworkWipeWatch;
 import de.aetherion.core.world.VoidChunkGenerator;
+import de.aetherion.core.world.WorldWire;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -58,6 +59,8 @@ public final class AetherionCore extends JavaPlugin {
     private de.aetherion.core.exile.ExileQuay exileQuay;
     private RaidRoster raidRoster;
     private RaidBans raidBans;
+    private WorldWire worldWire;
+    private de.aetherion.core.npc.CastSkins castSkins;
 
     public static AetherionCore get() {
         return instance;
@@ -149,6 +152,13 @@ public final class AetherionCore extends JavaPlugin {
             raidCmd.setTabCompleter(raidMenu);
         }
 
+        // World wire: news and tallies every backend shares through <shared>/world; cast skins keep their
+        // signatures beside it so one upload serves the whole network.
+        worldWire = new WorldWire(this, shared, link::serverName);
+        worldWire.start();
+        de.aetherion.core.api.AetherServices.registerWorld(worldWire);
+        castSkins = new de.aetherion.core.npc.CastSkins(this, worldWire.folder());
+
         de.aetherion.core.api.BarChrome.enabled(getConfig().getBoolean("bars.pack-glyphs", true));
         // After every plugin is up: ProtocolLib may enable after Core. The damage-heart cap is always on; the diet is opt-in.
         Bukkit.getScheduler().runTask(this, () -> {
@@ -198,6 +208,11 @@ public final class AetherionCore extends JavaPlugin {
         return islandsHost;
     }
 
+    /** Painted skins for {@link de.aetherion.core.npc.CastTroupe} bodies. Never null after enable. */
+    public de.aetherion.core.npc.CastSkins castSkins() {
+        return castSkins;
+    }
+
     /** The Veil Quay (ferry departure) on non-exile backends; null on mmo-c. */
     public de.aetherion.core.exile.ExileQuay exileQuay() {
         return exileQuay;
@@ -226,6 +241,10 @@ public final class AetherionCore extends JavaPlugin {
         }
         if (raidBans != null) {
             raidBans.stop();
+        }
+        if (worldWire != null) {
+            de.aetherion.core.api.AetherServices.clearWorld(worldWire);
+            worldWire.stop();
         }
         if (instance == this) {
             instance = null;
