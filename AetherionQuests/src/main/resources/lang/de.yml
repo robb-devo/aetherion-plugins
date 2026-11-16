@@ -1538,6 +1538,7 @@ talk:
     combat_stamp: "Jetzt §dMiss Ledgers§f Stempel. §e/capital§f — den Teleport hast du."
     combat_kit: "Vor dem Ödland: ein Kampf-Skill ins Loadout, Schadens-Booster auf die Klinge."
     combat_pass: "Ausreichend. Bestanden — für heute."
+    combat_tempo: "Jede Klinge hat ihr §e⚡ Tempo§f, es steht auf dem Item. Dolche schnell, Hämmer langsam. Zuschlagen, wenn das Fadenkreuz voll ist."
     combat_armour: "Rüstung in die Rüstungsslots, {player}. Egons ganzes Kit. Dann die Klinge."
     combat_blade: "Rüstung: passt. Hände: leer. §eKlinge§f in die Haupthand, {player}."
     combat_go: "Gut. Kit an, Klinge hoch. Dann sieh mich an."
