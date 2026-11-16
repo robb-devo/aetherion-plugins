@@ -254,7 +254,7 @@ public class PlayerQuestStorage {
                 next.set(child, section.get(child));
             }
             try {
-                next.save(target);
+                de.aetherion.core.persist.AtomicYaml.save(next, target);
             } catch (IOException exception) {
                 exception.printStackTrace();
             }

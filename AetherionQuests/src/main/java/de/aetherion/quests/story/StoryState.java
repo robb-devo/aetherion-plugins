@@ -124,7 +124,7 @@ public final class StoryState implements StoryAccess {
         }
         flags.set("flags." + key.toLowerCase(Locale.ROOT), value ? Boolean.TRUE : null);
         try {
-            flags.save(flagsFile);
+            de.aetherion.core.persist.AtomicYaml.save(flags, flagsFile);
         } catch (IOException ex) {
             plugin.getLogger().warning("Could not save story-flags.yml: " + ex.getMessage());
         }

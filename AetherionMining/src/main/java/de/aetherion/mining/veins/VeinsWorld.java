@@ -945,7 +945,7 @@ public final class VeinsWorld {
             yaml.set(path + ".pitch", location.getPitch());
         });
         try {
-            yaml.save(dataFile);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, dataFile);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save veins.yml: " + exception.getMessage());
         }

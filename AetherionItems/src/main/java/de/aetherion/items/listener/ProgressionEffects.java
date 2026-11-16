@@ -5,6 +5,7 @@ import de.aetherion.items.AetherionItems;
 import de.aetherion.items.economy.CompressedResource;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.CompactBonusSource;
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.manager.StatProvider;
 import de.aetherion.items.model.ItemCapability;
@@ -322,22 +323,24 @@ public final class ProgressionEffects implements Listener, StatProvider {
         if (player == null || itemId == null) {
             return false;
         }
-        return itemId.equals(items.getItemId(player.getInventory().getItemInMainHand()))
-                || itemId.equals(items.getItemId(player.getInventory().getItemInOffHand()))
-                || itemId.equals(items.getItemId(player.getInventory().getHelmet()))
-                || itemId.equals(items.getItemId(player.getInventory().getChestplate()))
-                || itemId.equals(items.getItemId(player.getInventory().getLeggings()))
-                || itemId.equals(items.getItemId(player.getInventory().getBoots()));
+        for (EquippedGear.Slot slot : EquippedGear.ALL) {
+            if (itemId.equals(EquippedGear.itemId(player, slot, items))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean wearing(Player player, ItemManager items, String itemId) {
         if (player == null) {
             return false;
         }
-        return itemId.equals(items.getItemId(player.getInventory().getBoots()))
-                || itemId.equals(items.getItemId(player.getInventory().getChestplate()))
-                || itemId.equals(items.getItemId(player.getInventory().getHelmet()))
-                || itemId.equals(items.getItemId(player.getInventory().getLeggings()));
+        for (EquippedGear.Slot slot : EquippedGear.ARMOR) {
+            if (itemId.equals(EquippedGear.itemId(player, slot, items))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static SkillService skills() {

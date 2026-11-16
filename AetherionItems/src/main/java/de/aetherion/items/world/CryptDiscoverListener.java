@@ -96,7 +96,7 @@ public final class CryptDiscoverListener implements Listener, Runnable {
         YamlConfiguration config = new YamlConfiguration();
         config.set("discovered", discovered.stream().map(UUID::toString).sorted().toList());
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save crypt-discover.yml: " + exception.getMessage());
         }

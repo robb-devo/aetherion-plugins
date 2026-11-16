@@ -1,5 +1,7 @@
 package de.aetherion.dungeons.bridge;
 
+import de.aetherion.core.network.NetworkPlayerDataSync;
+
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -756,7 +758,7 @@ public final class TransferSnapshotStore {
                 return;
             }
             Map<String, Object> network = decodeNetwork(yaml);
-            networkData.stageEarlyFiles(id, network, mainWorldFolder);
+            PendingSnapshotFiles.stageEarly(plugin, id, network, mainWorldFolder);
         } catch (Exception ex) {
             plugin.getLogger().warning("[Transfer] Pre-login staging skipped for " + id + ": " + ex.getMessage());
         }
@@ -1018,7 +1020,7 @@ public final class TransferSnapshotStore {
             }
             return NetworkPlayerDataSync.toPlainMap(box.get("network-data"));
         }
-        return NetworkPlayerDataSync.repairLegacyKeys(NetworkPlayerDataSync.toPlainMap(yaml.get("network-data")));
+        return PendingSnapshotFiles.repairLegacyKeys(NetworkPlayerDataSync.toPlainMap(yaml.get("network-data")));
     }
 
     private static final class EncodeFailure extends Exception {

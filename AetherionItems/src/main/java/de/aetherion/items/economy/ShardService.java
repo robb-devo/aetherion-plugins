@@ -29,7 +29,8 @@ public final class ShardService {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "shards.yml");
         load();
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty, 20L * 60, 20L * 60);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty,
+                de.aetherion.items.core.SaveSlot.SHARDS.firstRunTicks(), de.aetherion.items.core.SaveSlot.PERIOD_TICKS);
     }
 
     public long get(Player player) {

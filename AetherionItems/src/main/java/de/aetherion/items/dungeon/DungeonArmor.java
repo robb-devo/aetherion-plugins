@@ -1,6 +1,7 @@
 package de.aetherion.items.dungeon;
 
 import de.aetherion.items.item.ItemLore;
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.ItemCapability;
 import de.aetherion.items.model.ItemProfile;
@@ -234,19 +235,11 @@ public final class DungeonArmor {
         if (player == null || items == null || calling == null) {
             return 0;
         }
-        PlayerInventory inventory = player.getInventory();
         int count = 0;
-        if (matches(items.getItemId(inventory.getHelmet()), calling)) {
-            count++;
-        }
-        if (matches(items.getItemId(inventory.getChestplate()), calling)) {
-            count++;
-        }
-        if (matches(items.getItemId(inventory.getLeggings()), calling)) {
-            count++;
-        }
-        if (matches(items.getItemId(inventory.getBoots()), calling)) {
-            count++;
+        for (EquippedGear.Slot slot : EquippedGear.ARMOR) {
+            if (matches(EquippedGear.itemId(player, slot, items), calling)) {
+                count++;
+            }
         }
         return count;
     }

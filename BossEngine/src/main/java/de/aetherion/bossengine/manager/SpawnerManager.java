@@ -160,7 +160,11 @@ public class SpawnerManager {
         yaml.set(path + "leash-action", "TELEPORT");
 
         try {
-            yaml.save(file);
+            if (yaml instanceof YamlConfiguration atomic) {
+                de.aetherion.core.persist.AtomicYaml.save(atomic, file);
+            } else {
+                yaml.save(file);
+            }
         } catch (Exception exception) {
             plugin.getLogger().warning("Could not save spawners.yml: " + exception.getMessage());
             return false;

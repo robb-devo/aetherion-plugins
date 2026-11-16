@@ -170,7 +170,7 @@ public final class OriginConfig {
                 out.setDefaults(defaults);
                 out.options().copyDefaults(true);
                 if (missing) {
-                    out.save(file);
+                    de.aetherion.core.persist.AtomicYaml.save(out, file);
                 }
             }
         } catch (IOException exception) {

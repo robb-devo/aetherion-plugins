@@ -466,7 +466,7 @@ public final class AreaService {
             if (folder != null && !folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save areas.yml: " + exception.getMessage());
         }

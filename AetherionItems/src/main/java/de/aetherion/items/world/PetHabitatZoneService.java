@@ -394,7 +394,7 @@ public final class PetHabitatZoneService implements Runnable {
         }
         try {
             plugin.getDataFolder().mkdirs();
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save pet habitats: " + exception.getMessage());
         }

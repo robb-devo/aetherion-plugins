@@ -154,7 +154,7 @@ public class PetDataManager {
 
         try {
 
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
 
         } catch (IOException exception) {
 

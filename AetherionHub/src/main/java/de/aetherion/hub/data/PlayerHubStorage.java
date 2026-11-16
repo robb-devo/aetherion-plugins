@@ -163,7 +163,7 @@ public final class PlayerHubStorage {
             if (!folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file(data.uuid()));
+            de.aetherion.core.persist.AtomicYaml.save(config, file(data.uuid()));
         } catch (IOException exception) {
             if (plugin != null) {
                 plugin.getLogger().warning("Hub save failed for " + data.uuid() + ": " + exception.getMessage());

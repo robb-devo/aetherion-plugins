@@ -5,6 +5,7 @@ import de.aetherion.core.api.ActionBarLane;
 import de.aetherion.items.combat.PlayerHud;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.manager.ActiveEquipmentStats;
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.ItemCapability;
 
@@ -71,7 +72,7 @@ public class HealthListener implements Listener {
 
             @Override
             public String heldItemId(Player player) {
-                return itemManager.getItemId(player.getInventory().getItemInMainHand());
+                return EquippedGear.itemId(player, EquippedGear.Slot.MAIN_HAND, itemManager);
             }
         });
         // Compass / fishing lines now ride on the HUD's own packet instead of fighting it.

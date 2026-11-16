@@ -76,7 +76,8 @@ public final class SkillService implements StatProvider, Listener {
         ActiveEquipmentStats.registerProvider(this);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty, 20L * 60, 20L * 60);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty,
+                de.aetherion.items.core.SaveSlot.SKILLS.firstRunTicks(), de.aetherion.items.core.SaveSlot.PERIOD_TICKS);
     }
 
     public void setHealthListener(HealthListener health) {

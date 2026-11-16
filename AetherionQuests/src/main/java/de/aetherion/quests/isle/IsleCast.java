@@ -426,7 +426,7 @@ public final class IsleCast {
     private void save() {
         state.set("seeded", new ArrayList<>(seeded));
         try {
-            state.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(state, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("island-cast.yml: " + exception.getMessage());
         }

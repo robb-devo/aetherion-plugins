@@ -416,7 +416,7 @@ final class DungeonWarmPool {
         yaml.set("spots", spots);
         try {
             prepFile().getParentFile().mkdirs();
-            yaml.save(prepFile());
+            de.aetherion.core.persist.AtomicYaml.save(yaml, prepFile());
         } catch (Exception exception) {
             plugin.getLogger().warning("Could not save endless prep: " + exception.getMessage());
         }
@@ -567,7 +567,7 @@ final class DungeonWarmPool {
             yaml.set("door", door);
             yaml.set("spots", spots);
             ashesPrepFile().getParentFile().mkdirs();
-            yaml.save(ashesPrepFile());
+            de.aetherion.core.persist.AtomicYaml.save(yaml, ashesPrepFile());
         } catch (Exception exception) {
             plugin.getLogger().warning("Could not save ashes prep: " + exception.getMessage());
         }

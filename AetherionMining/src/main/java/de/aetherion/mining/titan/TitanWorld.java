@@ -415,7 +415,7 @@ public final class TitanWorld {
             if (!plugin.getDataFolder().isDirectory()) {
                 plugin.getDataFolder().mkdirs();
             }
-            yaml.save(stateFile);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, stateFile);
         } catch (IOException ex) {
             plugin.getLogger().warning("[Titan] Could not save titan.yml: " + ex.getMessage());
         }

@@ -55,6 +55,11 @@ public final class BloodstoneArenaCommand implements CommandExecutor, TabComplet
             player.sendMessage("§6Hollow Sun boss spawn §asaved§7 (Items snapshot — keep BossEngine spawner in sync).");
             return true;
         }
+        // A staff shortcut into a boss arena: players reach these fights through the exile altars.
+        if (!player.isOp() && !player.hasPermission("aetherion.dev")) {
+            player.sendMessage("§cDEV / OP only.");
+            return true;
+        }
         if (!arena.teleport(player)) {
             player.sendMessage("§cBloodstone arena world missing.");
             return true;

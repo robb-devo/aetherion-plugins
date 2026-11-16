@@ -585,7 +585,7 @@ public final class MineCast implements Listener {
             if (!isle.plugin().getDataFolder().exists()) {
                 isle.plugin().getDataFolder().mkdirs();
             }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException exception) {
             isle.plugin().getLogger().warning("Could not save mine-cast.yml: " + exception.getMessage());
         }

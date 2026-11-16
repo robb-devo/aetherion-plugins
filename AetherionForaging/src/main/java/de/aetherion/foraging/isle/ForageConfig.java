@@ -115,7 +115,7 @@ public final class ForageConfig {
 
     public void save() {
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException ex) {
             plugin.getLogger().log(Level.WARNING, "Could not save forage-isle.yml", ex);
         }

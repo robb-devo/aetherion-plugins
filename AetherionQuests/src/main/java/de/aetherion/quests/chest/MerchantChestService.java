@@ -298,7 +298,7 @@ public final class MerchantChestService {
             if (!file.getParentFile().exists()) {
                 file.getParentFile().mkdirs();
             }
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save merchant-chest.yml: " + exception.getMessage());
         }

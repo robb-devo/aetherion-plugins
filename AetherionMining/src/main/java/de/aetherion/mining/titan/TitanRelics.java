@@ -176,7 +176,7 @@ public final class TitanRelics implements Listener {
         yaml.set("generation", generation);
         yaml.set("opened", new ArrayList<>(opened));
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException ex) {
             plugin.getLogger().warning("[Titan] Could not save relic chests: " + ex.getMessage());
         }

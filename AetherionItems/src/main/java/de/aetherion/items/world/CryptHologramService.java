@@ -258,7 +258,7 @@ public final class CryptHologramService {
         }
         config.set("holograms", list);
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save crypt-holograms.yml: " + exception.getMessage());
         }

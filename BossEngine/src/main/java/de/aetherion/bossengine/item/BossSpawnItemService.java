@@ -44,7 +44,11 @@ public class BossSpawnItemService {
         boolean changed = ensureDefaultItems(yaml);
         if (changed) {
             try {
-                yaml.save(file);
+                if (yaml instanceof YamlConfiguration atomic) {
+                    de.aetherion.core.persist.AtomicYaml.save(atomic, file);
+                } else {
+                    yaml.save(file);
+                }
             } catch (Exception exception) {
                 plugin.getLogger().warning("Could not update items.yml: " + exception.getMessage());
             }

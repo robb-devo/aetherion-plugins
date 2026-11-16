@@ -260,7 +260,7 @@ public final class OriginProps {
             if (!snapFolder.isDirectory()) {
                 snapFolder.mkdirs();
             }
-            snap.save(new File(snapFolder, spot.id() + ".yml"));
+            de.aetherion.core.persist.AtomicYaml.save(snap, new File(snapFolder, spot.id() + ".yml"));
         } catch (IOException exception) {
             isle.plugin().getLogger().warning("Origin props: snapshot " + spot.id() + ": " + exception.getMessage());
             return -1;
@@ -523,7 +523,7 @@ public final class OriginProps {
 
     private void save() {
         try {
-            state.save(stateFile);
+            de.aetherion.core.persist.AtomicYaml.save(state, stateFile);
         } catch (IOException exception) {
             isle.plugin().getLogger().warning("Origin: could not save " + STATE_FILE + ": " + exception.getMessage());
         }

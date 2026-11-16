@@ -88,7 +88,7 @@ public final class Voided455Drops {
         }
         yaml.set("mvp-pity-used", ids);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
         } catch (IOException ignored) {
         }
     }

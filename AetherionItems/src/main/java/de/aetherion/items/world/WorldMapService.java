@@ -457,7 +457,7 @@ public final class WorldMapService {
             }
         }
         try {
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file);
         } catch (IOException ignored) {
         }
     }

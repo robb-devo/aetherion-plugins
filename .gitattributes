@@ -2,3 +2,16 @@
 # (helm-ctl with CRLF stopped the Helm panel's status and power controls, 10-24 to 10-28).
 *.sh text eol=lf
 AetherionHelm/deploy/helm-ctl text eol=lf
+
+# Binary assets must never be line-ending converted. Git guessed the Gnomon melodies (*.nbm) were text,
+# and a Windows checkout with autocrlf turned them into broken files in the build tree (2026-11-02).
+*.nbm binary
+*.nbs binary
+*.nbt binary
+*.schem binary
+*.ogg binary
+*.wav binary
+*.png binary
+*.jpg binary
+*.jar binary
+*.zip binary

@@ -97,7 +97,7 @@ public final class VoidWorlds {
                 return;
             }
             yaml.set(path, plugin.getName());
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file);
             plugin.getLogger().info("bukkit.yml: " + name + " now always loads on the void generator.");
         } catch (IOException | RuntimeException exception) {
             plugin.getLogger().warning("Could not write the void generator into bukkit.yml: " + exception.getMessage());

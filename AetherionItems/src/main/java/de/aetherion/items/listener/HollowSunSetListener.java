@@ -6,6 +6,7 @@ import de.aetherion.items.combat.DamageNumbers;
 import de.aetherion.items.combat.ScriptedHits;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.manager.ActiveEquipmentStats;
+import de.aetherion.items.manager.EquippedGear;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.manager.StatProvider;
 import de.aetherion.items.model.ItemCapability;
@@ -1230,15 +1231,15 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
 
     private Pieces pieces(Player player) {
         return new Pieces(
-                isPiece(player.getInventory().getHelmet(), HELMET),
-                isPiece(player.getInventory().getChestplate(), CHEST),
-                isPiece(player.getInventory().getLeggings(), LEGS),
-                isPiece(player.getInventory().getBoots(), BOOTS)
+                isWorn(player, EquippedGear.Slot.HELMET, HELMET),
+                isWorn(player, EquippedGear.Slot.CHESTPLATE, CHEST),
+                isWorn(player, EquippedGear.Slot.LEGGINGS, LEGS),
+                isWorn(player, EquippedGear.Slot.BOOTS, BOOTS)
         );
     }
 
-    private boolean isPiece(ItemStack item, String id) {
-        return item != null && !item.getType().isAir() && id.equalsIgnoreCase(itemManager.getItemId(item));
+    private boolean isWorn(Player player, EquippedGear.Slot slot, String id) {
+        return id.equalsIgnoreCase(EquippedGear.itemId(player, slot, itemManager));
     }
 
     private static double heightAboveGround(Location at) {
