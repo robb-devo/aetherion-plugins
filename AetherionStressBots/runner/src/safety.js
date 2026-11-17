@@ -185,11 +185,21 @@ export function wanderOnIsland(bot, home, radius, goals) {
   return true
 }
 
+/**
+ * Home is where the plugin put the bot. A configured anchor only wins when the bot stands on it
+ * (same pad, same floor): the plugin's YAML is the source of truth for destinations, and a far or
+ * stale runner anchor would drag a bot out of a quarry floor back up to a surface pad.
+ */
 export function resolveHome(bot, anchors) {
   const pos = bot.entity?.position
   if (!pos) return null
+  return homeFor(pos, anchors)
+}
+
+export function homeFor(pos, anchors, { snapXZ = 6, snapY = 4 } = {}) {
+  if (!pos) return null
   const nearest = nearestAnchor(pos, anchors)
-  if (nearest && horizontalDistance(pos, nearest) < 48) {
+  if (nearest && horizontalDistance(pos, nearest) <= snapXZ && Math.abs((nearest.y ?? pos.y) - pos.y) <= snapY) {
     return { x: nearest.x, y: nearest.y, z: nearest.z }
   }
   return { x: pos.x, y: pos.y, z: pos.z }

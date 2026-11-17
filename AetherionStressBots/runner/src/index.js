@@ -6,6 +6,7 @@ import net from 'node:net'
 import { createFleet } from './fleet.js'
 import { startControlServer } from './control.js'
 import { sleep } from './util.js'
+import { mergeConfig } from './config.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const configPath = path.join(__dirname, '..', 'config.json')
@@ -16,7 +17,8 @@ if (!fs.existsSync(configPath)) {
   process.exit(1)
 }
 
-const baseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+const exampleConfig = fs.existsSync(examplePath) ? JSON.parse(fs.readFileSync(examplePath, 'utf8')) : {}
+const baseConfig = mergeConfig(exampleConfig, JSON.parse(fs.readFileSync(configPath, 'utf8')))
 
 function parseArgs(argv) {
   const out = {

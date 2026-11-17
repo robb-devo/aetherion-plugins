@@ -141,6 +141,20 @@ public final class BotReportBuilder {
             }
             out.append('\n');
         }
+        Map<String, Map<String, Integer>> totals = new java.util.TreeMap<>();
+        for (TestBotView bot : report.bots()) {
+            Map<String, Integer> role = totals.computeIfAbsent(bot.role(), key -> new java.util.TreeMap<>());
+            countsOf(bot.name()).forEach((key, value) -> role.merge(key, value, Integer::sum));
+        }
+        if (totals.values().stream().anyMatch(map -> !map.isEmpty())) {
+            out.append('\n');
+            out.append("Work done (online bots, since plugin start):\n");
+            totals.forEach((role, counts) -> {
+                if (!counts.isEmpty()) {
+                    out.append("  - ").append(role).append(": ").append(work(counts)).append('\n');
+                }
+            });
+        }
         out.append('\n');
         out.append("Bots:\n");
         if (report.bots().isEmpty()) {
@@ -161,14 +175,30 @@ public final class BotReportBuilder {
                 out.append(" err=").append(bot.lastError());
             }
             out.append('\n');
+            String work = work(countsOf(bot.name()));
+            if (!work.isEmpty()) {
+                out.append("      work: ").append(work).append('\n');
+            }
             if (!bot.recentActions().isEmpty()) {
                 out.append("      recent: ").append(String.join(" | ", bot.recentActions())).append('\n');
             }
         }
         out.append('\n');
         out.append("Activities: idle/pathing/mining/foraging/catching/roaming/combat/fishing/ah/bazaar/quest_dialog/minigame/pad_hop/void/recovering/stuck.\n");
-        out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. AH/Bazaar click list/buy; quests click accept; fishing plays strike/reel; pad hops ride the arc.\n");
+        out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. Miners dig quarries; foragers play the Fell bar; fishers reel on the strike bar;\n");
+        out.append("catchers lock the catch timing; traders list and buy bot listings on AH/Bazaar; questers talk to NPCs and answer the dialog; pad hops ride the arc.\n");
         return out.toString();
+    }
+
+    private Map<String, Integer> countsOf(String name) {
+        Player player = name == null ? null : Bukkit.getPlayerExact(name);
+        return player == null ? Map.of() : plugin.getActivity().snapshot(player).counts();
+    }
+
+    private static String work(Map<String, Integer> counts) {
+        List<String> parts = new ArrayList<>();
+        counts.forEach((key, value) -> parts.add(key + "=" + value));
+        return String.join(" ", parts);
     }
 
     private TestBotView toView(Player player, BotRoleHandler handler) {

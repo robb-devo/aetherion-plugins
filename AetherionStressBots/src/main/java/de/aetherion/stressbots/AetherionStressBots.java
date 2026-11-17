@@ -32,6 +32,7 @@ public final class AetherionStressBots extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        ConfigMigration.run(this);
         activity = new BotActivityTracker(this);
         wire();
         Bukkit.getPluginManager().registerEvents(new BotListener(this), this);
@@ -77,6 +78,7 @@ public final class AetherionStressBots extends JavaPlugin {
 
     public void reloadAssist() {
         reloadConfig();
+        ConfigMigration.run(this);
         wire();
         AetherServices.registerTestBots(controller);
         warnLegacyDeathAnchors();

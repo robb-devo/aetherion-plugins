@@ -49,12 +49,18 @@ public final class BotListener implements Listener {
         if (handler == null) {
             return;
         }
-        Location dest = BotLocations.assignedAnchor(player, roleSection(handler));
+        Location dest = plugin.getSafety() == null ? null : plugin.getSafety().homeOf(player);
+        if (dest == null || !BotLocations.isSolidStand(dest)) {
+            dest = BotLocations.assignedAnchor(player, roleSection(handler));
+        }
         if (dest == null) {
             dest = handler.destination(player);
         }
         if (dest != null) {
             event.setRespawnLocation(dest);
+            if (plugin.getSafety() != null) {
+                plugin.getSafety().rememberHome(player, dest);
+            }
             plugin.getActivity().markRecovering(player, "respawn " + BotLocations.format(dest));
         }
         int delay = Math.max(1, plugin.getConfig().getInt("testbots.safety.respawn-setup-ticks", 5));

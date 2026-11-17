@@ -85,10 +85,13 @@ public final class BotProvisioner {
         Location destination = handler.destination(player);
         if (destination != null) {
             player.teleport(destination);
+            if (plugin.getSafety() != null) {
+                plugin.getSafety().rememberHome(player, destination);
+            }
             plugin.getActivity().markAction(player, "teleport " + BotLocations.format(destination));
         } else {
             plugin.getLogger().warning("No destination for " + handler.role().id()
-                    + " bot " + player.getName() + " (world unloaded or missing YAML anchors)");
+                    + " bot " + player.getName() + " (world unloaded, no anchors, or no anchor has ground under it)");
             plugin.getActivity().markError(player, "no destination");
         }
         plugin.getLogger().info("Provisioned " + handler.role().id()

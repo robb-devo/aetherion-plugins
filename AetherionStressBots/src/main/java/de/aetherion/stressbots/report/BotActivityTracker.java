@@ -7,8 +7,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
@@ -16,12 +18,15 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
+import de.aetherion.items.economy.MarketService;
 import de.aetherion.stressbots.AetherionStressBots;
 import de.aetherion.stressbots.role.BotRole;
 import de.aetherion.stressbots.role.BotRoleHandler;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -57,6 +62,7 @@ public final class BotActivityTracker implements Listener, Runnable {
     public static final String MINIGAME = "minigame";
     public static final String PAD_HOP = "pad_hop";
     public static final String COMBAT = "combat";
+    static final String LANGUAGE = "language";
 
     private final AetherionStressBots plugin;
     private final Map<UUID, Runtime> runtimes = new ConcurrentHashMap<>();
@@ -94,6 +100,7 @@ public final class BotActivityTracker implements Listener, Runnable {
         Block block = event.getBlock();
         String name = block.getType().name().toLowerCase(Locale.ROOT);
         Runtime runtime = runtime(player);
+        runtime.count("blocks");
         if (name.contains("log") || name.contains("stem") || name.contains("wood") || name.contains("bamboo")) {
             runtime.activity = FORAGING;
             runtime.note("broke " + name);
@@ -117,18 +124,34 @@ public final class BotActivityTracker implements Listener, Runnable {
             return;
         }
         Material type = item.getType();
+        Action action = event.getAction();
         Runtime runtime = runtime(player);
-        if (type == Material.SNOWBALL || type == Material.ENDER_PEARL
-                || type == Material.HEART_OF_THE_SEA || type == Material.GOLD_NUGGET
-                || type == Material.NETHER_STAR || type.name().contains("BALL")) {
-            runtime.activity = CATCHING;
-            runtime.note("used " + pretty(item));
+        boolean left = action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK;
+        if (type == Material.SNOWBALL) {
+            // Catch spheres: right click throws, a left click into the air locks the timing window.
+            runtime.activity = left ? MINIGAME : CATCHING;
+            runtime.count(left ? "locks" : "throws");
+            runtime.note(left ? "timing click" : "threw " + pretty(item));
             runtime.lastActionMs = System.currentTimeMillis();
-        } else if (type == Material.FISHING_ROD || type.name().contains("FISHING_ROD")) {
-            runtime.activity = FISHING;
-            runtime.note("cast " + pretty(item));
+        } else if (type == Material.FISHING_ROD) {
+            if (!left) {
+                runtime.activity = FISHING;
+                runtime.note("rod " + pretty(item));
+                runtime.lastActionMs = System.currentTimeMillis();
+            }
+        } else if (action == Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null
+                && type.name().endsWith("_AXE") && isWood(event.getClickedBlock().getType())) {
+            // Felling is two clicks on the Fell bar, not a block break.
+            runtime.activity = FORAGING;
+            runtime.count("chops");
+            runtime.note("chop " + event.getClickedBlock().getType().name().toLowerCase(Locale.ROOT));
             runtime.lastActionMs = System.currentTimeMillis();
         }
+    }
+
+    private static boolean isWood(Material type) {
+        String name = type.name();
+        return name.endsWith("_LOG") || name.endsWith("_WOOD") || name.endsWith("_STEM") || name.equals("BAMBOO_BLOCK");
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -138,7 +161,13 @@ public final class BotActivityTracker implements Listener, Runnable {
             return;
         }
         Runtime runtime = runtime(player);
-        runtime.activity = event.getState() == PlayerFishEvent.State.CAUGHT_FISH ? FISHING : MINIGAME;
+        PlayerFishEvent.State state = event.getState();
+        if (state == PlayerFishEvent.State.FISHING) {
+            runtime.count("casts");
+        } else if (state == PlayerFishEvent.State.CAUGHT_FISH) {
+            runtime.count("fish");
+        }
+        runtime.activity = state == PlayerFishEvent.State.CAUGHT_FISH ? FISHING : MINIGAME;
         runtime.note("fish " + event.getState().name().toLowerCase(Locale.ROOT));
         runtime.lastActionMs = System.currentTimeMillis();
     }
@@ -154,6 +183,7 @@ public final class BotActivityTracker implements Listener, Runnable {
         String who = event.getRightClicked().getName();
         if (role == BotRole.QUEST) {
             runtime.activity = QUEST_DIALOG;
+            runtime.count("talks");
             runtime.note("npc " + who);
         } else if (role == BotRole.TRADE) {
             runtime.activity = TRADING;
@@ -170,34 +200,20 @@ public final class BotActivityTracker implements Listener, Runnable {
             return;
         }
         Runtime runtime = runtime(player);
-        String title = titleOf(event.getView().getTitle());
-        if (de.aetherion.stressbots.role.BotPlaystyle.isLanguageTitle(title)) {
+        String kind = guiKind(event.getView().getTopInventory().getHolder(false));
+        if (LANGUAGE.equals(kind)) {
             runtime.note("language gui");
             plugin.getServer().getScheduler().runTask(plugin, () ->
                     de.aetherion.stressbots.role.BotPlaystyle.forceEnglish(plugin, player));
             runtime.lastActionMs = System.currentTimeMillis();
             return;
         }
-        String lower = title.toLowerCase(Locale.ROOT);
-        if (lower.contains("auction")) {
-            runtime.activity = AH;
-            runtime.note("open ah");
-        } else if (lower.contains("bazaar")) {
-            runtime.activity = BAZAAR;
-            runtime.note("open bazaar");
-        } else if (lower.contains("quest")) {
-            runtime.activity = QUEST_DIALOG;
-            runtime.note("quest gui " + title);
-        } else if (lower.contains("booster") || lower.contains("confirm purchase") || lower.contains("list ·")) {
-            runtime.activity = lower.contains("booster") ? MINIGAME : TRADING;
-            runtime.note("gui " + title);
-        } else if (roleOf(player) == BotRole.TRADE) {
-            runtime.activity = TRADING;
-            runtime.note("gui " + title);
-        } else {
-            runtime.activity = BROWSING;
-            runtime.note("gui " + title);
+        if (kind.isEmpty()) {
+            kind = roleOf(player) == BotRole.TRADE ? TRADING : BROWSING;
         }
+        runtime.activity = kind;
+        runtime.count("menus");
+        runtime.note("open " + kind);
         runtime.lastActionMs = System.currentTimeMillis();
     }
 
@@ -206,34 +222,49 @@ public final class BotActivityTracker implements Listener, Runnable {
         if (!(event.getWhoClicked() instanceof Player player) || !isBot(player)) {
             return;
         }
-        String title = titleOf(event.getView().getTitle());
         Runtime runtime = runtime(player);
-        String lower = title.toLowerCase(Locale.ROOT);
-        if (de.aetherion.stressbots.role.BotPlaystyle.isLanguageTitle(title)) {
+        String kind = guiKind(event.getView().getTopInventory().getHolder(false));
+        if (LANGUAGE.equals(kind)) {
             runtime.note("language click slot " + event.getRawSlot());
-            runtime.lastActionMs = System.currentTimeMillis();
-            return;
-        }
-        if (lower.contains("auction")) {
-            runtime.activity = AH;
-            runtime.note("ah click " + event.getRawSlot());
-        } else if (lower.contains("bazaar")) {
-            runtime.activity = BAZAAR;
-            runtime.note("bazaar click " + event.getRawSlot());
-        } else if (lower.contains("quest")) {
-            runtime.activity = QUEST_DIALOG;
-            runtime.note("quest click " + event.getRawSlot());
-        } else if (lower.contains("confirm purchase")) {
-            runtime.activity = TRADING;
-            runtime.note("confirm click " + event.getRawSlot());
-        } else if (lower.contains("list")) {
-            runtime.activity = TRADING;
-            runtime.note("list price slot " + event.getRawSlot());
-        } else if (lower.contains("booster")) {
-            runtime.activity = MINIGAME;
-            runtime.note("booster click " + event.getRawSlot());
+        } else if (!kind.isEmpty()) {
+            runtime.activity = kind;
+            runtime.note(kind + " click " + event.getRawSlot());
         }
         runtime.lastActionMs = System.currentTimeMillis();
+    }
+
+    /**
+     * What a menu is, read from its holder: Aetherion menu titles are drawn from pack glyphs, so the
+     * title never says "Auction House". Empty for vanilla and unknown menus.
+     */
+    static String guiKind(InventoryHolder holder) {
+        if (holder == null) {
+            return "";
+        }
+        if (holder instanceof MarketService.BrowseHolder
+                || holder instanceof MarketService.PriceHolder
+                || holder instanceof MarketService.ConfirmHolder) {
+            return "BAZAAR".equals(marketChannel(holder)) ? BAZAAR : AH;
+        }
+        String name = holder.getClass().getName();
+        if (de.aetherion.stressbots.role.BotPlaystyle.LANG_HOLDER.equals(name)) {
+            return LANGUAGE;
+        }
+        if (name.startsWith("de.aetherion.quests.")) {
+            return name.contains("Booster") ? MINIGAME : QUEST_DIALOG;
+        }
+        return BROWSING;
+    }
+
+    private static String marketChannel(InventoryHolder holder) {
+        try {
+            Field field = holder.getClass().getDeclaredField("channel");
+            field.setAccessible(true);
+            Object value = field.get(holder);
+            return value instanceof Enum<?> e ? e.name() : String.valueOf(value);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return "";
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -243,8 +274,18 @@ public final class BotActivityTracker implements Listener, Runnable {
         }
         Runtime runtime = runtime(player);
         runtime.activity = FIGHTING;
+        runtime.count("hits");
         runtime.note("hit " + event.getEntity().getName());
         runtime.lastActionMs = System.currentTimeMillis();
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onKill(EntityDeathEvent event) {
+        Player killer = event.getEntity().getKiller();
+        if (killer == null || !isBot(killer) || event.getEntity() instanceof Player) {
+            return;
+        }
+        runtime(killer).count("kills");
     }
 
     @EventHandler
@@ -265,7 +306,9 @@ public final class BotActivityTracker implements Listener, Runnable {
             }
             Runtime runtime = runtime(player);
             Location loc = player.getLocation();
-            double floor = plugin.getConfig().getDouble("testbots.safety.void-floor-y", 40);
+            double floor = plugin.getSafety() == null
+                    ? plugin.getConfig().getDouble("testbots.safety.void-floor-y", 40)
+                    : plugin.getSafety().floorOf(plugin.getRegistry().byPlayer(player));
             if (loc.getY() < floor) {
                 runtime.activity = VOID;
                 runtime.lastSample = loc.clone();
@@ -336,6 +379,7 @@ public final class BotActivityTracker implements Listener, Runnable {
             return;
         }
         Runtime runtime = runtime(player);
+        runtime.count("recovers");
         runtime.activity = RECOVERING;
         runtime.lastRecoverMs = System.currentTimeMillis();
         runtime.lastActionMs = runtime.lastRecoverMs;
@@ -389,10 +433,6 @@ public final class BotActivityTracker implements Listener, Runnable {
         runtime.lastActionMs = System.currentTimeMillis();
     }
 
-    private static String titleOf(String raw) {
-        return raw == null ? "" : raw.replaceAll("§.", "");
-    }
-
     private Runtime runtime(Player player) {
         return runtimes.computeIfAbsent(player.getUniqueId(), id -> new Runtime());
     }
@@ -423,7 +463,22 @@ public final class BotActivityTracker implements Listener, Runnable {
         private volatile long lastActionMs = System.currentTimeMillis();
         private volatile long lastRecoverMs;
         private volatile Location lastSample;
+        private final long sinceMs = System.currentTimeMillis();
         private final ConcurrentLinkedDeque<String> recent = new ConcurrentLinkedDeque<>();
+        private final Map<String, Integer> counts = new ConcurrentHashMap<>();
+
+        /** Work done since the plugin first saw this bot: blocks, chops, casts, fish, throws, hits, … */
+        public Map<String, Integer> counts() {
+            return new java.util.TreeMap<>(counts);
+        }
+
+        public long sinceMs() {
+            return sinceMs;
+        }
+
+        private void count(String key) {
+            counts.merge(key, 1, Integer::sum);
+        }
 
         public String activity() {
             return activity;

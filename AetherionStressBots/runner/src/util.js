@@ -2,6 +2,31 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * Run an async tick over and over, never two at once: the next tick is scheduled only after the
+ * previous one settled. Stops when the bot disconnects. Returns a stop function.
+ */
+export function runEvery(bot, intervalMs, tick, onError) {
+  let stopped = false
+  let timer = null
+  const loop = async () => {
+    if (stopped) return
+    try {
+      await tick()
+    } catch (err) {
+      if (onError) onError(err)
+    }
+    if (!stopped) timer = setTimeout(loop, jitter(intervalMs, 0.15))
+  }
+  const stop = () => {
+    stopped = true
+    if (timer) clearTimeout(timer)
+  }
+  bot.once('end', stop)
+  timer = setTimeout(loop, jitter(intervalMs, 0.5))
+  return stop
+}
+
 /** Human-ish delay: base ± spread fraction. */
 export function jitter(base, spread = 0.35) {
   const s = Math.max(0, spread)
@@ -58,7 +83,10 @@ export function markError(bot, err) {
 }
 
 export function inventoryAlmostFull(bot) {
-  const empty = bot.inventory.slots.filter((s) => s == null).length
+  const inv = bot.inventory
+  if (!inv) return false
+  if (typeof inv.emptySlotCount === 'function') return inv.emptySlotCount() < 4
+  const empty = inv.slots.slice(inv.inventoryStart ?? 9, inv.inventoryEnd ?? 45).filter((s) => s == null).length
   return empty < 4
 }
 
@@ -76,31 +104,57 @@ export function tossJunk(bot) {
   }
 }
 
-export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position) {
-  if (!bot?.entity?.position || !origin) return null
-  const originVec = bot.entity.position.offset(0, 0, 0)
-  originVec.x = origin.x
-  originVec.y = origin.y
-  originVec.z = origin.z
+/** Hold the first inventory item matching {@code predicate} (pick, axe, rod, sphere, sword). */
+export async function equipMatching(bot, predicate) {
+  const held = bot.heldItem
+  if (held && predicate(held)) return true
+  const item = (bot.inventory?.items?.() || []).find(predicate)
+  if (!item) return false
+  try {
+    await bot.equip(item, 'hand')
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Closest block whose name is in {@code nameSet} around {@code origin} (ores and logs win ties).
+ * Uses mineflayer's palette scan instead of a block-by-block cube, so 40 bots stay cheap.
+ * {@code skip(block)} drops candidates the caller already gave up on.
+ */
+export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position, skip = null) {
+  if (!bot?.entity?.position || !origin || !nameSet || nameSet.size === 0) return null
+  const ids = []
+  for (const name of nameSet) {
+    const def = bot.registry?.blocksByName?.[name]
+    if (def) ids.push(def.id)
+  }
+  if (ids.length === 0) return null
+  const point = bot.entity.position.offset(0, 0, 0)
+  point.x = origin.x
+  point.y = origin.y
+  point.z = origin.z
+  let positions = []
+  try {
+    positions = bot.findBlocks({ matching: ids, maxDistance: Math.ceil(radius), count: 96, point })
+  } catch {
+    return null
+  }
   let best = null
-  let bestDist = radius
-  const r = Math.ceil(radius)
-  for (let dx = -r; dx <= r; dx++) {
-    for (let dy = -yRange; dy <= yRange; dy++) {
-      for (let dz = -r; dz <= r; dz++) {
-        const pos = originVec.offset(dx, dy, dz).floored()
-        const dist = originVec.distanceTo(pos.offset(0.5, 0.5, 0.5))
-        if (dist > radius || dist >= bestDist) continue
-        const block = bot.blockAt(pos)
-        if (!block || !block.name) continue
-        if (!nameSet.has(block.name.toLowerCase())) continue
-        const prefer = block.name.includes('ore') || block.name.includes('log') ? -2 : 0
-        const score = dist + prefer
-        if (score < bestDist) {
-          best = block
-          bestDist = score
-        }
-      }
+  let bestScore = Infinity
+  for (const pos of positions) {
+    if (Math.abs(pos.y - origin.y) > yRange) continue
+    const dist = point.distanceTo(pos.offset(0.5, 0.5, 0.5))
+    if (dist > radius) continue
+    const block = bot.blockAt(pos)
+    if (!block || !block.name) continue
+    if (skip && skip(block)) continue
+    const prefer = block.name.includes('ore') || block.name.includes('log') ? -2 : 0
+    const score = dist + prefer
+    if (score < bestScore) {
+      best = block
+      bestScore = score
     }
   }
   return best

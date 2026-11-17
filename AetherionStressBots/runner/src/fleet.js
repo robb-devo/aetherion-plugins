@@ -12,8 +12,9 @@ import { attachVelocityForwarding } from './velocity.js'
 import { attachSafety, readAnchors } from './safety.js'
 import { attachPlaystyle } from './playstyle.js'
 import { attachLocale } from './locale.js'
-import { attachMinigames } from './minigame.js'
+import { attachWindowWatchdog } from './windows.js'
 import { fmtPos, heldName, note, sleep } from './util.js'
+import { toPlain } from './chat.js'
 
 const { goals } = pathfinderPkg
 
@@ -21,8 +22,18 @@ const WAVE1 = ['mine', 'forage', 'catch', 'roam']
 const WAVE2 = ['combat', 'fish', 'trade', 'quest', 'pad']
 const ALL_ROLES = [...WAVE1, ...WAVE2, 'mining']
 
+/** Reconnect delay after {@code fails} short-lived sessions in a row: 8 s, 16 s, 32 s … capped. */
+export function reconnectDelayMs(fails, { baseMs = 8000, maxMs = 120_000 } = {}) {
+  const n = Math.max(0, Math.min(10, Number(fails) || 0))
+  return Math.min(maxMs, baseMs * 2 ** n)
+}
+
 export function createFleet({ config, log }) {
   const slots = new Map()
+  // Per login name, kept across reconnects: counters, kicks, the reconnect streak.
+  const meta = new Map()
+  const maxFails = Math.max(1, Number(config.reconnect?.maxFails ?? 8))
+  const stableMs = Number(config.reconnect?.stableMs ?? 60_000)
   const desired = Object.fromEntries(ALL_ROLES.map((role) => [role, 0]))
   let shuttingDown = false
   let spawnQueue = Promise.resolve()
@@ -77,7 +88,7 @@ export function createFleet({ config, log }) {
       log
     })
     attachLocale(bot, log)
-    attachMinigames(bot, log)
+    attachWindowWatchdog(bot, log)
     if (role === 'combat') return createCombatLoop(bot, cfg, log)
     if (role === 'forage') return createForageLoop(bot, cfg, log)
     if (role === 'catch') return createCatchLoop(bot, cfg, log)
@@ -98,7 +109,16 @@ export function createFleet({ config, log }) {
     return 16
   }
 
+  function metaFor(name, role) {
+    if (!meta.has(name)) {
+      meta.set(name, { role, fails: 0, reconnects: 0, kicks: 0, lastKick: '', stats: {}, gaveUp: false })
+    }
+    return meta.get(name)
+  }
+
   function spawnBot(name, role) {
+    const info = metaFor(name, role)
+    info.gaveUp = false
     const bot = mineflayer.createBot({
       host: config.host,
       port: config.port,
@@ -116,6 +136,8 @@ export function createFleet({ config, log }) {
     bot.qaDeaths = 0
     bot.qaLastError = ''
     bot.managedStop = false
+    bot.qaStats = info.stats
+    bot.qaSpawnedAt = 0
 
     if (config.velocitySecret) {
       attachVelocityForwarding(bot, config.velocitySecret, name)
@@ -123,6 +145,7 @@ export function createFleet({ config, log }) {
 
     bot.once('login', () => log(name, `login → ${config.host}:${config.port} (${role})`))
     bot.on('spawn', () => {
+      if (!bot.qaSpawnedAt) bot.qaSpawnedAt = Date.now()
       note(bot, `spawn @ ${fmtPos(bot.entity?.position)}`, 'idle')
       log(name, `spawn @ ${fmtPos(bot.entity?.position)}`)
     })
@@ -134,7 +157,9 @@ export function createFleet({ config, log }) {
       log(name, 'died — holding for plugin re-anchor')
     })
     bot.on('kicked', (reason) => {
-      const text = stringify(reason)
+      const text = kickText(reason, bot.registry)
+      info.kicks++
+      info.lastKick = text
       note(bot, `kicked: ${text}`, 'error')
       bot.qaLastError = text
       log(name, `kicked: ${text}`)
@@ -158,20 +183,32 @@ export function createFleet({ config, log }) {
     })
 
     bot.on('end', (reason) => {
-      log(name, `disconnected: ${reason || 'end'}${bot.managedStop || shuttingDown ? '' : ' — retry in 8s'}`)
       if (bot.managedStop || shuttingDown) {
-        slots.delete(name)
+        log(name, `disconnected: ${reason || 'end'}`)
+        if (slots.get(name) === bot) slots.delete(name)
         return
       }
+      const lived = bot.qaSpawnedAt ? Date.now() - bot.qaSpawnedAt : 0
+      info.fails = lived >= stableMs ? 0 : info.fails + 1
+      if (info.fails >= maxFails) {
+        info.gaveUp = true
+        if (slots.get(name) === bot) slots.delete(name)
+        log(name, `disconnected: ${reason || 'end'} — gave up after ${info.fails} short sessions`
+          + ` (last kick: ${info.lastKick || 'none'}). Start the role again to retry.`)
+        return
+      }
+      const delay = reconnectDelayMs(info.fails - 1) + Math.round(Math.random() * 2000)
+      log(name, `disconnected: ${reason || 'end'} — retry in ${Math.round(delay / 1000)}s`)
       setTimeout(() => {
-        if (shuttingDown || bot.managedStop) return
+        if (shuttingDown || bot.managedStop || slots.get(name) !== bot) return
+        info.reconnects++
         try {
-          const replacement = spawnBot(name, role)
-          slots.set(name, replacement)
+          spawnBot(name, role)
         } catch (err) {
           log(name, `reconnect failed: ${err.message}`)
+          slots.delete(name)
         }
-      }, 8000)
+      }, delay)
     })
 
     slots.set(name, bot)
@@ -279,6 +316,12 @@ export function createFleet({ config, log }) {
       const bots = [...slots.values()].map((bot) => ({
         name: bot.stressName,
         role: bot.role,
+        online: Boolean(bot.entity),
+        uptimeS: bot.qaSpawnedAt ? Math.round((Date.now() - bot.qaSpawnedAt) / 1000) : 0,
+        reconnects: meta.get(bot.stressName)?.reconnects || 0,
+        kicks: meta.get(bot.stressName)?.kicks || 0,
+        lastKick: meta.get(bot.stressName)?.lastKick || '',
+        stats: { ...(bot.qaStats || {}) },
         activity: bot.qaActivity || 'idle',
         heldItem: heldName(bot),
         deaths: bot.qaDeaths || 0,
@@ -292,10 +335,18 @@ export function createFleet({ config, log }) {
       const roles = {}
       for (const role of ALL_ROLES) {
         const members = bots.filter((b) => b.role === role)
+        const totals = {}
+        for (const bot of members) {
+          for (const [key, value] of Object.entries(bot.stats)) totals[key] = (totals[key] || 0) + value
+        }
+        const gaveUp = [...meta.entries()].filter(([, m]) => m.role === role && m.gaveUp).map(([n]) => n)
         roles[role] = {
           desired: desired[role] || 0,
-          online: members.length,
-          activity: members.map((b) => b.activity).join(',')
+          online: members.filter((b) => b.online).length,
+          tracked: members.length,
+          activity: members.map((b) => b.activity).join(','),
+          totals,
+          gaveUp
         }
       }
       return { bots, roles, desired: { ...desired } }
@@ -304,6 +355,11 @@ export function createFleet({ config, log }) {
       return slots.size
     }
   }
+}
+
+function kickText(reason, registry) {
+  const text = toPlain(reason, registry).trim()
+  return text || stringify(reason)
 }
 
 function stringify(value) {

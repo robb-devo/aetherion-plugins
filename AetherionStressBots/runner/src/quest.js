@@ -1,99 +1,125 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
-import { clickSlot, closeWindow, isQuestOfferWindow, parseQuestAcceptCommand, SLOTS, waitForWindow, windowTitle } from './gui.js'
+import { clickSlot, closeWindow, KINDS, SLOTS, windowKind } from './gui.js'
 import { applyIslandMovements, cancelPath, wanderOnIsland } from './safety.js'
-import { markError, note, sleep } from './util.js'
+import { clickCommands } from './chat.js'
+import { jitter, markError, note, runEvery, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
-const SKIP_NAMES = ['item', 'experience', 'armor_stand', 'fishing_bobber', 'area_effect_cloud']
+const BOT_PREFIXES = ['qa', 'stress']
 
+/**
+ * Quest NPCs are FancyNpcs packet players: player entities that are not listed in the tab list.
+ * Real players (and other bots) are listed, so the bot never right-clicks a person.
+ */
+export function isNpcEntity(entity, players) {
+  if (!entity || entity.type !== 'player' || !entity.username) return false
+  const lower = String(entity.username).toLowerCase()
+  if (BOT_PREFIXES.some((prefix) => lower.startsWith(prefix))) return false
+  const entry = players?.[entity.username]
+  return !entry || entry.listed === false
+}
+
+/** Which clickable chat command to run: accept a quest most of the time, else any reply. */
+export function chooseReply(commands, rng = Math.random) {
+  const list = (commands || []).filter((cmd) => /^\/(aetherionquest|aetalk)\b/i.test(cmd))
+  if (list.length === 0) return null
+  const accept = list.find((cmd) => /\/aetherionquest\s+accept\s+/i.test(cmd))
+  if (accept && rng() < 0.75) return accept
+  const replies = list.filter((cmd) => !/\s(decline|abandon|abort)\b/i.test(cmd))
+  const pool = replies.length ? replies : list
+  return pool[Math.floor(rng() * pool.length)]
+}
+
+/**
+ * Walk up to quest NPCs, right-click, and play the TalkUx dialog through its mirrored chat buttons
+ * (/aetalk pick …, /aetherionquest accept …). A Quest Offer window is answered by its slots.
+ */
 export function createQuestLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
-  const searchRadius = cfg.searchRadius ?? 10
+  const searchRadius = cfg.searchRadius ?? 16
   const wanderRadius = cfg.wanderRadius ?? 5
+  const npcCooldownMs = cfg.npcCooldownMs ?? 60_000
+  const stats = (bot.qaStats = bot.qaStats || {})
+  const cooldown = new Map()
   let running = false
-  let lastTalk = 0
   let lastFidget = 0
-  let lastNpcId = null
+  let pending = []
 
-  bot.on('message', (json) => {
-    const text = typeof json.toString === 'function' ? json.toString() : String(json)
-    const command = parseQuestAcceptCommand(text)
-    if (command && Date.now() - lastTalk < 12_000) {
-      try {
-        bot.chat(command)
-        note(bot, `quest accept ${command.split(' ').pop()}`, ACTIVITIES.questDialog)
-      } catch {
-        /* ignore */
-      }
-    }
+  bot.on('message', (message) => {
+    const commands = clickCommands(message)
+    if (commands.length) pending = commands
   })
 
   function pickNpc() {
+    const now = Date.now()
     let best = null
     let bestDist = searchRadius
     for (const entity of Object.values(bot.entities)) {
-      if (!entity || entity === bot.entity) continue
-      const name = (entity.username || entity.displayName || entity.name || '').toString().toLowerCase()
-      if (!name) continue
-      if (SKIP_NAMES.some((key) => name.includes(key))) continue
-      if (entity.type === 'orb' || entity.type === 'object') continue
-      if (name.startsWith('qa') || name.startsWith('stress')) continue
-      const isPerson = entity.type === 'player' || entity.type === 'mob' || name.includes('villager')
-        || name.includes('egon') || name.includes('lark') || name.includes('temper')
-        || name.includes('foreman') || name.includes('quartermaster') || name.includes('npc')
-      if (!isPerson && entity.type !== 'player') continue
-      if (entity.username && entity.username === bot.username) continue
+      if (!isNpcEntity(entity, bot.players)) continue
+      if ((cooldown.get(entity.username) || 0) > now) continue
       const dist = bot.entity.position.distanceTo(entity.position)
-      if (dist < bestDist && entity.id !== lastNpcId) {
+      if (dist < bestDist) {
         best = entity
         bestDist = dist
-      }
-    }
-    if (!best) {
-      for (const entity of Object.values(bot.entities)) {
-        if (!entity || entity === bot.entity) continue
-        if (entity.type !== 'player' && entity.type !== 'mob') continue
-        const name = (entity.username || entity.name || '').toLowerCase()
-        if (name.startsWith('qa') || name.startsWith('stress')) continue
-        const dist = bot.entity.position.distanceTo(entity.position)
-        if (dist < bestDist) {
-          best = entity
-          bestDist = dist
-        }
       }
     }
     return best
   }
 
-  async function talk(entity) {
-    lastTalk = Date.now()
-    lastNpcId = entity.id
-    note(bot, `quest talk ${entity.username || entity.name || 'npc'}`, ACTIVITIES.questDialog)
+  async function answerOffer(info) {
+    if (info.state === 'offer' || (info.state === 'abort_current' && Math.random() < 0.25)) {
+      await clickSlot(bot, SLOTS.questAccept)
+      stats.accepts = (stats.accepts || 0) + 1
+      note(bot, 'quest accept (offer)', ACTIVITIES.questDialog)
+    } else {
+      await clickSlot(bot, SLOTS.questDecline)
+      note(bot, `quest offer ${info.state}`, ACTIVITIES.questDialog)
+    }
+    await sleep(300)
+    await closeWindow(bot)
+  }
+
+  async function dialog(npc) {
+    // Up to four steps: greeting → topic → offer → accept.
+    for (let step = 0; step < 4; step++) {
+      const until = Date.now() + 4500
+      while (Date.now() < until && pending.length === 0 && !bot.currentWindow) await sleep(150)
+      const info = windowKind(bot)
+      if (info.kind === KINDS.questOffer) {
+        await answerOffer(info)
+        return
+      }
+      if (pending.length === 0) return
+      const choice = chooseReply(pending)
+      pending = []
+      if (!choice) return
+      // Read the line first, like a person would.
+      await sleep(jitter(1400, 0.5))
+      bot.chat(choice)
+      if (/accept/i.test(choice)) {
+        stats.accepts = (stats.accepts || 0) + 1
+        note(bot, `quest accept ${choice.split(' ').pop()}`, ACTIVITIES.questDialog)
+        return
+      }
+      stats.replies = (stats.replies || 0) + 1
+      note(bot, `reply to ${npc.username}`, ACTIVITIES.questDialog)
+    }
+  }
+
+  async function talk(npc) {
+    cooldown.set(npc.username, Date.now() + jitter(npcCooldownMs, 0.4))
+    pending = []
+    note(bot, `talk ${npc.username}`, ACTIVITIES.questDialog)
     try {
-      await bot.lookAt(entity.position.offset(0, entity.height || 1.6, 0), true)
+      await bot.lookAt(npc.position.offset(0, npc.height || 1.6, 0), true)
     } catch { /* ignore */ }
     try {
-      await bot.activateEntity(entity)
-    } catch {
-      /* FancyNpcs may ignore a missed packet; retry once */
-      try { await bot.activateEntity(entity) } catch { /* ignore */ }
-    }
-    try {
-      await waitForWindow(bot, isQuestOfferWindow, 2800)
-      await clickSlot(bot, SLOTS.questAccept)
-      note(bot, 'quest accept gui', ACTIVITIES.questDialog)
-      await sleep(300)
-      await closeWindow(bot)
-    } catch {
-      if (isQuestOfferWindow(windowTitle(bot))) {
-        try {
-          await clickSlot(bot, SLOTS.questAccept)
-          note(bot, 'quest accept gui', ACTIVITIES.questDialog)
-        } catch { /* ignore */ }
-      }
-    }
+      await bot.activateEntity(npc)
+    } catch { /* FancyNpcs may ignore one packet */ }
+    stats.talks = (stats.talks || 0) + 1
+    await dialog(npc)
   }
 
   async function tick() {
@@ -101,17 +127,16 @@ export function createQuestLoop(bot, cfg, log) {
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
     }
-    if (isQuestOfferWindow(windowTitle(bot))) {
-      try {
-        await clickSlot(bot, SLOTS.questAccept)
-        note(bot, 'quest accept gui', ACTIVITIES.questDialog)
-      } catch { /* ignore */ }
+    const info = windowKind(bot)
+    if (info.kind === KINDS.questOffer) {
+      await answerOffer(info)
       return
     }
+    if (bot.currentWindow) return
     const npc = pickNpc()
     if (!npc) {
       bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : ACTIVITIES.questDialog
-      wanderOnIsland(bot, bot.qaHome || bot.entity.position, wanderRadius, goals)
+      if (!bot.pathfinder.isMoving()) wanderOnIsland(bot, bot.qaHome || bot.entity.position, wanderRadius, goals)
       if (Date.now() - lastFidget > 4000) {
         lastFidget = Date.now()
         fidget(bot, ACTIVITIES.questDialog)
@@ -119,27 +144,33 @@ export function createQuestLoop(bot, cfg, log) {
       return
     }
     const dist = bot.entity.position.distanceTo(npc.position)
-    if (dist > 3.2) {
-      note(bot, `path npc ${npc.username || npc.name || ''}`, 'pathing')
-      bot.pathfinder.setGoal(new goals.GoalFollow(npc, 2), true)
-      return
+    if (dist > 3) {
+      note(bot, `walk to ${npc.username}`, 'pathing')
+      bot.pathfinder.setGoal(new goals.GoalNear(npc.position.x, npc.position.y, npc.position.z, 2))
+      const until = Date.now() + 10_000
+      while (Date.now() < until && bot.pathfinder.isMoving() && bot.entity.position.distanceTo(npc.position) > 3) {
+        if (bot.qaSuspended) return
+        await sleep(200)
+      }
+      if (bot.entity.position.distanceTo(npc.position) > 3.5) {
+        cancelPath(bot)
+        cooldown.set(npc.username, Date.now() + 20_000)
+        return
+      }
     }
     cancelPath(bot)
-    if (Date.now() - lastTalk < 2200) return
     await talk(npc)
+    await sleep(jitter(2500, 0.4))
   }
 
   return function start() {
     if (running) return
     running = true
-    log(bot.stressName, 'quest loop start')
+    log(bot.stressName, 'quest loop start (NPC talk + chat replies)')
     note(bot, 'quest loop start', ACTIVITIES.questDialog)
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `quest tick: ${err.message}`)
-      })
-    }, 380)
-    bot.once('end', () => clearInterval(handle))
+    runEvery(bot, 400, tick, (err) => {
+      markError(bot, err)
+      log(bot.stressName, `quest tick: ${err.message}`)
+    })
   }
 }

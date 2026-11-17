@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 public final class StressBotsCommand implements CommandExecutor, TabCompleter {
 
@@ -61,20 +62,31 @@ public final class StressBotsCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 int count = args.length >= 3 ? parseInt(args[2], 1) : Math.max(1, plugin.getController().desired(args[1]));
-                sender.sendMessage(plugin.getController().start(args[1], count));
+                String role = args[1];
+                runnerCall(sender, () -> plugin.getController().start(role, count));
             }
             case "stop" -> {
                 if (args.length < 2 || "all".equalsIgnoreCase(args[1])) {
-                    sender.sendMessage(plugin.getController().stopAll());
+                    runnerCall(sender, () -> plugin.getController().stopAll());
                     return true;
                 }
-                sender.sendMessage(plugin.getController().stop(args[1]));
+                String role = args[1];
+                runnerCall(sender, () -> plugin.getController().stop(role));
             }
-            case "stopall" -> sender.sendMessage(plugin.getController().stopAll());
+            case "stopall" -> runnerCall(sender, () -> plugin.getController().stopAll());
             case "report" -> sender.sendMessage(plugin.getController().reportText().split("\n"));
             default -> help(sender);
         }
         return true;
+    }
+
+    /** Runner calls are HTTP (up to 8 s when it hangs): run them off the main thread, answer back on it. */
+    private void runnerCall(CommandSender sender, Supplier<String> call) {
+        sender.sendMessage("§7Contacting testbot runner…");
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            String message = call.get();
+            Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(message));
+        });
     }
 
     private void help(CommandSender sender) {

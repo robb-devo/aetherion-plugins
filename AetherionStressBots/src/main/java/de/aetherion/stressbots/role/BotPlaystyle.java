@@ -6,6 +6,7 @@ import de.aetherion.core.api.HubAccess;
 import de.aetherion.core.api.PetAccess;
 import de.aetherion.core.api.PetCatalogItem;
 import de.aetherion.core.api.ProgressAccess;
+import de.aetherion.core.api.QuestProgressAccess;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.item.CustomItem;
 import de.aetherion.items.model.BoosterApplier;
@@ -18,6 +19,7 @@ import de.aetherion.stressbots.AetherionStressBots;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -27,13 +29,14 @@ import java.util.List;
 /**
  * Player-like extras after a role kit: mixed-tier gear, equipped skills (so activity XP
  * actually lands), item boosters, optional pet follow, starter coins, progression flags.
- * Also forces English locale, trader unlock, and starter spawn unlocks for QA bots.
+ * Also forces English locale, trader unlock, the forager chop unlock and starter spawn unlocks for QA bots.
  * Does <em>not</em> call {@code /skills setlevel} — bots still grind by doing the work.
  */
 public final class BotPlaystyle {
 
     public static final String FLAG_TRADER = "TRADER";
     public static final long DEFAULT_STARTER_COINS = 2_500L;
+    public static final String LANG_HOLDER = "de.aetherion.quests.lang.LangMenu$Holder";
 
     private BotPlaystyle() {
     }
@@ -42,13 +45,12 @@ public final class BotPlaystyle {
         if (plugin == null || player == null || role == null || items == null) {
             return;
         }
+        // The role handler already put on the kit. Coins are topped up to a target in apply(), never added
+        // per setup: every respawn and reconnect runs this again.
         int index = nameIndex(player);
-        int tier = gearTier(index);
-        kitGear(player.getInventory(), items, role, tier);
         applyBoosters(plugin, player, role, items, index);
         equipSkills(plugin, player, role, index);
         unlockProgress(plugin, player, role);
-        seedCoins(plugin, player, role, index);
         maybePet(plugin, player, role, index);
         if (role == BotRole.CATCH && index >= 3) {
             giveSphere(player, "rare", 8);
@@ -62,8 +64,22 @@ public final class BotPlaystyle {
         }
         forceEnglish(plugin, player);
         unlockTrader(plugin, player, role);
+        unlockChop(plugin, player, role);
         topUpCoins(plugin, player, role);
         unlockStarterSpawns(plugin, player, role);
+    }
+
+    /** Fresh accounts cannot fell until the forager lesson is done; forage bots skip the lesson. */
+    private static void unlockChop(AetherionStressBots plugin, Player player, BotRole role) {
+        if (role != BotRole.FORAGE) {
+            return;
+        }
+        QuestProgressAccess quests = AetherServices.quests();
+        if (quests == null || quests.canChopTrees(player)) {
+            return;
+        }
+        quests.unlockForagerChop(player);
+        plugin.getActivity().markAction(player, "forager chop unlocked");
     }
 
     public static int gearTier(Player player) {
@@ -156,11 +172,14 @@ public final class BotPlaystyle {
         if (player == null || !player.isOnline()) {
             return;
         }
+        // Set the stored choice directly; the command is only a fallback (it chats and can reopen the menu).
         boolean set = setQuestLanguageEnglish(player);
-        try {
-            player.performCommand("language en");
-        } catch (RuntimeException ignored) {
-            // command may be missing when Quests is offline
+        if (!set) {
+            try {
+                player.performCommand("language en");
+            } catch (RuntimeException ignored) {
+                // command may be missing when Quests is offline
+            }
         }
         if (isLanguageWindow(player.getOpenInventory())) {
             player.closeInventory();
@@ -180,15 +199,19 @@ public final class BotPlaystyle {
         return plain.contains("language") || plain.contains("sprache");
     }
 
+    /** Quests' LangMenu, told apart by its holder: the title is drawn from pack glyphs. */
     public static boolean isLanguageWindow(InventoryView view) {
         if (view == null) {
             return false;
         }
+        InventoryHolder holder = view.getTopInventory().getHolder(false);
+        if (holder != null) {
+            return LANG_HOLDER.equals(holder.getClass().getName());
+        }
         try {
-            String title = PlainTextComponentSerializer.plainText().serialize(view.title());
-            return isLanguageTitle(title);
+            return isLanguageTitle(PlainTextComponentSerializer.plainText().serialize(view.title()));
         } catch (RuntimeException ignored) {
-            return isLanguageTitle(view.getTitle());
+            return false;
         }
     }
 
@@ -250,17 +273,6 @@ public final class BotPlaystyle {
             if (hub.unlockNew(player.getUniqueId(), id)) {
                 plugin.getActivity().markAction(player, "spawn unlock " + id);
             }
-        }
-    }
-
-    private static void kitGear(PlayerInventory inv, CustomItem items, BotRole role, int tier) {
-        switch (role) {
-            case MINE, MINING -> kitMining(inv, items, tier);
-            case FORAGE -> kitForaging(inv, items, tier);
-            case CATCH -> kitCatcher(inv, items, tier);
-            case FISH -> kitFishing(inv, items, tier);
-            case COMBAT -> kitCombat(inv, items, tier, true);
-            default -> kitCombat(inv, items, Math.min(3, tier), false);
         }
     }
 
@@ -357,19 +369,6 @@ public final class BotPlaystyle {
             progress.unlock(player, ProgressionService.Flag.TRADER);
             plugin.getActivity().markAction(player, "trader flag");
         }
-    }
-
-    private static void seedCoins(AetherionStressBots plugin, Player player, BotRole role, int index) {
-        AetherionItems itemsPlugin = AetherionItems.getInstance();
-        if (itemsPlugin == null || itemsPlugin.getCoins() == null) {
-            return;
-        }
-        long amount = switch (role) {
-            case TRADE -> 400L + index * 80L;
-            case QUEST -> 120L + index * 20L;
-            default -> 40L + index * 15L;
-        };
-        itemsPlugin.getCoins().add(player, amount);
     }
 
     private static void maybePet(AetherionStressBots plugin, Player player, BotRole role, int index) {
