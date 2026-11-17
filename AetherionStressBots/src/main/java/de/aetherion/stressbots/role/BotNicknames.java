@@ -10,62 +10,25 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
- * Quirky in-game nicknames. Login names stay {@code QaMine01} for Velocity;
- * chat, tab list, death messages, Dev menu, and Collection leaderboards use these.
+ * Player-like display names. Login names stay {@code QaMine01} for Velocity and
+ * provisioning; chat, tab list, death messages, Dev menu, and Collection use these.
+ * The pool is ordinary Minecraft-style names, offset per role so bots do not share a label.
  */
 public final class BotNicknames {
 
-    private static final Map<BotRole, List<String>> DEFAULTS = Map.ofEntries(
-            Map.entry(BotRole.MINE, List.of(
-                    "§bPickel-Ute", "§bErz-Ernie", "§bSchacht-Stefan", "§bKohle-Karla", "§bAder-Achim",
-                    "§bGruben-Gabi", "§bStollen-Sören", "§bFlinz-Frieda", "§bTiefen-Theo", "§bKies-Klaus",
-                    "§bGestein-Greta", "§bBohr-Bernd", "§bErzgeist", "§bSchiefer-Susi", "§bHauer-Hans",
-                    "§bAetherader", "§bKrummpickel", "§bVenen-Vera", "§bDusty-Dieter", "§bAderwächter"
-            )),
-            Map.entry(BotRole.FORAGE, List.of(
-                    "§aAst-Anni", "§aLaub-Lutz", "§aCanopy-Kalle", "§aStamm-Steffi", "§aMiss-Axt",
-                    "§aBirken-Bert", "§aEichen-Else", "§aRinden-Rudi", "§aForst-Fritze", "§aAetherholz",
-                    "§aZweig-Zora", "§aKlotz-Kai", "§aHain-Hilde", "§aWurzel-Willi", "§aSchnitzi",
-                    "§aKronen-Kira", "§aMoos-Moritz", "§aHolz-Heiner", "§aIsle-Ilse", "§aBlatt-Bärbel"
-            )),
-            Map.entry(BotRole.CATCH, List.of(
-                    "§dKugel-Kai", "§dSphäre-Sven", "§dPet-Petra", "§dFang-Fiete", "§dHabitat-Hansi",
-                    "§dNetz-Nadja", "§dGaff-Gustav", "§dFlucht-Felix", "§dAetherfang", "§dKnautsch-Kim",
-                    "§dPfote-Pia", "§dWurf-Waldi", "§dZoo-Zelda", "§dMenagerie-Max", "§dSchnapp-Sandra",
-                    "§dKäfig-Kurt", "§dPlüsch-Paul", "§dTreffer-Tine", "§dMiss-Catch", "§dKugelregen"
-            )),
-            Map.entry(BotRole.ROAM, List.of(
-                    "§eFlaneur-Franz", "§eCapital-Claus", "§ePad-Poldi", "§eBummel-Bärbel", "§eAether-Tourist",
-                    "§eHafen-Heike", "§ePflaster-Pit", "§eUmweg-Uwe", "§eGasse-Gundula", "§eSchlender-Sepp",
-                    "§eOrigin-Otto", "§eBrücken-Britta", "§eMarkt-Manni", "§eIrrläufer", "§eHub-Hugo",
-                    "§eEcken-Ella", "§eTorkel-Tim", "§eStadtgeist", "§eQuatsch-Quirin", "§eBummelant"
-            )),
-            Map.entry(BotRole.COMBAT, List.of(
-                    "§cBorder-Bernd", "§cWaste-Wanda", "§cVex-Victim", "§cKlingen-Kai", "§cScharmützel",
-                    "§cHieb-Hilde", "§cAetherfehde", "§cTritt-Toni", "§cSchild-Susi", "§cRage-Rudi"
-            )),
-            Map.entry(BotRole.FISH, List.of(
-                    "§3Köder-Kai", "§3Nibble-Nora", "§3Angel-Ansgar", "§3Brassen-Berta", "§3Haken-Heinz",
-                    "§3Tiden-Tine", "§3Kutter-Kurt", "§3Aetherköder", "§3Schnur-Sven", "§3Wellen-Wilma"
-            )),
-            Map.entry(BotRole.TRADE, List.of(
-                    "§6Markt-Marga", "§6Bazaar-Berti", "§6Auktions-Ute", "§6Händler-Hans", "§6Schatz-Susi",
-                    "§6Gebot-Gerd", "§6Taler-Tanja", "§6Aethermarkt", "§6Schnäppchen", "§6Zahltag-Zack"
-            )),
-            Map.entry(BotRole.QUEST, List.of(
-                    "§dQuest-Quirin", "§dMaren-Fan", "§dTwig-Talker", "§dNpc-Nadja", "§dDialog-Dieter",
-                    "§dAuftrag-Anni", "§dKlatsch-Klaus", "§dAethergeschwätz", "§dPlauder-Pia", "§dHint-Heiko"
-            )),
-            Map.entry(BotRole.PAD, List.of(
-                    "§ePad-Hopper", "§eSchleim-Sepp", "§eSprung-Steffi", "§eLaunch-Lutz", "§eBogen-Bärbel",
-                    "§eInsel-Ilse", "§eHub-Hüpfer", "§eAetherpad", "§eTrampolin-Tim", "§eAbsprung-Anke"
-            )),
-            Map.entry(BotRole.MINING, List.of(
-                    "§7Stress-Stollen", "§7Schacht-Bot", "§7Alte-Ader", "§7Mine-Marga", "§7Staub-Stefan"
-            ))
+    private static final List<String> PLAYER_NAMES = List.of(
+            "MapleReed", "IronWade", "CinderFox", "NovaKite", "RowanVale",
+            "CaseyBrook", "QuinnAsh", "AveryLane", "ParkerHolt", "ReeseWild",
+            "SkylerNorth", "HaydenCole", "ElliotMarsh", "FinleyCrowe", "HarperGlen",
+            "LoganPike", "BlakeYarrow", "CameronDusk", "DrewHollow", "EllisWard",
+            "FrankieMoss", "GreerLane", "IndigoVale", "JulesHart", "KaiMercer",
+            "LaneBishop", "MicahSol", "NoelArcher", "OakleyFinn", "PeytonRue",
+            "RemyShaw", "SloaneVale", "TatumReed", "WinterHayes", "AugustKerr",
+            "BlairMoss", "CedarQuinn", "WynnHollis", "SagePorter", "TheoMarlow",
+            "NiaCalder", "OwenBriar", "LilaFen", "MiloCrest", "JunoHale",
+            "ArloVoss", "EsmeCalder", "BodhiLane", "FreyaMoss", "NicoVale"
     );
 
     private final AetherionStressBots plugin;
@@ -86,7 +49,7 @@ public final class BotNicknames {
         if (pool.isEmpty()) {
             return player.getName();
         }
-        int index = Math.floorMod(slotIndex(player.getName()), pool.size());
+        int index = Math.floorMod(slotIndex(player.getName()) + role.ordinal() * 7, pool.size());
         String nick = pool.get(index);
         return nick == null || nick.isBlank() ? player.getName() : nick;
     }
@@ -121,7 +84,7 @@ public final class BotNicknames {
         if (configured != null && !configured.isEmpty()) {
             return configured;
         }
-        return DEFAULTS.getOrDefault(role, List.of());
+        return PLAYER_NAMES;
     }
 
     static int slotIndex(String username) {

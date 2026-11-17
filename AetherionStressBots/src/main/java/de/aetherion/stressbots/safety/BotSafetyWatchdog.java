@@ -84,7 +84,10 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 plugin.getActivity().markActivity(player, "pad_hop", "mid-hop");
                 continue;
             }
-            if (home != null && BotLocations.horizontalDistance(loc, home) > leash) {
+            // Gather roles turn around inside the leash. A one-block overshoot used to
+            // teleport them from the rail cut back up to the pad, which restarted the hop.
+            double leashLimit = gathersInPlace(handler.role()) ? leash + 2 : leash;
+            if (home != null && BotLocations.horizontalDistance(loc, home) > leashLimit) {
                 Location nearest = BotLocations.nearestAnchor(loc, section);
                 if (nearest == null || BotLocations.horizontalDistance(loc, nearest) > leash) {
                     recover(player, handler, "leash", false);
@@ -97,7 +100,8 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             }
 
             String activity = plugin.getActivity().snapshot(player).activity();
-            boolean idle = "idle".equals(activity) || "stuck".equals(activity);
+            boolean idle = ("idle".equals(activity) || "stuck".equals(activity))
+                    && !gathersInPlace(handler.role());
             if (idle) {
                 idleSince.putIfAbsent(player.getUniqueId(), now);
             } else {
@@ -183,6 +187,15 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             return fallback;
         }
         return section.getDouble("leash-radius", fallback);
+    }
+
+    /** Mine, forage, fish, and catch work a small pad. Idle teleports were cancelling their path mid-step. */
+    private static boolean gathersInPlace(BotRole role) {
+        return role == BotRole.MINE
+                || role == BotRole.MINING
+                || role == BotRole.FORAGE
+                || role == BotRole.FISH
+                || role == BotRole.CATCH;
     }
 
     private static boolean isMob(DamageCause cause) {

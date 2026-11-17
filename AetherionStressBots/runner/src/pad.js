@@ -3,6 +3,7 @@ import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, st
 import { pickNextPad, readPads } from './pads.js'
 import { markError, note, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
+import { isLingering } from './mind.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -104,6 +105,10 @@ export function createPadLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended) return
+    if (!isAirborne(bot) && isLingering(bot)) {
+      note(bot, 'watching the pad', 'lingering')
+      return
+    }
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 3 }))
     }
@@ -114,7 +119,8 @@ export function createPadLoop(bot, cfg, log) {
       return
     }
 
-    if (Date.now() - lastLand < 900) {
+    const settle = 700 + Math.round((bot.qaPersona?.patience ?? 0.5) * 2200)
+    if (Date.now() - lastLand < settle || isLingering(bot)) {
       if (Date.now() - lastFidget > 2000) {
         lastFidget = Date.now()
         fidget(bot, ACTIVITIES.padHop)

@@ -58,6 +58,12 @@ public final class RunnerControlClient {
         return post("/stop-all", "{}");
     }
 
+    /** Fresh dashboard token. The permanent runner token stays in the request header, not the URL. */
+    public Response mintSession(int hours) {
+        int life = Math.max(1, Math.min(72, hours));
+        return post("/session", "{\"hours\":" + life + "}");
+    }
+
     public CompletableFuture<Response> setDesiredAsync(String role, int count) {
         return CompletableFuture.supplyAsync(() -> setDesired(role, count));
     }

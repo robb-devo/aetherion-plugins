@@ -16,7 +16,7 @@ softdepend:
 commands:
   stressbots:
     description: Stress/test-bot assist controls
-    usage: /stressbots <reload|setup|list|start|stop|stopall|report>
+    usage: /stressbots <reload|setup|list|start|stop|stopall|report|dashboard>
     permission-message: No permission.
   botreport:
     description: Dump online test-bot status for QA

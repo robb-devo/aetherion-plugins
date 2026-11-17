@@ -73,7 +73,7 @@ Bots **throw spheres** at nearby living entities. They do **not** play the catch
 4. Click the role icon for a list (nickname, xyz, held item, activity)
 5. **Stop all** · **/botreport** book+chat
 
-Login names stay `QaMine01…` (Velocity). In chat, tab list, death messages, Dev menu, `/botreport`, and **Collection** top-3 they wear a quirky nickname (`Pickel-Ute`, `Ast-Anni`, `Kugel-Kai`, `Flaneur-Franz`, …). Edit `testbots.nicknames` in config. There is no Mysteries API — skipped.
+Login names stay `QaMine01…` (Velocity still has to recognize the role prefix). In chat, tab list, death messages, Dev menu, `/botreport`, and **Collection** top-3 they wear an ordinary Minecraft-style name (`MapleReed`, `IronWade`, `NovaKite`, …), different per role so two bots do not share a label. Edit `testbots.nicknames` in config. There is no Mysteries API — skipped.
 
 Counts clamp to `testbots.max-total` (40), `testbots.caps.<role>` (8), `max-per-start` (40), and the server `max-players`.
 
@@ -110,7 +110,23 @@ node src/index.js --combat 3 --fish 2 --trade 2 --quest 2 --pad 2
 node src/index.js --mining 5    # Phase 1 StressM
 ```
 
-Control HTTP: `http://127.0.0.1:18765` (`/health`, `/desired`, `/stop`, `/stop-all`). Optional `control.token` must match plugin `testbots.runner.token`.
+Control HTTP: `http://127.0.0.1:18765` (`/health`, `/desired`, `/stop`, `/stop-all`, `/status`). Optional `control.token` must match plugin `testbots.runner.token`.
+
+## Live dashboard
+
+Open **`http://127.0.0.1:18765/`** on the machine running the runner (same bind as the control server, default localhost only). From a laptop, tunnel it:
+
+```bash
+ssh -L 18765:127.0.0.1:18765 <host>
+```
+
+Then open `http://127.0.0.1:18765/`. If `control.token` is set, use `http://127.0.0.1:18765/?token=<token>` so the page can call `/status`.
+
+In game, `/stressbots dashboard` (alias `link`) posts a **clickable** chat URL. Set `testbots.dashboard.public-url` to the address players can actually open (a reverse proxy, or `http://HOST:18765` if that port is reachable). Each command asks the runner for a new session token (`testbots.dashboard.session-hours`, default 12) and appends `?token=`. The permanent `testbots.runner.token` is not put in chat. The runner still binds `127.0.0.1` until `control.bind` is changed or a proxy forwards the public URL. The page can start, stop, and set a role count as well as show the fleet (online/desired per role). The page polls every 2s: name, role, personality, activity, goal, last action, location, health, estimated coins, inventory, uptime, deaths, last error, and fleet economy totals.
+
+## How a bot decides
+
+Each login name gets a stable personality (patience, greed, caution, sociability, clumsiness, focus) plus a combat style (`aggressive`, `cautious`, `strafe`, `burst`, `balanced`) and an economy style (`saver`, `spender`, `flipper`, `casual`). The role loop still does the work the kit was built for. A slow mind tick (about every 3s, staggered) can linger, eat, retreat, look at someone nearby, say one short line, or walk off to list a resource stack on the Bazaar. Trade bots pick Auction House / Bazaar actions from purse, stock, and style instead of a fixed rotate, and they sometimes underprice, overprice, or close the GUI. Chat is capped fleet-wide so a full set of bots does not spam. Miners dig a block that is already in reach. They path only to an ore with a real stand cell on the same floor, inside the leash, and they do not chase deepslate across a rail tunnel or climb back to a pad that sits above them. A path that fails to move is dropped instead of restarted, which is what was making them jump in place. `/skills`, `/pets`, `/guide`, and `/trades` stay closed while that dig is in progress.
 
 Plugin YAML anchors should stay in sync with `runner/config.json` mine/forage/catch/roam/combat/fish/trade/quest/pad sections.
 

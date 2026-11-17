@@ -11,6 +11,7 @@ import { createPadLoop } from './pad.js'
 import { attachVelocityForwarding } from './velocity.js'
 import { attachSafety, readAnchors } from './safety.js'
 import { attachPlaystyle } from './playstyle.js'
+import { attachMind, describeBot } from './mind.js'
 import { attachLocale } from './locale.js'
 import { attachMinigames } from './minigame.js'
 import { fmtPos, heldName, note, sleep } from './util.js'
@@ -149,6 +150,7 @@ export function createFleet({ config, log }) {
     })
 
     const loop = startLoop(bot, role)
+    attachMind(bot, log)
     attachPlaystyle(bot, log)
     let started = false
     bot.on('spawn', () => {
@@ -276,19 +278,24 @@ export function createFleet({ config, log }) {
       }
     },
     snapshot() {
-      const bots = [...slots.values()].map((bot) => ({
-        name: bot.stressName,
-        role: bot.role,
-        activity: bot.qaActivity || 'idle',
-        heldItem: heldName(bot),
-        deaths: bot.qaDeaths || 0,
-        lastAction: bot.qaLastAction || '',
-        lastError: bot.qaLastError || '',
-        recentActions: bot.qaRecent || [],
-        position: bot.entity?.position
-          ? { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
-          : null
-      }))
+      const now = Date.now()
+      const bots = [...slots.values()].map((bot) => {
+        const view = describeBot(bot, now)
+        if (!view.heldItem || view.heldItem === '-') view.heldItem = heldName(bot)
+        return view
+      })
+      const economy = bots.reduce((sum, bot) => {
+        const book = bot.economy || {}
+        sum.listed += book.listed || 0
+        sum.bought += book.bought || 0
+        sum.sales += book.sales || 0
+        sum.spent += book.spent || 0
+        sum.earned += book.earned || 0
+        sum.failed += book.failed || 0
+        sum.skipped += book.skipped || 0
+        return sum
+      }, { listed: 0, bought: 0, sales: 0, spent: 0, earned: 0, failed: 0, skipped: 0 })
+      const chats = bots.reduce((sum, bot) => sum + (bot.chats || 0), 0)
       const roles = {}
       for (const role of ALL_ROLES) {
         const members = bots.filter((b) => b.role === role)
@@ -298,7 +305,7 @@ export function createFleet({ config, log }) {
           activity: members.map((b) => b.activity).join(',')
         }
       }
-      return { bots, roles, desired: { ...desired } }
+      return { bots, roles, desired: { ...desired }, economy, chats }
     },
     size() {
       return slots.size
