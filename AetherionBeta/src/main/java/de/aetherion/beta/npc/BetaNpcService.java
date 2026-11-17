@@ -2,6 +2,7 @@ package de.aetherion.beta.npc;
 
 import de.aetherion.beta.AetherionBeta;
 import de.aetherion.beta.BetaLang;
+import de.aetherion.beta.Milestone;
 import de.aetherion.beta.Texts;
 import de.aetherion.beta.data.BetaPlayerData;
 import de.aetherion.beta.data.BetaStore;
@@ -10,21 +11,20 @@ import de.aetherion.beta.menu.ChecklistMenu;
 import de.aetherion.beta.menu.LanguageMenu;
 import de.aetherion.core.api.AetherServices;
 import de.aetherion.core.api.TalkAccess;
+import de.aetherion.core.npc.CastTroupe;
 
 import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
-import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 import java.util.Map;
@@ -32,19 +32,39 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * One shared anchor; each online player gets a personal villager only they can see.
+ * The Patch Courier waits at one shared anchor. He is a real person (a body on a Core {@link CastTroupe}), but a
+ * private one: only players who have not picked up their journal yet see him, so the square is not crowded by a
+ * courier nobody else needs. There is one body per language, so the name over his head reads right for whoever
+ * sees it.
  */
 public final class BetaNpcService {
+
+    private static final String SPEAKER_ID = "beta_courier";
+    private static final String SKIN = "beta_courier";
+    private static final Color COAT = Color.fromRGB(0x8a5fd0);
 
     private final AetherionBeta plugin;
     private final BetaStore store;
     private final BetaBook book;
-    private final Map<UUID, UUID> npcByPlayer = new ConcurrentHashMap<>();
+    private final CastTroupe troupe;
+    /** Who sees the courier right now, and which of the two bodies. */
+    private final Map<UUID, String> shown = new ConcurrentHashMap<>();
 
     public BetaNpcService(AetherionBeta plugin, BetaStore store, BetaBook book) {
         this.plugin = plugin;
         this.store = store;
         this.book = book;
+        this.troupe = openTroupe(plugin);
+    }
+
+    /** The journal and the checklist work without him: a courier that cannot stand must not stop the plugin. */
+    private CastTroupe openTroupe(AetherionBeta host) {
+        try {
+            return CastTroupe.open(host, "beta", (player, key) -> interact(player));
+        } catch (RuntimeException | LinkageError failure) {
+            host.getLogger().warning("Patch Courier is off: " + failure);
+            return null;
+        }
     }
 
     public boolean hasAnchor() {
@@ -61,7 +81,7 @@ public final class BetaNpcService {
         if (world == null) {
             return null;
         }
-        Location location = new Location(
+        return new Location(
                 world,
                 config.getDouble("npc.x"),
                 config.getDouble("npc.y"),
@@ -69,7 +89,6 @@ public final class BetaNpcService {
                 (float) config.getDouble("npc.yaw"),
                 (float) config.getDouble("npc.pitch")
         );
-        return location;
     }
 
     public void placeAnchor(Location location) {
@@ -77,8 +96,8 @@ public final class BetaNpcService {
     }
 
     /**
-     * Set the shared anchor. When {@code placer} is set, they always get a personal
-     * courier here (even if they already finished MEET_GUIDE) so admins can see it.
+     * Set the shared anchor. When {@code placer} is set, they always see the courier
+     * here (even if they already finished MEET_GUIDE) so admins can check the spot.
      */
     public void placeAnchor(Location location, Player placer) {
         FileConfiguration config = plugin.getConfig();
@@ -96,17 +115,12 @@ public final class BetaNpcService {
         }
     }
 
-    /** Spawn (or re-teleport) the personal courier ignoring book / milestone gates. */
+    /** Shows the courier to {@code player} ignoring the book / milestone gates. */
     public void forceEnsureFor(Player player) {
         if (player == null || !hasAnchor()) {
             return;
         }
-        Location anchor = anchor();
-        if (anchor == null) {
-            return;
-        }
-        despawnFor(player);
-        spawnPersonal(player, anchor);
+        reveal(player);
     }
 
     public void clearAnchor() {
@@ -120,40 +134,50 @@ public final class BetaNpcService {
             return;
         }
         BetaPlayerData data = store.get(player.getUniqueId());
-        if (data.bookGiven() || data.isDone(de.aetherion.beta.Milestone.MEET_GUIDE)) {
+        if (data.bookGiven() || data.isDone(Milestone.MEET_GUIDE)) {
             despawnFor(player);
             return;
         }
-        Location anchor = anchor();
-        if (anchor == null) {
-            return;
-        }
-        UUID existing = npcByPlayer.get(player.getUniqueId());
-        if (existing != null) {
-            Entity entity = Bukkit.getEntity(existing);
-            if (entity != null && !entity.isDead()) {
-                if (entity.getWorld().equals(anchor.getWorld())
-                        && entity.getLocation().distanceSquared(anchor) > 0.01) {
-                    entity.teleport(anchor);
-                }
-                return;
-            }
-            npcByPlayer.remove(player.getUniqueId());
-        }
-        spawnPersonal(player, anchor);
+        reveal(player);
     }
 
+    private void reveal(Player player) {
+        Location anchor = anchor();
+        if (troupe == null || anchor == null) {
+            return;
+        }
+        BetaLang lang = store.get(player.getUniqueId()).langOr(BetaLang.EN);
+        String key = lang == BetaLang.DE ? "de" : "en";
+        String before = shown.put(player.getUniqueId(), key);
+        if (before != null && !before.equals(key)) {
+            troupe.hide(before, player);
+        }
+        if (!troupe.keys().contains(key)) {
+            troupe.spawn(key, anchor, look(lang));
+            troupe.habit(key, CastTroupe.Habit.watch(9, 18));
+        }
+        troupe.show(key, player);
+    }
+
+    private CastTroupe.Look look(BetaLang lang) {
+        String plate = lang == BetaLang.DE
+                ? plugin.getConfig().getString("npc.name-de", "§d✦ Patch-Kurier")
+                : plugin.getConfig().getString("npc.name-en", "§d✦ Patch Courier");
+        return CastTroupe.Look
+                .of(lang == BetaLang.DE ? "Patch-Kurier" : "Patch Courier", SKIN, Material.WRITTEN_BOOK, COAT)
+                .stand(Villager.Profession.LIBRARIAN, Villager.Type.PLAINS)
+                .labelled(plate)
+                .hidden();
+    }
+
+    /** The courier walks out of {@code player}'s sight (he stays for everybody still waiting for a journal). */
     public void despawnFor(Player player) {
         if (player == null) {
             return;
         }
-        UUID entityId = npcByPlayer.remove(player.getUniqueId());
-        if (entityId == null) {
-            return;
-        }
-        Entity entity = Bukkit.getEntity(entityId);
-        if (entity != null) {
-            entity.remove();
+        String key = shown.remove(player.getUniqueId());
+        if (key != null && troupe != null) {
+            troupe.hide(key, player);
         }
     }
 
@@ -168,53 +192,35 @@ public final class BetaNpcService {
     }
 
     public void despawnAll() {
-        for (UUID playerId : npcByPlayer.keySet()) {
-            UUID entityId = npcByPlayer.remove(playerId);
-            if (entityId != null) {
-                Entity entity = Bukkit.getEntity(entityId);
-                if (entity != null) {
-                    entity.remove();
-                }
-            }
-        }
-        npcByPlayer.clear();
-        Location anchor = anchor();
-        if (anchor != null && anchor.getWorld() != null) {
-            for (Entity entity : anchor.getWorld().getEntities()) {
-                if (isBetaNpc(entity)) {
-                    entity.remove();
-                }
-            }
+        shown.clear();
+        if (troupe != null) {
+            troupe.clear();
         }
     }
 
-    public boolean isBetaNpc(Entity entity) {
-        if (entity == null || !entity.isValid()) {
-            return false;
-        }
-        return entity.getPersistentDataContainer().has(plugin.npcKey(), PersistentDataType.STRING);
-    }
-
-    public UUID ownerOf(Entity entity) {
-        if (!isBetaNpc(entity)) {
-            return null;
-        }
-        String raw = entity.getPersistentDataContainer().get(plugin.npcKey(), PersistentDataType.STRING);
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        try {
-            return UUID.fromString(raw);
-        } catch (IllegalArgumentException ignored) {
-            return null;
+    /** Plugin shutdown: the courier leaves and his troupe stops listening. */
+    public void shutdown() {
+        shown.clear();
+        if (troupe != null) {
+            troupe.close();
         }
     }
 
-    private static final String SPEAKER_ID = "beta_courier";
+    /** Where he stands (his feet), or null while he has no body. */
+    private Location spot() {
+        if (troupe == null) {
+            return null;
+        }
+        Location at = troupe.location("en");
+        return at != null ? at : troupe.location("de");
+    }
 
-    public void interact(Player player, Entity entity) {
-        UUID owner = ownerOf(entity);
-        if (owner == null || !owner.equals(player.getUniqueId())) {
+    private void interact(Player player) {
+        if (!shown.containsKey(player.getUniqueId())) {
+            return;
+        }
+        Location spot = spot();
+        if (spot == null) {
             return;
         }
         BetaPlayerData data = store.get(player.getUniqueId());
@@ -224,8 +230,7 @@ public final class BetaNpcService {
         TalkAccess talk = AetherServices.talk();
         if (talk != null && talk.bubbles(player)) {
             String display = lang == BetaLang.DE ? "Patch-Kurier" : "Patch Courier";
-            talk.registerSpeaker(new TalkAccess.Speaker(
-                    SPEAKER_ID, display, "§d", "isle_hand", entity::getLocation));
+            talk.registerSpeaker(new TalkAccess.Speaker(SPEAKER_ID, display, "§d", "isle_hand", this::spot));
             if (talk.recentlyPicked(player)) {
                 return;
             }
@@ -237,19 +242,19 @@ public final class BetaNpcService {
                 offerDoneChip(player, lang, data);
                 return;
             }
-            player.playSound(entity.getLocation(), Sound.ENTITY_VILLAGER_CELEBRATE, 0.55f, 1.2f);
+            player.playSound(spot, Sound.ITEM_BOOK_PAGE_TURN, 0.9f, 1.1f);
             if (!talk.say(player, SPEAKER_ID, Texts.bubbleThanks(lang, player.getName()))) {
-                chatFallback(player, entity, data, lang);
+                chatFallback(player, spot, data, lang);
                 return;
             }
             talk.say(player, SPEAKER_ID, Texts.bubbleBook(lang));
             giveBook(player, data, lang, false);
-            de.aetherion.beta.BetaJournal.progress(plugin, player, de.aetherion.beta.Milestone.MEET_GUIDE);
+            de.aetherion.beta.BetaJournal.progress(plugin, player, Milestone.MEET_GUIDE);
             offerDoneChip(player, lang, data);
             return;
         }
 
-        chatFallback(player, entity, data, lang);
+        chatFallback(player, spot, data, lang);
     }
 
     private void offerDoneChip(Player player, BetaLang lang, BetaPlayerData data) {
@@ -285,11 +290,11 @@ public final class BetaNpcService {
         }, 12L);
     }
 
-    private void chatFallback(Player player, Entity entity, BetaPlayerData data, BetaLang lang) {
+    private void chatFallback(Player player, Location spot, BetaPlayerData data, BetaLang lang) {
         player.sendMessage(Texts.npcGreeting(lang, player.getName()));
-        player.playSound(entity.getLocation(), Sound.ENTITY_VILLAGER_CELEBRATE, 0.7f, 1.2f);
+        player.playSound(spot, Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.1f);
         giveBook(player, data, lang, true);
-        de.aetherion.beta.BetaJournal.progress(plugin, player, de.aetherion.beta.Milestone.MEET_GUIDE);
+        de.aetherion.beta.BetaJournal.progress(plugin, player, Milestone.MEET_GUIDE);
         player.sendMessage(Texts.npcFarewell(lang));
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
@@ -340,65 +345,5 @@ public final class BetaNpcService {
             }
         }
         return book.isBook(player.getInventory().getItemInOffHand());
-    }
-
-    private void spawnPersonal(Player owner, Location anchor) {
-        BetaPlayerData data = store.get(owner.getUniqueId());
-        BetaLang lang = data.langOr(BetaLang.EN);
-        String display = lang == BetaLang.DE
-                ? plugin.getConfig().getString("npc.name-de", "§d✦ Patch-Kurier")
-                : plugin.getConfig().getString("npc.name-en", "§d✦ Patch Courier");
-
-        Villager villager = anchor.getWorld().spawn(anchor, Villager.class, spawned -> {
-            spawned.setCustomName(display + " §8· §f" + owner.getName());
-            spawned.setCustomNameVisible(true);
-            spawned.setAI(false);
-            spawned.setAware(false);
-            spawned.setGravity(true);
-            spawned.setInvulnerable(true);
-            spawned.setCollidable(false);
-            spawned.setSilent(true);
-            spawned.setPersistent(false);
-            spawned.setRemoveWhenFarAway(false);
-            spawned.setCanPickupItems(false);
-            spawned.setAdult();
-            spawned.setAgeLock(true);
-            spawned.setRecipes(java.util.List.of());
-            spawned.setProfession(Villager.Profession.LIBRARIAN);
-            spawned.setVillagerType(Villager.Type.PLAINS);
-            spawned.setVillagerLevel(5);
-            spawned.getPersistentDataContainer().set(
-                    plugin.npcKey(),
-                    PersistentDataType.STRING,
-                    owner.getUniqueId().toString()
-            );
-            EntityEquipment gear = spawned.getEquipment();
-            if (gear != null) {
-                gear.clear();
-                gear.setItemInMainHand(new ItemStack(Material.WRITTEN_BOOK));
-                gear.setItemInMainHandDropChance(0.0f);
-            }
-        });
-
-        npcByPlayer.put(owner.getUniqueId(), villager.getUniqueId());
-
-        for (Player other : Bukkit.getOnlinePlayers()) {
-            if (!other.getUniqueId().equals(owner.getUniqueId())) {
-                other.hideEntity(plugin, villager);
-            }
-        }
-        owner.showEntity(plugin, villager);
-    }
-
-    public void hideNewNpcFromOthers(Player joiner) {
-        for (Map.Entry<UUID, UUID> entry : npcByPlayer.entrySet()) {
-            if (entry.getKey().equals(joiner.getUniqueId())) {
-                continue;
-            }
-            Entity entity = Bukkit.getEntity(entry.getValue());
-            if (entity != null) {
-                joiner.hideEntity(plugin, entity);
-            }
-        }
     }
 }

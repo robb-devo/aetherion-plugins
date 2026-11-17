@@ -98,6 +98,7 @@ public class AetherionItems extends JavaPlugin {
     private de.aetherion.items.economy.FenceService fence;
     private de.aetherion.items.economy.LiquidatorService liquidator;
     private de.aetherion.items.economy.MarketService market;
+    private de.aetherion.items.economy.EconomyNpcs economyNpcs;
     private de.aetherion.items.casino.CasinoService casino;
     private de.aetherion.items.world.AreaService areas;
     private de.aetherion.items.world.MobZoneService mobZones;
@@ -382,6 +383,18 @@ public class AetherionItems extends JavaPlugin {
             }
         }, 120L);
         getServer().getPluginManager().registerEvents(market, this);
+        // The traders as people (Core cast bodies); villagers of older builds are moved over as they turn up.
+        startSafely("Trader NPCs", () -> {
+            de.aetherion.items.economy.EconomyNpcs npcs = new de.aetherion.items.economy.EconomyNpcs(this);
+            npcs.handler(de.aetherion.items.economy.EconomyNpcs.Kind.TRADER, trader::open);
+            npcs.handler(de.aetherion.items.economy.EconomyNpcs.Kind.GEAR, gearTrader::open);
+            npcs.handler(de.aetherion.items.economy.EconomyNpcs.Kind.FENCE, fence::open);
+            npcs.handler(de.aetherion.items.economy.EconomyNpcs.Kind.BAZAAR, market::openBazaar);
+            npcs.handler(de.aetherion.items.economy.EconomyNpcs.Kind.AUCTION, market::openAuction);
+            getServer().getPluginManager().registerEvents(npcs, this);
+            npcs.start();
+            economyNpcs = npcs;
+        });
         getServer().getPluginManager().registerEvents(casino, this);
         startSafely("Casino slot cabinets", () ->
                 getServer().getPluginManager().registerEvents(new de.aetherion.items.casino.CasinoCabinet(), this));
@@ -602,6 +615,10 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (economyNpcs != null) {
+            try { economyNpcs.shutdown(); } catch (Throwable ignored) { }
+            economyNpcs = null;
+        }
         if (hudCarrier != null) {
             try { hudCarrier.shutdown(); } catch (Throwable ignored) { }
             hudCarrier = null;
@@ -912,6 +929,11 @@ public class AetherionItems extends JavaPlugin {
 
     public de.aetherion.items.economy.TraderService getTrader() {
         return trader;
+    }
+
+    /** The traders' bodies, or null where they could not start (the services then keep their villagers). */
+    public de.aetherion.items.economy.EconomyNpcs economyNpcs() {
+        return economyNpcs;
     }
 
     public de.aetherion.items.economy.LiquidatorService getLiquidator() {

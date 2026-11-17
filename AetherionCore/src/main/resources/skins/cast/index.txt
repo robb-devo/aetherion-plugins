@@ -1,0 +1,46 @@
+# Cast skins, painted by docs/npc/skins/paint_skins.py --group world. Do not edit by hand.
+mine_wick
+mine_otto
+mine_nan slim
+mine_ilse slim
+mine_brann
+mine_hollis
+jaw_foreman
+jaw_keeper slim
+jaw_grafter
+veins_foreman
+farm_elsie slim
+farm_hattie slim
+farm_bram
+farm_gus
+farm_wren
+farm_pip
+farm_marta slim
+farm_tobias
+lake_maren slim
+lake_tilly slim
+lake_odile slim
+lake_finn
+shop_trader
+shop_fence
+shop_gear
+shop_bazaar slim
+shop_auction
+gate_warden
+beta_courier slim
+lobby_modpack
+lobby_shop
+origin_orla slim
+origin_cobb
+origin_aurel slim
+origin_fen
+origin_stellan
+town_joss
+town_bette slim
+town_harl
+town_odo
+town_wynn slim
+town_marn
+town_dilly slim
+town_hob
+town_corin

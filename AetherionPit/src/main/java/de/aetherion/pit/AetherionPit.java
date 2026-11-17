@@ -216,6 +216,9 @@ public final class AetherionPit extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (hubNpcs != null) {
+            hubNpcs.shutdown();
+        }
         if (guide != null) {
             guide.stop();
         }

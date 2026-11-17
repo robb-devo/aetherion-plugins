@@ -861,6 +861,11 @@ public final class MarketService implements Listener {
     }
 
     private void spawn(Location location, MarketChannel channel) {
+        EconomyNpcs npcs = plugin.economyNpcs();
+        if (npcs != null && npcs.playerModels()) {
+            npcs.place(channel == MarketChannel.BAZAAR ? EconomyNpcs.Kind.BAZAAR : EconomyNpcs.Kind.AUCTION, location);
+            return;
+        }
         String title = channel == MarketChannel.BAZAAR ? "§6Bazaar" : "§eAuction House";
         Villager villager = location.getWorld().spawn(location, Villager.class, spawned -> {
             spawned.setCustomName(title);
@@ -886,6 +891,12 @@ public final class MarketService implements Listener {
     }
 
     private void despawnNearest(Player player, MarketChannel channel) {
+        EconomyNpcs npcs = plugin.economyNpcs();
+        if (npcs != null && npcs.removeNearest(channel == MarketChannel.BAZAAR ? EconomyNpcs.Kind.BAZAAR
+                : EconomyNpcs.Kind.AUCTION, player.getLocation(), 8.0d)) {
+            player.sendMessage("§eDespawned the " + label(channel) + ".");
+            return;
+        }
         Entity closest = null;
         double best = 8.0;
         for (Entity entity : player.getNearbyEntities(8, 8, 8)) {

@@ -1,11 +1,13 @@
 package de.aetherion.mining.titan;
 
+import de.aetherion.core.npc.CastTroupe;
 import de.aetherion.mining.AetherionMining;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -23,10 +25,7 @@ import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
@@ -57,6 +56,7 @@ public final class Jawcamp implements Listener {
     private final Map<UUID, Long> cooldown = new ConcurrentHashMap<>();
     private final List<Entity> placed = new ArrayList<>();
     private World world;
+    private CastTroupe troupe;
     private TextDisplay board;
     private boolean built;
 
@@ -136,6 +136,10 @@ public final class Jawcamp implements Listener {
             }
         }
         placed.clear();
+        if (troupe != null) {
+            troupe.close();
+            troupe = null;
+        }
     }
 
     // ------------------------------------------------------------------ the skull
@@ -371,37 +375,28 @@ public final class Jawcamp implements Listener {
                 entity.remove();
             }
         }
-        placed.add(npc(new Location(world, 34.5, OY, 7.5, 90f, 0f), "brann", "§6Foreman Brann",
-                Villager.Profession.TOOLSMITH));
-        placed.add(npc(new Location(world, -23.5, OY, 8.5, -90f, 0f), "keeper", "§cGullet Keeper",
-                Villager.Profession.CLERIC));
-        placed.add(npc(new Location(world, -12.5, OY, -9.5, 180f, 0f), "grafter", "§6The Grafter",
-                Villager.Profession.WEAPONSMITH));
+        // The camp crew: real people on a Core troupe (a villager only stands in where FancyNpcs is missing).
+        if (troupe == null) {
+            troupe = CastTroupe.open(plugin, "jawcamp", this::clicked);
+        }
+        troupe.spawn("brann", new Location(world, 34.5, OY, 7.5, 90f, 0f),
+                CastTroupe.Look.of("Foreman Brann", "jaw_foreman", Material.IRON_PICKAXE, Color.fromRGB(0x6a5a4a))
+                        .stand(Villager.Profession.TOOLSMITH, Villager.Type.TAIGA).labelled("§6Foreman Brann"));
+        troupe.habit("brann", CastTroupe.Habit.work(7, 15));
+        troupe.spawn("keeper", new Location(world, -23.5, OY, 8.5, -90f, 0f),
+                CastTroupe.Look.of("Gullet Keeper", "jaw_keeper", Material.SOUL_LANTERN, Color.fromRGB(0x6a1a26))
+                        .stand(Villager.Profession.CLERIC, Villager.Type.TAIGA).labelled("§cGullet Keeper"));
+        troupe.habit("keeper", CastTroupe.Habit.watch(10, 20));
+        troupe.spawn("grafter", new Location(world, -12.5, OY, -9.5, 180f, 0f),
+                CastTroupe.Look.of("The Grafter", "jaw_grafter", Material.BONE, Color.fromRGB(0xd8cfb8))
+                        .stand(Villager.Profession.WEAPONSMITH, Villager.Type.TAIGA).labelled("§6The Grafter"));
+        troupe.habit("grafter", CastTroupe.Habit.work(5, 11, Material.BONE, Material.BLAZE_POWDER));
         placed.add(label(new Location(world, -13.0, OY + 3.4, -10.0), "§6§lThe Heartforge\n§7Bonegrafts · Titan Runes"));
         placed.add(label(new Location(world, GX + 0.5, OY + 4.5, 0.5), "§4§lThe Gullet\n§7Mining 40 · step onto the throat"));
         placed.add(label(new Location(world, 8.5, OY + 6.6, -11.5), "§d§lThe Veins\n§7Amethyst Mine · Mining 30"));
         board = label(new Location(world, 34.5, OY + 3.4, 10.0), boardText());
         placed.add(board);
         Bukkit.getScheduler().runTaskTimer(plugin, this::ambience, 40L, 10L);
-    }
-
-    private Villager npc(Location at, String id, String name, Villager.Profession profession) {
-        Villager villager = world.spawn(at, Villager.class, v -> {
-            v.setAI(false);
-            v.setInvulnerable(true);
-            v.setSilent(true);
-            v.setCollidable(false);
-            v.setPersistent(false);
-            v.setRemoveWhenFarAway(false);
-            v.setProfession(profession);
-            v.setVillagerType(Villager.Type.TAIGA);
-            v.setVillagerLevel(5);
-            v.customName(LegacyComponentSerializer.legacySection().deserialize(name));
-            v.setCustomNameVisible(true);
-            v.getPersistentDataContainer().set(npcKey, PersistentDataType.STRING, id);
-        });
-        villager.setRotation(at.getYaw(), 0f);
-        return villager;
     }
 
     private TextDisplay label(Location at, String text) {
@@ -501,23 +496,9 @@ public final class Jawcamp implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
-    public void onNpc(PlayerInteractEntityEvent event) {
-        handle(event.getPlayer(), event.getRightClicked(), event.getHand(), event);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
-    public void onNpcAt(PlayerInteractAtEntityEvent event) {
-        handle(event.getPlayer(), event.getRightClicked(), event.getHand(), event);
-    }
-
-    private void handle(Player player, Entity entity, EquipmentSlot hand, org.bukkit.event.Cancellable event) {
-        String id = entity.getPersistentDataContainer().get(npcKey, PersistentDataType.STRING);
-        if (id == null) {
-            return;
-        }
-        event.setCancelled(true);
-        if (hand != EquipmentSlot.HAND || !cooled(player)) {
+    /** A click on one of the camp crew (from the troupe: player model or stand-in alike). */
+    private void clicked(Player player, String id) {
+        if (!cooled(player)) {
             return;
         }
         switch (id) {

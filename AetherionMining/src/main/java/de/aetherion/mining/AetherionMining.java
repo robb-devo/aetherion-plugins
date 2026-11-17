@@ -18,6 +18,7 @@ public class AetherionMining extends JavaPlugin {
     private de.aetherion.mining.isle.MineIsle isle;
     private de.aetherion.mining.titan.TitanWorld titan;
     private de.aetherion.mining.titan.Jawcamp camp;
+    private VeinsNpcs veinsNpcs;
 
     @Override
     public void onEnable() {
@@ -33,6 +34,7 @@ public class AetherionMining extends JavaPlugin {
         de.aetherion.mining.titan.TitanItems.init(this);
         getServer().getPluginManager().registerEvents(new de.aetherion.mining.titan.TitanRunes(this), this);
         VeinsNpcs npcs = new VeinsNpcs(this);
+        veinsNpcs = npcs;
         veins.bind(npcs);
         // The mine server (mmo-m) runs the Amethyst Mine with mmo-r's config copy; the Eldervale isle stays on mmo-r.
         if (veins.mineServer()) {
@@ -144,6 +146,10 @@ public class AetherionMining extends JavaPlugin {
         }
         if (veins != null) {
             veins.saveData();
+        }
+        if (veinsNpcs != null) {
+            veinsNpcs.shutdown();
+            veinsNpcs = null;
         }
         if (miningAccess != null) {
             de.aetherion.core.api.AetherServices.clearMining(miningAccess);

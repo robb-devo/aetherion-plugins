@@ -1,7 +1,9 @@
 package de.aetherion.mining.veins;
 
+import de.aetherion.core.npc.CastTroupe;
 import de.aetherion.mining.AetherionMining;
 
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -10,6 +12,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -19,7 +22,13 @@ import org.bukkit.persistence.PersistentDataType;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Consumer;
 
+/**
+ * The Foreman at the way down to the mines (and at the way back up). His body is a real person on a Core
+ * {@link CastTroupe}; the saved, tagged {@link Interaction} box around him is what players click, as before.
+ * Foremen of older builds were persistent villagers: those are swept away wherever they turn up.
+ */
 public final class VeinsNpcs {
 
     public static final String ID = "veins_foreman";
@@ -28,10 +37,44 @@ public final class VeinsNpcs {
     private final AetherionMining plugin;
     private final File file;
     private Location entrance;
+    private CastTroupe troupe;
+    private Consumer<Player> clicks;
 
     public VeinsNpcs(AetherionMining plugin) {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "npcs.yml");
+    }
+
+    /** Who to tell when somebody clicks the Foreman himself instead of the box around him. */
+    public void clicks(Consumer<Player> handler) {
+        this.clicks = handler;
+    }
+
+    public void shutdown() {
+        if (troupe != null) {
+            troupe.close();
+            troupe = null;
+        }
+    }
+
+    private CastTroupe troupe() {
+        if (troupe == null) {
+            troupe = CastTroupe.open(plugin, "veins", (player, key) -> {
+                if (clicks != null) {
+                    clicks.accept(player);
+                }
+            });
+        }
+        return troupe;
+    }
+
+    /** Foreman villagers saved by older builds: gone as soon as their chunk hands them over. */
+    public void sweep(List<Entity> loaded) {
+        for (Entity entity : loaded) {
+            if (entity instanceof Villager && isNpc(entity)) {
+                entity.remove();
+            }
+        }
     }
 
     public static NamespacedKey key(AetherionMining plugin) {
@@ -112,6 +155,7 @@ public final class VeinsNpcs {
 
     public void spawnEntrance(Location location) {
         removeAround(entrance);
+        troupe().remove("entrance");
         entrance = location.clone();
         spawnAt(entrance, false);
         save();
@@ -122,12 +166,14 @@ public final class VeinsNpcs {
             return;
         }
         removeHub(world);
+        troupe().remove("exit");
         Location location = new Location(world, 3.5, hubY + 1, -7.5, 180f, 0f);
         spawnAt(location, true);
     }
 
     public void removeEntrance() {
         removeAround(entrance);
+        troupe().remove("entrance");
         entrance = null;
         if (file.exists() && !file.delete()) {
             plugin.getLogger().warning("Could not delete veins NPC save.");
@@ -144,6 +190,9 @@ public final class VeinsNpcs {
             removeEntrance();
             return true;
         }
+        if ("exit".equals(entity.getPersistentDataContainer().get(key(plugin), PersistentDataType.STRING))) {
+            troupe().remove("exit");
+        }
         entity.remove();
         return true;
     }
@@ -156,26 +205,13 @@ public final class VeinsNpcs {
             removeAround(location);
         }
         location.getWorld().getChunkAt(location).load();
-        Villager villager = location.getWorld().spawn(location, Villager.class);
-        villager.setCustomName("§6" + DISPLAY);
-        // false = name only when looking at him, not through walls
-        villager.setCustomNameVisible(false);
-        villager.setAI(false);
-        villager.setInvulnerable(true);
-        villager.setCollidable(true);
-        villager.setSilent(true);
-        villager.setGravity(false);
-        villager.setRemoveWhenFarAway(false);
-        villager.setPersistent(true);
-        villager.setAdult();
-        villager.setAgeLock(true);
-        villager.setProfession(Villager.Profession.NITWIT);
-        villager.setVillagerLevel(1);
-        villager.setVillagerExperience(0);
-        villager.setRecipes(List.of());
-        villager.addScoreboardTag(ID);
-        villager.getEquipment().setItemInMainHand(new ItemStack(Material.IRON_PICKAXE));
-        tag(villager, exit ? "exit" : "entrance");
+        String key = exit ? "exit" : "entrance";
+        troupe().remove(key);
+        troupe().spawn(key, location, CastTroupe.Look
+                .of(DISPLAY, "veins_foreman", Material.IRON_PICKAXE, Color.fromRGB(0xb86a1e))
+                .stand(Villager.Profession.NITWIT, Villager.Type.PLAINS)
+                .labelled("§6" + DISPLAY));
+        troupe().habit(key, CastTroupe.Habit.work(8, 16));
 
         Interaction hitbox = location.getWorld().spawn(location, Interaction.class);
         hitbox.setInteractionWidth(1.2f);

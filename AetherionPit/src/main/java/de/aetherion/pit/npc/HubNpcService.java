@@ -1,5 +1,6 @@
 package de.aetherion.pit.npc;
 
+import de.aetherion.core.npc.CastTroupe;
 import de.aetherion.core.npc.FancyNpcFacade;
 import de.aetherion.pit.AetherionPit;
 import de.aetherion.pit.hub.HubHolograms;
@@ -11,13 +12,16 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
@@ -25,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +40,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * The five lobby stations on the pedestals west of spawn: Aetherion (travel to the MMO), Modpack &amp; Shader,
  * The Pit, Discord and the Pit Shop. FancyNpcs draws the bodies with no name tag; the plates above them are
  * {@link de.aetherion.pit.hub.HubGuide} signs.
+ *
+ * <p>The clerk at Modpack &amp; Shader and the Pit Shop keeper are people of the cast: painted player models on
+ * a Core {@link CastTroupe} (they used to be villagers). The other three keep their saved FancyNpcs bodies.
  */
 public final class HubNpcService implements PluginMessageListener {
 
@@ -44,16 +52,20 @@ public final class HubNpcService implements PluginMessageListener {
     public static final String FANCY_MODPACK = "ae_hub_modpack";
     public static final String FANCY_PIT = "ae_hub_pit";
 
-    /** {@code profession} is a FancyNpcs villager attribute; {@code glow} a NamedTextColor name or null. */
-    public record Station(String key, String fancyName, EntityType type, String profession, String glow) {
+    /**
+     * {@code profession} is a FancyNpcs villager attribute; {@code glow} a NamedTextColor name or null.
+     * {@code castSkin} names a painted cast skin: such a station stands on the troupe instead of a saved body.
+     */
+    public record Station(String key, String fancyName, EntityType type, String profession, String glow,
+                          String castSkin) {
     }
 
     public static final List<Station> STATIONS = List.of(
-            new Station("aetherion", FANCY_AETHERION, EntityType.PLAYER, null, "light_purple"),
-            new Station("modpack", FANCY_MODPACK, EntityType.VILLAGER, "librarian", null),
-            new Station("pit", FANCY_PIT, EntityType.VINDICATOR, null, "red"),
-            new Station("discord", FANCY_DISCORD, EntityType.PLAYER, null, null),
-            new Station("shop", FANCY_SHOP, EntityType.VILLAGER, "weaponsmith", null)
+            new Station("aetherion", FANCY_AETHERION, EntityType.PLAYER, null, "light_purple", null),
+            new Station("modpack", FANCY_MODPACK, EntityType.PLAYER, null, null, "lobby_modpack"),
+            new Station("pit", FANCY_PIT, EntityType.VINDICATOR, null, "red", null),
+            new Station("discord", FANCY_DISCORD, EntityType.PLAYER, null, null, null),
+            new Station("shop", FANCY_SHOP, EntityType.PLAYER, null, null, "lobby_shop")
     );
 
     private static final String DEFAULT_AETHERION_SKIN =
@@ -63,6 +75,9 @@ public final class HubNpcService implements PluginMessageListener {
 
     private final AetherionPit plugin;
     private final Map<String, Integer> proxyCounts = new ConcurrentHashMap<>();
+    /** Where each cast station was last seated, so a reload does not blink a body that did not move. */
+    private final Map<String, Location> seated = new HashMap<>();
+    private CastTroupe troupe;
 
     public HubNpcService(AetherionPit plugin) {
         this.plugin = plugin;
@@ -82,11 +97,80 @@ public final class HubNpcService implements PluginMessageListener {
             if (loc == null) {
                 continue;
             }
+            if (station.castSkin() != null) {
+                seat(station, loc, vis);
+                continue;
+            }
             if (!spawnFancy(station, skinOf(station), loc, vis)) {
                 plugin.getLogger().warning("Hub NPC " + station.fancyName() + " could not spawn (FancyNpcs?).");
             }
         }
         plugin.guide().placePlates();
+    }
+
+    /** A cast station: its painted person on the troupe, and the villager body it used to have retired. */
+    private void seat(Station station, Location at, int visibility) {
+        retireSavedBody(station.fancyName(), 0);
+        try {
+            if (troupe == null) {
+                troupe = CastTroupe.open(plugin, "lobby", (player, key) -> {
+                    Station clicked = station(key);
+                    if (clicked != null) {
+                        handleClick(player, clicked.fancyName());
+                    }
+                });
+            }
+            troupe.visibility(visibility);
+            Location before = seated.get(station.key());
+            if (before != null && !before.equals(at)) {
+                troupe.remove(station.key());
+            }
+            seated.put(station.key(), at.clone());
+            boolean shop = "shop".equals(station.key());
+            troupe.spawn(station.key(), at, shop
+                    ? CastTroupe.Look.of("Pit Shop", station.castSkin(), Material.IRON_SWORD, Color.fromRGB(0x4a3020))
+                            .stand(Villager.Profession.WEAPONSMITH, Villager.Type.PLAINS)
+                    : CastTroupe.Look.of("Modpack & Shader", station.castSkin(), Material.WRITABLE_BOOK,
+                            Color.fromRGB(0x2a4a6a)).stand(Villager.Profession.LIBRARIAN, Villager.Type.PLAINS));
+            troupe.habit(station.key(), shop
+                    ? CastTroupe.Habit.work(7, 15, Material.IRON_SWORD, Material.IRON_AXE)
+                    : CastTroupe.Habit.watch(8, 16));
+        } catch (RuntimeException | LinkageError failure) {
+            plugin.getLogger().warning("Hub NPC " + station.key() + " could not take its place: " + failure);
+        }
+    }
+
+    /** The saved FancyNpcs body a cast station had before (a villager): gone from the world and from the file. */
+    private void retireSavedBody(String fancyName, int attempt) {
+        if (!FancyNpcFacade.isAvailable()) {
+            return;
+        }
+        try {
+            Object manager = FancyNpcFacade.manager();
+            if (manager == null || !FancyNpcFacade.isManagerLoaded(manager)) {
+                if (attempt < 15) {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> retireSavedBody(fancyName, attempt + 1), 40L);
+                }
+                return;
+            }
+            Object existing = FancyNpcFacade.getNpc(manager, fancyName);
+            if (existing != null) {
+                FancyNpcFacade.removeForAll(existing);
+                FancyNpcFacade.unregister(manager, existing);
+                FancyNpcFacade.saveNpcs(manager, true);
+            }
+        } catch (Throwable ex) {
+            plugin.getLogger().warning("Hub FancyNPC " + fancyName + " not retired: " + ex.getMessage());
+        }
+    }
+
+    /** Plugin shutdown: the cast stations leave (they are not saved; the next start seats them again). */
+    public void shutdown() {
+        if (troupe != null) {
+            troupe.close();
+            troupe = null;
+        }
+        seated.clear();
     }
 
     private String skinOf(Station station) {
@@ -132,7 +216,7 @@ public final class HubNpcService implements PluginMessageListener {
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.2f);
             openDiscord(player);
         } else if (FANCY_SHOP.equalsIgnoreCase(fancyName)) {
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 0.7f, 1.0f);
+            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.6f, 1.25f);
             PitShopGUI.open(player);
         } else if (FANCY_MODPACK.equalsIgnoreCase(fancyName)) {
             player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.9f, 1.0f);

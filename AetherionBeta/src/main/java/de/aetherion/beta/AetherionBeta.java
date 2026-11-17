@@ -8,7 +8,6 @@ import de.aetherion.beta.listener.MenuListener;
 import de.aetherion.beta.listener.SessionListener;
 import de.aetherion.beta.npc.BetaNpcService;
 
-import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class AetherionBeta extends JavaPlugin {
@@ -16,12 +15,10 @@ public final class AetherionBeta extends JavaPlugin {
     private BetaStore store;
     private BetaBook book;
     private BetaNpcService npcs;
-    private NamespacedKey npcKey;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        npcKey = new NamespacedKey(this, "beta_guide");
         store = new BetaStore(this);
         book = new BetaBook(this);
         npcs = new BetaNpcService(this, store, book);
@@ -47,7 +44,7 @@ public final class AetherionBeta extends JavaPlugin {
     @Override
     public void onDisable() {
         if (npcs != null) {
-            npcs.despawnAll();
+            npcs.shutdown();
         }
         if (store != null) {
             store.saveAll();
@@ -64,9 +61,5 @@ public final class AetherionBeta extends JavaPlugin {
 
     public BetaNpcService npcs() {
         return npcs;
-    }
-
-    public NamespacedKey npcKey() {
-        return npcKey;
     }
 }

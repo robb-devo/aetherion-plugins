@@ -5,6 +5,7 @@ import com.destroystokyo.paper.event.entity.EntityZapEvent;
 import de.aetherion.core.AetherionCore;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import org.bukkit.Bukkit;
@@ -29,7 +30,10 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -42,6 +46,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -71,39 +76,54 @@ public final class CastTroupe implements Listener {
     /**
      * How a member looks. {@code skin} names a {@link CastSkins} PNG (null = default body); {@code outfit} is
      * the dyed leather worn until that skin is signed, and for good when there is none. {@code profession} and
-     * {@code villagerType} dress the villager stand-in; {@code label} is an optional name plate.
+     * {@code villagerType} dress the villager stand-in; {@code label} is an optional name plate. A
+     * {@code personal} member is there only for the players the cast shows it to.
      */
     public record Look(String name, String skin, ItemStack hand, Color outfit,
-                       Villager.Profession profession, Villager.Type villagerType, String label) {
+                       Villager.Profession profession, Villager.Type villagerType, String label, boolean personal) {
 
         public static Look of(String name, String skin, Material hand, Color outfit) {
-            return new Look(name, skin, hand == null ? null : new ItemStack(hand), outfit, null, null, null);
+            return new Look(name, skin, hand == null ? null : new ItemStack(hand), outfit, null, null, null, false);
         }
 
         /** How the villager stand-in is dressed where FancyNpcs is missing. */
         public Look stand(Villager.Profession fallbackProfession, Villager.Type fallbackType) {
-            return new Look(name, skin, hand, outfit, fallbackProfession, fallbackType, label);
+            return new Look(name, skin, hand, outfit, fallbackProfession, fallbackType, label, personal);
         }
 
         /** A name label above the head ({@code §} colours, lines split by {@code \n}); it follows the body. */
         public Look labelled(String text) {
-            return new Look(name, skin, hand, outfit, profession, villagerType, text);
+            return new Look(name, skin, hand, outfit, profession, villagerType, text, personal);
+        }
+
+        /**
+         * Seen only by the players the cast names ({@link CastTroupe#show}, {@link CastTroupe#hide}): a courier
+         * waiting for one newcomer, not for the whole square. Its label is worn as a plain name tag.
+         */
+        public Look hidden() {
+            return new Look(name, skin, hand, outfit, profession, villagerType, label, true);
         }
     }
 
     /**
      * What a member does by itself. {@code tools} are held in turn for a working beat (empty = the usual hand
      * item), {@code gapMin}/{@code gapMax} the seconds between two beats, {@code stroll} how far (blocks) it may
-     * wander from its spot on flat ground, 0 = stays put.
+     * wander from its spot on flat ground (0 = stays put), {@code swings} whether a beat moves the arm at all.
      */
-    public record Habit(List<Material> tools, int gapMin, int gapMax, double stroll) {
+    public record Habit(List<Material> tools, int gapMin, int gapMax, double stroll, boolean swings) {
 
+        /** Somebody at work: swings the hand, holding the tools in turn. */
         public static Habit work(int gapMin, int gapMax, Material... tools) {
-            return new Habit(List.of(tools), gapMin, gapMax, 0.0d);
+            return new Habit(List.of(tools), gapMin, gapMax, 0.0d, true);
+        }
+
+        /** Somebody who only watches: a glance to the side now and then, no arm. */
+        public static Habit watch(int gapMin, int gapMax) {
+            return new Habit(List.of(), gapMin, gapMax, 0.0d, false);
         }
 
         public Habit strolling(double blocks) {
-            return new Habit(tools, gapMin, gapMax, blocks);
+            return new Habit(tools, gapMin, gapMax, blocks, swings);
         }
     }
 
@@ -112,6 +132,7 @@ public final class CastTroupe implements Listener {
         void click(Player player, String key);
     }
 
+    private static final String MANUAL_VISIBILITY = "de.oliver.fancynpcs.api.data.property.NpcVisibility$ManualNpcVisibility";
     private static final double WATCHED = 26.0d;
     private static final double CLOSE = 3.6d;
     private static final double STEP = 0.17d;
@@ -122,6 +143,8 @@ public final class CastTroupe implements Listener {
         final String key;
         final Look look;
         Location home;
+        /** Where the body is right now (differs from home mid-stroll). */
+        Location at;
         UUID villager;
         UUID label;
         String fancyName;
@@ -136,11 +159,14 @@ public final class CastTroupe implements Listener {
         boolean returning;
         long restoreHandAt;
         long lookBackAt;
+        /** Personal members only: who may see it. */
+        final Set<UUID> viewers = new HashSet<>();
 
         Body(String key, Look look, Location home) {
             this.key = key;
             this.look = look;
             this.home = home;
+            this.at = home;
         }
     }
 
@@ -156,6 +182,7 @@ public final class CastTroupe implements Listener {
     private int turnDistance = 7;
     private boolean bridged;
     private boolean closed;
+    private boolean waiting;
     private long now;
     private org.bukkit.scheduler.BukkitTask task;
 
@@ -207,7 +234,18 @@ public final class CastTroupe implements Listener {
 
     /** True when members are player models (FancyNpcs is installed), false for the villager stand-ins. */
     public boolean playerModels() {
-        return FancyNpcFacade.isAvailable();
+        return installed();
+    }
+
+    /**
+     * Installed is enough to rule the stand-in out: a FancyNpcs that enables after us is waited for. Only one
+     * that is still down half a minute in (it failed to start) is given up on, so the cast stays clickable.
+     */
+    private boolean installed() {
+        if (Bukkit.getPluginManager().getPlugin(FancyNpcFacade.PLUGIN_NAME) == null) {
+            return false;
+        }
+        return now < 600L || FancyNpcFacade.isAvailable();
     }
 
     // ------------------------------------------------------------------ bodies
@@ -231,16 +269,20 @@ public final class CastTroupe implements Listener {
         if (old != null) {
             despawn(old);
             body.habit = old.habit;
+            body.viewers.addAll(old.viewers);
         }
         bodies.put(key, body);
         return materialize(body);
     }
 
     private boolean materialize(Body body) {
+        if (!body.home.isWorldLoaded()) {
+            return false; // its world went away (an instance closed): nothing to stand in until the cast re-seats it
+        }
         boolean there;
-        if (FancyNpcFacade.isAvailable()) {
+        if (installed()) {
             bridge();
-            there = spawnFancy(body);
+            there = FancyNpcFacade.isAvailable() && spawnFancy(body);
         } else {
             Location at = body.home;
             there = at.getWorld().isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4);
@@ -255,6 +297,9 @@ public final class CastTroupe implements Listener {
     }
 
     private boolean alive(Body body) {
+        if (!body.home.isWorldLoaded()) {
+            return false;
+        }
         if (body.fancyName != null) {
             return fancy(body) != null;
         }
@@ -264,28 +309,33 @@ public final class CastTroupe implements Listener {
 
     /** Every few seconds: bring back what a FancyNpcs reload or a chunk unload took away. */
     private void upkeep() {
+        boolean missing = false;
         for (Body body : List.copyOf(bodies.values())) {
             if (!alive(body)) {
                 body.fancyName = null;
                 body.villager = null;
                 body.walkTo = null;
-                materialize(body);
+                body.at = body.home;
+                missing |= !materialize(body) && installed();
             } else {
                 label(body);
             }
         }
+        // A player model that could not appear yet (FancyNpcs still starting) is tried again every second.
+        waiting = missing;
     }
 
     /** The name label: a text display over the head, there while its chunk is loaded. */
     private void label(Body body) {
-        if (body.look.label() == null || body.look.label().isBlank()) {
-            return;
+        if (body.look.label() == null || body.look.label().isBlank() || body.look.personal()
+                || !body.at.isWorldLoaded()) {
+            return; // a personal member wears its name as a tag only its viewers get
         }
         Entity existing = body.label == null ? null : Bukkit.getEntity(body.label);
         if (existing != null && existing.isValid()) {
             return;
         }
-        Location at = labelSpot(body, body.home);
+        Location at = labelSpot(body, body.at);
         if (!at.getWorld().isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
             return;
         }
@@ -306,9 +356,9 @@ public final class CastTroupe implements Listener {
         body.label = display.getUniqueId();
     }
 
+    /** A text display grows upwards from where it stands: a hand above a player model's head, any line count. */
     private static Location labelSpot(Body body, Location feet) {
-        int lines = 1 + (int) body.look.label().chars().filter(c -> c == '\n').count();
-        Location at = feet.clone().add(0.0d, 2.1d + 0.125d * lines, 0.0d);
+        Location at = feet.clone().add(0.0d, 2.2d, 0.0d);
         at.setYaw(0.0f);
         at.setPitch(0.0f);
         return at;
@@ -340,22 +390,17 @@ public final class CastTroupe implements Listener {
     /** Where the member is right now (it may be mid-stroll), or null when it has no body. */
     public Location location(String key) {
         Body body = bodies.get(key);
-        if (body == null) {
+        if (body == null || (body.fancyName == null && body.villager == null)) {
             return null;
         }
-        if (body.fancyName != null) {
-            Object npc = fancy(body);
-            if (npc == null) {
-                return null;
-            }
-            try {
-                return FancyNpcFacade.locationOf(npc);
-            } catch (ReflectiveOperationException exception) {
-                return body.home.clone();
-            }
-        }
-        Entity villager = body.villager == null ? null : Bukkit.getEntity(body.villager);
-        return villager != null && villager.isValid() ? villager.getLocation() : null;
+        return body.at.clone();
+    }
+
+    /** The member's name label (so a cast can hide it from one player while a talk bubble is up), or null. */
+    public Entity label(String key) {
+        Body body = bodies.get(key);
+        Entity label = body == null || body.label == null ? null : Bukkit.getEntity(body.label);
+        return label != null && label.isValid() ? label : null;
     }
 
     /** Puts the member somewhere else at once and makes that its spot (walks are a row of small moves). */
@@ -366,7 +411,7 @@ public final class CastTroupe implements Listener {
         }
         body.home = to.clone();
         body.walkTo = null;
-        return place(body, to);
+        return place(body, body.home);
     }
 
     /** One swing of the main hand. */
@@ -388,15 +433,8 @@ public final class CastTroupe implements Listener {
     /** Player models turn their head to a player nearby by themselves; switch it off for scripted moves. */
     public void turnToPlayers(String key, boolean on) {
         Body body = bodies.get(key);
-        Object npc = body == null || body.fancyName == null ? null : fancy(body);
-        if (npc == null) {
-            return;
-        }
-        try {
-            FancyNpcFacade.invoke(FancyNpcFacade.data(npc), "setTurnToPlayer", boolean.class, on);
-            FancyNpcFacade.updateForAll(npc, false);
-        } catch (ReflectiveOperationException exception) {
-            complain(key, "turn", exception);
+        if (body != null && body.fancyName != null) {
+            setTurn(body, on);
         }
     }
 
@@ -422,6 +460,109 @@ public final class CastTroupe implements Listener {
         return entity.getPersistentDataContainer().get(tag, PersistentDataType.STRING);
     }
 
+    // ------------------------------------------------------------------ personal members
+
+    /** Lets {@code player} see a {@link Look#hidden() personal} member. */
+    public void show(String key, Player player) {
+        Body body = bodies.get(key);
+        if (body != null && player != null && body.look.personal() && body.viewers.add(player.getUniqueId())) {
+            reveal(body, player, true);
+        }
+    }
+
+    /** Takes a personal member out of {@code player}'s world again. */
+    public void hide(String key, Player player) {
+        Body body = bodies.get(key);
+        if (body != null && player != null && body.look.personal() && body.viewers.remove(player.getUniqueId())) {
+            reveal(body, player, false);
+        }
+    }
+
+    private void reveal(Body body, Player player, boolean visible) {
+        if (body.fancyName != null) {
+            Object npc = fancy(body);
+            if (npc == null) {
+                return;
+            }
+            try {
+                Class.forName(MANUAL_VISIBILITY)
+                        .getMethod(visible ? "addDistantViewer" : "removeDistantViewer", FancyNpcFacade.npcClass(), UUID.class)
+                        .invoke(null, npc, player.getUniqueId());
+                npc.getClass().getMethod("checkAndUpdateVisibility", Player.class).invoke(npc, player);
+            } catch (ReflectiveOperationException | RuntimeException exception) {
+                complain(body.key, "show", exception);
+            }
+            return;
+        }
+        Entity villager = body.villager == null ? null : Bukkit.getEntity(body.villager);
+        if (villager != null && villager.isValid()) {
+            if (visible) {
+                player.showEntity(owner, villager);
+            } else {
+                player.hideEntity(owner, villager);
+            }
+        }
+    }
+
+    /** Sends a player model out: to everyone, or for a personal member only to its viewers. */
+    private void send(Body body, Object npc) throws ReflectiveOperationException {
+        if (!body.look.personal()) {
+            FancyNpcFacade.spawnForAll(npc);
+            return;
+        }
+        Class<?> manual = Class.forName(MANUAL_VISIBILITY);
+        for (UUID viewer : body.viewers) {
+            manual.getMethod("addDistantViewer", FancyNpcFacade.npcClass(), UUID.class).invoke(null, npc, viewer);
+        }
+        npc.getClass().getMethod("checkAndUpdateVisibilityForAll").invoke(npc);
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        // A stand-in is a real entity: keep the personal ones away from somebody they are not waiting for.
+        for (Body body : bodies.values()) {
+            if (!body.look.personal() || body.viewers.contains(event.getPlayer().getUniqueId())) {
+                continue;
+            }
+            Entity villager = body.villager == null ? null : Bukkit.getEntity(body.villager);
+            if (villager != null) {
+                event.getPlayer().hideEntity(owner, villager);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        for (Body body : bodies.values()) {
+            if (body.look.personal() && body.viewers.remove(event.getPlayer().getUniqueId()) && body.fancyName != null) {
+                Object npc = fancy(body);
+                if (npc != null) {
+                    try {
+                        Class.forName(MANUAL_VISIBILITY)
+                                .getMethod("removeDistantViewer", FancyNpcFacade.npcClass(), UUID.class)
+                                .invoke(null, npc, event.getPlayer().getUniqueId());
+                    } catch (ReflectiveOperationException | RuntimeException ignored) {
+                        // the list is rebuilt from our own set whenever the body is sent out again
+                    }
+                }
+            }
+        }
+    }
+
+    /** A world that unloads takes its bodies with it; the cast seats them again if the world comes back. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWorldUnload(WorldUnloadEvent event) {
+        for (Body body : bodies.values()) {
+            if (body.home.isWorldLoaded() && event.getWorld().equals(body.home.getWorld())) {
+                despawn(body);
+                body.fancyName = null;
+                body.villager = null;
+                body.label = null;
+                body.walkTo = null;
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ habits
 
     public void habit(String key, Habit habit) {
@@ -438,7 +579,7 @@ public final class CastTroupe implements Listener {
             return;
         }
         now += 2L;
-        if (now % 100L == 0L) {
+        if (now % 100L == 0L || (waiting && now % 20L == 0L)) {
             try {
                 upkeep();
             } catch (RuntimeException exception) {
@@ -446,7 +587,7 @@ public final class CastTroupe implements Listener {
             }
         }
         for (Body body : bodies.values()) {
-            if (body.habit == null || body.fancyName == null) {
+            if (body.habit == null || body.fancyName == null || !body.home.isWorldLoaded()) {
                 continue;
             }
             try {
@@ -468,6 +609,13 @@ public final class CastTroupe implements Listener {
             place(body, body.home);
         }
         if (body.walkTo != null) {
+            if (!body.returning && now % 10L == 0L && nearestPlayer(body.at) < CLOSE) {
+                // Somebody walked up: cut the stroll short and go back to the spot they know.
+                body.returning = true;
+                body.walkFrom = body.at.clone();
+                body.walkTo = body.home.clone();
+                body.walked = 0.0d;
+            }
             stride(body);
             return;
         }
@@ -485,7 +633,7 @@ public final class CastTroupe implements Listener {
         if (habit.stroll() >= 1.0d && roll < 22 && beginStroll(body, random)) {
             return;
         }
-        if (roll < 70) {
+        if (roll < 70 && habit.swings()) {
             if (!habit.tools().isEmpty()) {
                 Material tool = habit.tools().get(body.toolIndex++ % habit.tools().size());
                 hold(body, new ItemStack(tool));
@@ -583,7 +731,7 @@ public final class CastTroupe implements Listener {
     }
 
     private static double nearestPlayer(Location at) {
-        World world = at.getWorld();
+        World world = at.isWorldLoaded() ? at.getWorld() : null;
         double best = Double.MAX_VALUE;
         if (world == null) {
             return best;
@@ -601,6 +749,7 @@ public final class CastTroupe implements Listener {
 
     private boolean place(Body body, Location to) {
         boolean moved;
+        body.at = to.clone();
         if (body.fancyName != null) {
             Object npc = fancy(body);
             if (npc == null) {
@@ -705,7 +854,19 @@ public final class CastTroupe implements Listener {
                 FancyNpcFacade.unregister(manager, existing);
             }
             Object data = FancyNpcFacade.createNpcData(name, new UUID(0L, 0L), body.home);
-            FancyNpcFacade.invoke(data, "setDisplayName", String.class, "<empty>");
+            String nameTag = "<empty>";
+            if (body.look.personal()) {
+                // Only its viewers may get it, name included: FancyNpcs' own tag is per viewer, a text display is not.
+                Class<?> visibility = Class.forName("de.oliver.fancynpcs.api.data.property.NpcVisibility");
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                Object manual = Enum.valueOf((Class) visibility.asSubclass(Enum.class), "MANUAL");
+                data.getClass().getMethod("setVisibility", visibility).invoke(data, manual);
+                if (body.look.label() != null && !body.look.label().isBlank()) {
+                    nameTag = MiniMessage.miniMessage().serialize(LegacyComponentSerializer.legacySection()
+                            .deserialize(body.look.label().replace('\n', ' ')));
+                }
+            }
+            FancyNpcFacade.invoke(data, "setDisplayName", String.class, nameTag);
             FancyNpcFacade.invoke(data, "setType", EntityType.class, EntityType.PLAYER);
             FancyNpcFacade.invoke(data, "setShowInTab", boolean.class, false);
             FancyNpcFacade.invoke(data, "setCollidable", boolean.class, false);
@@ -730,7 +891,7 @@ public final class CastTroupe implements Listener {
             FancyNpcFacade.setSaveToFile(fancy, false);
             FancyNpcFacade.create(fancy);
             FancyNpcFacade.register(manager, fancy);
-            FancyNpcFacade.spawnForAll(fancy);
+            send(body, fancy);
             body.fancyName = name;
             return true;
         } catch (ReflectiveOperationException | RuntimeException exception) {
@@ -760,16 +921,27 @@ public final class CastTroupe implements Listener {
             }
             spawned.setVillagerLevel(5);
             spawned.setRecipes(new ArrayList<MerchantRecipe>());
-            if (look.name() != null) {
+            boolean plate = look.personal() && look.label() != null && !look.label().isBlank();
+            if (plate) {
+                // A personal stand-in is hidden from everybody else anyway, so it can wear its plate as its name.
+                spawned.customName(LegacyComponentSerializer.legacySection().deserialize(look.label().replace('\n', ' ')));
+            } else if (look.name() != null) {
                 spawned.customName(Component.text(look.name()));
             }
-            spawned.setCustomNameVisible(false);
+            spawned.setCustomNameVisible(plate);
             spawned.getPersistentDataContainer().set(tag, PersistentDataType.STRING, body.key);
             if (look.hand() != null && spawned.getEquipment() != null) {
                 spawned.getEquipment().setItemInMainHand(look.hand().clone());
             }
         });
         body.villager = villager.getUniqueId();
+        if (look.personal()) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!body.viewers.contains(player.getUniqueId())) {
+                    player.hideEntity(owner, villager);
+                }
+            }
+        }
     }
 
     private void despawn(Body body) {
@@ -792,6 +964,9 @@ public final class CastTroupe implements Listener {
                 if (fancy != null) {
                     FancyNpcFacade.removeFromPlayersQuiet(fancy);
                     FancyNpcFacade.unregister(manager, fancy);
+                    if (body.look.personal()) {
+                        Class.forName(MANUAL_VISIBILITY).getMethod("remove", FancyNpcFacade.npcClass()).invoke(null, fancy);
+                    }
                 }
             } catch (ReflectiveOperationException | RuntimeException exception) {
                 complain(body.key, "remove", exception);
@@ -850,7 +1025,7 @@ public final class CastTroupe implements Listener {
                 equip(data, "LEGS", air);
                 equip(data, "FEET", air);
                 FancyNpcFacade.removeFromPlayersQuiet(npc);
-                FancyNpcFacade.spawnForAll(npc);
+                send(body, npc);
             } catch (ReflectiveOperationException | RuntimeException exception) {
                 complain(body.key, "skin", exception);
             }
@@ -953,7 +1128,8 @@ public final class CastTroupe implements Listener {
         World world = event.getWorld();
         for (Body body : bodies.values()) {
             Location home = body.home;
-            if (world.equals(home.getWorld()) && (home.getBlockX() >> 4) == cx && (home.getBlockZ() >> 4) == cz) {
+            if (home.isWorldLoaded() && world.equals(home.getWorld()) && (home.getBlockX() >> 4) == cx
+                    && (home.getBlockZ() >> 4) == cz) {
                 Bukkit.getScheduler().runTask(owner, () -> {
                     if (!closed && bodies.get(body.key) == body) {
                         if (alive(body)) {

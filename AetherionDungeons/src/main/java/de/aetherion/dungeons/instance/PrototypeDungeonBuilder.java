@@ -763,24 +763,18 @@ public final class PrototypeDungeonBuilder {
         wallSign(world, x + 3, y + 2, z - 1, BlockFace.WEST, "§5Exit", "Walk in to", "return home", "");
     }
 
+    /** What a click on a Gate Warden himself does (the box around him is handled by the dungeon listener). */
+    public static void onWardenClick(Plugin plugin, java.util.function.Consumer<org.bukkit.entity.Player> ready) {
+        GateWardens.onClick(plugin, ready);
+    }
+
+    public static void shutdownWardens() {
+        GateWardens.shutdown();
+    }
+
     static void spawnReadyNpc(Plugin plugin, World world, Location location) {
-        Villager villager = world.spawn(location, Villager.class);
-        villager.setCustomName("§eGate Warden");
-        villager.setCustomNameVisible(true);
-        villager.setAI(false);
-        villager.setInvulnerable(true);
-        villager.setCollidable(true);
-        villager.setSilent(true);
-        villager.setGravity(false);
-        villager.setRemoveWhenFarAway(false);
-        villager.setPersistent(true);
-        villager.setAdult();
-        villager.setAgeLock(true);
-        villager.setProfession(Villager.Profession.NITWIT);
-        villager.setRecipes(java.util.List.of());
-        villager.addScoreboardTag(READY_NPC);
-        villager.getEquipment().setItemInMainHand(new ItemStack(Material.IRON_SWORD));
-        villager.getPersistentDataContainer().set(npcKey(plugin), PersistentDataType.STRING, READY_NPC);
+        // The warden himself is a person on a Core cast body; the tagged box below is what gets clicked and hit.
+        GateWardens.seat(plugin, world, location);
 
         Interaction hitbox = world.spawn(location, Interaction.class);
         hitbox.setInteractionWidth(1.1f);

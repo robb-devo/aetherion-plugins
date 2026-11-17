@@ -45,6 +45,13 @@ public final class VeinsListener implements Listener {
         this.plugin = plugin;
         this.veins = veins;
         this.npcs = npcs;
+        npcs.clicks(player -> handleNpc(player, null));
+    }
+
+    /** Foreman villagers of older builds are saved with their chunk: clear them as the chunk hands them over. */
+    @EventHandler
+    public void onEntitiesLoad(org.bukkit.event.world.EntitiesLoadEvent event) {
+        npcs.sweep(event.getEntities());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
@@ -199,7 +206,7 @@ public final class VeinsListener implements Listener {
     }
 
     private void handleNpc(Player player, Entity entity) {
-        if (player.isSneaking() && player.hasPermission("aetherion.mines.admin")) {
+        if (entity != null && player.isSneaking() && player.hasPermission("aetherion.mines.admin")) {
             if (npcs.tryRemoveClicked(entity)) {
                 player.sendMessage("§7Foreman removed.");
             }

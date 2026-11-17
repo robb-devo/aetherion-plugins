@@ -41,7 +41,6 @@ public final class SessionListener implements Listener {
             if (!player.isOnline()) {
                 return;
             }
-            plugin.npcs().hideNewNpcFromOthers(player);
             plugin.npcs().ensureFor(player);
         }, 20L);
     }
@@ -58,11 +57,6 @@ public final class SessionListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onNpc(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
-        if (plugin.npcs().isBetaNpc(entity)) {
-            event.setCancelled(true);
-            plugin.npcs().interact(event.getPlayer(), entity);
-            return;
-        }
         if (AetherEntities.isQuestNpc(entity)) {
             BetaJournal.progress(plugin, event.getPlayer(), Milestone.QUESTS);
         }

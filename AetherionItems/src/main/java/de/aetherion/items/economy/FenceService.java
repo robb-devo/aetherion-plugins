@@ -202,6 +202,11 @@ public final class FenceService implements Listener {
     }
 
     private void spawn(Location location) {
+        EconomyNpcs npcs = plugin.economyNpcs();
+        if (npcs != null && npcs.playerModels()) {
+            npcs.place(EconomyNpcs.Kind.FENCE, location);
+            return;
+        }
         Villager villager = location.getWorld().spawn(location, Villager.class, spawned -> {
             spawned.setCustomName("§6Silas Markup");
             spawned.setCustomNameVisible(true);
@@ -219,6 +224,11 @@ public final class FenceService implements Listener {
     }
 
     private void despawnNearest(Player player) {
+        EconomyNpcs npcs = plugin.economyNpcs();
+        if (npcs != null && npcs.removeNearest(EconomyNpcs.Kind.FENCE, player.getLocation(), 8.0d)) {
+            player.sendMessage("§eDespawned Silas Markup.");
+            return;
+        }
         org.bukkit.entity.Entity closest = null;
         double best = 8.0;
         for (org.bukkit.entity.Entity entity : player.getNearbyEntities(8, 8, 8)) {

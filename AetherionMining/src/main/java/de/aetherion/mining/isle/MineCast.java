@@ -1,11 +1,11 @@
 package de.aetherion.mining.isle;
 
-import net.kyori.adventure.text.Component;
+import de.aetherion.core.npc.CastTroupe;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -15,33 +15,23 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.TextDisplay;
-import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.MerchantRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,19 +39,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Spawns and runs the Mining Eldervale cast. Placements live in {@code mine-cast.yml}. The villagers
- * are NOT persistent: they are rebuilt whenever their chunk loads, so restarts and reloads never
- * stack duplicates. Right-click opens the NPC's board. Walk past one and you get a line. On first
- * start, every role with a preset is placed automatically, so a fresh server has a cast.
+ * Spawns and runs the Mining Eldervale cast. Placements live in {@code mine-cast.yml}. The crew are real
+ * people: player models with their own painted skins on a Core {@link CastTroupe}, each busy with their own
+ * work until somebody walks up. Nothing is saved with the world, so restarts and reloads never stack
+ * duplicates. Right-click opens the NPC's board. Walk past one and you get a line. On first start, every
+ * role with a preset is placed automatically, so a fresh server has a cast.
  */
 public final class MineCast implements Listener {
 
     private static final double TURN_RANGE = 7.0d;
     private static final double BARK_RANGE = 4.5d;
     private static final long BARK_COOLDOWN_MS = 5L * 60_000L;
-
-    private record Spawned(UUID villager, UUID hologram) {
-    }
 
     private final MineIsle isle;
     private final NamespacedKey npcKey;
@@ -70,7 +58,7 @@ public final class MineCast implements Listener {
     private final Map<MineRole, Location> placed = new EnumMap<>(MineRole.class);
     /** Saved spots whose world wasn't loaded yet: kept (and re-saved) until it is. */
     private final Map<MineRole, ConfigurationSection> pending = new EnumMap<>(MineRole.class);
-    private final Map<MineRole, Spawned> live = new EnumMap<>(MineRole.class);
+    private CastTroupe troupe;
     private final Map<String, Long> barked = new ConcurrentHashMap<>();
     private final Map<UUID, Long> clickCool = new ConcurrentHashMap<>();
     private boolean seeded;
@@ -118,19 +106,63 @@ public final class MineCast implements Listener {
                 "Mind your lamp.");
     }
 
-    /** Where the NPC actually stands right now (spawned villager), else its placed spot. */
+    /** Where the NPC actually stands right now (it may be a few steps into its round), else its placed spot. */
     private Location liveLocation(MineRole role) {
-        Spawned spawned = live.get(role);
-        Entity villager = spawned == null ? null : Bukkit.getEntity(spawned.villager());
-        if (villager != null && villager.isValid()) {
-            return villager.getLocation();
-        }
-        return location(role);
+        Location at = troupe == null ? null : troupe.location(role.id());
+        return at != null ? at : location(role);
     }
 
     private Entity liveHologram(MineRole role) {
-        Spawned spawned = live.get(role);
-        return spawned == null || spawned.hologram() == null ? null : Bukkit.getEntity(spawned.hologram());
+        return troupe == null ? null : troupe.label(role.id());
+    }
+
+    /** Body, name plate and stand-in dress of one role. */
+    private static CastTroupe.Look look(MineRole role) {
+        String skin;
+        Material hand = role.icon();
+        Color outfit;
+        switch (role) {
+            case LAMPWARDEN -> {
+                skin = "mine_wick";
+                outfit = Color.fromRGB(0x4a4034);
+            }
+            case CLERK -> {
+                skin = "mine_otto";
+                outfit = Color.fromRGB(0x6a3a2a);
+            }
+            case COOK -> {
+                skin = "mine_nan";
+                outfit = Color.fromRGB(0x6f7d5a);
+            }
+            case ASSAYER -> {
+                skin = "mine_ilse";
+                outfit = Color.fromRGB(0x3a2e52);
+            }
+            case FORGEMASTER -> {
+                skin = "mine_brann";
+                hand = Material.MACE; // a smith holds his hammer, not his anvil
+                outfit = Color.fromRGB(0x3a2a20);
+            }
+            default -> {
+                skin = "mine_hollis";
+                outfit = Color.fromRGB(0x4a5a56);
+            }
+        }
+        return CastTroupe.Look.of(role.display(), skin, hand, outfit)
+                .stand(role.profession(), role.villagerType())
+                .labelled(role.color() + "§l" + role.display() + "\n§7" + role.title() + "\n§e▸ §7" + role.role());
+    }
+
+    /** What each of them is busy with while nobody is asking. */
+    private static CastTroupe.Habit habit(MineRole role) {
+        return switch (role) {
+            case LAMPWARDEN -> CastTroupe.Habit.work(9, 18, Material.FLINT_AND_STEEL);
+            case CLERK -> CastTroupe.Habit.work(7, 14, Material.FEATHER);
+            case COOK -> CastTroupe.Habit.work(6, 12, Material.BOWL, Material.BAKED_POTATO).strolling(2.5d);
+            case ASSAYER -> CastTroupe.Habit.work(8, 16, Material.SPYGLASS);
+            case FORGEMASTER -> CastTroupe.Habit.work(4, 9).strolling(2.5d);
+            default -> CastTroupe.Habit.watch(12, 24);
+        };
     }
 
     /** Lesson click pre-check on Wick's bubble (see {@link TalkDesk#busy}). */
@@ -145,6 +177,7 @@ public final class MineCast implements Listener {
 
     void start() {
         purgeStrays();
+        troupe = CastTroupe.open(isle.plugin(), "mine", this::clicked);
         for (MineRole role : List.copyOf(pending.keySet())) {
             Location at = MineWorld.location(pending.get(role));
             if (at != null) {
@@ -171,8 +204,9 @@ public final class MineCast implements Listener {
             task = null;
         }
         wickDesk.shutdown();
-        for (MineRole role : MineRole.values()) {
-            despawn(role);
+        if (troupe != null) {
+            troupe.close();
+            troupe = null;
         }
     }
 
@@ -315,75 +349,22 @@ public final class MineCast implements Listener {
         }
     }
 
-    private boolean alive(MineRole role) {
-        Spawned spawned = live.get(role);
-        if (spawned == null) {
-            return false;
-        }
-        Entity villager = Bukkit.getEntity(spawned.villager());
-        return villager != null && villager.isValid();
-    }
-
     private void ensure(MineRole role) {
         Location at = placed.get(role);
-        if (at == null || at.getWorld() == null || alive(role)) {
+        if (at == null || at.getWorld() == null || troupe == null) {
             return;
         }
-        if (!at.getWorld().isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
-            return;
-        }
-        despawn(role);
-        Villager villager = at.getWorld().spawn(at, Villager.class, spawned -> {
-            spawned.setPersistent(false);
-            spawned.setRemoveWhenFarAway(false);
-            spawned.setAI(false);
-            spawned.setInvulnerable(true);
-            spawned.setSilent(true);
-            spawned.setCollidable(false);
-            spawned.setGravity(false);
-            spawned.setAdult();
-            spawned.setAgeLock(true);
-            spawned.setProfession(role.profession());
-            spawned.setVillagerType(role.villagerType());
-            spawned.setVillagerLevel(5);
-            spawned.setRecipes(new ArrayList<MerchantRecipe>());
-            spawned.customName(Component.text(role.display()));
-            spawned.setCustomNameVisible(false);
-            spawned.getPersistentDataContainer().set(npcKey, PersistentDataType.STRING, role.id());
-            if (spawned.getEquipment() != null) {
-                spawned.getEquipment().setItemInMainHand(new ItemStack(role.icon()));
-            }
-        });
-        TextDisplay hologram = at.getWorld().spawn(at.clone().add(0, 2.35, 0), TextDisplay.class, text -> {
-            text.text(MineText.legacy(role.color() + "§l" + role.display() + "\n§7" + role.title()
-                    + "\n§e▸ §7" + role.role()));
-            text.setBillboard(Display.Billboard.CENTER);
-            text.setAlignment(TextDisplay.TextAlignment.CENTER);
-            text.setShadowed(true);
-            text.setSeeThrough(false);
-            text.setDefaultBackground(false);
-            text.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
-            text.setViewRange(0.35f);
-            text.setPersistent(false);
-            text.getPersistentDataContainer().set(npcKey, PersistentDataType.STRING, role.id());
-        });
-        live.put(role, new Spawned(villager.getUniqueId(), hologram.getUniqueId()));
+        troupe.spawn(role.id(), at, look(role));
+        troupe.habit(role.id(), habit(role));
     }
 
     private void despawn(MineRole role) {
-        Spawned spawned = live.remove(role);
-        if (spawned == null) {
-            return;
-        }
-        for (UUID id : List.of(spawned.villager(), spawned.hologram())) {
-            Entity entity = Bukkit.getEntity(id);
-            if (entity != null) {
-                entity.remove();
-            }
+        if (troupe != null) {
+            troupe.remove(role.id());
         }
     }
 
-    /** Leftover tagged entities (older builds, crashes) in loaded chunks. */
+    /** Tagged villagers and name plates of builds before the troupe, in loaded chunks. */
     private void purgeStrays() {
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
@@ -392,47 +373,21 @@ public final class MineCast implements Listener {
                 }
             }
         }
-        live.clear();
     }
 
-    @EventHandler
-    public void onChunkLoad(ChunkLoadEvent event) {
-        Chunk chunk = event.getChunk();
-        for (Map.Entry<MineRole, Location> entry : placed.entrySet()) {
-            Location at = entry.getValue();
-            if (at.getWorld() != null && at.getWorld().equals(chunk.getWorld())
-                    && (at.getBlockX() >> 4) == chunk.getX() && (at.getBlockZ() >> 4) == chunk.getZ()) {
-                MineRole role = entry.getKey();
-                Bukkit.getScheduler().runTask(isle.plugin(), () -> ensure(role));
-            }
-        }
-    }
-
-    public MineRole roleOf(Entity entity) {
-        if (entity == null) {
-            return null;
-        }
-        return MineRole.byId(entity.getPersistentDataContainer().get(npcKey, PersistentDataType.STRING));
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onClick(PlayerInteractEntityEvent event) {
-        MineRole role = roleOf(event.getRightClicked());
+    /** A click on a member of the crew (from the troupe: player model or stand-in alike). */
+    private void clicked(Player player, String key) {
+        MineRole role = MineRole.byId(key);
         if (role == null) {
             return;
         }
-        event.setCancelled(true);
-        if (event.getHand() != EquipmentSlot.HAND) {
-            return;
-        }
-        Player player = event.getPlayer();
         long now = System.currentTimeMillis();
         Long cool = clickCool.get(player.getUniqueId());
         if (cool != null && cool > now) {
             return;
         }
         clickCool.put(player.getUniqueId(), now + 400L);
-        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, SoundCategory.NEUTRAL, 0.7f, 1.1f);
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.NEUTRAL, 0.7f, 1.1f);
         // First visit: Old Wick runs the isle lesson; the rest of the crew send you back to him.
         if (role == MineRole.LAMPWARDEN && isle.lesson().onTeacher(player)) {
             return;
@@ -449,20 +404,6 @@ public final class MineCast implements Listener {
             return;
         }
         isle.menus().open(player, role);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onClickAt(PlayerInteractAtEntityEvent event) {
-        if (roleOf(event.getRightClicked()) != null) {
-            event.setCancelled(true);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onDamage(EntityDamageEvent event) {
-        if (roleOf(event.getEntity()) != null) {
-            event.setCancelled(true);
-        }
     }
 
     void forget(UUID id) {
@@ -488,17 +429,7 @@ public final class MineCast implements Listener {
 
     private void tick() {
         wickDesk.tick();
-        if (Bukkit.getCurrentTick() % 100 < 10) {
-            ensureAll();
-        }
-        Map<MineRole, Villager> villagers = new HashMap<>();
-        for (Map.Entry<MineRole, Spawned> entry : live.entrySet()) {
-            Entity entity = Bukkit.getEntity(entry.getValue().villager());
-            if (entity instanceof Villager villager && villager.isValid()) {
-                villagers.put(entry.getKey(), villager);
-            }
-        }
-        if (villagers.isEmpty()) {
+        if (troupe == null || placed.isEmpty()) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -506,35 +437,25 @@ public final class MineCast implements Listener {
             if (!MineWorld.onIsle(isle.plugin(), player)) {
                 continue;
             }
-            for (Map.Entry<MineRole, Villager> entry : villagers.entrySet()) {
-                Villager villager = entry.getValue();
-                if (!villager.getWorld().equals(player.getWorld())) {
+            for (MineRole role : placed.keySet()) {
+                Location at = troupe.location(role.id());
+                if (at == null || !player.getWorld().equals(at.getWorld())) {
                     continue;
                 }
-                double distance = villager.getLocation().distance(player.getLocation());
+                double distance = at.distance(player.getLocation());
                 if (distance <= TURN_RANGE) {
-                    face(villager, player);
+                    troupe.face(role.id(), player); // player models turn by themselves
                 }
                 if (distance <= BARK_RANGE) {
-                    String key = player.getUniqueId() + ":" + entry.getKey().id();
+                    String key = player.getUniqueId() + ":" + role.id();
                     Long last = barked.get(key);
                     if (last == null || now - last > BARK_COOLDOWN_MS) {
                         barked.put(key, now);
-                        List<String> barks = entry.getKey().barks();
-                        say(player, entry.getKey(), barks.get(ThreadLocalRandom.current().nextInt(barks.size())));
+                        List<String> barks = role.barks();
+                        say(player, role, barks.get(ThreadLocalRandom.current().nextInt(barks.size())));
                     }
                 }
             }
-        }
-    }
-
-    private static void face(Villager villager, Player player) {
-        Location from = villager.getLocation();
-        double dx = player.getX() - from.getX();
-        double dz = player.getZ() - from.getZ();
-        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
-        if (Math.abs(((yaw - from.getYaw()) % 360 + 540) % 360 - 180) > 4.0f) {
-            villager.setRotation(yaw, 0.0f);
         }
     }
 

@@ -75,6 +75,7 @@ public final class DungeonListener implements Listener {
         this.instances = instances;
         this.keeper = keeper;
         this.guide = guide;
+        PrototypeDungeonBuilder.onWardenClick(plugin, this::markReady);
     }
 
     @EventHandler(priority = EventPriority.HIGH)

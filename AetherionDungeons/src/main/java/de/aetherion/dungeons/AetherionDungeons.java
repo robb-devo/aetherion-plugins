@@ -164,6 +164,7 @@ public final class AetherionDungeons extends JavaPlugin {
         if (instances != null) {
             instances.shutdown();
         }
+        de.aetherion.dungeons.instance.PrototypeDungeonBuilder.shutdownWardens();
         if (dungeonAccess != null) {
             de.aetherion.core.api.AetherServices.clearDungeons(dungeonAccess);
             dungeonAccess = null;

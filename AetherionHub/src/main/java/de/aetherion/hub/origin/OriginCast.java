@@ -1,7 +1,9 @@
 package de.aetherion.hub.origin;
 
+import de.aetherion.core.AetherionCore;
 import de.aetherion.core.api.AetherServices;
 import de.aetherion.core.api.StoryAccess;
+import de.aetherion.core.npc.CastSkins;
 import de.aetherion.core.npc.FancyNpcFacade;
 
 import net.kyori.adventure.text.Component;
@@ -55,8 +57,10 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -65,6 +69,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Runs the Origin cast (see {@link OriginRole}). Placements live in {@code plugins/AetherionHub/origin-cast.yml}.
  * Prefers FancyNpcs player models when available; falls back to AI-off villagers. Non-persistent either way —
  * rebuilt on chunk load so restarts never stack duplicates. Boards stay Hub GUIs (not Quests TalkUx).
+ * Each of the five wears a skin painted for them ({@link CastSkins}); dyed leather only until it is signed.
  */
 public final class OriginCast implements Listener {
 
@@ -88,6 +93,9 @@ public final class OriginCast implements Listener {
     private final Map<String, Long> barked = new ConcurrentHashMap<>();
     private final Map<UUID, Long> clickCool = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> barkBubble = new ConcurrentHashMap<>();
+    /** Who wears the painted skin already (the others are in placeholder leather until theirs is signed). */
+    private final Set<OriginRole> painted = EnumSet.noneOf(OriginRole.class);
+    private final java.util.function.Consumer<String> skinSigned = this::onSkinSigned;
     private boolean seeded;
     private int ensureTick;
     private boolean fancyBridge;
@@ -103,6 +111,10 @@ public final class OriginCast implements Listener {
     void start() {
         purgeStrays();
         registerFancyBridge();
+        CastSkins skins = castSkins();
+        if (skins != null) {
+            skins.onSigned(skinSigned);
+        }
         for (OriginRole role : List.copyOf(pending.keySet())) {
             Location at = fromSection(pending.get(role));
             if (at != null) {
@@ -125,6 +137,10 @@ public final class OriginCast implements Listener {
     }
 
     void shutdown() {
+        CastSkins skins = castSkins();
+        if (skins != null) {
+            skins.removeListener(skinSigned);
+        }
         for (OriginRole role : OriginRole.values()) {
             despawn(role);
         }
@@ -364,7 +380,9 @@ public final class OriginCast implements Listener {
             FancyNpcFacade.applyVisibility(data, 48);
             FancyNpcFacade.invoke(data, "setInteractionCooldown", float.class, 0.5f);
             FancyNpcFacade.invoke(data, "setSpawnEntity", boolean.class, true);
-            applyOriginGear(data, role);
+            CastSkins skins = castSkins();
+            boolean skinned = skins != null && skins.apply(data, skinOf(role));
+            applyOriginGear(data, role, !skinned);
 
             Object fancy = FancyNpcFacade.adapt(data);
             FancyNpcFacade.setSaveToFile(fancy, false);
@@ -372,6 +390,11 @@ public final class OriginCast implements Listener {
             FancyNpcFacade.register(FancyNpcFacade.manager(), fancy);
             FancyNpcFacade.spawnForAll(fancy);
             live.put(role, new Spawned(hologramId, null, name));
+            if (skinned) {
+                painted.add(role);
+            } else {
+                painted.remove(role);
+            }
             return true;
         } catch (ReflectiveOperationException | RuntimeException ex) {
             isle.plugin().getLogger().warning("Origin FancyNPC spawn failed for " + role.id() + ": " + ex.getMessage());
@@ -379,10 +402,41 @@ public final class OriginCast implements Listener {
         }
     }
 
-    private static void applyOriginGear(Object data, OriginRole role) throws ReflectiveOperationException {
+    private static CastSkins castSkins() {
+        AetherionCore core = AetherionCore.get();
+        return core == null ? null : core.castSkins();
+    }
+
+    private static String skinOf(OriginRole role) {
+        return switch (role) {
+            case GUIDE -> "origin_orla";
+            case KEEPER -> "origin_cobb";
+            case BELLKEEPER -> "origin_aurel";
+            case TENDER -> "origin_fen";
+            case STARGAZER -> "origin_stellan";
+        };
+    }
+
+    /** A painted skin came back signed: whoever wears it changes out of the placeholder leather. */
+    private void onSkinSigned(String skinId) {
+        for (OriginRole role : OriginRole.values()) {
+            Spawned spawned = live.get(role);
+            if (spawned != null && spawned.fancyName() != null && !painted.contains(role)
+                    && skinOf(role).equalsIgnoreCase(skinId)) {
+                despawn(role);
+                ensure(role);
+            }
+        }
+    }
+
+    private static void applyOriginGear(Object data, OriginRole role, boolean leather)
+            throws ReflectiveOperationException {
         Class<?> slotClass = FancyNpcFacade.equipmentSlotClass();
         Method add = data.getClass().getMethod("addEquipment", slotClass, ItemStack.class);
         add.invoke(data, FancyNpcFacade.equipmentSlot("MAINHAND"), new ItemStack(role.icon()));
+        if (!leather) {
+            return;
+        }
         Color dye = leatherColor(role);
         add.invoke(data, FancyNpcFacade.equipmentSlot("CHEST"), dyed(Material.LEATHER_CHESTPLATE, dye));
         add.invoke(data, FancyNpcFacade.equipmentSlot("LEGS"), dyed(Material.LEATHER_LEGGINGS, dye));
