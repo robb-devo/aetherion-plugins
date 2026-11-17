@@ -96,6 +96,28 @@ public final class HangingSaintDirector {
     private static final int DEATH_TICKS = 290;
     private static final int STRIKE_DELAY_TICKS = 20 * 45;
     private static final float[] HAND_Y = {43.5f, 29f, 26f};
+    /**
+     * A stage under a roof (the exile's Little Theatre): the Hand and its threads stay this far under the ceiling
+     * instead of hanging above it. Open sky: no cap.
+     */
+    private float handCap = Float.MAX_VALUE;
+
+    private float handY(int phase) {
+        return Math.min(HAND_Y[phase], handCap);
+    }
+
+    /** First solid block over the stage's middle, minus a little room for the Hand; no roof within 60 = no cap. */
+    private static float measureHandCap(Location center) {
+        if (center == null || center.getWorld() == null) {
+            return Float.MAX_VALUE;
+        }
+        for (int dy = 8; dy <= 60; dy++) {
+            if (!center.getWorld().getBlockAt(center.getBlockX(), center.getBlockY() + dy, center.getBlockZ()).isPassable()) {
+                return Math.max(10f, dy - 4f);
+            }
+        }
+        return Float.MAX_VALUE;
+    }
     private static final float ARENA = 13.5f;
     /** Thread i runs from finger THREAD_FINGER[i] to a body anchor. */
     private static final int[] THREAD_FINGER = {HandBody.INDEX, HandBody.MIDDLE, HandBody.RING, HandBody.PINKY, HandBody.THUMB};
@@ -230,11 +252,12 @@ public final class HangingSaintDirector {
             return;
         }
         stage = SaintStage.claim(instance.getPlugin(), instance.getSpawnLocation());
+        handCap = stage.built() ? measureHandCap(stage.center()) : Float.MAX_VALUE;
         fx = new SaintFx(instance, stage.center());
         props = new SaintProps();
         music = new MusicBox(fx);
         pos.set(0f, 0.6f, 0f);
-        handPos.set(0f, HAND_Y[0] + 4f, 0f);
+        handPos.set(0f, handY(0) + 4f, 0f);
         handGoal.set(handPos);
         lastHealth = instance.getCombatHealth();
         phase = phaseFromTemplate();
@@ -711,7 +734,7 @@ public final class HangingSaintDirector {
     private void tickIntro() {
         int t = actTick++;
         Skeleton rig = body.rig;
-        handGoal.set(0, HAND_Y[0], 0);
+        handGoal.set(0, handY(0), 0);
         handFollow = 0.04f;
         if (t == 22) {
             music.play(10f, 1f, 0.85f, false);
@@ -1077,7 +1100,7 @@ public final class HangingSaintDirector {
                 pos.z = lerp(pos.z, tp.z, 0.05f);
             }
             body.poseHoisted();
-            handGoal.set(pos.x, HAND_Y[phase - 1] + 4f, pos.z);
+            handGoal.set(pos.x, handY(phase - 1) + 4f, pos.z);
         }
         if (k >= 22 && k < 34 && p != null) {
             Vector3f tp = fx.stage(p.getLocation());
@@ -1206,7 +1229,7 @@ public final class HangingSaintDirector {
             pos.set(lerp(mC.x, start.x, w), lerp(mC.y, start.y, w), lerp(mC.z, start.z, w));
             yaw = SaintMath.approachAngle(yaw, SaintMath.yawToward(mB.x, mB.z), 0.12f);
             body.poseReap(-1f);
-            handGoal.set(mA.x, HAND_Y[phase - 1], mA.z);
+            handGoal.set(mA.x, handY(phase - 1), mA.z);
             if (t % 6 == 0) {
                 fx.sound(pos, Sound.BLOCK_CHAIN_STEP, 1.2f, 0.5f);
                 fx.sound(pos, Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 0.8f, 0.5f);
@@ -1504,7 +1527,7 @@ public final class HangingSaintDirector {
         if (t < 28) {
             float w = smooth(window(t, 0, 26));
             hand.flex(w);
-            handGoal.set(mB.x, lerp(HAND_Y[phase - 1], 12f + window(t, 18, 28) * 4f, w), mB.z);
+            handGoal.set(mB.x, lerp(handY(phase - 1), 12f + window(t, 18, 28) * 4f, w), mB.z);
         } else if (t < 34) {
             float f = inCubic(window(t, 28, 34));
             hand.flex(1f);
@@ -1532,7 +1555,7 @@ public final class HangingSaintDirector {
         }
         if (t >= 64) {
             hand.flex(1f - smooth(window(t, 64, 90)));
-            handGoal.set(pos.x, HAND_Y[phase - 1], pos.z);
+            handGoal.set(pos.x, handY(phase - 1), pos.z);
         }
         if (t == 86) {
             handBusy = false;
@@ -2007,7 +2030,7 @@ public final class HangingSaintDirector {
         }
         if (n >= 3) {
             hand.open();
-            handGoal.set(pos.x, HAND_Y[2], pos.z);
+            handGoal.set(pos.x, handY(2), pos.z);
             handFollow = 0.05f;
             if (t >= 3 * each + 12) {
                 finish(18);
@@ -2642,7 +2665,7 @@ public final class HangingSaintDirector {
         freezeBody = false;
         if (phase == 2) {
             dressing.parting(1f);
-            handGoal.set(pos.x, HAND_Y[1], pos.z);
+            handGoal.set(pos.x, handY(1), pos.z);
             for (int i = 0; i < 5; i++) {
                 threads[i].visible = true;
                 threads[i].reach = 1f;
@@ -2662,7 +2685,7 @@ public final class HangingSaintDirector {
             body.springsSharp();
             body.rig.frameStep = 2;
             body.rig.interp = 1;
-            handGoal.set(pos.x, HAND_Y[2], pos.z);
+            handGoal.set(pos.x, handY(2), pos.z);
             // Act III: the threads object is reused by Restring; cut[] stops normal updates.
             for (int i = 0; i < 5; i++) {
                 cut[i] = true;
@@ -2706,7 +2729,7 @@ public final class HangingSaintDirector {
         }
         if (t >= 20 && t < 80) {
             handFollow = 0.08f;
-            handGoal.set(0f, lerp(HAND_Y[0], HAND_Y[1], smooth(window(t, 20, 80))), 0f);
+            handGoal.set(0f, lerp(handY(0), handY(1), smooth(window(t, 20, 80))), 0f);
             handYaw += 0.01f;
             handBusy = true;
             for (int f = 0; f < 5; f++) {
@@ -2795,7 +2818,7 @@ public final class HangingSaintDirector {
             float f = smooth(window(t, 0, 25));
             pos.set(lerp(mA.x, 0f, f), lerp(mA.y, 10f, f), lerp(mA.z, 0f, f));
             body.poseHang(clock);
-            handGoal.set(0f, HAND_Y[1] + 3f, 0f);
+            handGoal.set(0f, handY(1) + 3f, 0f);
         }
         dressing.third.aim(new Vector3f(pos.x, 0, pos.z), 3);
         if (t >= 25 && t < 135) {
@@ -2910,7 +2933,7 @@ public final class HangingSaintDirector {
         }
         if (t > 206) {
             body.poseWrong(clock);
-            handGoal.set(0f, HAND_Y[2], 0f);
+            handGoal.set(0f, handY(2), 0f);
         }
     }
 
