@@ -21,6 +21,7 @@ export function runEvery(bot, intervalMs, tick, onError) {
   const stop = () => {
     stopped = true
     if (timer) clearTimeout(timer)
+    bot.removeListener('end', stop)
   }
   bot.once('end', stop)
   timer = setTimeout(loop, jitter(intervalMs, 0.5))

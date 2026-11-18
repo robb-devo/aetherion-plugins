@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import net from 'node:net'
-import { createFleet } from './fleet.js'
+import { ALL_ROLES, createFleet, WAVE1, WAVE2, WAVE3 } from './fleet.js'
 import { startControlServer } from './control.js'
 import { sleep } from './util.js'
 import { mergeConfig } from './config.js'
@@ -20,42 +20,26 @@ if (!fs.existsSync(configPath)) {
 const exampleConfig = fs.existsSync(examplePath) ? JSON.parse(fs.readFileSync(examplePath, 'utf8')) : {}
 const baseConfig = mergeConfig(exampleConfig, JSON.parse(fs.readFileSync(configPath, 'utf8')))
 
-function parseArgs(argv) {
+/** `--<role> N` for every role (plus the old `--ah` for trade), `--host/--port/--version`, `--listen`. */
+function parseArgs(argv, defaults = {}) {
   const out = {
-    combat: 0,
-    mining: 0,
-    mine: 0,
-    forage: 0,
-    catch: 0,
-    roam: 0,
-    fish: 0,
-    trade: 0,
-    quest: 0,
-    pad: 0,
+    counts: Object.fromEntries(ALL_ROLES.map((role) => [role, 0])),
     listen: false,
-    host: baseConfig.host,
-    port: baseConfig.port,
-    version: baseConfig.version,
-    joinDelayMs: baseConfig.joinDelayMs
+    host: defaults.host,
+    port: defaults.port,
+    version: defaults.version,
+    joinDelayMs: defaults.joinDelayMs
   }
+  const aliases = { ah: 'trade', tour: 'general', player: 'general', dungeons: 'dungeon', islands: 'island' }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const next = argv[i + 1]
-    const takeNum = (key) => {
-      out[key] = Math.max(0, Number(next))
+    const key = arg.startsWith('--') ? arg.slice(2) : ''
+    const role = aliases[key] || key
+    if (ALL_ROLES.includes(role) && next != null) {
+      out.counts[role] = Math.max(0, Number(next) || 0)
       i++
-    }
-    if (arg === '--combat' && next != null) takeNum('combat')
-    else if (arg === '--mining' && next != null) takeNum('mining')
-    else if (arg === '--mine' && next != null) takeNum('mine')
-    else if (arg === '--forage' && next != null) takeNum('forage')
-    else if (arg === '--catch' && next != null) takeNum('catch')
-    else if (arg === '--roam' && next != null) takeNum('roam')
-    else if (arg === '--fish' && next != null) takeNum('fish')
-    else if ((arg === '--trade' || arg === '--ah') && next != null) takeNum('trade')
-    else if (arg === '--quest' && next != null) takeNum('quest')
-    else if (arg === '--pad' && next != null) takeNum('pad')
-    else if (arg === '--host' && next != null) { out.host = next; i++ }
+    } else if (arg === '--host' && next != null) { out.host = next; i++ }
     else if (arg === '--port' && next != null) { out.port = Number(next); i++ }
     else if (arg === '--version' && next != null) { out.version = next; i++ }
     else if (arg === '--listen') out.listen = true
@@ -70,19 +54,24 @@ function log(tag, msg) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2))
+  const args = parseArgs(process.argv.slice(2), baseConfig)
   if (args.help) {
     console.log(`Usage:
-  node src/index.js [--listen] [--mine N] [--forage N] [--catch N] [--roam N]
-                    [--combat N] [--fish N] [--trade N] [--quest N] [--pad N] [--mining N]
+  node src/index.js [--listen] [--<role> N ...] [--host H] [--port P]
 
-Wave 1 QA: --mine / --forage / --catch / --roam
-Wave 2 QA: --combat (QaCombat) / --fish / --trade / --quest / --pad
-Legacy:    --mining (StressM). --combat uses QaCombat unless prefixes.combat is StressC.
+Roles (any number of --<role> N):
+  Main world jobs:  ${WAVE1.join(' ')} ${WAVE2.join(' ')}
+  Network players:  ${WAVE3.join(' ')}
+  Legacy:           mining (StressM01 …)
 
---listen   start with 0 bots and keep the HTTP control server up (Dev menu)
-Defaults connect offline to MMO-R (${baseConfig.host}:${baseConfig.port}).
-Copy ${path.basename(examplePath)} → config.json and set velocitySecret locally. Do not commit it.
+  general   Testbot_ players who tour everything: isles, menus, dungeons, exile, islands, the Pit
+  pit       hub Pit PvP (bots only fight bots)       dungeon  parties on mmo-d (yield to people)
+  exile     the story island on mmo-c                island   private islands on mmo-i
+  farm / menus / casino / social   the main world's fields, menus, slots and parties
+
+--listen   start with 0 bots and keep the HTTP control server up (Dev menu, /testbots start …)
+Login: connect.mode "proxy" (through Velocity, needs connect.proxy.token) or "direct" (${baseConfig.host}:${baseConfig.port}).
+Copy ${path.basename(examplePath)} → config.json and put the secrets there. Do not commit it.
 Stop with Ctrl+C.`)
     process.exit(0)
   }
@@ -95,11 +84,10 @@ Stop with Ctrl+C.`)
     joinDelayMs: args.joinDelayMs
   }
 
-  if (!config.velocitySecret || config.velocitySecret === 'CHANGE_ME') {
-    log('main', 'WARNING: velocitySecret missing or CHANGE_ME — Paper Velocity forwarding will fail. Set it in runner/config.json (gitignored).')
-  }
-
   const fleet = createFleet({ config, log })
+  if (fleet.target.mode === 'direct' && (!config.velocitySecret || config.velocitySecret === 'CHANGE_ME')) {
+    log('main', 'WARNING: velocitySecret missing or CHANGE_ME: direct logins need Velocity forwarding. Set it in runner/config.json (gitignored).')
+  }
   const control = config.control || {}
   const bindHost = control.bind || '127.0.0.1'
   const bindPort = Number(control.port || 18765)
@@ -111,24 +99,13 @@ Stop with Ctrl+C.`)
     log
   })
 
-  const planned = {
-    mine: args.mine,
-    forage: args.forage,
-    catch: args.catch,
-    roam: args.roam,
-    combat: args.combat,
-    fish: args.fish,
-    trade: args.trade,
-    quest: args.quest,
-    pad: args.pad,
-    mining: args.mining
-  }
+  const planned = args.counts
   const total = Object.values(planned).reduce((a, b) => a + b, 0)
   if (total <= 0 && !args.listen) {
-    log('main', 'nothing to spawn — keeping control server (--listen implied). Use Dev menu or CLI flags.')
+    log('main', 'nothing to spawn: keeping the control server up (--listen implied). Use the Dev menu or CLI flags.')
   }
 
-  await waitForPort(args.host, args.port, 120_000)
+  await waitForPort(fleet.target.host, fleet.target.port, 120_000)
 
   for (const [role, count] of Object.entries(planned)) {
     if (count > 0) {
@@ -161,7 +138,7 @@ function waitForPort(host, port, timeoutMs) {
     })
     while (Date.now() - start < timeoutMs) {
       if (await tryOnce()) {
-        log('main', `backend ${host}:${port} is up`)
+        log('main', `${host}:${port} is up`)
         resolve()
         return
       }

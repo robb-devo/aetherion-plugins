@@ -58,7 +58,7 @@ public final class StressBotsCommand implements CommandExecutor, TabCompleter {
             case "list" -> sender.sendMessage(plugin.getController().reportText().split("\n"));
             case "start" -> {
                 if (args.length < 2) {
-                    sender.sendMessage("§e/stressbots start <mine|forage|catch|roam|combat|fish|trade|quest|pad> [count]");
+                    sender.sendMessage("§e/stressbots start <" + String.join("|", plugin.getController().startableRoles()) + "> [count]");
                     return true;
                 }
                 int count = args.length >= 3 ? parseInt(args[2], 1) : Math.max(1, plugin.getController().desired(args[1]));

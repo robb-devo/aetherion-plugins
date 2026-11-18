@@ -67,11 +67,12 @@ public final class BotPlaystyle {
         unlockChop(plugin, player, role);
         topUpCoins(plugin, player, role);
         unlockStarterSpawns(plugin, player, role);
+        ensureAccountLevel(plugin, player, role);
     }
 
-    /** Fresh accounts cannot fell until the forager lesson is done; forage bots skip the lesson. */
+    /** Fresh accounts cannot fell until the forager lesson is done; forage and touring bots skip the lesson. */
     private static void unlockChop(AetherionStressBots plugin, Player player, BotRole role) {
-        if (role != BotRole.FORAGE) {
+        if (role != BotRole.FORAGE && role != BotRole.GENERAL) {
             return;
         }
         QuestProgressAccess quests = AetherServices.quests();
@@ -105,6 +106,11 @@ public final class BotPlaystyle {
     static int nameIndex(Player player) {
         if (player == null || player.getName() == null) {
             return 1;
+        }
+        AetherionStressBots plugin = AetherionStressBots.instance();
+        int told = plugin == null ? -1 : plugin.getIdentity().index(player);
+        if (told > 0) {
+            return told;
         }
         String digits = player.getName().replaceAll("\\D+", "");
         if (digits.isEmpty()) {
@@ -157,6 +163,56 @@ public final class BotPlaystyle {
         inv.setBoots(items.fishing().boots(t));
         inv.setItemInMainHand(items.fishing().rod(t));
         BotRoleRegistry.giveSpare(inv, items.fishing().rod(Math.max(1, t - 1)));
+    }
+
+    /** A player who does a bit of everything: combat armour and sword, pick, axe, rod, a few spheres. */
+    public static void kitAllRounder(PlayerInventory inv, CustomItem items, int tier) {
+        int t = clamp(tier, 1, 5);
+        kitCombat(inv, items, t, false);
+        BotRoleRegistry.giveSpare(inv, miningPick(items, t));
+        BotRoleRegistry.giveSpare(inv, items.foraging().axe(t));
+        BotRoleRegistry.giveSpare(inv, items.fishing().rod(t));
+        BotRoleRegistry.giveSpare(inv, items.farming().hoe(t));
+        PetAccess pets = AetherServices.pets();
+        ItemStack sphere = pets == null ? null : pets.catchSphere("common");
+        if (sphere != null) {
+            sphere.setAmount(8);
+            inv.addItem(sphere);
+        }
+    }
+
+    public static void kitFarming(PlayerInventory inv, CustomItem items, int tier) {
+        int t = clamp(tier, 1, 5);
+        inv.setHelmet(items.farming().helmet(t));
+        inv.setChestplate(items.farming().chestplate(t));
+        inv.setLeggings(items.farming().leggings(t));
+        inv.setBoots(items.farming().boots(t));
+        inv.setItemInMainHand(items.farming().hoe(t));
+        BotRoleRegistry.giveSpare(inv, items.farming().hoe(Math.max(1, t - 1)));
+    }
+
+    /**
+     * Islands open at Aetherion level 20. Island (and, when configured, general) bots are raised to that level once
+     * by levelling every skill together, the way {@code /skills setlevel all} does, so the island road can be tested
+     * without hours of grinding. Every other role keeps earning its XP the normal way.
+     */
+    public static void ensureAccountLevel(AetherionStressBots plugin, Player player, BotRole role) {
+        int target = plugin.getConfig().getInt("testbots.unlocks.account-level", 20);
+        java.util.List<String> roles = plugin.getConfig().getStringList("testbots.unlocks.account-level-roles");
+        if (target <= 0 || role == null || !(roles.isEmpty() ? role == BotRole.ISLAND : roles.contains(role.id()))) {
+            return;
+        }
+        AetherionItems itemsPlugin = AetherionItems.getInstance();
+        SkillService skills = itemsPlugin == null ? null : itemsPlugin.getSkills();
+        if (skills == null || skills.accountLevel(player) >= target) {
+            return;
+        }
+        int level = 1;
+        while (level < 100 && skills.accountLevel(player) < target) {
+            level += 2;
+            skills.setLevelAll(player, level);
+        }
+        plugin.getActivity().markAction(player, "account level " + skills.accountLevel(player) + " (skills " + level + ")");
     }
 
     public static void kitCatcher(PlayerInventory inv, CustomItem items, int tier) {
@@ -240,7 +296,7 @@ public final class BotPlaystyle {
 
     private static void topUpCoins(AetherionStressBots plugin, Player player, BotRole role) {
         long want = plugin.getConfig().getLong("testbots.playstyle.starter-coins", DEFAULT_STARTER_COINS);
-        if (role != BotRole.TRADE) {
+        if (role != BotRole.TRADE && role != BotRole.GENERAL) {
             want = plugin.getConfig().getLong("testbots.playstyle.pocket-coins", Math.min(250L, want));
         }
         if (want <= 0L) {
@@ -262,7 +318,8 @@ public final class BotPlaystyle {
         if (!plugin.getConfig().getBoolean("testbots.playstyle.unlock-spawns", true)) {
             return;
         }
-        if (role != BotRole.TRADE && role != BotRole.QUEST && role != BotRole.PAD && role != BotRole.ROAM) {
+        if (role != BotRole.TRADE && role != BotRole.QUEST && role != BotRole.PAD && role != BotRole.ROAM
+                && role != BotRole.GENERAL) {
             return;
         }
         HubAccess hub = AetherServices.hub();
@@ -351,7 +408,18 @@ public final class BotPlaystyle {
                     : new AetherSkill[] {AetherSkill.HEAVY_HANDS, AetherSkill.LIFE_ABSORB, AetherSkill.THICK_SKIN};
             case TRADE -> new AetherSkill[] {AetherSkill.PINCH_PENNY, AetherSkill.GOLDEN_HOUR, AetherSkill.LUCKY_STREAK};
             case QUEST -> new AetherSkill[] {AetherSkill.QUIET_PRIDE, AetherSkill.NIGHT_OWL, AetherSkill.QUICK_HANDS};
-            case ROAM, PAD -> new AetherSkill[] {AetherSkill.LIGHT_FOOT, AetherSkill.QUIET_PRIDE, AetherSkill.IRON_STOMACH};
+            case ROAM, PAD, SOCIAL, MENUS -> new AetherSkill[] {AetherSkill.LIGHT_FOOT, AetherSkill.QUIET_PRIDE, AetherSkill.IRON_STOMACH};
+            case FARM -> alt
+                    ? new AetherSkill[] {AetherSkill.WIDE_FURROW, AetherSkill.ROW_RHYTHM, AetherSkill.SOIL_SENSE}
+                    : new AetherSkill[] {AetherSkill.CROP_GOSSIP, AetherSkill.SEED_LEDGER, AetherSkill.MARKET_DAY};
+            case CASINO -> new AetherSkill[] {AetherSkill.LUCKY_STREAK, AetherSkill.PINCH_PENNY, AetherSkill.GOLDEN_HOUR};
+            case DUNGEON -> alt
+                    ? new AetherSkill[] {AetherSkill.CHAMBER_PACE, AetherSkill.FLOOR_GRUDGE, AetherSkill.THICK_SKIN}
+                    : new AetherSkill[] {AetherSkill.RELIC_APPETITE, AetherSkill.STONE_BLOOD, AetherSkill.HEAVY_HANDS};
+            case EXILE, PIT -> new AetherSkill[] {AetherSkill.HEAVY_HANDS, AetherSkill.SECOND_WIND, AetherSkill.THICK_SKIN};
+            case GENERAL, ISLAND -> alt
+                    ? new AetherSkill[] {AetherSkill.ROCK_WHISPER, AetherSkill.WOODWISE, AetherSkill.SHORT_CAST}
+                    : new AetherSkill[] {AetherSkill.HEAVY_HANDS, AetherSkill.GREEN_THUMB, AetherSkill.BITE_ME};
         };
     }
 

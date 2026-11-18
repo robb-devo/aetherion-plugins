@@ -81,7 +81,7 @@ The proxy runs **AetherionProxy** `44947554` (Velocity 4, built on JDK 25, see "
 
 The bold cell is drift on purpose: a newer Hub would switch on Origin systems (props, chests, NPCs) in the
 lobby. Hub and Fishing left mmo-d on 10-20 (jars in `plugins.bak-pre-mmod-cleanup-*`, data folders kept);
-there Dungeons registers `/spawn` and `/hub` itself and sends players back to the main world. StressBots left mmo-r and mmo-d on 10-19 (jar in the ship backup, data folder kept). The 2026-11 polish (branch `claude/stressbots-polish`) makes the bots play today's loops (Fell / strike / catch bars, TalkUx dialogs, glyph menus, quarry and isle spots) and patches the kept config on start; it only matters once StressBots goes back on mmo-r (`AetherionStressBots/README.md`).
+there Dungeons registers `/spawn` and `/hub` itself and sends players back to the main world. StressBots left mmo-r and mmo-d on 10-19 (jar in the ship backup, data folder kept). The 2026-11 rework (branch `claude/stressbots-polish`) makes the bots play the whole network: they log in through the proxy (AetherionProxy test-bot door, token in `plugins/aetherion-proxy/testbots.properties` and the runner's gitignored `config.json`), carry German names and the `Testbot_` family, walk the player roads hub → mmo-r → mmo-d / mmo-c / mmo-i, and play the Pit, every main-world job, menus, slots, parties, dungeons (yielding to people), the exile and islands; `/botreport` adds a network section. The plugin goes on mmo-r, mmo-d, mmo-c and mmo-i (not the hub) once `deploy-stressbots.ps1` has run (`AetherionStressBots/README.md`).
 Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Resource pack (2026-10-21)

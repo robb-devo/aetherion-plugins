@@ -140,14 +140,20 @@ export function createFishLoop(bot, cfg, log) {
     await sleep(jitter(cfg.recastMs ?? 1400, 0.4))
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     log(bot.stressName, 'fish loop start (cast → strike bar → reel on green)')
     note(bot, 'fish loop start', ACTIVITIES.fishing)
-    runEvery(bot, 400, tick, (err) => {
+    const halt = runEvery(bot, 400, tick, (err) => {
       markError(bot, err)
       log(bot.stressName, `fish tick: ${err.message}`)
     })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }

@@ -4,10 +4,9 @@ import { applyIslandMovements, cancelPath, wanderOnIsland } from './safety.js'
 import { clickCommands } from './chat.js'
 import { jitter, markError, note, runEvery, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
+import { isBotName } from './names.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
-
-const BOT_PREFIXES = ['qa', 'stress']
 
 /**
  * Quest NPCs are FancyNpcs packet players: player entities that are not listed in the tab list.
@@ -15,8 +14,7 @@ const BOT_PREFIXES = ['qa', 'stress']
  */
 export function isNpcEntity(entity, players) {
   if (!entity || entity.type !== 'player' || !entity.username) return false
-  const lower = String(entity.username).toLowerCase()
-  if (BOT_PREFIXES.some((prefix) => lower.startsWith(prefix))) return false
+  if (isBotName(String(entity.username))) return false
   const entry = players?.[entity.username]
   return !entry || entry.listed === false
 }
@@ -163,14 +161,20 @@ export function createQuestLoop(bot, cfg, log) {
     await sleep(jitter(2500, 0.4))
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     log(bot.stressName, 'quest loop start (NPC talk + chat replies)')
     note(bot, 'quest loop start', ACTIVITIES.questDialog)
-    runEvery(bot, 400, tick, (err) => {
+    const halt = runEvery(bot, 400, tick, (err) => {
       markError(bot, err)
       log(bot.stressName, `quest tick: ${err.message}`)
     })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }

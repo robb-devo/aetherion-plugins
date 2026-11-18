@@ -107,15 +107,21 @@ export function createRoamLoop(bot, cfg, log) {
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     log(bot.stressName, `roam loop start (${waypoints.length} local waypoints, hop<=${maxHop})`)
     note(bot, 'roam loop start', 'roaming')
-    runEvery(bot, 380, tick, (err) => {
+    const halt = runEvery(bot, 380, tick, (err) => {
       markError(bot, err)
       log(bot.stressName, `roam tick: ${err.message}`)
     })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }
 

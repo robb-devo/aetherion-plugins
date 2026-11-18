@@ -48,9 +48,10 @@ mining:
 # defaults of an older version move to the current spots, and new keys are added. Tuned anchors stay.
 # ---------------------------------------------------------------------------
 testbots:
-  config-version: 2
+  config-version: 3
   enabled: false
-  # Mixed fleet headroom (~5 roles × 8, or a thinner mix of all 9). Live max-players is 60.
+  # Bots spread over the whole network now (hub, mmo-r, mmo-d, mmo-c, mmo-i); this caps what one start may ask
+  # for. Live max-players on mmo-r is 60.
   max-total: 40
   max-per-start: 40
   runner:
@@ -78,6 +79,20 @@ testbots:
     quest: 8
     trade: 8
     pad: 8
+    general: 12
+    farm: 6
+    menus: 4
+    casino: 4
+    social: 6
+    pit: 8
+    dungeon: 8
+    exile: 6
+    island: 4
+  # Islands open at Aetherion level 20. Bots of these roles are raised to it once (all skills together), so the
+  # island road can be tested; every other role earns its XP by playing.
+  unlocks:
+    account-level: 20
+    account-level-roles: [island, general]
   # Player-like extras (skills, mixed-tier kits, pets, boosters) run on every provision.
   # Skill XP only lands on equipped loadout skills — bots do not /skills setlevel.
   # Coins are topped up to these targets on setup, never added on top (no inflation across respawns).

@@ -24,8 +24,9 @@ export function attachWindowWatchdog(bot, log, { maxOpenMs = 7000 } = {}) {
     }
     if (!openedAt) openedAt = Date.now()
     const info = windowKind(bot)
-    const owned = (bot.role === 'trade' && [KINDS.market, KINDS.price, KINDS.confirm].includes(info.kind))
-      || (bot.role === 'quest' && info.kind === KINDS.questOffer)
+    const owned = Boolean(bot.qaOwnWindows)
+      || ((bot.role === 'trade' || bot.qaStep === 'trade') && [KINDS.market, KINDS.price, KINDS.confirm].includes(info.kind))
+      || ((bot.role === 'quest' || bot.qaStep === 'quest') && info.kind === KINDS.questOffer)
     const limit = owned ? maxOpenMs * 3 : maxOpenMs
     if (Date.now() - openedAt > limit) {
       openedAt = 0

@@ -65,15 +65,21 @@ export function createCombatLoop(bot, cfg, log) {
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     if (bot.entity?.position && !bot.qaHome) {
       bot.qaHome = { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
     log(bot.stressName, 'combat loop start')
     note(bot, 'combat loop start', 'fighting')
-    runEvery(bot, 250, tick, (err) => log(bot.stressName, `combat tick: ${err.message}`))
+    const halt = runEvery(bot, 250, tick, (err) => log(bot.stressName, `combat tick: ${err.message}`))
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }
 

@@ -205,6 +205,15 @@ export function homeFor(pos, anchors, { snapXZ = 6, snapY = 4 } = {}) {
   return { x: pos.x, y: pos.y, z: pos.z }
 }
 
+/** Activities that look motionless on purpose (breaking, waiting on a bar, a menu, a server hop). */
+const WORKING = [
+  'mining', 'foraging', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop',
+  'combat', 'trading', 'fighting', 'farming', 'menus', 'casino', 'party', 'dungeon', 'exploring', 'island', 'pit',
+  'travel', 'building'
+]
+/** Of those, the ones whose path must not be cancelled when the bot stands still. */
+const KEEP_JOB = ['ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'menus', 'casino', 'party', 'travel', 'building']
+
 export function attachSafety(bot, opts = {}) {
   const voidFloorY = opts.voidFloorY ?? 40
   const leash = opts.leashRadius ?? 16
@@ -229,9 +238,13 @@ export function attachSafety(bot, opts = {}) {
     note(bot, reason, activity)
   }
 
+  // Role and activity can change the leash and floor on the fly (a touring bot goes from a quarry to a dungeon).
+  const floorNow = () => bot.qaVoidFloorY ?? voidFloorY
+  const leashNow = () => bot.qaLeash ?? leash
+
   const resumeIfSafe = (pos) => {
     if (!bot.qaSuspended) return
-    if (!pos || isBelowFloor(pos, voidFloorY)) return
+    if (!pos || isBelowFloor(pos, floorNow())) return
     if ((bot.health ?? 0) <= 0) return
     bot.qaHome = resolveHome(bot, anchors)
     bot.qaLastSafe = { x: pos.x, y: pos.y, z: pos.z }
@@ -248,7 +261,7 @@ export function attachSafety(bot, opts = {}) {
       return
     }
 
-    if (isBelowFloor(pos, voidFloorY)) {
+    if (isBelowFloor(pos, floorNow())) {
       hold('void floor — hold for plugin recover', 'void')
       return
     }
@@ -266,14 +279,14 @@ export function attachSafety(bot, opts = {}) {
       bot.qaHome = resolveHome(bot, anchors)
     }
 
-    if (bot.qaHome && !withinLeash(pos, bot.qaHome, leash + 3) && bot.qaActivity !== 'pad_hop') {
+    if (bot.qaHome && !bot.qaTravelling && !withinLeash(pos, bot.qaHome, leashNow() + 3) && bot.qaActivity !== 'pad_hop') {
       cancelPath(bot)
       bot.qaNeedRetarget = true
       bot.qaGoal = null
       bot.qaGoalDist = null
       note(bot, 'leash pull', 'recovering')
       if (bot.pathfinder && !bot.qaSuspended) {
-        const pull = clampToLeash(pos, bot.qaHome, Math.max(2, leash * 0.35))
+        const pull = clampToLeash(pos, bot.qaHome, Math.max(2, leashNow() * 0.35))
         try {
           const goals = opts.goals
           if (goals) {
@@ -294,9 +307,8 @@ export function attachSafety(bot, opts = {}) {
     if (progress.dist != null) bot.qaGoalDist = progress.dist
     const digging = !!bot.qaDigging
     const gathering = !!bot.qaGathering || bot.qaActivity === 'foraging' || bot.qaActivity === 'mining' || bot.qaActivity === 'fishing'
-    const working = digging || gathering || !!bot.targetDigBlock
-      || ['mining', 'foraging', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat', 'trading', 'fighting']
-        .includes(bot.qaActivity)
+    const working = digging || gathering || !!bot.targetDigBlock || !!bot.qaTravelling
+      || WORKING.includes(bot.qaActivity)
       || bot.pathfinder?.isMoving?.()
     if (moved || progress.progressed) {
       bot.qaStuckSince = 0
@@ -305,7 +317,7 @@ export function attachSafety(bot, opts = {}) {
     } else if (!bot.qaSuspended) {
       bot.qaStuckSince = bot.qaStuckSince || Date.now()
       const frozenMs = Date.now() - bot.qaStuckSince
-      const keepJob = working && ['ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop'].includes(bot.qaActivity)
+      const keepJob = working && KEEP_JOB.includes(bot.qaActivity)
       if (shouldCancelStuck({
         moved: false,
         progressedTowardGoal: false,
@@ -360,7 +372,7 @@ export function attachSafety(bot, opts = {}) {
     hold('spawn — wait for plugin teleport', 'recovering')
     setTimeout(() => {
       const pos = bot.entity?.position
-      if (pos && !isBelowFloor(pos, voidFloorY)) {
+      if (pos && !isBelowFloor(pos, floorNow())) {
         bot.qaHome = resolveHome(bot, anchors)
         bot.qaLastSafe = { x: pos.x, y: pos.y, z: pos.z }
         bot.qaSuspended = false

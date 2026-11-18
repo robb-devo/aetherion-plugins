@@ -306,7 +306,10 @@ public final class BotActivityTracker implements Listener, Runnable {
             }
             Runtime runtime = runtime(player);
             Location loc = player.getLocation();
-            double floor = plugin.getSafety() == null
+            BotRole current = roleOf(player);
+            double floor = current != null && current.free() && loc.getWorld() != null
+                    ? loc.getWorld().getMinHeight() - 8
+                    : plugin.getSafety() == null
                     ? plugin.getConfig().getDouble("testbots.safety.void-floor-y", 40)
                     : plugin.getSafety().floorOf(plugin.getRegistry().byPlayer(player));
             if (loc.getY() < floor) {

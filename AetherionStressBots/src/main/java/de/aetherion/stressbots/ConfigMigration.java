@@ -13,10 +13,13 @@ import java.util.Map;
  * Patches an existing live config.yml in place (it is never replaced). Role anchors that still equal what an
  * older jar shipped move to the current defaults; anchors somebody tuned stay. Keys that are new in this
  * version are added. Runs once per {@code testbots.config-version}.
+ *
+ * <p>Version 3 (whole-network bots): every {@code testbots} key the jar ships that the live file lacks is added
+ * (caps and spots of the new roles, {@code unlocks}); values already in the file are never touched.
  */
 final class ConfigMigration {
 
-    static final int VERSION = 2;
+    static final int VERSION = 3;
 
     /** Anchors shipped before version 2, per role (x, y, z). */
     private static final Map<String, double[][]> SHIPPED_V1 = Map.of(
@@ -38,7 +41,7 @@ final class ConfigMigration {
         }
         List<String> changes = new ArrayList<>();
         ConfigurationSection shippedRoles = defaults.getConfigurationSection("testbots.roles");
-        if (shippedRoles != null && config.contains("testbots.roles", true)) {
+        if (version < 2 && shippedRoles != null && config.contains("testbots.roles", true)) {
             for (String role : shippedRoles.getKeys(false)) {
                 String path = "testbots.roles." + role;
                 ConfigurationSection shipped = shippedRoles.getConfigurationSection(role);
@@ -58,10 +61,34 @@ final class ConfigMigration {
                 }
             }
         }
+        if (version < 3) {
+            int added = addMissing(config, defaults);
+            if (added > 0) {
+                changes.add(added + " new keys (wave 3 roles, unlocks)");
+            }
+        }
         config.set("testbots.config-version", VERSION);
         plugin.saveConfig();
         plugin.getLogger().info("config.yml patched to version " + VERSION
                 + (changes.isEmpty() ? " (nothing else to change)" : ": " + String.join(", ", changes)));
+    }
+
+    /** Adds every shipped leaf under {@code testbots} the live file does not have. Lists count as leaves. */
+    private static int addMissing(FileConfiguration config, Configuration defaults) {
+        ConfigurationSection shipped = defaults.getConfigurationSection("testbots");
+        if (shipped == null) {
+            return 0;
+        }
+        int added = 0;
+        for (String key : shipped.getKeys(true)) {
+            String path = "testbots." + key;
+            if (shipped.isConfigurationSection(key) || config.contains(path, true)) {
+                continue;
+            }
+            config.set(path, shipped.get(key));
+            added++;
+        }
+        return added;
     }
 
     private static boolean sameAnchors(List<?> live, double[][] old) {

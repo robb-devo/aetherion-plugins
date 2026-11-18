@@ -34,6 +34,8 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
     private final Map<UUID, Long> idleSince = new ConcurrentHashMap<>();
     private final Map<UUID, Long> padFlightUntil = new ConcurrentHashMap<>();
     private final Map<UUID, Location> homes = new ConcurrentHashMap<>();
+    /** Free roles: the last ground they stood on, where the void sends them back. */
+    private final Map<UUID, Location> lastGround = new ConcurrentHashMap<>();
 
     public BotSafetyWatchdog(AetherionStressBots plugin) {
         this.plugin = plugin;
@@ -51,7 +53,11 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
         DamageCause cause = event.getCause();
         if (cause == DamageCause.VOID) {
             event.setCancelled(true);
-            recover(player, handler, "void", false);
+            if (handler.role().free()) {
+                recoverFree(player, "void");
+            } else {
+                recover(player, handler, "void", false);
+            }
             return;
         }
         if (cause == DamageCause.FALL) {
@@ -73,6 +79,7 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
         lastHopAt.remove(id);
         idleSince.remove(id);
         padFlightUntil.remove(id);
+        lastGround.remove(id);
     }
 
     /** Where the plugin last put this bot (setup, respawn, recover). The leash is measured from here. */
@@ -100,6 +107,10 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 continue;
             }
             Location loc = player.getLocation();
+            if (handler.role().free()) {
+                watchFree(player, loc);
+                continue;
+            }
             ConfigurationSection section = roleSection(handler);
             double floor = BotLocations.voidFloor(plugin.getConfig(), section);
             double leash = leashOf(section);
@@ -160,6 +171,43 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 }
             }
         }
+    }
+
+    /**
+     * Travelling roles walk wherever the server lets players walk: no leash, no idle re-anchor, no pad hops, and
+     * the floor is the world's real bottom (dungeons and islands sit at other heights than the main-world pads).
+     */
+    private void watchFree(Player player, Location loc) {
+        if (loc.getWorld() == null) {
+            return;
+        }
+        if (loc.getY() < loc.getWorld().getMinHeight() - 8) {
+            recoverFree(player, "void-floor");
+            return;
+        }
+        if (player.isOnGround() && BotLocations.isSolidStand(loc)) {
+            lastGround.put(player.getUniqueId(), loc.clone());
+        }
+    }
+
+    public boolean recoverFree(Player player, String reason) {
+        long now = System.currentTimeMillis();
+        long cooldown = plugin.getConfig().getLong("testbots.safety.recover-cooldown-ms", 1500);
+        Long previous = recoverAt.get(player.getUniqueId());
+        if (previous != null && now - previous < cooldown) {
+            return false;
+        }
+        Location dest = lastGround.get(player.getUniqueId());
+        if (dest == null || dest.getWorld() == null || !dest.getWorld().equals(player.getWorld())) {
+            dest = player.getWorld().getSpawnLocation();
+        }
+        recoverAt.put(player.getUniqueId(), now);
+        player.setFallDistance(0f);
+        player.setVelocity(new Vector(0, 0, 0));
+        player.teleport(dest);
+        plugin.getActivity().markRecovering(player, reason + " → " + BotLocations.format(dest));
+        plugin.getLogger().info("Recovered " + player.getName() + " (" + reason + ") → " + BotLocations.format(dest));
+        return true;
     }
 
     public boolean recover(Player player, BotRoleHandler handler, String reason, boolean otherPad) {

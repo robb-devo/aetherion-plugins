@@ -280,18 +280,24 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     if (bot.entity?.position) {
       bot.qaHome = bot.qaHome || { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
     log(bot.stressName, `${activity} loop start (${mode})`)
     note(bot, `${activity} loop start`, activity)
-    runEvery(bot, 300, tick, (err) => {
+    const halt = runEvery(bot, 300, tick, (err) => {
       markError(bot, err)
       log(bot.stressName, `${activity} tick: ${err.message}`)
     })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }
 

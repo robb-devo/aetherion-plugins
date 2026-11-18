@@ -14,7 +14,7 @@
     <packaging>jar</packaging>
 
     <name>AetherionProxy</name>
-    <description>Velocity side of the network: sends the resource pack once per session.</description>
+    <description>Velocity side of the network: sends the resource pack once per session, lets the test bots in.</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

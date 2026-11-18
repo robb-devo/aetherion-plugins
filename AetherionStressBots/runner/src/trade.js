@@ -11,10 +11,10 @@ import {
 import { applyIslandMovements, wanderOnIsland } from './safety.js'
 import { jitter, markError, note, runEvery, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
+import { isBotName } from './names.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
-const BOT_SELLERS = /^(qa|stress)/i
 
 export function isGearItem(item) {
   if (!item?.name) return false
@@ -37,7 +37,7 @@ export function isResourceItem(item) {
  */
 export function pickListing(listings, { buyFromPlayers = false, purse = Infinity, rng = Math.random } = {}) {
   const pool = listings.filter((entry) => !entry.mine
-    && (buyFromPlayers || BOT_SELLERS.test(entry.seller))
+    && (buyFromPlayers || isBotName(entry.seller))
     && (!Number.isFinite(purse) || entry.price <= purse))
   if (pool.length === 0) return null
   return pool[Math.floor(rng() * pool.length)]
@@ -160,14 +160,20 @@ export function createTradeLoop(bot, cfg, log) {
     await sleep(jitter(cfg.actionGapMs ?? 6000, 0.4))
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     log(bot.stressName, `trade loop start (ah + bazaar windows, buy from ${buyFromPlayers ? 'anyone' : 'bots only'})`)
     note(bot, 'trade loop start', ACTIVITIES.trading)
-    runEvery(bot, 500, tick, (err) => {
+    const halt = runEvery(bot, 500, tick, (err) => {
       markError(bot, err)
       log(bot.stressName, `trade tick: ${err.message}`)
     })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }

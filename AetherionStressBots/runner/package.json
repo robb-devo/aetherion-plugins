@@ -2,7 +2,7 @@
   "name": "aetherion-stress-bots",
   "version": "1.0.0",
   "private": true,
-  "description": "Mineflayer QA/stress bots for Aetherion (Wave 1 + combat/fish/trade/quest/pad)",
+  "description": "Mineflayer test bots that play the whole Aetherion network (proxy logins, every server, network report)",
   "type": "module",
   "bin": {
     "aetherion-stress": "./src/index.js"

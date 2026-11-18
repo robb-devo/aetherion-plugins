@@ -2,9 +2,21 @@
   "host": "127.0.0.1",
   "port": 25567,
   "version": "1.21.1",
-  "joinDelayMs": 2500,
+  "connect": {
+    "mode": "proxy",
+    "proxy": {
+      "host": "127.0.0.1",
+      "port": 25565,
+      "token": "CHANGE_ME"
+    },
+    "directServer": "mmo-r"
+  },
+  "names": {
+    "style": "german"
+  },
+  "joinDelayMs": 3500,
   "velocitySecret": "CHANGE_ME",
-  "maxTotal": 40,
+  "maxTotal": 60,
   "control": {
     "bind": "127.0.0.1",
     "port": 18765,
@@ -24,7 +36,16 @@
     "fish": "QaFish",
     "trade": "QaTrade",
     "quest": "QaQuest",
-    "pad": "QaPad"
+    "pad": "QaPad",
+    "general": "QaGeneral",
+    "farm": "QaFarm",
+    "menus": "QaMenus",
+    "casino": "QaCasino",
+    "social": "QaSocial",
+    "pit": "QaPit",
+    "dungeon": "QaDungeon",
+    "exile": "QaExile",
+    "island": "QaIsland"
   },
   "caps": {
     "mine": 8,
@@ -36,7 +57,16 @@
     "trade": 8,
     "quest": 8,
     "pad": 8,
-    "mining": 8
+    "mining": 8,
+    "general": 12,
+    "farm": 6,
+    "menus": 4,
+    "casino": 4,
+    "social": 6,
+    "pit": 8,
+    "dungeon": 8,
+    "exile": 6,
+    "island": 4
   },
   "playstyle": {
     "starterCoins": 2500,
@@ -232,5 +262,51 @@
         "z": -240.5
       }
     ]
+  },
+  "general": {
+    "weights": {},
+    "reachMs": 150000
+  },
+  "farm": {
+    "searchRadius": 18,
+    "warp": "/farm",
+    "stage": "farm"
+  },
+  "menus": {
+    "gapMs": 4000,
+    "maxPages": 2,
+    "openTimeoutMs": 5000
+  },
+  "casino": {
+    "spinsPerVisit": 3,
+    "visitGapMs": 30000
+  },
+  "social": {
+    "partySize": 4,
+    "holdMs": 180000
+  },
+  "pit": {
+    "searchRadius": 26,
+    "attackIntervalMs": 520,
+    "reenterMs": 120000
+  },
+  "dungeon": {
+    "partySize": 4,
+    "floor": 1,
+    "maxRunMs": 480000,
+    "runsBeforeHome": 3,
+    "homeBreakMs": 120000,
+    "clearedLeaveMs": 75000,
+    "yieldToPlayers": true,
+    "attackIntervalMs": 460
+  },
+  "exile": {
+    "stayMs": 600000,
+    "roamRadius": 32,
+    "breakMs": 180000
+  },
+  "island": {
+    "stayMs": 480000,
+    "breakMs": 180000
   }
 }

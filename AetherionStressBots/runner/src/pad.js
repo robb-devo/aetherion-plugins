@@ -145,15 +145,21 @@ export function createPadLoop(bot, cfg, log) {
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     log(bot.stressName, `pad loop start (${pads.length} pads)`)
     note(bot, 'pad loop start', ACTIVITIES.padHop)
     // Sequential: a hop (walk + arc + landing) takes seconds, and two overlapping ticks fought over the pathfinder.
-    runEvery(bot, 420, tick, (err) => {
+    const halt = runEvery(bot, 420, tick, (err) => {
       markError(bot, err)
       log(bot.stressName, `pad tick: ${err.message}`)
     })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }

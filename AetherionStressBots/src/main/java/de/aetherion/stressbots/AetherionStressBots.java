@@ -20,6 +20,9 @@ import org.bukkit.scheduler.BukkitTask;
 
 public final class AetherionStressBots extends JavaPlugin {
 
+    private static volatile AetherionStressBots instance;
+
+    private final BotIdentity identity = new BotIdentity();
     private BotRoleRegistry registry;
     private BotNicknames nicknames;
     private BotProvisioner provisioner;
@@ -31,6 +34,7 @@ public final class AetherionStressBots extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        instance = this;
         saveDefaultConfig();
         ConfigMigration.run(this);
         activity = new BotActivityTracker(this);
@@ -51,6 +55,12 @@ public final class AetherionStressBots extends JavaPlugin {
         PluginCommand report = getCommand("botreport");
         if (report != null) {
             report.setExecutor(new BotReportCommand(this));
+        }
+        PluginCommand testbot = getCommand("testbot");
+        if (testbot != null) {
+            TestBotCommand executor = new TestBotCommand(this);
+            testbot.setExecutor(executor);
+            testbot.setTabCompleter(executor);
         }
 
         AetherServices.registerTestBots(controller);
@@ -74,6 +84,16 @@ public final class AetherionStressBots extends JavaPlugin {
         if (controller != null) {
             AetherServices.clearTestBots(controller);
         }
+        instance = null;
+    }
+
+    /** The running plugin, or null while it is disabled. */
+    public static AetherionStressBots instance() {
+        return instance;
+    }
+
+    public BotIdentity getIdentity() {
+        return identity;
     }
 
     public void reloadAssist() {

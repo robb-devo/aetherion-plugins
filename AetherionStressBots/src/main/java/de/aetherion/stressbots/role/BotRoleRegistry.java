@@ -31,7 +31,15 @@ public final class BotRoleRegistry {
         register(new QuestRoleHandler(plugin));
         register(new PadRoleHandler(plugin));
         register(new LegacyMiningRoleHandler(plugin));
+        for (BotRole role : BotRole.values()) {
+            if (role.free()) {
+                register(new NetworkRoleHandler(plugin, role));
+            }
+        }
+        this.plugin = plugin;
     }
+
+    private final AetherionStressBots plugin;
 
     private void register(BotRoleHandler handler) {
         handlers.put(handler.role(), handler);
@@ -41,9 +49,14 @@ public final class BotRoleRegistry {
         return role == null ? null : handlers.get(role);
     }
 
+    /** The role the runner said in {@code /testbot hello}; else the old {@code QaMine01}-style name prefix. */
     public BotRoleHandler byPlayer(Player player) {
         if (player == null) {
             return null;
+        }
+        BotRole told = plugin.getIdentity().role(player);
+        if (told != null) {
+            return handlers.get(told);
         }
         return byName(player.getName());
     }
@@ -100,10 +113,15 @@ public final class BotRoleRegistry {
         return byWave(2);
     }
 
+    public List<BotRoleHandler> wave3() {
+        return byWave(3);
+    }
+
     public List<BotRoleHandler> qa() {
         List<BotRoleHandler> out = new ArrayList<>();
         out.addAll(wave1());
         out.addAll(wave2());
+        out.addAll(wave3());
         return out;
     }
 

@@ -27,7 +27,20 @@ export const SLOTS = {
   priceSuggested: 2,
   priceCancel: 8,
   confirmBuy: 11,
-  confirmCancel: 15
+  confirmCancel: 15,
+  // AetherionDungeons DungeonMenu: header 4 (end portal frame), Floor 1 · Prison 20, Floor 2 22, Floor 3 24, close 49.
+  dungeonHeader: 4,
+  dungeonFloor1: 20,
+  dungeonFloor2: 22,
+  dungeonFloor3: 24,
+  dungeonClose: 49,
+  // AetherionItems CasinoGames slots table: logo 4, purse 7, bet 47, spin 51. (8 is the staff rigger, 53 auto: never.)
+  slotsLogo: 4,
+  slotsPurse: 7,
+  slotsSpin: 51,
+  // AetherionGuilds StarterSelectMenu: header 4 (nether star when open, clock when locked), starters 11 / 13 / 15.
+  starterHeader: 4,
+  starters: [11, 13, 15]
 }
 
 export const KINDS = {
@@ -37,6 +50,9 @@ export const KINDS = {
   price: 'price',
   confirm: 'confirm',
   questOffer: 'quest_offer',
+  dungeon: 'dungeon',
+  slots: 'casino_slots',
+  starter: 'island_starter',
   other: 'other'
 }
 
@@ -132,7 +148,33 @@ export function windowKind(bot) {
       return { kind: KINDS.questOffer, state }
     }
   }
+  if (size === 54 && slotType(bot, SLOTS.dungeonHeader) === 'end_portal_frame'
+      && slotType(bot, SLOTS.dungeonFloor1) === 'deepslate_bricks' && slotType(bot, SLOTS.dungeonClose) === 'barrier') {
+    return { kind: KINDS.dungeon }
+  }
+  if (size === 54 && slotItem(bot, SLOTS.slotsSpin) && slotItem(bot, SLOTS.slotsLogo)
+      && (slotName(bot, SLOTS.slotsSpin).includes('spin') || slotName(bot, SLOTS.slotsLogo).includes('slot'))) {
+    return { kind: KINDS.slots }
+  }
+  if (size >= 27 && SLOTS.starters.every((slot) => slotItem(bot, slot))
+      && ['nether_star', 'clock'].includes(slotType(bot, SLOTS.starterHeader))) {
+    return { kind: KINDS.starter, state: slotType(bot, SLOTS.starterHeader) === 'nether_star' ? 'open' : 'locked' }
+  }
   return { kind: KINDS.other, title }
+}
+
+/** Slots of the open window whose item name looks like a page-forward button (arrows only, never a buy button). */
+export function nextPageSlots(bot) {
+  const window = bot?.currentWindow
+  if (!window) return []
+  const out = []
+  for (let slot = 0; slot < containerSize(window); slot++) {
+    const item = window.slots[slot]
+    if (!item || !['arrow', 'spectral_arrow'].includes(item.name)) continue
+    const name = itemName(item, bot.registry).toLowerCase()
+    if (/next|more|weiter|vor|▶|→|»/.test(name) && !/back|prev|zurück|◀|←|«/.test(name)) out.push(slot)
+  }
+  return out
 }
 
 export function isLanguageWindow(bot) {

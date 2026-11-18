@@ -10,6 +10,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -85,6 +86,37 @@ public final class RunnerControlClient {
                 lastHealth = new Response(200, "{\"ok\":true}");
             }
         }
+    }
+
+    private final AtomicBoolean networkRefreshing = new AtomicBoolean();
+    private volatile List<String> network = List.of();
+    private volatile long networkAt;
+
+    /**
+     * The runner's own view of the whole network (bots per server, roads taken, menu timings, problems), as ready
+     * lines from {@code GET /report.txt}. Cached and refreshed off the main thread like the health line.
+     */
+    public List<String> networkLines() {
+        long now = System.currentTimeMillis();
+        if (now - networkAt > HEALTH_TTL_MS && networkRefreshing.compareAndSet(false, true)) {
+            Runnable refresh = () -> {
+                try {
+                    Response response = get("/report.txt");
+                    network = response == null || response.status() != 200 || response.body() == null
+                            ? List.of()
+                            : List.of(response.body().split("\\R"));
+                    networkAt = System.currentTimeMillis();
+                } finally {
+                    networkRefreshing.set(false);
+                }
+            };
+            if (Bukkit.isPrimaryThread() && plugin.isEnabled()) {
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, refresh);
+            } else {
+                refresh.run();
+            }
+        }
+        return network;
     }
 
     public Response setDesired(String role, int count) {

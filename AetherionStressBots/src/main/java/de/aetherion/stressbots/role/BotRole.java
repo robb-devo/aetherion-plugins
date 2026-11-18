@@ -6,7 +6,9 @@ import java.util.Locale;
  * All Mineflayer bot identities this plugin kits.
  * Wave 1 QA roles: {@link #MINE}, {@link #FORAGE}, {@link #CATCH}, {@link #ROAM}.
  * Wave 2 QA roles: {@link #COMBAT}, {@link #FISH}, {@link #TRADE}, {@link #QUEST}, {@link #PAD}.
- * {@link #MINING} stays as the Phase 1 {@code StressM*} prefix.
+ * Wave 3 roles play the rest of the network: {@link #FARM}, {@link #MENUS}, {@link #CASINO}, {@link #SOCIAL} on the
+ * main world, {@link #PIT} on the hub, {@link #DUNGEON} on mmo-d, {@link #EXILE} on mmo-c, {@link #ISLAND} on mmo-i,
+ * and {@link #GENERAL}, a player who tours all of it. {@link #MINING} stays as the Phase 1 {@code StressM*} prefix.
  */
 public enum BotRole {
     MINE("mine", 1),
@@ -18,6 +20,15 @@ public enum BotRole {
     TRADE("trade", 2),
     QUEST("quest", 2),
     PAD("pad", 2),
+    GENERAL("general", 3),
+    FARM("farm", 3),
+    MENUS("menus", 3),
+    CASINO("casino", 3),
+    SOCIAL("social", 3),
+    PIT("pit", 3),
+    DUNGEON("dungeon", 3),
+    EXILE("exile", 3),
+    ISLAND("island", 3),
     MINING("mining", 0);
 
     private final String id;
@@ -50,7 +61,15 @@ public enum BotRole {
     }
 
     public boolean qa() {
-        return wave == 1 || wave == 2;
+        return wave >= 1;
+    }
+
+    /**
+     * Roles that travel or wander on purpose (other servers, dungeons, islands, the Pit): the plugin keeps them out
+     * of the void but never leashes them to a pad, never re-anchors them when idle and never re-kits them on respawn.
+     */
+    public boolean free() {
+        return wave == 3;
     }
 
     public static BotRole fromId(String raw) {
@@ -87,6 +106,37 @@ public enum BotRole {
         if ("jump".equals(key) || "jumppad".equals(key) || "jump-pad".equals(key)
                 || "pads".equals(key) || "slime".equals(key) || "hop".equals(key)) {
             return PAD;
+        }
+        switch (key) {
+            case "tour", "player", "mixed", "all" -> {
+                return GENERAL;
+            }
+            case "farmer", "farming", "crops" -> {
+                return FARM;
+            }
+            case "menu", "gui", "guis" -> {
+                return MENUS;
+            }
+            case "gamble", "slots" -> {
+                return CASINO;
+            }
+            case "party", "friends", "friend" -> {
+                return SOCIAL;
+            }
+            case "pvp", "lobby" -> {
+                return PIT;
+            }
+            case "dungeons", "mmo-d", "mmod" -> {
+                return DUNGEON;
+            }
+            case "story", "mmo-c", "mmoc" -> {
+                return EXILE;
+            }
+            case "islands", "isle", "insel", "mmo-i", "mmoi" -> {
+                return ISLAND;
+            }
+            default -> {
+            }
         }
         for (BotRole role : values()) {
             if (role.id.equals(key) || role.name().equalsIgnoreCase(key)) {

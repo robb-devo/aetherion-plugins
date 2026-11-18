@@ -125,8 +125,18 @@ public final class BotReportBuilder {
         }
         out.append(" online=").append(report.onlineTotal())
                 .append("/").append(report.maxTotal()).append('\n');
+        List<String> network = plugin.getController() == null ? List.of() : plugin.getController().networkLines();
+        if (!network.isEmpty()) {
+            out.append('\n');
+            out.append("Network (every server, from the runner):\n");
+            for (String line : network) {
+                if (!line.isBlank()) {
+                    out.append("  ").append(line).append('\n');
+                }
+            }
+        }
         out.append('\n');
-        out.append("Roles:\n");
+        out.append("Roles on this server:\n");
         for (TestBotRoleView role : report.roles()) {
             if (role.online() == 0 && role.desired() == 0 && !isQa(role.id())) {
                 continue;
@@ -187,6 +197,8 @@ public final class BotReportBuilder {
         out.append("Activities: idle/pathing/mining/foraging/catching/roaming/combat/fishing/ah/bazaar/quest_dialog/minigame/pad_hop/void/recovering/stuck.\n");
         out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. Miners dig quarries; foragers play the Fell bar; fishers reel on the strike bar;\n");
         out.append("catchers lock the catch timing; traders list and buy bot listings on AH/Bazaar; questers talk to NPCs and answer the dialog; pad hops ride the arc.\n");
+        out.append("Network roles: general tours everything; pit fights bots in the hub's Pit; dungeon, exile and island take the player roads to mmo-d, mmo-c, mmo-i;\n");
+        out.append("farm harvests, menus opens and times every menu, casino spins the slots, social builds parties and friend lists with other bots.\n");
         return out.toString();
     }
 

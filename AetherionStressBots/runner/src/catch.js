@@ -120,18 +120,24 @@ export function createCatchLoop(bot, cfg, log) {
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     if (bot.entity?.position) {
       bot.qaHome = bot.qaHome || { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
     log(bot.stressName, 'catch loop start (throw → timing window)')
     note(bot, 'catch loop start', 'catching')
-    runEvery(bot, 320, tick, (err) => {
+    const halt = runEvery(bot, 320, tick, (err) => {
       markError(bot, err)
       log(bot.stressName, `catch tick: ${err.message}`)
     })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }
 
