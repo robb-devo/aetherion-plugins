@@ -1,6 +1,6 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, wanderOnIsland } from './safety.js'
-import { markError, note } from './util.js'
+import { markError, note, runEvery } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -107,18 +107,21 @@ export function createRoamLoop(bot, cfg, log) {
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     log(bot.stressName, `roam loop start (${waypoints.length} local waypoints, hop<=${maxHop})`)
     note(bot, 'roam loop start', 'roaming')
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `roam tick: ${err.message}`)
-      })
-    }, 380)
-    bot.once('end', () => clearInterval(handle))
+    const halt = runEvery(bot, 380, tick, (err) => {
+      markError(bot, err)
+      log(bot.stressName, `roam tick: ${err.message}`)
+    })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }
 

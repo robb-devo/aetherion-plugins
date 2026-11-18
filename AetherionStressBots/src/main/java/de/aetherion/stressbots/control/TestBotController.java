@@ -57,7 +57,9 @@ public final class TestBotController implements TestBotsAccess {
 
     @Override
     public List<String> wave2Roles() {
-        return idsOf(plugin.getRegistry().wave2());
+        List<String> ids = idsOf(plugin.getRegistry().wave2());
+        ids.addAll(idsOf(plugin.getRegistry().wave3()));
+        return ids;
     }
 
     private static List<String> idsOf(List<BotRoleHandler> handlers) {
@@ -75,9 +77,8 @@ public final class TestBotController implements TestBotsAccess {
         }
         BotRole role = requireStartable(roleId);
         if (role == null) {
-            return "§cUnknown role. Wave 1: mine, forage, catch, roam. Wave 2: combat, fish, trade, quest, pad.";
+            return "§cUnknown role. Roles: " + String.join(", ", startableRoles()) + ".";
         }
-        BotRoleHandler handler = plugin.getRegistry().handler(role);
         int clamped = clampCount(role, count <= 0 ? Math.max(1, desired.getOrDefault(role, 1)) : count);
         if (clamped <= 0) {
             return "§cRole cap is 0.";
@@ -100,8 +101,7 @@ public final class TestBotController implements TestBotsAccess {
         if (!response.ok()) {
             return "§cRunner refused: §7" + response.message();
         }
-        return "§aStarting §f" + clamped + " §a" + role.id() + " §7bots (" + handler.prefix() + "01..). "
-                + "§8" + response.message();
+        return "§aStarting §f" + clamped + " §a" + role.id() + " §7bots. §8" + response.message();
     }
 
     @Override
@@ -180,6 +180,11 @@ public final class TestBotController implements TestBotsAccess {
 
     public String runnerDetail() {
         return runner.detail();
+    }
+
+    /** The runner's whole-network lines (bots per server, roads, menu timings, problems); empty when it is down. */
+    public List<String> networkLines() {
+        return runner.networkLines();
     }
 
     public int maxTotal() {

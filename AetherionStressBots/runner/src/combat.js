@@ -1,6 +1,6 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, wanderOnIsland, withinLeash } from './safety.js'
-import { fidget, jitter, note } from './util.js'
+import { equipMatching, fidget, jitter, note, runEvery } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -21,7 +21,7 @@ export function createCombatLoop(bot, cfg, log) {
   }
 
   async function tick() {
-    if (!bot.entity || bot.entity.isValid === false || bot.qaSuspended) return
+    if (!bot.entity || bot.entity.isValid === false || bot.qaSuspended || bot.currentWindow) return
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
         canDig: false,
@@ -35,6 +35,9 @@ export function createCombatLoop(bot, cfg, log) {
       const dist = bot.entity.position.distanceTo(target.position)
       note(bot, `combat ${target.name || 'mob'}`, 'combat')
       bot.lookAt(target.position.offset(0, target.height * 0.85, 0), true).catch(() => {})
+      if (!bot.heldItem || !bot.heldItem.name.endsWith('_sword')) {
+        await equipMatching(bot, (item) => item.name.endsWith('_sword'))
+      }
       if (dist > 2.6) {
         bot.pathfinder.setGoal(new goals.GoalFollow(target, 1.6), true)
       } else {
@@ -62,18 +65,21 @@ export function createCombatLoop(bot, cfg, log) {
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     if (bot.entity?.position && !bot.qaHome) {
       bot.qaHome = { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
     log(bot.stressName, 'combat loop start')
     note(bot, 'combat loop start', 'fighting')
-    const handle = setInterval(() => {
-      tick().catch((err) => log(bot.stressName, `combat tick: ${err.message}`))
-    }, jitter(250, 0.15))
-    bot.once('end', () => clearInterval(handle))
+    const halt = runEvery(bot, 250, tick, (err) => log(bot.stressName, `combat tick: ${err.message}`))
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }
 

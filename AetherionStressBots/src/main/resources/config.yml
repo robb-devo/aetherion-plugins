@@ -44,11 +44,14 @@ mining:
 #
 # Island safety: keep scatter small, leash near the assigned pad, and prefer
 # interior anchors over jump-pad lip / canopy / borderlands death spots.
-# Live servers must copy these keys — saveDefaultConfig does not overwrite.
+# Live configs are patched on start (config-version): role anchors that still equal the shipped
+# defaults of an older version move to the current spots, and new keys are added. Tuned anchors stay.
 # ---------------------------------------------------------------------------
 testbots:
+  config-version: 3
   enabled: false
-  # Mixed fleet headroom (~5 roles × 8, or a thinner mix of all 9). Live max-players is 60.
+  # Bots spread over the whole network now (hub, mmo-r, mmo-d, mmo-c, mmo-i); this caps what one start may ask
+  # for. Live max-players on mmo-r is 60.
   max-total: 40
   max-per-start: 40
   runner:
@@ -76,16 +79,31 @@ testbots:
     quest: 8
     trade: 8
     pad: 8
+    general: 12
+    farm: 6
+    menus: 4
+    casino: 4
+    social: 6
+    pit: 8
+    dungeon: 8
+    exile: 6
+    island: 4
+  # Islands open at Aetherion level 20. Bots of these roles are raised to it once (all skills together), so the
+  # island road can be tested; every other role earns its XP by playing.
+  unlocks:
+    account-level: 20
+    account-level-roles: [island, general]
   # Player-like extras (skills, mixed-tier kits, pets, boosters) run on every provision.
   # Skill XP only lands on equipped loadout skills — bots do not /skills setlevel.
-  # New keys — copy into live YAML. saveDefaultConfig does not overwrite.
+  # Coins are topped up to these targets on setup, never added on top (no inflation across respawns).
   playstyle:
     starter-coins: 2500
     pocket-coins: 250
     unlock-trader: true
     unlock-spawns: true
   safety:
-    # Paper watchdog + Mineflayer hold. Tune if pads sit lower than Y 56.
+    # Paper watchdog + Mineflayer hold. Tune if pads sit lower than Y 56. A role can set its own
+    # void-floor-y (mine does: quarry floors are deeper than the pads).
     void-floor-y: 40
     leash-radius: 18
     recover-cooldown-ms: 1500
@@ -97,42 +115,46 @@ testbots:
     # Pad role: ignore leash/falling while mid-arc (ms).
     pad-flight-ms: 8000
   roles:
-    # Eldervale interior first (paste center), then mid-isle, then landing lip.
-    # Do not scatter off the slime-pad ledge — leash stays on the assigned patch.
+    # Quarry floors on Mining Eldervale (anchors from docs/MINING_ELDERVALE.md): Terraces, North Pit,
+    # Long Cut, Sunder Cut, West Hollow. The floors sit at Y 35-77, below the island void floor, so mine
+    # has its own floor. The Eldervale town (Lantern Row, the Landing) is not a dig site.
     mine:
       world: world
+      void-floor-y: -40
       anchors:
-        - { x: 22.5, y: 90.0, z: 580.5 }
-        - { x: 80.5, y: 92.0, z: 530.5 }
-        - { x: 53.5, y: 91.0, z: 482.5 }
+        - { x: 99.5, y: 77.0, z: 506.5 }
+        - { x: 30.5, y: 35.0, z: 457.5 }
+        - { x: -27.5, y: 45.0, z: 512.5 }
+        - { x: 159.5, y: 45.0, z: 529.5 }
+        - { x: -72.5, y: 50.0, z: 586.5 }
       yaw: 0.0
       pitch: 20.0
-      scatter-radius: 5
+      scatter-radius: 4
       leash-radius: 16
-    # Grove / return platform / paste center. Removed jump-pad lip 479.5 74 -240.5
-    # (Canopy-Kalle death loop) and any canopy-edge scatter.
-    # Leash 20 so logs a few blocks past the pad still count; search does not pick off-island trees.
+    # Forage Eldervale places (forage-isle.yml landmarks): the Landing and Streamside Hut (Elderwood, oak +
+    # birch), Bell Lodge, Ridge Watchtower and Frostpine Lodge (Frostpine, spruce). Never the jump-pad lip
+    # 479.5 74 -240.5 (Canopy-Kalle death loop).
     forage:
       world: world
       anchors:
-        - { x: 560.5, y: 91.0, z: -200.5 }
-        - { x: 559.5, y: 90.0, z: -208.5 }
-        - { x: 677.5, y: 91.0, z: -116.5 }
-        - { x: 560.5, y: 90.0, z: -160.5 }
+        - { x: 559.5, y: 90.0, z: -207.5 }
+        - { x: 698.5, y: 91.0, z: -132.5 }
+        - { x: 763.5, y: 92.0, z: -44.5 }
+        - { x: 766.5, y: 112.0, z: -146.5 }
+        - { x: 846.5, y: 113.0, z: -161.5 }
       yaw: 90.0
       pitch: 10.0
       scatter-radius: 5
       leash-radius: 20
-    # Solid habitat pads only. Removed 500.5 80 -200.5 (immediate void after TP).
+    # Solid ground in the Elderwood Vale (Landing, Streamside Hut). Removed 500.5 80 -200.5 (immediate void after TP).
     catch:
       world: world
       spheres: [common]
       sphere-count: 16
       anchors:
-        - { x: 560.5, y: 91.0, z: -200.5 }
-        - { x: 559.5, y: 90.0, z: -208.5 }
+        - { x: 559.5, y: 90.0, z: -207.5 }
+        - { x: 698.5, y: 91.0, z: -132.5 }
         - { x: 560.5, y: 90.0, z: -160.5 }
-        - { x: 22.5, y: 90.0, z: 580.5 }
       yaw: 0.0
       pitch: 0.0
       scatter-radius: 4
@@ -154,30 +176,36 @@ testbots:
       scatter-radius: 3
       leash-radius: 14
 
-    # Borderlands combat zone (hostiles). QaCombat login names; StressC still kits.
+    # Borderlands combat zone (hostiles). The live Hub spawn "borderlands" wins when it is set; the anchor is
+    # the fallback. QaCombat login names; StressC still kits.
     combat:
       world: world
+      hub-spawns: [borderlands]
       anchors:
         - { x: 220.5, y: 58.0, z: 160.5 }
       yaw: 0.0
       pitch: 0.0
       scatter-radius: 8
       leash-radius: 22
-    # Water scan from these pads (Forage dock / Origin). Tune if live water is elsewhere.
+    # Fishing Eldervale shores (AetherionFishing isle-cast presets + landing): Lakewatcher pier on Mirror
+    # Reach, the Bait Shack boathouse, the plaza landing above South Deep, the Harbourmaster's Hall by
+    # Lantern Cove. The Line's strike bar only runs on the isle.
     fish:
       world: world
       anchors:
-        - { x: 560.5, y: 91.0, z: -200.5 }
-        - { x: 559.5, y: 90.0, z: -208.5 }
-        - { x: 560.5, y: 90.0, z: -160.5 }
-        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: -336.5, y: 90.0, z: -821.5 }
+        - { x: -482.5, y: 90.0, z: -823.5 }
+        - { x: -380.0, y: 90.0, z: -815.5 }
+        - { x: -391.5, y: 90.0, z: -964.5 }
       yaw: 90.0
       pitch: 20.0
       scatter-radius: 3
       leash-radius: 14
-    # Origin pads + /ah /bazaar. GUIs need the TRADER progression flag.
+    # /ah and /bazaar work anywhere; bots stand at the live harbour and capital spawns (market, Egon),
+    # else on the origin pads. GUIs need the TRADER progression flag (given on setup).
     trade:
       world: world
+      hub-spawns: [harbour, capital]
       waypoints:
         - { x: 22.5, y: 56.0, z: 305.5 }
         - { x: 18.5, y: 56.0, z: 301.5 }
@@ -186,9 +214,12 @@ testbots:
       pitch: 0.0
       scatter-radius: 3
       leash-radius: 14
-    # Known FancyNPC pads (Maren / Twig / Eldervale interior). Right-click only.
+    # Quest NPC spots come from AetherionQuests (every saved NPC in the bot's world within quest-npc-radius),
+    # so bots follow NPCs when they move. The anchors are the fallback when Quests is offline.
     quest:
       world: world
+      use-quest-npcs: true
+      quest-npc-radius: 1500
       anchors:
         - { x: 53.5, y: 91.0, z: 482.5 }
         - { x: 22.5, y: 90.0, z: 580.5 }

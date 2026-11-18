@@ -3,7 +3,7 @@ version: 1.0.0
 main: de.aetherion.stressbots.AetherionStressBots
 api-version: 1.21
 author: Aetherion
-description: Mineflayer test/stress bots — kits, teleports, Dev-menu control, /botreport
+description: Mineflayer test bots for the whole network — kits, /testbot helper, Dev-menu control, /botreport
 depend:
   - AetherionCore
   - AetherionItems
@@ -23,8 +23,16 @@ commands:
     usage: /botreport
     aliases: [testbotreport]
     permission-message: No permission.
+  testbot:
+    description: Test bots only (hello, where, stage, near, quest, goto). People never see it.
+    usage: /testbot <hello|where|stage|near|quest|goto>
+    permission: aetherion.testbot.self
+    permission-message: Unknown command. Type "/help" for help.
 
 permissions:
   aetherion.stressbots.admin:
     description: Manage test/stress bots and /botreport
     default: op
+  aetherion.testbot.self:
+    description: Given to test bots on join (offline UUID); nobody else has it
+    default: false

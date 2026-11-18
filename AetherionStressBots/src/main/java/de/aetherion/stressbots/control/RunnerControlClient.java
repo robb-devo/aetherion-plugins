@@ -2,14 +2,18 @@ package de.aetherion.stressbots.control;
 
 import de.aetherion.stressbots.AetherionStressBots;
 
+import org.bukkit.Bukkit;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 /**
@@ -19,23 +23,33 @@ import java.util.logging.Level;
 public final class RunnerControlClient {
 
     private final AetherionStressBots plugin;
+    private static final long HEALTH_TTL_MS = 5_000L;
+
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(2))
             .build();
+    private final AtomicBoolean refreshing = new AtomicBoolean();
+    private volatile Response lastHealth;
+    private volatile long healthAt;
 
     public RunnerControlClient(AetherionStressBots plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Runner health from a cache refreshed off the main thread (at most every 5 s). The Dev menu and
+     * /botreport draw on the main thread, and a blocking HTTP call there froze the server for up to 3 s
+     * per draw whenever the runner was down.
+     */
     public boolean reachable() {
-        Response health = get("/health");
+        Response health = health();
         return health != null && health.ok();
     }
 
     public String detail() {
-        Response health = get("/health");
+        Response health = health();
         if (health == null) {
-            return "no response from " + baseUrl();
+            return healthAt == 0L ? "checking " + baseUrl() + "…" : "no response from " + baseUrl();
         }
         if (!health.ok()) {
             return "http " + health.status() + " " + trim(health.body());
@@ -44,18 +58,85 @@ public final class RunnerControlClient {
         return message.isBlank() ? "ok " + baseUrl() : message;
     }
 
+    private Response health() {
+        long now = System.currentTimeMillis();
+        if (now - healthAt > HEALTH_TTL_MS && refreshing.compareAndSet(false, true)) {
+            Runnable refresh = () -> {
+                try {
+                    lastHealth = get("/health");
+                    healthAt = System.currentTimeMillis();
+                } finally {
+                    refreshing.set(false);
+                }
+            };
+            if (Bukkit.isPrimaryThread() && plugin.isEnabled()) {
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, refresh);
+            } else {
+                refresh.run();
+            }
+        }
+        return lastHealth;
+    }
+
+    private void sawRunner(Response response) {
+        if (response != null) {
+            // A POST answered: the runner is up. Refresh the detail line on the next read.
+            healthAt = Math.min(healthAt, System.currentTimeMillis() - HEALTH_TTL_MS);
+            if (lastHealth == null) {
+                lastHealth = new Response(200, "{\"ok\":true}");
+            }
+        }
+    }
+
+    private final AtomicBoolean networkRefreshing = new AtomicBoolean();
+    private volatile List<String> network = List.of();
+    private volatile long networkAt;
+
+    /**
+     * The runner's own view of the whole network (bots per server, roads taken, menu timings, problems), as ready
+     * lines from {@code GET /report.txt}. Cached and refreshed off the main thread like the health line.
+     */
+    public List<String> networkLines() {
+        long now = System.currentTimeMillis();
+        if (now - networkAt > HEALTH_TTL_MS && networkRefreshing.compareAndSet(false, true)) {
+            Runnable refresh = () -> {
+                try {
+                    Response response = get("/report.txt");
+                    network = response == null || response.status() != 200 || response.body() == null
+                            ? List.of()
+                            : List.of(response.body().split("\\R"));
+                    networkAt = System.currentTimeMillis();
+                } finally {
+                    networkRefreshing.set(false);
+                }
+            };
+            if (Bukkit.isPrimaryThread() && plugin.isEnabled()) {
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, refresh);
+            } else {
+                refresh.run();
+            }
+        }
+        return network;
+    }
+
     public Response setDesired(String role, int count) {
         String json = "{\"role\":\"" + escape(role) + "\",\"count\":" + count + "}";
-        return post("/desired", json);
+        Response response = post("/desired", json);
+        sawRunner(response);
+        return response;
     }
 
     public Response stop(String role) {
         String json = "{\"role\":\"" + escape(role) + "\"}";
-        return post("/stop", json);
+        Response response = post("/stop", json);
+        sawRunner(response);
+        return response;
     }
 
     public Response stopAll() {
-        return post("/stop-all", "{}");
+        Response response = post("/stop-all", "{}");
+        sawRunner(response);
+        return response;
     }
 
     public CompletableFuture<Response> setDesiredAsync(String role, int count) {

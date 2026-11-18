@@ -1,8 +1,8 @@
 import http from 'node:http'
 
 /**
- * Localhost-only control plane for the Dev menu / plugin.
- * Does not expose the Velocity secret.
+ * Localhost-only control plane for the Dev menu / plugin: /health, /status (JSON), /report.txt (the network lines
+ * of /botreport), POST /desired, /stop, /stop-all. Never exposes the Velocity secret or the proxy token.
  */
 export function startControlServer({ host, port, token, fleet, log }) {
   const server = http.createServer(async (req, res) => {
@@ -18,6 +18,13 @@ export function startControlServer({ host, port, token, fleet, log }) {
       }
       if (req.method === 'GET' && url.pathname === '/status') {
         send(res, 200, { ok: true, ...fleet.snapshot() })
+        return
+      }
+      if (req.method === 'GET' && url.pathname === '/report.txt') {
+        // The network part of /botreport: one plain line each (roads, menus, what got done, problems).
+        const text = fleet.report().join('\n') + '\n'
+        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Content-Length': Buffer.byteLength(text) })
+        res.end(text)
         return
       }
       const body = await readBody(req)

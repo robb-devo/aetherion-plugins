@@ -1,7 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, standingIsSafe } from './safety.js'
 import { pickNextPad, readPads } from './pads.js'
-import { markError, note, sleep } from './util.js'
+import { markError, note, runEvery, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -145,17 +145,21 @@ export function createPadLoop(bot, cfg, log) {
     }
   }
 
+  let stop = () => {}
   return function start() {
-    if (running) return
+    if (running) return stop
     running = true
     log(bot.stressName, `pad loop start (${pads.length} pads)`)
     note(bot, 'pad loop start', ACTIVITIES.padHop)
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `pad tick: ${err.message}`)
-      })
-    }, 420)
-    bot.once('end', () => clearInterval(handle))
+    // Sequential: a hop (walk + arc + landing) takes seconds, and two overlapping ticks fought over the pathfinder.
+    const halt = runEvery(bot, 420, tick, (err) => {
+      markError(bot, err)
+      log(bot.stressName, `pad tick: ${err.message}`)
+    })
+    stop = () => {
+      halt()
+      running = false
+    }
+    return stop
   }
 }
