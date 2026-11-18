@@ -85,7 +85,7 @@ public final class TestBotDoor {
         new SecureRandom().nextBytes(raw);
         try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             writer.write("# Test bots (AetherionStressBots runner) log in offline through this proxy when this is on.\n");
-            writer.write("# Put the same token into the runner's config.json (proxy.token). Never commit it.\n");
+            writer.write("# Put the same token into the runner's config.json (connect.proxy.token). Never commit it.\n");
             writer.write("enabled=false\n");
             writer.write("token=" + HexFormat.of().formatHex(raw) + "\n");
             writer.write("# true = only connections from this machine (the runner runs next to the proxy).\n");
