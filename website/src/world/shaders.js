@@ -3,9 +3,9 @@ precision highp float; precision highp int;
 layout(location=0) in ivec3 aPos;
 layout(location=1) in uint aColor;
 layout(location=2) in uvec4 aInfo;  // faceAo, skyBlk, sunAB, sunC
-uniform mat4 uVP; uniform vec3 uOrigin; uniform highp sampler2D uPal; uniform float uIntro; uniform vec3 uCam; uniform vec3 uCenter;
+uniform mat4 uVP; uniform vec3 uOrigin; uniform highp sampler2D uPal; uniform float uIntro, uIntroR; uniform vec3 uCam; uniform vec3 uCenter;
 uniform vec3 uSunW, uSunCol, uAmbUp, uAmbDn, uBlock, uSunDirV; uniform float uTime;
-out vec3 vW; out float vAO; out vec3 vCol; out vec3 vL; flat out vec3 vN; flat out vec4 vM; flat out vec3 vSunTint;
+out vec3 vW; out float vAO; out vec3 vCol; out vec3 vL; out vec3 vS; flat out vec3 vN; flat out vec4 vM; flat out vec3 vSunTint;
 const vec3 NRM[8]=vec3[8](vec3(0,-1,0),vec3(0,1,0),vec3(0,0,-1),vec3(0,0,1),vec3(-1,0,0),vec3(1,0,0),vec3(.707,0,-.707),vec3(.707,0,.707));
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 void main(){
@@ -22,13 +22,13 @@ void main(){
   vec3 amb=mix(uAmbDn,uAmbUp,vN.y*.5+.5);
   amb*=1.0+dot(vN,uSunDirV)*.28;
   float skyL=.15+.85*pow(sky,.9);
-  vec3 L=amb*skyL+uSunCol*dot(sun,uSunW);
-  L+=uBlock*blk*blk*blk;
-  vL=L;
+  // sky and lamps here, the sun apart: clouds passing overhead dim only the sun (SOLID_FS)
+  vL=amb*skyL+uBlock*blk*blk*blk;
+  vS=uSunCol*dot(sun,uSunW);
   vM=vec4(floor(m.r*255.0/16.0),mod(m.r*255.0,16.0)/15.0,m.g*255.0,0.0);
   vSunTint=uSunCol;
   if(uIntro<1.0){ // chunks rise out of the fog, from the middle outward
-    vec2 col=floor(p.xz/16.0); float s=h21(col); float d=length(p.xz-uCenter.xz)/230.0;
+    vec2 col=floor(p.xz/16.0); float s=h21(col); float d=length(p.xz-uCenter.xz)/uIntroR;
     float k=clamp((uIntro*1.6-d*.72-s*.22)/.5,0.,1.); k=1.0-(1.0-k)*(1.0-k)*(1.0-k);
     p.y-=(1.0-k)*(150.0+s*90.0);
   }
@@ -40,8 +40,9 @@ void main(){
 
 export const SOLID_FS = `#version 300 es
 precision highp float; precision highp int;
-in vec3 vW; in float vAO; in vec3 vCol; in vec3 vL; flat in vec3 vN; flat in vec4 vM; flat in vec3 vSunTint;
+in vec3 vW; in float vAO; in vec3 vCol; in vec3 vL; in vec3 vS; flat in vec3 vN; flat in vec4 vM; flat in vec3 vSunTint;
 uniform vec3 uCam; uniform sampler2D uPat; uniform sampler2D uNoise; uniform vec3 uSunDir, uHaze, uAmbUp; uniform float uEmis, uFog, uMist, uMistY, uTime, uExposure, uFogBoost, uSolid, uFade;
+uniform vec4 uShadow; // cloud shadows: drift xy, strength, scale
 out vec4 o;
 float h31(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
 vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
@@ -57,14 +58,34 @@ void main(){
   if(near>0.0){ g=(texture(uPat,(tile+fract(uv))/4.0).r*2.0-1.0)*(.1+con*1.5)*near; }
   vec3 alb=vCol*(1.0+g)*(1.0+(hb-.5)*.15);
   float ao=mix(.5,1.0,vAO);
-  vec3 col=alb*vL*ao;
+  // clouds nobody sees, high overhead: their shadows drift over the land
+  float shade=1.0;
+  if(uShadow.z>0.0){ float cn=texture(uNoise,vW.xz*uShadow.w+uShadow.xy).r; shade=1.0-uShadow.z*smoothstep(.5,.74,cn); }
+  vec3 col=alb*(vL+vS*shade)*ao;
   float isGlow=mod(flags,2.0), isGlass=mod(floor(flags/2.0),2.0), isWater=mod(floor(flags/4.0),2.0);
   // metal and glass catch the sun as the camera moves: each block a slightly different mirror
-  if(pat==8.0||isGlass>.5||isWater>.5){
+  if(pat==8.0||isGlass>.5){
     vec3 n=normalize(vN+(vec3(h31(bp+1.3),h31(bp+2.7),h31(bp+4.1))-.5)*(isGlass>.5?.12:.28));
     float s=pow(max(dot(reflect(-V,n),uSunDir),0.),isGlass>.5?64.:28.);
     float fr=pow(1.0-max(dot(V,vN),0.),3.0);
     col+=vSunTint*s*(isGlass>.5?1.1:.9)+uAmbUp*fr*.35;
+  }
+  if(isWater>.5){
+    if(vN.y>.5){ // open water: two swells cross, the sky lies in it and the sun glitters on it
+      float r1=texture(uNoise,vW.xz*.021+uTime*vec2(.0042,.0026)).g;
+      float r2=texture(uNoise,vW.xz*.047-uTime*vec2(.0031,.0047)).g;
+      vec3 n=normalize(vec3((r1-.5)*1.1+(r2-.5)*.6,1.0,(r2-r1)*.9));
+      float fr=.03+.97*pow(1.0-max(dot(V,n),0.),5.0);
+      col=mix(col,uHaze*(.55+.45*shade),clamp(fr*.75,0.,.62));
+      float glint=pow(max(dot(reflect(-V,n),uSunDir),0.),120.)*shade;
+      col+=vSunTint*glint*2.2;
+    } else { // falling water: streaks running down, a little foam in them
+      float u=dot(vW.xz,abs(vN.x)>.5?vec2(0.,1.):vec2(1.,0.));
+      float st=texture(uNoise,vec2(u*.11,vW.y*.016+uTime*.1)).g;
+      float st2=texture(uNoise,vec2(u*.23+.5,vW.y*.031+uTime*.19)).g;
+      col*=.82+.36*smoothstep(.38,.7,st);
+      col=mix(col,(vL+vS*shade)*vec3(.82,.88,.95),smoothstep(.6,.82,st2)*.45);
+    }
   }
   if(isGlow>.5) col=mix(col,alb*(1.1+uEmis*2.6),.55+.45*uEmis);
   if(isGlass>.5){ // a window: dark by day; at dusk the lights come on, one by one

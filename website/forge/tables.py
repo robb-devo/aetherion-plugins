@@ -200,6 +200,9 @@ def build(palette, out_states, colors=None, sea=False):
     if True:
         for st in palette:
             f = io.BytesIO(); records.append(f)
+            # `full:<state>` is that block drawn as a whole cube in its main colour (far cells, build_scenes.soften)
+            force_full = st.startswith('full:')
+            if force_full: st = st[5:]
             name = st.replace('minecraft:', '').split('[')[0]
             props = {}
             if '[' in st:
@@ -284,6 +287,10 @@ def build(palette, out_states, colors=None, sea=False):
                 lo, hi, fc = boxes[0]
                 fc = [next((c for c in fc if c != 0xffff), 0xffff) if v == 0xffff else v for v in fc]
                 boxes = [([0, 0, 0], [16, 16, 16], fc)]
+            if force_full and boxes:
+                faces = [c for bx in boxes for c in bx[2] if c != 0xffff]
+                main = max(set(faces), key=faces.count)
+                boxes = [([0, 0, 0], [16, 16, 16], [main] * 6)]; cross = None
             # identical bounds from layered models: keep the first
             seen = {}; ub = []
             for bx in boxes:
@@ -302,7 +309,7 @@ def build(palette, out_states, colors=None, sea=False):
                             s = tex_stats(restex(tex, fd.get('texture')) or '')
                             if s and s[2] < 0.995: cutout = True
                 if cf & CF_GLASS: cutout = True
-            if name in ('mangrove_roots', 'muddy_mangrove_roots'): cutout = False
+            if name in ('mangrove_roots', 'muddy_mangrove_roots') or force_full: cutout = False
             solid_ish = full and not cutout
             if solid_ish: flags |= FL_FULL | FL_RAY
             elif full and (cf & CF_GLASS): flags |= FL_RAY  # glass seals the interior, blocks flood

@@ -324,7 +324,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
   const stats = { tris: 0, draws: 0, regions: 0 }
 
   /** `draw: false` keeps the geometry on the GPU without showing it: a stock that instances are cut from. */
-  function addMesh(mesh, origin = [0, 0, 0], { name = '', intro = 1, draw = true } = {}) {
+  function addMesh(mesh, origin = [0, 0, 0], { name = '', intro = 1, draw = true, center = null, introR = 230 } = {}) {
     const vao = gl.createVertexArray()
     gl.bindVertexArray(vao)
     const vb = gl.createBuffer()
@@ -360,9 +360,10 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
       gl.bindVertexArray(null)
     }
     const m = {
-      name, vao, lvao, pal, regions: mesh.regions, origin, intro, visible: true, fade: 1,
+      name, vao, lvao, pal, regions: mesh.regions, origin, intro, introR, visible: true, fade: 1,
       l0: 0, nl: mesh.lights.length / 4,
-      center: [origin[0] + mesh.size[0] / 2, 0, origin[2] + mesh.size[2] / 2],
+      // where the intro rises from: the middle, unless the set names the place the page opens on
+      center: center || [origin[0] + mesh.size[0] / 2, 0, origin[2] + mesh.size[2] / 2],
     }
     if (draw) meshes.push(m)
     // free the CPU copies
@@ -404,7 +405,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
   }
 
   /** view: { eye, at, fov, shiftX, shiftY, roll, clouds } · day: dayAt(t) · time: seconds */
-  function render(view, day, time, { intro = 1, fogBoost = 0, haze = [1, 0.9, 0.8], clouds = true, solidAir = 0, mistY = 92, flock = null, motes = null } = {}) {
+  function render(view, day, time, { intro = 1, fogBoost = 0, haze = [1, 0.9, 0.8], clouds = true, solidAir = 0, mistY = 92, flock = null, motes = null, shadow = null } = {}) {
     const w = canvas.width, h = canvas.height
     gl.viewport(0, 0, w, h)
     gl.depthMask(true)
@@ -438,6 +439,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
     gl.uniform1f(u.uMistY, mistY)
     gl.uniform1f(u.uTime, time)
     gl.uniform1f(u.uExposure, day.exposure)
+    gl.uniform4fv(u.uShadow, shadow || [0, 0, 0, 0.001])
     gl.uniform1i(u.uPal, 0)
     gl.uniform1i(u.uPat, 1)
     gl.uniform1i(u.uNoise, 2)
@@ -450,6 +452,7 @@ export function createWorld(canvas, { antialias = true, preserve = false } = {})
       gl.uniform3fv(u.uOrigin, m.origin)
       gl.uniform1f(u.uFade, m.fade)
       gl.uniform3fv(u.uCenter, m.center)
+      gl.uniform1f(u.uIntroR, m.introR || 230)
       gl.uniform1f(u.uIntro, Math.min(m.intro, intro))
       list.length = 0
       for (const r of m.regions) {

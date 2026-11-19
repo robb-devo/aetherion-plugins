@@ -1,6 +1,8 @@
 // Stills of the world from the page's own camera, for devices that don't get the 3D, plus the link preview.
 // Needs the dev server running. usage: node capture_posters.cjs <url> <public dir>
-const { chromium } = require('playwright')
+// PLAYWRIGHT: where Playwright is installed, PLAYWRIGHT_EXE: an installed Chromium-based browser instead of
+// Playwright's own download, PYTHON: a Python with Pillow (python3 by default).
+const { chromium } = require(process.env.PLAYWRIGHT || 'playwright')
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
@@ -13,13 +15,16 @@ fs.mkdirSync(tmp, { recursive: true })
 const CHAPTERS = ['hero', 'about', 'jobs', 'world', 'isle', 'pets', 'dungeons', 'exile', 'join', 'finale']
 
 ;(async () => {
-  const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] })
+  const browser = await chromium.launch({
+    ...(process.env.PLAYWRIGHT_EXE ? { executablePath: process.env.PLAYWRIGHT_EXE } : {}),
+    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
+  })
   const manifest = { l: {}, p: {} }
   for (const [key, w, h] of [['l', 1600, 900], ['p', 810, 1440]]) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
     const page = await ctx.newPage()
     await page.goto(`${url}/?shot=1`, { waitUntil: 'domcontentloaded' })
-    await page.waitForFunction('window.__stage && window.__stage.loaded.city', { timeout: 300000 })
+    await page.waitForFunction('window.__stage && window.__stage.loaded.city', null, { timeout: 300000 })
     await page.waitForTimeout(800)
     const grab = async (id) => {
       const data = await page.evaluate((ch) => {
@@ -53,14 +58,14 @@ const CHAPTERS = ['hero', 'about', 'jobs', 'world', 'isle', 'pets', 'dungeons', 
   const og = await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 })
   const page = await og.newPage()
   await page.goto(`${url}/?shot=1`, { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction('window.__stage && window.__stage.loaded.isles', { timeout: 300000 })
+  await page.waitForFunction('window.__stage && window.__stage.loaded.island', null, { timeout: 300000 })
   await page.waitForTimeout(800)
   await page.addStyleTag({ content: '.site-nav,.hero-foot{visibility:hidden!important}' })
   await page.evaluate(() => window.__stage.snap(0))
   await page.waitForTimeout(200)
   await page.screenshot({ path: path.join(pub, 'brand/og-aetherion.jpg'), type: 'jpeg', quality: 88 })
   await browser.close()
-  execFileSync('python3', ['-c', `
+  execFileSync(process.env.PYTHON || 'python3', ['-c', `
 import glob,os
 from PIL import Image
 for f in glob.glob(${JSON.stringify(tmp)}+'/*.png'):

@@ -53,6 +53,10 @@ const hermite = (y0, y1, m0, m1, h, u) => {
 }
 const CHANNELS = [['eye', 0], ['eye', 1], ['eye', 2], ['at', 0], ['at', 1], ['at', 2], ['fov'], ['sx'], ['sy']]
 
+/** A key names one set or several (`z: ['isles', 'island']`); the first one is the place it stands in. */
+const zoneOf = (k) => (Array.isArray(k.z) ? k.z[0] : k.z)
+const holds = (k, name) => (Array.isArray(k.z) ? k.z.includes(name) : k.z === name)
+
 const SEARCH = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams()
 export const SHOT = SEARCH.has('shot')
 
@@ -153,7 +157,8 @@ class Stage {
     const set = SETS[name]
     const mesh = await loadMesh(asset(set.url), onProgress)
     if (!set.place) {
-      this.world.addMesh(mesh, set.origin, { name })
+      const rise = set.rise ? { center: [set.rise[0], 0, set.rise[1]], introR: set.rise[2] } : {}
+      this.world.addMesh(mesh, set.origin, { name, ...rise })
     } else {
       // A set made of parts that stand on their own (the islands): each placement draws its part of
       // the one mesh. The lantern list is regrouped so that every part owns a run of it.
@@ -364,15 +369,16 @@ class Stage {
    * on screen together: each dissolves into the air it stands in.
    */
   presence(name, i, u) {
-    const a = this.keys[i].z === name ? 1 : 0
-    const b = this.keys[i + 1].z === name ? 1 : 0
+    const a = holds(this.keys[i], name) ? 1 : 0
+    const b = holds(this.keys[i + 1], name) ? 1 : 0
     if (a === b) return a
     return a ? 1 - smooth((u - 0.1) / 0.36) : smooth((u - 0.54) / 0.36)
   }
 
   /** The hero can be turned by hand. It springs back as soon as you let go and scroll. */
   orbitBy(dx, dy) {
-    this.orbit.yaw += dx * 0.0032
+    // a turn of the head, not a walk around: the island is only baked for what the route can see
+    this.orbit.yaw = Math.max(-0.55, Math.min(0.55, this.orbit.yaw + dx * 0.0032))
     this.orbit.pitch = Math.max(-0.1, Math.min(0.14, this.orbit.pitch + dy * 0.0012))
   }
 
@@ -522,7 +528,7 @@ class Stage {
     day.mist *= c.ff
 
     // which place this is, and how much of it
-    const zoneName = this.keys[c.u < 0.5 ? c.i : c.i + 1].z
+    const zoneName = zoneOf(this.keys[c.u < 0.5 ? c.i : c.i + 1])
     const zone = c.zone ? { ...ZONES[zoneName], ...c.zone } : ZONES[zoneName]
     const here = this.presence(zoneName, c.i, c.u)
 
@@ -582,13 +588,26 @@ class Stage {
         m.visible = m.fade > 0.004
       }
       const dusk = clamp01(day.emis * 1.4)
-      w.render(view, day, this.time + 40, {
+      // A flock marked `follow` drifts after whatever the camera looks at, slower than the camera, so
+      // every frame of a big place has birds over it without them ever jumping.
+      let flock = zone.flock && here > 0.5 ? zone.flock : null
+      if (flock && flock[0] === 'follow') {
+        const want = [at[0], at[2], at[1] + flock[1], flock[2]]
+        const k = SHOT || !this.flockAt ? 1 : 1 - Math.exp(-dt / 2600)
+        this.flockAt = (this.flockAt || want).map((v, j) => v + (want[j] - v) * k)
+        flock = this.flockAt
+      }
+      // cloud shadows by day, drifting with the cloud sea's wind; none once the lamps are lit
+      const tt = this.time + 40
+      const shadow = [tt * 0.0034, tt * 0.0021, clamp01(1 - day.emis * 2.2) * 0.4 * (zone.shadow ?? 1), 0.00115]
+      w.render(view, day, tt, {
+        shadow,
         intro: e,
         fogBoost: (1 - e) * 0.0046,
         haze: day.haze,
         solidAir: c.solid,
         mistY: zone.mistY,
-        flock: zone.flock && here > 0.5 ? zone.flock : null,
+        flock,
         motes: {
           tint: zone.motes || [1, lerp(0.96, 0.74, dusk), lerp(0.84, 0.38, dusk)],
           alpha: lerp(0.3, 0.85, dusk) * here * e,
@@ -655,7 +674,8 @@ class Stage {
   /** Test hook: paint an arbitrary view, to compose a frame before it becomes a key. `z` names its zone. */
   peek(view) {
     this.remeasure()
-    const i = Math.max(0, this.keys.findIndex((k) => k.z === (view.z || 'isles')))
+    const want = view.z || zoneOf(ROUTE[0])
+    const i = Math.max(0, this.keys.findIndex((k) => (Array.isArray(want) ? want.every((n) => holds(k, n)) : zoneOf(k) === want)))
     this.peeking = { sx: 0, sy: 0, fov: 40, t: 0, ff: 1, solid: 0, ...view, i: Math.min(i, this.keys.length - 2), u: i >= this.keys.length - 1 ? 1 : 0 }
     this.t = this.peeking.t
     this.step(performance.now(), 16)

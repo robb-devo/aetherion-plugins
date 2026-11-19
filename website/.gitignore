@@ -4,3 +4,6 @@ dist-ssr
 dist-preview
 *.local
 .DS_Store
+
+# The main island is a purchased map (OriginBuilds). Its mesh stays out of this public repo; the deploy copies it in.
+public/world3d/island.wasm

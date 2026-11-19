@@ -50,9 +50,17 @@ Fog is alpha, so the world dissolves into whatever sky is behind it. Weak device
 `stage.js` interpolates between keys with a monotone cubic over scroll distance, so the camera settles on a frame and never overshoots it.
 It banks a little into turns, and a box of motes travels with it.
 
-A key also names its set (`z`). `SETS` are the meshes, loaded in page order: the first one is what the page opens on.
-Between two keys of different sets, the old set dissolves into the air in the first half and the new one arrives in the second, so two
-places are never on screen together. The islands are one mesh of four parts, each placed on its own as often as the sky needs islands.
+A key also names its set (`z`). `SETS` are the meshes, loaded in page order: the first one is what the page opens on (the main island,
+Anker Harbour at dawn). Between two keys of different sets, the old set dissolves into the air in the first half and the new one arrives
+in the second, so two places never pop. A key can name several sets (`z: ['isles', 'island']`): the starter islands float off the main
+island's west coast, so in those two frames the main island stays below them. The starter islands are one mesh of four parts, each
+placed on its own as often as the sky needs islands.
+
+The page opens on the main island: the intro lifts it out of the fog from the harbour outward (`rise` in `SETS`). The hero can be turned
+by hand only a little (±0.55 rad), because the island is baked for what the route can see (below).
+
+Life in the frame: cloud shadows drift over the land by day, the sea has swell and glints, falling water streams (all in `shaders.js`),
+and on the main island the birds drift after whatever the camera looks at (`flock: ['follow', …]` in `ZONES`).
 
 To compose a frame, run the dev server with `?shot`: `window.__stage.peek({ eye, at, fov, t, z })` paints any view, `snap(y)` any scroll position.
 
@@ -64,30 +72,34 @@ python3 website/forge/build_scenes.py <repo root> <exil_gesamt.schem> website/pu
 ```
 
 After changing the route or a scene, refresh the stills for devices without 3D and the link preview, with the dev server running:
-`node forge/capture_posters.cjs <dev url> public`.
+`node forge/capture_posters.cjs <dev url> public` (`PLAYWRIGHT_EXE` may point at any installed Chromium-based browser, `PYTHON` at a
+Python with Pillow).
 
 ### The main island
 
-The page opens on the starter islands only until the main island is in. It comes straight from the server's world folder:
+It comes straight from the MMO-R server's world folder (`world/region`, nine region files `r.-2.-2` to `r.0.0`). The bake needs about
+8 GB of memory; it runs fine on the game host at `nice 19` in a work folder of its own (numpy, Pillow and lz4 in a venv).
 
 ```bash
 python3 website/forge/anvil.py <world>/region                    # what is in there: chunks, bounds, heights
-SCENES=island ISLAND=<world>/region ISLAND_BOX=x0,z0,x1,z1 \
-  ISLAND_FINE="x,z,r;x,z,r" python3 website/forge/build_scenes.py <repo root> x website/public/world3d
+node website/forge/route_views.mjs <dev url> island.views.txt    # where the camera goes (needs the dev server and Playwright)
+SCENES=island ISLAND=<world>/region ISLAND_BOX=-560,-640,520,430 ISLAND_VIEWS=island.views.txt \
+  ISLAND_FINE="330,-470,200;0,-50,170;-260,150,110;0,230,100" python3 website/forge/build_scenes.py <repo root> x website/public/world3d
 ```
 
-`ISLAND_BOX` is the island's footprint in world blocks (about -552..476 by -640..374, nine region files `r.-2.-2` to `r.0.0`).
-`ISLAND_FINE` lists circles around the places the camera comes close to (harbour, capital); outside them the grid is redrawn in
-2-block cells, which nobody can tell from a flying camera and which keeps the download small. Leave it out to keep every block.
-Seas bake as one surface. The result is `island.wasm`, and `scenes.json` gets its `offset`: add the set to `SETS` in `route.js`
-with that origin, put it first, give it a zone, and move the keys from the islands to the harbour. Then recapture the stills.
+`ISLAND_BOX` is the island's footprint in world blocks. `ISLAND_FINE` lists circles around the places the camera comes close to
+(harbour, capital, the fields, Southwood); outside them the grid is redrawn in 2-block cells, which nobody can tell from a flying
+camera. `ISLAND_VIEWS` is the route, sampled: every face that none of those camera positions can see is left out (the underside,
+backs of hills, rooms), which takes the mesh from 19 MB to a few. So after a route change, sample the views again and rebake, or the
+new frame may look through a hole. Seas bake as one surface. `scenes.json` gets the island's `offset`, which is `SETS.island.origin`.
 
-The island is a purchased map (OriginBuilds). Its mesh is downloaded by every visitor and this repository is public, so check the
-licence before the file is committed. What ships is softened geometry and averaged colours, never the world files or textures.
+The island is a purchased map (OriginBuilds). `island.wasm` is not in this public repository (`.gitignore`); the deploy copies it into
+`dist/world3d/`. What ships to visitors is softened geometry and averaged colours, never the world files or textures.
 
 ## Deploy
 
-Build from a clean `main`, then copy `dist/` into the web root. Keep `launcher/` and the launcher `.exe` that live there: `dist/` does not contain them, so copy, do not mirror-delete.
+Build from a clean `main`, put `island.wasm` (kept next to the deploy, not in git) into `dist/world3d/`, then copy `dist/` into the
+web root. Keep `launcher/` and the launcher `.exe` that live there: `dist/` does not contain them, so copy, do not mirror-delete.
 
 nginx needs `try_files $uri $uri/ /index.html;` so baked pages win and the account pages fall back to the app, and `.wasm` served as a file.
 `/de/...` is the German site; `index.html` sends German browsers there before the first paint.
