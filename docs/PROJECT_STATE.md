@@ -344,7 +344,7 @@ Known gaps:
 29 worktrees exist, 14 with uncommitted files. All branches were mirrored to
 `origin/backup/2026-10-02/*` on 10-02.
 
-## Website rebuild (branch `claude/donnernet-overhaul`, not merged, not deployed)
+## Website (live on donnernet.de since 2026-11-19, PR #148, main `55ebc808`)
 
 `website/` holds the new donnernet.de: one continuous 3D camera take over one in-game day, EN and DE. Start with `website/README.md`.
 The home page is a server page, not a game: hero, one statement, six frames with a line each, join. Depth lives in the wiki.
@@ -352,9 +352,10 @@ The page opens on the main island (MMO-R world, `world/region`, baked 2026-11-19
 and Southwood, the whole island from above, then the starter islands off the west coast, the prison under the clouds, the Exile city
 once at night (late game, never the face), and back to the harbour. `island.wasm` is not in git (purchased map, OriginBuilds); the
 deploy copies it in. Bake steps in `website/README.md`.
-Before it goes live, Robb decides or checks:
-- The OriginBuilds licence: every visitor downloads the island mesh (softened, averaged colours), and the stills show the island.
+Deployed 2026-11-19 21:04 from main: `dist/` plus `island.wasm` copied over `/var/www/donnernet.de` (launcher kept), backup of the
+old site in `/root/aetherion-ops/backups/www-donnernet-20261119-210454.tar.gz`. The build values live in the deploy clone's
+`website/.env.production.local`, never in this repo. Robb cleared the OriginBuilds licence for the site on 11-19.
+Still open:
+- Impressum and Datenschutz: put aside by Robb on 11-19; a German site with accounts usually needs them.
 - The boss list on the page and in the wiki.
-- Build env for the vanilla address and node ids (see the README's Deploy section).
-- Impressum and Datenschutz: the old site had neither, and a German site with accounts usually needs them.
-- Real-device performance (only tested on a software renderer so far).
+- Real-device performance (tested on desktop GPU and a software renderer; phones fall back to stills when too slow).
