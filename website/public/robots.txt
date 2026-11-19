@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /servers
+Disallow: /login
+Disallow: /register
+Sitemap: https://donnernet.de/sitemap.xml
