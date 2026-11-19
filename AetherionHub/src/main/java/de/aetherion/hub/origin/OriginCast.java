@@ -650,7 +650,10 @@ public final class OriginCast implements Listener {
         }
     }
 
-    /** Player-only bark bubble above the townsfolk (Hub-owned — not Quests TalkUx). */
+    /**
+     * Player-only bark bubble above the townsfolk (Hub-owned — not Quests TalkUx). While it shows, it takes the
+     * nameplate's place for that player: both sat above the head and stacked into two boxes (playtest 3, R-58).
+     */
     private void showBarkBubble(Player player, Location at, OriginRole role, String line) {
         if (at.getWorld() == null || !player.getWorld().equals(at.getWorld())) {
             return;
@@ -662,7 +665,12 @@ public final class OriginCast implements Listener {
                 previous.remove();
             }
         }
-        Location bubbleAt = at.clone().add(0, 2.55, 0);
+        Spawned spawned = live.get(role);
+        Entity plate = spawned == null || spawned.hologram() == null ? null : Bukkit.getEntity(spawned.hologram());
+        if (plate != null) {
+            player.hideEntity(isle.plugin(), plate);
+        }
+        Location bubbleAt = at.clone().add(0, 2.35, 0);
         String wrapped = wrapBark(role.color() + role.shortName() + "\n§f" + line, 42);
         TextDisplay display = at.getWorld().spawn(bubbleAt, TextDisplay.class, text -> {
             text.setPersistent(false);
@@ -688,6 +696,14 @@ public final class OriginCast implements Listener {
             }
             if (display.isValid()) {
                 display.remove();
+            }
+            // the nameplate comes back unless a newer bubble of the same townsperson still covers it
+            UUID current = barkBubble.get(player.getUniqueId());
+            Entity covering = current == null ? null : Bukkit.getEntity(current);
+            if (plate != null && plate.isValid() && player.isOnline()
+                    && (covering == null || !covering.getWorld().equals(bubbleAt.getWorld())
+                    || covering.getLocation().distanceSquared(bubbleAt) > 0.01)) {
+                player.showEntity(isle.plugin(), plate);
             }
         }, BARK_BUBBLE_TICKS);
     }
