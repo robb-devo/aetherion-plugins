@@ -104,6 +104,19 @@ public final class OriginProps {
         return any;
     }
 
+    /** Which text version a pasted spot's signs carry ({@link OriginSignposts}); null = never written. */
+    String label(String id) {
+        return id == null ? null : state.getString("pasted." + id.toLowerCase(Locale.ROOT) + ".labels");
+    }
+
+    void markLabel(String id, String version) {
+        if (id == null || !pasted(id)) {
+            return;
+        }
+        state.set("pasted." + id.toLowerCase(Locale.ROOT) + ".labels", version);
+        save();
+    }
+
     public int pastedCount() {
         ConfigurationSection p = state.getConfigurationSection("pasted");
         return p == null ? 0 : p.getKeys(false).size();
@@ -177,6 +190,7 @@ public final class OriginProps {
             state.set(root + ".order", ++order);
             state.set(root + ".time", System.currentTimeMillis());
             state.set(root + ".box", box.minX() + " " + box.minY() + " " + box.minZ() + " " + box.maxX() + " " + box.maxY() + " " + box.maxZ());
+            state.set(root + ".labels", null);
             jobs.add(new Object[]{spot, schem});
             if (tiles > 0) {
                 sender.sendMessage("§8  " + spot.id() + ": " + tiles + " container/sign block(s) in the box — undo restores the block, not its contents.");

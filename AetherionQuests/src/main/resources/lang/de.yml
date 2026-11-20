@@ -506,9 +506,9 @@ dialogs:
 
   # ---------------------------------------------------------------- Borderlands (Hub pass owns these — unchanged)
   rite_keeper_intro:
-    - "Rite Warden. Borderlands-Vertrag — T1-Bosse, kein Sightseeing."
-    - "Töte Gegner. Spirit-Fläschchen: §c5%§f T1 · §c10%§f Sturdy · §c15%§f Elites. Die §eBeacon-Säule§f ist der Altar."
-    - "Rechtsklick auf hellgraues Pulver mit dem Fläschchen. Zehn Sekunden. Donner. Dann läuft er. Einmal töten — Ritus bestanden."
+    - "Ich bin der Rite Warden. Ich rufe die alten Bosse der Borderlands. Du besiegst sie."
+    - "Monster hier draußen lassen manchmal eine Phiole fallen, einen §cBorderlands Spirit§f. Hast du eine, führt dich der gelbe Pfeil oben zum Altar."
+    - "Phiole in die Hand, Rechtsklick auf das graue Pulver. Zehn Sekunden später steht der Boss da. Einmal besiegen, dann hast du bestanden."
   arena_proctor_intro:
     - "Proctor. Dieser Ring bedeutete mal etwas. Dann wurden die Leute vorsichtig."
     - "Ich hab von Fläschchen alter Borderlands-Bosse gehört — und von einer stärkeren Variante in der Crypt."
@@ -1145,6 +1145,9 @@ completed:
     - "Guck dir mal deine Rute an — manche Tools leveln hier."
   fishmonger:
     - "Shop ist offen. Sprich mich an, wenn du stöbern willst."
+  rite_keeper:
+    - "Bring eine Phiole und ruf sie wieder, {player}. Der Altar ist immer offen."
+    - "Mehr gefällig? Crypt-Phiolen aus den Höhlen unten, dann zum §6Proctor§f ins Kolosseum. Vorher bessere Rüstung."
   vex:
     - "Lektion Stahl: bestanden. Form: fragwürdig. Akzeptabel."
     - "Combat-Set und Booster vor dem härteren Ödland. Dann §cRite Warden§f, wenn du Bosse willst."
@@ -1534,6 +1537,10 @@ talk:
     pass_ok: "Pass passt."
     shop_open: "Der Shop ist offen für T1-Gear — Rute und Rüstung. Sprich mich an, wenn du stöbern willst."
     lesson: "Willst du Tackles Angelstunde? Kauf hier 'ne Rute, dann zurück zu ihm."
+  rite_keeper:
+    done: "Das ist der Ritus, {player}. Mit einer neuen Phiole rufst du jeden der vier Bosse wieder."
+    done_crypt: "Stärkere warten in der §5Crypt§f, den Höhlen unter den Borderlands. Die Monster dort lassen Crypt-Phiolen fallen. Der §6Proctor§f im Kolosseum zeigt dir, was du damit machst."
+    done_gear: "Aber nicht in dieser Ausrüstung. Hol dir erst bessere Rüstung. Die Crypt schlägt viel härter zu."
   vex:
     combat_stamp: "Jetzt §dMiss Ledgers§f Stempel. §e/capital§f — den Teleport hast du."
     combat_kit: "Vor dem Ödland: ein Kampf-Skill ins Loadout, Schadens-Booster auf die Klinge."
@@ -2654,9 +2661,9 @@ cast:
   rite_keeper:
     accept: "Ich zünde es an."
     decline: "Noch nicht."
-    on_accept: ["Gut. Zünde das Pulver an der Säule an und sei bereit, wenn der Donner kommt."]
+    on_accept: ["Gut. Jag, bis eine Phiole fällt. Dann folg dem gelben Pfeil."]
     on_decline: ["Geister sind geduldig. Ich weniger."]
-    returning: ["Du hast die Phiole, {player}. Schütte das Pulver an der Säule aus.", "Dann warte etwa zehn Sekunden. Du hörst Donner, und dann tritt der Geist heraus und kämpft."]
+    returning: ["Noch keine Phiole, {player}? Weiter jagen. Stärkere Monster lassen sie öfter fallen.", "Hast du eine? Folg dem gelben Pfeil zum Altar und mach mit ihr Rechtsklick aufs graue Pulver."]
     greet_new: ["Willkommen in den Grenzlanden, {player}. Die Ödnis behält jeden im Auge, der herkommt."]
     greet: ["Die Geister regen sich, wenn du vorbeigehst, {player}. Sie erinnern sich an dich."]
     greet_grad: ["Die Ödnis beobachtet dich, {player}. Ich glaub, sie ist beeindruckt."]

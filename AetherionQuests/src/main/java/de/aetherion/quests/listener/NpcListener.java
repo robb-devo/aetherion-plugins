@@ -1557,18 +1557,29 @@ public class NpcListener implements Listener {
 
         if ("border_rites".equalsIgnoreCase(quest.getId())) {
             de.aetherion.quests.ui.QuestHint.clearPending(player);
-            npcSay(player, npc, "Rite logged. The pillar dies with the lesson. Keep the vials coming, {player}.");
+            // What comes after the first rite boss: the Crypt's stronger vials, and armour first (playtest 3, R-51).
+            String[] next = {
+                    de.aetherion.quests.lang.LangPack.say(player, "rite_keeper.done",
+                            "That's the rite, {player}. With a new vial you can call any of the four bosses again."),
+                    de.aetherion.quests.lang.LangPack.say(player, "rite_keeper.done_crypt",
+                            "Stronger ones wait in the §5Crypt§f, the caves under the Borderlands. Monsters down there drop"
+                                    + " Crypt vials. The §6Proctor§f at the Colosseum shows you what to do with one."),
+                    de.aetherion.quests.lang.LangPack.say(player, "rite_keeper.done_gear",
+                            "Not in this gear, though. Get better armour first. The Crypt hits a lot harder.")
+            };
+            npcSay(player, npc, next[0]);
             AetherionQuests plugin = AetherionQuests.getInstance();
-            if (plugin != null) {
+            for (int i = 1; i < next.length; i++) {
+                String line = next[i];
+                if (plugin == null) {
+                    npcSay(player, npc, line);
+                    continue;
+                }
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
-                        npcSay(player, npc,
-                                "Thread's yours now — waste, desks, whatever. No leash from me.");
+                        npcSay(player, npc, line);
                     }
-                }, 45L);
-            } else {
-                npcSay(player, npc,
-                        "Thread's yours now — waste, desks, whatever. No leash from me.");
+                }, 50L * i);
             }
             return;
         }

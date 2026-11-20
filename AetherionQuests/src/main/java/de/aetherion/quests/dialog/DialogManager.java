@@ -1892,9 +1892,9 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("rite_keeper_intro")) {
             return new String[] {
-                    "Rite Warden. Borderlands contract — T1 bosses. Not a walking tour.",
-                    "Kill hostiles for Spirit vials: §c5%§f T1 · §c10%§f Sturdy · §c15%§f elites. The §ebeacon pillar§f is the altar.",
-                    "Right-click the light-gray powder with a vial. Ten seconds. Thunder. Then it walks. Kill it once — rite passed."
+                    "I'm the Rite Warden. I call up the old bosses of the Borderlands. You put them down.",
+                    "Monsters out here sometimes drop a vial, a §cBorderlands Spirit§f. Once you have one, the yellow arrow at the top leads you to the altar.",
+                    "Hold the vial and right-click the grey powder. Ten seconds later the boss is there. Beat it once and you've passed."
             };
         }
 
@@ -2446,8 +2446,8 @@ public class DialogManager implements Listener {
                     "Rarer chest, better loot. Open everything. Trust nothing."
             };
             case "rite_keeper" -> new String[] {
-                    "Rite logged. The altar stays. Keep the vials coming.",
-                    "No leash from me, {player}. Waste, desks, whatever."
+                    "Bring a vial and call them again, {player}. The altar is always open.",
+                    "Want more? Crypt vials from the caves below, then the §6Proctor§f at the Colosseum. Better armour first."
             };
             case "miner" -> new String[] {
                     "Hollow Lurker's quiet. My nerves aren't. Thanks for that.",
