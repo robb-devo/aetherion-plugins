@@ -89,6 +89,7 @@ public final class AetherionGuilds extends JavaPlugin {
     private de.aetherion.guilds.island.IslandFiles islandFiles;
     private de.aetherion.guilds.island.FactoryProgress progress;
     private de.aetherion.guilds.island.DockService dock;
+    private de.aetherion.guilds.island.LandingCamera landingCamera;
     private de.aetherion.core.api.IslandAccess islandAccess;
 
     @Override
@@ -220,6 +221,10 @@ public final class AetherionGuilds extends JavaPlugin {
         guide.attachDock(dock, dockMenu::open);
         dock.attachVoice(guide::say);
         unlock.attachGuide(guide);
+        landingCamera = new de.aetherion.guilds.island.LandingCamera(this);
+        landingCamera.setEnabled(getConfig().getBoolean("landing-camera.enabled", true));
+        getServer().getPluginManager().registerEvents(landingCamera, this);
+        unlock.attachCamera(landingCamera);
         unlock.onClaim(host -> progress.milestone(host, "start"));
         unlock.attachStarterQuarry(() -> minions.createQuarryItem(de.aetherion.guilds.model.QuarryType.COBBLESTONE));
         islandBar = new IslandBar(this, hosts, structures, logistics);
@@ -346,6 +351,10 @@ public final class AetherionGuilds extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, guide::tick, 60L, 2L);
         getServer().getScheduler().runTaskTimer(this, islandBar::tick, 40L, 20L);
         getServer().getScheduler().runTaskTimer(this, dock::tick, 40L, 20L);
+        de.aetherion.guilds.island.IslandAmbience ambience = new de.aetherion.guilds.island.IslandAmbience(hosts,
+                structures, logistics);
+        ambience.setEnabled(getConfig().getBoolean("ambience.enabled", true));
+        getServer().getScheduler().runTaskTimer(this, ambience::tick, 80L, 20L);
         getServer().getScheduler().runTaskTimer(this, () -> {
             minions.catchUpAll();
             logistics.stepAll();
@@ -446,6 +455,9 @@ public final class AetherionGuilds extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (landingCamera != null) {
+            landingCamera.clear();
+        }
         if (islandAccess != null) {
             de.aetherion.core.api.AetherServices.clearIslands(islandAccess);
             islandAccess = null;

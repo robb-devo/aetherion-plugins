@@ -82,6 +82,12 @@ final class MachineFx {
     private record Pending(Display entity, Transformation to, long due, int duration) {
     }
 
+    /** The satisfying thunk once the last part of an assembling body has landed. */
+    private record Thunk(Location at, long due, boolean big) {
+    }
+
+    private final List<Thunk> thunks = new ArrayList<>();
+
     private static final class Props {
         TextDisplay tag;
         String tagText = "";
@@ -394,11 +400,12 @@ final class MachineFx {
             TextDisplay arrow = flatGlyph(world, lid, "›", color, exit, 1.9f, 0.012f);
             // nudge it toward its edge
             Transformation t = arrow.getTransformation();
-            Vector3f moved = new Vector3f(t.getTranslation()).add(exit.getModX() * 0.28f, 0f, exit.getModZ() * 0.28f);
+            Vector3f moved = new Vector3f(t.getTranslation()).add(exit.getModX() * 0.32f, 0f, exit.getModZ() * 0.32f);
             arrow.setTransformation(new Transformation(moved, t.getLeftRotation(), t.getScale(), t.getRightRotation()));
             props.piece.add(arrow);
             entities++;
         }
+        routerTop(world, props, s, front);
         if (s.type() == StructureType.SORTER && icon != null) {
             ItemDisplay held = world.spawn(new Location(world, s.x() + 0.5, s.y() + 2.55, s.z() + 0.5), ItemDisplay.class, d -> {
                 d.setItemStack(icon);
@@ -414,6 +421,75 @@ final class MachineFx {
             props.piece.add(held);
             entities++;
         }
+    }
+
+    /**
+     * Each belt piece wears its own little top, so you tell them apart from across the island: the Splitter a
+     * copper turntable with a hub (shares in every direction), the Overflow Gate a weir wall across its front with
+     * blue spill chutes at the sides, the Sorter a gantry over its front exit (its chosen good floats above).
+     */
+    private void routerTop(World world, Props props, PlacedStructure s, BlockFace front) {
+        switch (s.type()) {
+            case SPLITTER -> {
+                topBox(world, props, s, front, 0f, 0.02f, 0f, 0.36f, 0.06f, 0.36f, "minecraft:waxed_cut_copper", 45f);
+                topBox(world, props, s, front, 0f, 0.08f, 0f, 0.22f, 0.05f, 0.22f, "minecraft:waxed_copper_block", 0f);
+                topBox(world, props, s, front, 0f, 0.13f, 0f, 0.14f, 0.32f, 0.14f, "minecraft:lightning_rod", 0f);
+            }
+            case OVERFLOW -> {
+                topBox(world, props, s, front, 0f, 0.0f, 0.44f, 0.86f, 0.30f, 0.08f, "minecraft:waxed_weathered_cut_copper", 0f);
+                topBox(world, props, s, front, 0f, 0.30f, 0.44f, 0.86f, 0.04f, 0.12f, "minecraft:iron_block", 0f);
+                topBox(world, props, s, front, 0.5f, -0.25f, 0f, 0.14f, 0.06f, 0.5f, "minecraft:light_blue_stained_glass", 0f);
+                topBox(world, props, s, front, -0.5f, -0.25f, 0f, 0.14f, 0.06f, 0.5f, "minecraft:light_blue_stained_glass", 0f);
+            }
+            case SORTER -> {
+                topBox(world, props, s, front, 0.38f, 0f, 0.3f, 0.09f, 0.62f, 0.09f, "minecraft:dark_oak_planks", 0f);
+                topBox(world, props, s, front, -0.38f, 0f, 0.3f, 0.09f, 0.62f, 0.09f, "minecraft:dark_oak_planks", 0f);
+                topBox(world, props, s, front, 0f, 0.6f, 0.3f, 0.86f, 0.09f, 0.11f, "minecraft:waxed_oxidized_cut_copper", 0f);
+                topBox(world, props, s, front, 0f, 0.02f, -0.1f, 0.34f, 0.04f, 0.34f, "minecraft:polished_deepslate", 0f);
+            }
+            default -> {
+            }
+        }
+    }
+
+    /**
+     * A small box on a belt piece's lid. Local axes: x across the front (right), z toward the front, y up from the
+     * lid; sizes are blocks. {@code yaw} spins it about its own centre (the Splitter's diamond plate).
+     */
+    private void topBox(World world, Props props, PlacedStructure s, BlockFace front, float x, float y, float z,
+                        float sx, float sy, float sz, String block, float yaw) {
+        int fx = front.getModX();
+        int fz = front.getModZ();
+        // right of someone facing the front
+        int rx = -fz;
+        int rz = fx;
+        float wx = rx * x + fx * z;
+        float wz = rz * x + fz * z;
+        boolean alongX = fx != 0;
+        float bx = alongX ? sz : sx;
+        float bz = alongX ? sx : sz;
+        Quaternionf spin = new Quaternionf().rotateY((float) Math.toRadians(yaw));
+        // rotate about the box centre: translate to the centre, spin, then offset by half the size
+        Vector3f half = new Vector3f(-bx / 2f, 0f, -bz / 2f);
+        spin.transform(half);
+        Vector3f translation = new Vector3f(0.5f + wx + half.x, y, 0.5f + wz + half.z);
+        BlockData data;
+        try {
+            data = Bukkit.createBlockData(block);
+        } catch (IllegalArgumentException exception) {
+            return;
+        }
+        BlockData finalData = data;
+        BlockDisplay box = world.spawn(new Location(world, s.x(), s.y() + 2, s.z()), BlockDisplay.class, d -> {
+            d.setBlock(finalData);
+            d.setTransformation(new Transformation(translation, spin, new Vector3f(bx, sy, bz), new Quaternionf()));
+            d.setViewRange(0.6f);
+            d.setShadowRadius(0f);
+            d.setPersistent(false);
+            d.addScoreboardTag(TAG);
+        });
+        props.piece.add(box);
+        entities++;
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -455,6 +531,9 @@ final class MachineFx {
                 Location at = new Location(world, s.x() + 0.5, s.y() + 1.5, s.z() + 0.5);
                 world.playSound(at, Sound.BLOCK_SCAFFOLDING_PLACE, SoundCategory.BLOCKS, 0.9f, 0.8f);
                 world.playSound(at, Sound.BLOCK_CHAIN_PLACE, SoundCategory.BLOCKS, 0.8f, 0.7f);
+                int last = Math.max(0, i - 1);
+                thunks.add(new Thunk(at, clock + 2 + last / 2 + 10 + Math.min(10, last / 3),
+                        s.type() == StructureType.WORKSHOP || s.type() == StructureType.DOCK));
             }
         }
         if (s.type() == StructureType.DEPOT || s.type() == StructureType.STORAGE_HUT) {
@@ -624,6 +703,27 @@ final class MachineFx {
     /** Every tick: parts flying into place, the forge hammer and bellows, the quarry drill. */
     void tick(long tick) {
         clock = tick;
+        if (!thunks.isEmpty()) {
+            Iterator<Thunk> it = thunks.iterator();
+            while (it.hasNext()) {
+                Thunk thunk = it.next();
+                if (thunk.due() > tick) {
+                    continue;
+                }
+                it.remove();
+                World world = thunk.at().getWorld();
+                if (world == null) {
+                    continue;
+                }
+                world.playSound(thunk.at(), Sound.BLOCK_ANVIL_LAND, SoundCategory.BLOCKS, 0.35f, thunk.big() ? 0.75f : 1.1f);
+                world.playSound(thunk.at(), Sound.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 1.0f, 0.6f);
+                if (thunk.big()) {
+                    world.playSound(thunk.at(), Sound.BLOCK_BEACON_ACTIVATE, SoundCategory.BLOCKS, 0.5f, 1.4f);
+                }
+                world.spawnParticle(Particle.BLOCK, thunk.at().clone().add(0, -1.3, 0), 24, 1.0, 0.05, 1.0, 0.0,
+                        org.bukkit.Material.OAK_PLANKS.createBlockData());
+            }
+        }
         if (!pending.isEmpty()) {
             Iterator<Pending> it = pending.iterator();
             while (it.hasNext()) {

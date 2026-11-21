@@ -141,6 +141,8 @@ public final class PlacementService {
         long quietUntil;
         UUID armed;
         long armedUntil;
+        Part cardPart;
+        long cardDue;
 
         Session(IslandHost host, SiteConfirm onConfirm, GhostView ghost) {
             this.host = host;
@@ -459,7 +461,53 @@ public final class PlacementService {
         session.quietUntil = 0L;
         session.ghost.clear();
         lastPart.put(player.getUniqueId(), part);
+        // the first-pick card waits until the player rests on the part (scrolling past shows nothing)
+        session.cardPart = part;
+        session.cardDue = System.currentTimeMillis() + 1200L;
         return true;
+    }
+
+    /** The first time a player picks a part: three lines, what it does, what goes in, what comes out. */
+    private void firstCard(Player player, Part part) {
+        String[] card = switch (part) {
+            case BELT -> new String[]{"Carries goods, tile by tile.", "From an orange chute, or another belt.",
+                    "Into a hut, a machine or the Dock (green pads)."};
+            case STORAGE_HUT -> new String[]{"Keeps what your belts bring in.", "Belts from any side, any good.",
+                    "Your storage: the Hub and every menu draw from it."};
+            case HUB -> new String[]{"Your island's heart: the board, unlocks, the hand press.", "Nothing, it runs on you.",
+                    "What to build next, and what it costs."};
+            case DEPOT -> new String[]{"More storage on the line.", "Belts from any side.", "Belts can pass through it."};
+            case MILL -> new String[]{"Grinds raw goods into Compressed.", "128 raw of one kind.",
+                    "1 Compressed, out of its orange chute."};
+            case FORGE -> new String[]{"Presses Compressed into Compacted.", "128 Compressed of one kind.",
+                    "1 Compacted, out of its orange chute."};
+            case SPLITTER -> new String[]{"Shares one belt out evenly.", "One belt, from behind.",
+                    "An equal share to every belt leading away."};
+            case OVERFLOW -> new String[]{"Keeps the front fed first.", "One belt, from behind.",
+                    "Front first; the sides only take the spill."};
+            case SORTER -> new String[]{"Picks one good off the line.", "One belt, from behind.",
+                    "Your pick out the front, the rest out the sides."};
+            case DOCK -> new String[]{"Ships your goods off the island.", "Belts with what the contracts ask for.",
+                    "An airship, coins and Dock Marks."};
+            default -> null;
+        };
+        if (card == null) {
+            return;
+        }
+        org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(plugin, "seen_cards");
+        org.bukkit.persistence.PersistentDataContainer data = player.getPersistentDataContainer();
+        String seen = data.getOrDefault(key, org.bukkit.persistence.PersistentDataType.STRING, "");
+        String id = part.name().toLowerCase(java.util.Locale.ROOT);
+        if (("," + seen + ",").contains("," + id + ",")) {
+            return;
+        }
+        data.set(key, org.bukkit.persistence.PersistentDataType.STRING, seen.isEmpty() ? id : seen + "," + id);
+        player.sendMessage("");
+        player.sendMessage("§6§l" + part.label() + " §8· §7new part");
+        player.sendMessage("§8▪ §f" + card[0]);
+        player.sendMessage("§8▪ §aIn: §7" + card[1]);
+        player.sendMessage("§8▪ §6Out: §7" + card[2]);
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
     }
 
     /**
@@ -1328,6 +1376,12 @@ public final class PlacementService {
                 session.ghost.clear();
                 sessions.remove(entry.getKey());
                 continue;
+            }
+            if (session.cardPart != null && now >= session.cardDue) {
+                if (session.cardPart == session.part) {
+                    firstCard(player, session.cardPart);
+                }
+                session.cardPart = null;
             }
             if (now - session.lastAction > IDLE_MS) {
                 cancel(player, "§7Build Tool put away (unused for a while).");

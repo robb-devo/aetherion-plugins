@@ -256,6 +256,12 @@ public final class UnlockService {
 
     private java.util.function.Consumer<IslandHost> claimed = host -> {
     };
+    private LandingCamera camera;
+
+    /** The five-second sweep over a new island before you drift down onto it. */
+    public void attachCamera(LandingCamera camera) {
+        this.camera = camera;
+    }
 
     /** Told when a player claims a new island (the funnel's "start"). */
     public void onClaim(java.util.function.Consumer<IslandHost> claimed) {
@@ -274,11 +280,17 @@ public final class UnlockService {
                 return;
             }
             Location spawn = personal.spawn(island);
-            descend(player, spawn, "§a✦ " + starter.display() + " §a✦", "§fYour island. Grow it.", () -> {
+            Runnable land = () -> descend(player, spawn, "§a✦ " + starter.display() + " §a✦", "§fYour island. Grow it.", () -> {
                 if (guide == null || !guide.introduce(player)) {
                     firstSteps(player, starter);
                 }
             });
+            if (camera != null && spawn != null) {
+                player.sendTitle("", "§7" + starter.display(), 5, 70, 15);
+                camera.sweep(player, spawn, land);
+            } else {
+                land.run();
+            }
         });
     }
 
