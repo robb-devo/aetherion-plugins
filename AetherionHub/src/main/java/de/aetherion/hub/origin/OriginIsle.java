@@ -55,6 +55,7 @@ public final class OriginIsle implements Listener {
     private final OriginTales tales;
     private final OriginProps props;
     private final OriginLife life;
+    private final OriginSignposts signposts;
     private BukkitTask task;
     private long tick;
     private boolean running;
@@ -83,6 +84,7 @@ public final class OriginIsle implements Listener {
         this.tales = new OriginTales(this);
         this.props = new OriginProps(this);
         this.life = new OriginLife(this);
+        this.signposts = new OriginSignposts(this);
     }
 
     /** Called from {@code AetherionHub#onEnable}. Never throws: a broken Origin must not take the Hub down. */
@@ -231,6 +233,9 @@ public final class OriginIsle implements Listener {
             }
             if (tick % 60 == 0) {
                 ambience.soundscape(onIsle);
+            }
+            if (tick % 200 == 0) {
+                signposts.tick();
             }
             if (tick % 1200 == 0) {
                 profiles.flush();

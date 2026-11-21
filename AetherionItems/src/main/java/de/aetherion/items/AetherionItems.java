@@ -177,6 +177,7 @@ public class AetherionItems extends JavaPlugin {
         de.aetherion.core.api.AetherServices.registerItems(itemFactoryAccess);
         getServer().getPluginManager().registerEvents(new PersistenceFlushListener(this), this);
         gearTrader = new de.aetherion.items.economy.GearTraderService(this, itemValues, coins, customItem);
+        startSafely("Trader anchor", () -> new de.aetherion.items.economy.TraderAnchor(this));
         fishShop = new de.aetherion.items.economy.FishShopService(coins, customItem);
         fence = new de.aetherion.items.economy.FenceService(this, itemValues, coins, customItem);
         liquidator = new de.aetherion.items.economy.LiquidatorService(this, itemValues, coins, shards);

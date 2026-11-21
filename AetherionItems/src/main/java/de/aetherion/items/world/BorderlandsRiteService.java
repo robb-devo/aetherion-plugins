@@ -42,8 +42,10 @@ import org.bukkit.potion.PotionType;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -526,23 +528,27 @@ public final class BorderlandsRiteService implements Listener {
                 BossBar.Color.RED,
                 BossBar.Overlay.PROGRESS
         );
-        player.showBossBar(bar);
+        // Everyone in the Borderlands sees the countdown, not only the caller (playtest 3, R-52).
+        Set<UUID> viewers = new HashSet<>();
+        syncViewers(bar, viewers, player, spawnAt.getWorld());
+        announceToOthers(player, boss, spawnAt.getWorld());
 
         final int[] left = {RITUAL_SECONDS};
         Bukkit.getScheduler().runTaskTimer(plugin, task -> {
             if (!player.isOnline()) {
-                player.hideBossBar(bar);
+                hideAll(bar, viewers);
                 show.stop();
                 ritualBusyUntil.remove(player.getUniqueId());
                 task.cancel();
                 return;
             }
             if (left[0] <= 0) {
-                player.hideBossBar(bar);
+                hideAll(bar, viewers);
                 task.cancel();
                 spawnBoss(player, boss, spawnAt);
                 return;
             }
+            syncViewers(bar, viewers, player, spawnAt.getWorld());
             float progress = left[0] / (float) RITUAL_SECONDS;
             bar.progress(Math.max(0f, Math.min(1f, progress)));
             bar.name(Component.text(
@@ -552,6 +558,56 @@ public final class BorderlandsRiteService implements Listener {
             ));
             left[0]--;
         }, 0L, 20L);
+    }
+
+    /** Shows the bar to the caller and to everyone standing in the Borderlands; drops those who walked out. */
+    private void syncViewers(BossBar bar, Set<UUID> viewers, Player caller, World world) {
+        if (world == null) {
+            return;
+        }
+        for (Player other : world.getPlayers()) {
+            boolean in = other.equals(caller)
+                    || (mobZones != null && mobZones.containsBorderlands(other.getLocation()));
+            if (in && viewers.add(other.getUniqueId())) {
+                other.showBossBar(bar);
+            } else if (!in && viewers.remove(other.getUniqueId())) {
+                other.hideBossBar(bar);
+            }
+        }
+    }
+
+    private static void hideAll(BossBar bar, Set<UUID> viewers) {
+        for (UUID id : viewers) {
+            Player viewer = Bukkit.getPlayer(id);
+            if (viewer != null) {
+                viewer.hideBossBar(bar);
+            }
+        }
+        viewers.clear();
+    }
+
+    /** One chat line for everyone else in the Borderlands: who calls which boss, so nobody walks into it blind. */
+    private void announceToOthers(Player caller, SpiritBoss boss, World world) {
+        if (world == null || mobZones == null) {
+            return;
+        }
+        for (Player other : world.getPlayers()) {
+            if (other.equals(caller) || !mobZones.containsBorderlands(other.getLocation())) {
+                continue;
+            }
+            other.sendMessage(t(other,
+                    "§cRite §8» §f" + caller.getName() + " is calling §c" + boss.display() + "§f at the altar. Ten seconds.",
+                    "§cRitus §8» §f" + caller.getName() + " ruft §c" + boss.display() + "§f am Altar. Zehn Sekunden."));
+        }
+    }
+
+    private static String t(Player player, String en, String de) {
+        de.aetherion.core.api.LangAccess lang = AetherServices.lang();
+        try {
+            return lang != null && lang.german(player) ? de : en;
+        } catch (RuntimeException ex) {
+            return en;
+        }
     }
 
     private void spawnBoss(Player player, SpiritBoss boss, Location at) {

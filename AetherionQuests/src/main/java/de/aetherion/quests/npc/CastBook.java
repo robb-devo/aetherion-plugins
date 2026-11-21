@@ -327,11 +327,11 @@ public final class CastBook {
         v = voice("rite_keeper");
         v.accept = "I'll light it.";
         v.decline = "Not yet.";
-        v.onAccept = new String[] {"Good. Light the powder at the pillar, and be ready when the thunder comes."};
+        v.onAccept = new String[] {"Good. Hunt until a vial drops. Then follow the yellow arrow."};
         v.onDecline = new String[] {"Spirits are patient. I am less so."};
         v.returning = new String[] {
-                "You have the vial, {player}. Pour the powder out at the pillar.",
-                "Then wait about ten seconds. You'll hear thunder, and then the spirit steps out to fight."
+                "No vial yet, {player}? Keep hunting. Tougher monsters drop them more often.",
+                "Got one? Follow the yellow arrow to the altar and right-click the grey powder with it."
         };
         v.greetNew = new String[] {"Welcome to the Borderlands, {player}. The wastes keep an eye on everyone who comes here."};
         v.greet = new String[] {"The spirits stir when you walk past, {player}. They remember you."};
