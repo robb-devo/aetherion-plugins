@@ -42,8 +42,10 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("Players only.");
             return true;
         }
-        if (!AetherionItemsAccess.guildUnlocked(player)) {
-            player.sendMessage(AetherionItemsAccess.guildHint());
+        // joining opens with the island (Level 20); founding (create) checks Level 75 itself
+        if (!AetherionItemsAccess.guildUnlocked(player) && !AetherionItemsAccess.islandUnlocked(player)) {
+            player.sendMessage(AetherionItemsAccess.islandHint());
+            player.sendMessage("§7Guilds take members from §fLevel 20§7, founding one opens at §fLevel 75§7.");
             return true;
         }
         if (args.length == 0) {

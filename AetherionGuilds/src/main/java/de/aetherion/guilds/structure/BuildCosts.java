@@ -26,8 +26,14 @@ public final class BuildCosts {
         }
     }
 
-    /** An unlock: which Hub tier it needs and its one-time price. */
-    public record Unlock(StructureType type, int hubLevel, List<Line> price) {
+    /**
+     * An unlock: which Hub tier it needs (guild islands), which island stage it needs (personal islands, where
+     * the Hub tier follows the stage) and its one-time price.
+     */
+    public record Unlock(StructureType type, int hubLevel, List<Line> price, int stage) {
+        public Unlock(StructureType type, int hubLevel, List<Line> price) {
+            this(type, hubLevel, price, hubLevel);
+        }
     }
 
     public static final Res COBBLE = Res.of(QuarryType.COBBLESTONE, Res.Form.RAW);
@@ -49,6 +55,7 @@ public final class BuildCosts {
             case SPLITTER -> List.of(new Line(COBBLE, 32L));
             case FORGE -> List.of(new Line(COMPRESSED, 4L), new Line(COBBLE, 128L));
             case OVERFLOW, SORTER -> List.of(new Line(COMPRESSED, 2L), new Line(COBBLE, 64L));
+            case DOCK -> List.of(new Line(COBBLE, 64L));
             default -> List.of();
         };
     }
@@ -62,6 +69,35 @@ public final class BuildCosts {
             new Unlock(StructureType.OVERFLOW, 2, List.of(new Line(COMPRESSED, 4L), new Line(null, 4_000L))),
             new Unlock(StructureType.SORTER, 2, List.of(new Line(COMPRESSED, 6L), new Line(null, 6_000L))));
 
+    /**
+     * Personal islands: the Hub board is the stage ladder. Stage 0 (the tour) opens the Mill (with the Compressed
+     * Cobble you pressed by hand) and the Dock; the Werkhof the Splitter; the Foreman's Hall the Forge, Overflow
+     * Gate and Sorter. No Depot: the Storage Hut does that job.
+     */
+    public static final List<Unlock> PERSONAL_UNLOCKS = List.of(
+            new Unlock(StructureType.MILL, 1, List.of(new Line(COMPRESSED, 1L), new Line(COBBLE, 64L)), 0),
+            new Unlock(StructureType.DOCK, 1, List.of(new Line(COMPRESSED, 4L)), 0),
+            new Unlock(StructureType.SPLITTER, 1, List.of(new Line(COBBLE, 96L), new Line(null, 1_000L)), 1),
+            new Unlock(StructureType.FORGE, 2, List.of(new Line(COMPRESSED, 12L), new Line(null, 10_000L)), 2),
+            new Unlock(StructureType.OVERFLOW, 2, List.of(new Line(COMPRESSED, 4L), new Line(null, 4_000L)), 2),
+            new Unlock(StructureType.SORTER, 2, List.of(new Line(COMPRESSED, 6L), new Line(null, 6_000L)), 2));
+
+    /** The unlock board of this island (personal: the stage ladder; guild: the Hub-tier list). */
+    public static List<Unlock> unlocks(de.aetherion.guilds.island.IslandHost host) {
+        return host == null || host.isGuild() ? UNLOCKS : PERSONAL_UNLOCKS;
+    }
+
+    /** The unlock for a part on this island, or null when it needs none there. */
+    public static Unlock unlock(de.aetherion.guilds.island.IslandHost host, StructureType type) {
+        for (Unlock unlock : unlocks(host)) {
+            if (unlock.type() == type) {
+                return unlock;
+            }
+        }
+        return null;
+    }
+
+    /** Guild-island unlock (the old Hub-tier list). */
     public static Unlock unlock(StructureType type) {
         for (Unlock unlock : UNLOCKS) {
             if (unlock.type() == type) {

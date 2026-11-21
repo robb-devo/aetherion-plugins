@@ -256,6 +256,12 @@ public final class UnlockService {
 
     private java.util.function.Consumer<IslandHost> claimed = host -> {
     };
+    private LandingCamera camera;
+
+    /** The five-second sweep over a new island before you drift down onto it. */
+    public void attachCamera(LandingCamera camera) {
+        this.camera = camera;
+    }
 
     /** Told when a player claims a new island (the funnel's "start"). */
     public void onClaim(java.util.function.Consumer<IslandHost> claimed) {
@@ -274,11 +280,17 @@ public final class UnlockService {
                 return;
             }
             Location spawn = personal.spawn(island);
-            descend(player, spawn, "§a✦ " + starter.display() + " §a✦", "§fYour island. Grow it.", () -> {
+            Runnable land = () -> descend(player, spawn, "§a✦ " + starter.display() + " §a✦", "§fYour island. Grow it.", () -> {
                 if (guide == null || !guide.introduce(player)) {
                     firstSteps(player, starter);
                 }
             });
+            if (camera != null && spawn != null) {
+                player.sendTitle("", "§7" + starter.display(), 5, 70, 15);
+                camera.sweep(player, spawn, land);
+            } else {
+                land.run();
+            }
         });
     }
 
@@ -382,7 +394,8 @@ public final class UnlockService {
                 .append(buttonComponent("§a[Projects]", "/guild project", "§7Opens guild projects")));
         player.sendMessage(legacy("  §7Factory, same as your own island: §fStorage Hut §7(free), a quarry, a belt chute → hut §8(first belt free)§7. ")
                 .append(buttonComponent("§a[Build Tool]", "/guild build", "§7Build Tool in hand (on the guild island)")));
-        player.sendMessage(legacy("  §7Invite people: ")
+        player.sendMessage("  §7Members can pay in §fstraight from their own island§7 (the board's island button).");
+        player.sendMessage(legacy("  §7Invite people §8(anyone from Level 20)§7: ")
                 .append(suggestComponent("§a[/guild invite]", "/guild invite ", "§7/guild invite <player>")));
         player.sendMessage("");
     }

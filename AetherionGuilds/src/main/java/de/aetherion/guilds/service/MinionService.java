@@ -69,6 +69,18 @@ public final class MinionService {
         this.hooks = hooks;
     }
 
+    private java.util.function.BiFunction<PersonalIsland, Integer, String> levelGate = (island, level) -> null;
+
+    /** Personal islands: the island's stage caps the quarry level (null = allowed). */
+    public void attachLevelGate(java.util.function.BiFunction<PersonalIsland, Integer, String> gate) {
+        this.levelGate = gate == null ? (island, level) -> null : gate;
+    }
+
+    /** Why this quarry can't take its next level on its island's stage (null when it can, or on guild islands). */
+    public String levelGate(PersonalIsland island, QuarryMinion minion) {
+        return island == null || minion == null ? null : levelGate.apply(island, minion.level() + 1);
+    }
+
     public NamespacedKey itemKey() {
         return new NamespacedKey(plugin, "quarry_item");
     }
@@ -224,7 +236,7 @@ public final class MinionService {
             return;
         }
         int cap = minion.cap();
-        minion.addStored((int) Math.min(steps * (long) minion.perTick(), Integer.MAX_VALUE), cap);
+        minion.addStored((int) Math.min(minion.produced(steps), Integer.MAX_VALUE), cap);
         minion.setLastTick(minion.lastTick() + steps * interval);
         if (AetherionItemsAccess.available()) {
             minion.processStorage();
@@ -245,7 +257,7 @@ public final class MinionService {
             if (steps > 0) {
                 int used = raw + compressed * QuarryMinion.COMPRESS_UNIT + compacted * QuarryMinion.COMPACT_UNIT;
                 int room = Math.max(0, minion.cap() - used);
-                raw += (int) Math.min(steps * (long) minion.perTick(), room);
+                raw += (int) Math.min(Math.round(steps * minion.ratePerTick()), room);
             }
         }
         if (AetherionItemsAccess.available()) {
@@ -1099,6 +1111,11 @@ public final class MinionService {
         }
         if (!minion.canUpgrade()) {
             player.sendMessage("§cThis quarry is already max level.");
+            return false;
+        }
+        String gate = ref.isPersonal() ? levelGate.apply(ref.island(), minion.level() + 1) : null;
+        if (gate != null) {
+            player.sendMessage("§c" + gate);
             return false;
         }
         QuarryType type = minion.quarryType();

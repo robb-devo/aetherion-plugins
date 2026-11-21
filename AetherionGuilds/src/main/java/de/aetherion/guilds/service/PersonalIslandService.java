@@ -528,10 +528,22 @@ public final class PersonalIslandService {
         player.setAllowFlight(false);
     }
 
+    private java.util.function.Function<PersonalIsland, String> tierGate = island -> null;
+
+    /** Islands on the stage ladder grow their Island Tier with the stage, not for coins (null = coin upgrade). */
+    public void attachTierGate(java.util.function.Function<PersonalIsland, String> gate) {
+        this.tierGate = gate == null ? island -> null : gate;
+    }
+
     public void upgradeIsland(Player player) {
         PersonalIsland island = byOwner(player.getUniqueId());
         if (island == null) {
             player.sendMessage("§cYou do not have a personal island.");
+            return;
+        }
+        String gate = tierGate.apply(island);
+        if (gate != null) {
+            player.sendMessage("§e" + gate);
             return;
         }
         if (!island.canUpgradeIsland()) {

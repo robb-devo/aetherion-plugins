@@ -28,6 +28,7 @@ public final class GuildProjectMenu implements MenuKit.Menu {
     private static final int FROM_STORAGE = 24;
     private static final int COINS = 25;
     private static final int FROM_BANK = 34;
+    private static final int FROM_ISLAND = 33;
     private static final int VISIT = 32;
     private static final int BACK = 45;
     private static final int CLOSE = 49;
@@ -120,6 +121,9 @@ public final class GuildProjectMenu implements MenuKit.Menu {
                     "§eLeft §71,000 · §eRight §710,000", "§eShift §7100,000", "§8From your own purse."));
             inventory.setItem(FROM_BANK, MenuKit.named(Material.ENDER_CHEST, "§6Pay from the guild bank",
                     "§eClick §710,000 · §eShift §7100,000", "§8Soldier+."));
+            inventory.setItem(FROM_ISLAND, MenuKit.named(Material.SPRUCE_BOAT, "§aGive from my island",
+                    "§7Takes what this stage still needs", "§7straight out of your own island's",
+                    "§7storage (your Storage Huts).", "§eClick"));
             inventory.setItem(VISIT, MenuKit.named(Material.COMPASS, "§eGo to the site"));
         }
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eBack"));
@@ -162,6 +166,10 @@ public final class GuildProjectMenu implements MenuKit.Menu {
             }
             case FROM_STORAGE -> {
                 projects.contributeStorage(player, guild);
+                reopen(player);
+            }
+            case FROM_ISLAND -> {
+                projects.contributeIsland(player, guild);
                 reopen(player);
             }
             case COINS -> {

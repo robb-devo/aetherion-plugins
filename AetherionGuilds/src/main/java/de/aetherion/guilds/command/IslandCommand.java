@@ -39,6 +39,13 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
 
     private java.util.function.Supplier<List<String>> funnel = List::of;
 
+    private de.aetherion.guilds.island.DockService dock;
+
+    /** {@code /island admin stage <0-3>}: put your own island on a stage (testing the ladder). */
+    public void attachDock(de.aetherion.guilds.island.DockService dock) {
+        this.dock = dock;
+    }
+
     /** {@code /island admin funnel}: how far islands got (first hut, belt, quarry, Hub, machine, upgrade...). */
     public void attachFunnel(java.util.function.Supplier<List<String>> funnel) {
         this.funnel = funnel == null ? List::of : funnel;
@@ -234,6 +241,23 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "funnel" -> funnel.get().forEach(player::sendMessage);
+            case "stage" -> {
+                // your own island only: jump the stage ladder for testing (Hub and Island Tier follow)
+                if (dock == null || islands.byOwner(player.getUniqueId()) == null) {
+                    player.sendMessage("§7You have no personal island.");
+                    return;
+                }
+                if (args.length < 3) {
+                    player.sendMessage("§7/island admin stage <0-3> §8(now "
+                            + dock.stage(IslandHost.personal(player.getUniqueId())) + ")");
+                    return;
+                }
+                try {
+                    dock.setStage(player, IslandHost.personal(player.getUniqueId()), Integer.parseInt(args[2]));
+                } catch (NumberFormatException ignored) {
+                    player.sendMessage("§7/island admin stage <0-3>");
+                }
+            }
             case "plots" -> {
                 // /island admin plots <player>: where that player's record and factory save say the island is.
                 if (args.length < 3) {
@@ -280,7 +304,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 }
             }
             default -> player.sendMessage("§7/island admin fx [unlock|foreshadow|guild|guildhint] §8| §7rebuild §8| §7reload-templates"
-                    + " §8| §7void [sweep [force]] §8| §7guide reset §8| §7wipe §8| §7info §8| §7funnel"
+                    + " §8| §7void [sweep [force]] §8| §7guide reset §8| §7wipe §8| §7info §8| §7funnel §8| §7stage <0-3>"
                     + " §8| §7plots <player> §8| §7moveplot <player> <plot>");
         }
     }
@@ -295,7 +319,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("admin") && sender.hasPermission("aetherion.guild.admin")) {
             String prefix = args[1].toLowerCase(Locale.ROOT);
-            return Stream.of("fx", "rebuild", "reload-templates", "void", "guide", "wipe", "info", "funnel", "plots", "moveplot")
+            return Stream.of("fx", "rebuild", "reload-templates", "void", "guide", "wipe", "info", "funnel", "stage", "plots", "moveplot")
                     .filter(o -> o.startsWith(prefix)).toList();
         }
         return List.of();

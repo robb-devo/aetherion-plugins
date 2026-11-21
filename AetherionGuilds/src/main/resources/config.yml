@@ -50,6 +50,14 @@ guide:
   skin: MHF_Villager
   free-belt-tiles: 16             # the first belt the guide hands out: these tiles cost nothing
   factory-belt-tiles: 24          # act two (the Mill): free belt tiles topped up for its belts
+# The isle's quiet sound bed (wind, gulls, a hum near running machines), only for players on an island.
+ambience:
+  enabled: true
+# Five seconds of camera sweep over a new island before the first landing.
+landing-camera:
+  enabled: true
+stages:
+  ramp-multiplier: 10             # stage 0 (the tour): every quarry of a personal island digs this many times as fast
 island-bar:
   enabled: true                   # calm island status bar; quest/hint bars step aside on island worlds either way
 

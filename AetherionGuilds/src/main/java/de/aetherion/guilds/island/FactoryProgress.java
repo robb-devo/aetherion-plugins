@@ -39,7 +39,8 @@ public final class FactoryProgress {
 
     /** The steps of the funnel, in the order a new player meets them. */
     public static final List<String> STEPS = List.of("start", "hub_founded", "first_hut", "first_quarry", "first_belt",
-            "first_chain", "first_unlock", "first_machine", "first_piece", "first_upgrade");
+            "first_chain", "hand_press", "first_unlock", "first_machine", "first_build", "first_ship", "stage_1",
+            "first_piece", "first_upgrade", "stage_2", "stage_3");
 
     private final JavaPlugin plugin;
     private final IslandFiles files;
@@ -73,7 +74,7 @@ public final class FactoryProgress {
     // ------------------------------------------------------------------------------------------------
 
     public boolean unlocked(IslandHost host, StructureType type) {
-        if (BuildCosts.unlock(type) == null) {
+        if (BuildCosts.unlock(host, type) == null) {
             return true;
         }
         Set<String> set = unlocked.get(host.key());
@@ -88,7 +89,7 @@ public final class FactoryProgress {
 
     /** The next part this island can unlock (first locked one in Hub order), or null when all are unlocked. */
     public BuildCosts.Unlock next(IslandHost host) {
-        for (BuildCosts.Unlock unlock : BuildCosts.UNLOCKS) {
+        for (BuildCosts.Unlock unlock : BuildCosts.unlocks(host)) {
             if (!unlocked(host, unlock.type())) {
                 return unlock;
             }
@@ -101,7 +102,7 @@ public final class FactoryProgress {
         int granted = 0;
         for (IslandHost host : hosts) {
             for (PlacedStructure structure : structures.of(host)) {
-                if (BuildCosts.unlock(structure.type()) != null && !unlocked(host, structure.type())) {
+                if (BuildCosts.unlock(host, structure.type()) != null && !unlocked(host, structure.type())) {
                     unlock(host, structure.type());
                     granted++;
                 }

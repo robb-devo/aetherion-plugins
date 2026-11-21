@@ -309,6 +309,26 @@ server to test on: it compiles, it has never been fought. Design, entry, admin c
 `BossEngine/docs/THE_HUSH.md`. `/hush enter` needs `hush.enter` (op by default) until the boss has a place in
 the world. Its void world `aetherion_hush` is only created on the backend where somebody first enters.
 
+## Private island as its own game (2026-11-21, cloud session, PR #155 + #156, Guilds only)
+
+Plan: doc "Private Insel: Onboarding-Konzept", tab "Umsetzungsplan" (v2, four packages). P1 (PR #155) live on mmo-i
+since 2026-11-21 17:03 CET. PR #156 adds P2-P4, deployed to mmo-i with one restart (see LIVE_STATE).
+- Stages 0-3 on personal islands (`island/Stages.java`): First Shift, Werkhof, Foreman's Hall, Grand Hub. The Hub
+  tier and Island Tier follow the stage (no coin upgrades there); guild islands keep the Hub-tier ladder.
+- Hand press at the Hub (128 Cobble -> 1 Compressed), stage-0 ramp (`stages.ramp-multiplier`, default 10).
+- Dock (`island/DockService.java`, `menu/DockMenu.java`, Role.EXPORT): phase contract = stage gate, a daily, two
+  regular contracts, a Guild Order when the owner's guild has its Guild Hall (coins to the guild bank), surplus
+  sold for Dock Marks (1 per 512 raw-equivalent, stage 1+). Dock Marks buy cosmetics only. Airship is cosmetic;
+  rewards are booked at ship start. Saved in each island file, section `dock`.
+- Look and feel: build thunk, own tops for Splitter/Sorter/Overflow, island sound bed (`ambience.enabled`),
+  five-second landing sweep on a new island (`landing-camera.enabled`, spectator camera, game mode restored on
+  quit/next join), first-pick cards in the Build Tool. Footprints unchanged (3x3 machines, 5x5 hut/Hub, 3x3 Dock).
+- Guild: Harbour Beacon gives members' own quarries +10 %; project board "Give from my island"; guild joining from
+  Level 20 in Guilds (`/guild` on mmo-i), founding still Level 75. Core IslandLink and the Items Manager tile still
+  gate `/guild` at 75 on the other backends (follow-up needs a Core + Items deploy).
+- Not done: 2x2 / Hub 4x2 footprints and resource-pack building models, quarry inside the Build Tool, building
+  hologram snapping, Southwood broker board, account XP and booster rewards.
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,

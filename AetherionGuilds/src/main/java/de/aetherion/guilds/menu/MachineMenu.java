@@ -90,8 +90,8 @@ public final class MachineMenu implements MenuKit.Menu {
         inventory.setItem(OUTPUT, MenuKit.named(Material.CHEST, "§eReady to leave",
                 bufferLore(structure.output(), "§8Goes onto the belt from the chute.")));
         inventory.setItem(DECONSTRUCT, MenuKit.named(Material.IRON_AXE, "§cTake it down",
-                "§7Empty it first. Half the coins and",
-                "§7the Quarry Mill/Forge item come back.",
+                "§7Empty it first. Everything it",
+                "§7cost comes back.",
                 "§eShift-click §7to confirm"));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));

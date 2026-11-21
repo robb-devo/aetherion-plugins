@@ -1171,7 +1171,7 @@ public final class LogisticsService {
                 // a quarry digs (wheel turns, drill pumps) until it is full, belt or not
                 case SOURCE -> digger != null && digger.rawEquivalent() < digger.cap();
                 case ROUTER -> now - sent < flowWindow();
-                case SINK -> state == MachineState.RECEIVING;
+                case SINK, EXPORT -> state == MachineState.RECEIVING;
                 default -> false;
             };
             // world labels show the steady rate the quarries feed (from their levels), never a jumpy average
@@ -1186,6 +1186,7 @@ public final class LogisticsService {
                         ? (s.filter() == null ? "§8front: nothing picked" : "§8front: §f" + filterName(s.filter()))
                         : type == StructureType.OVERFLOW ? "§8front first, then sides" : "§8shares evenly")
                         + (feed > 0 ? "\n§7▸ " + perMinute(feed) + " through" : "");
+                case EXPORT -> export == null ? null : export.line(s);
                 default -> null;
             };
             boolean tag = type.role() != StructureType.Role.SOURCE;
@@ -1217,7 +1218,8 @@ public final class LogisticsService {
 
     /** A quarry's dig rate per minute (rock solid: level and interval only). */
     public long digPerMinute(QuarryMinion minion) {
-        return minion == null ? 0L : minion.quarryType().perMinute(minion.level(), intervalSeconds());
+        return minion == null ? 0L : Math.round(minion.quarryType().perMinute(minion.level(), intervalSeconds()) * minion.boost()
+                * (1.0 + minion.bonusPct() / 100.0));
     }
 
     /**
@@ -1293,6 +1295,21 @@ public final class LogisticsService {
     private java.util.function.Function<IslandHost, String> hubFooter = host -> null;
 
     /** The board's last line (the next factory goal), supplied by the goals. */
+    /** The Dock: what a belt brings it goes into the island's open contracts (DockService). */
+    public interface Export {
+        /** Takes up to {@code amount} of {@code res} into the open contracts; returns how many it took. */
+        long accept(PlacedStructure dock, Res res, long amount);
+
+        /** The line under the Dock's floating name ("Contract 2/4 Compressed Cobble"). */
+        String line(PlacedStructure dock);
+    }
+
+    private Export export;
+
+    public void attachExport(Export export) {
+        this.export = export;
+    }
+
     public void setHubFooter(java.util.function.Function<IslandHost, String> footer) {
         this.hubFooter = footer == null ? host -> null : footer;
     }
@@ -1445,7 +1462,8 @@ public final class LogisticsService {
         Net net = nets.get(host.key());
         boolean hasMachines = false;
         for (PlacedStructure structure : structures.of(host)) {
-            if (structure.type().role() == StructureType.Role.PROCESSOR || structure.type().role() == StructureType.Role.SINK) {
+            if (structure.type().role() == StructureType.Role.PROCESSOR || structure.type().role() == StructureType.Role.SINK
+                    || structure.type().role() == StructureType.Role.EXPORT) {
                 hasMachines = true;
                 break;
             }
@@ -1705,6 +1723,9 @@ public final class LogisticsService {
     private long accept(PlacedStructure target, Res res, long amount) {
         if (amount <= 0L || target == null || target.building()) {
             return 0L;
+        }
+        if (target.type().role() == StructureType.Role.EXPORT) {
+            return export == null ? 0L : Math.max(0L, export.accept(target, res, amount));
         }
         Map<Res, Long> into = target.type().role() == StructureType.Role.SINK ? target.store() : target.input();
         long free = target.capacity() - PlacedStructure.total(into);
@@ -2034,6 +2055,9 @@ public final class LogisticsService {
                     return MachineState.BACKED_UP;
                 }
                 return anyDead ? MachineState.DEAD_END : MachineState.WAITING;
+            }
+            case EXPORT -> {
+                return now - got < flowWindow() ? MachineState.RECEIVING : MachineState.IDLE;
             }
             default -> {
                 return MachineState.IDLE;

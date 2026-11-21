@@ -31,6 +31,8 @@ public final class Props {
     public static final String HUT = "prop_hut";
     /** 5x5 Hub: a dais, a tower, a spinning holo core over the real lectern (canopy, then a gold dome). */
     public static final String HUB = "prop_hub";
+    /** 3x3 Dock: a timber quay with a cargo crane and a mooring mast the airship ties up to. */
+    public static final String DOCK = "prop_dock";
 
     /** Old pasted looks that get swapped for props on first visit (same 3x3 footprint, same chute). */
     public static final Set<String> OLD_PRODUCTION = Set.of(
@@ -54,6 +56,7 @@ public final class Props {
             case DEPOT -> StructureType.DEPOT;
             case HUT -> StructureType.STORAGE_HUT;
             case HUB -> StructureType.WORKSHOP;
+            case DOCK -> StructureType.DOCK;
             default -> null;
         };
     }
@@ -70,6 +73,20 @@ public final class Props {
         library.register(machine(DEPOT, false, false));
         library.register(hut());
         library.register(hub());
+        library.register(dock());
+    }
+
+    /** 3x3 Dock: a knee-high quay shell (belts run into any side), the mooring mast at the back corner. */
+    private static Template dock() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                cells.put(x + ",1," + z, BARRIER);
+            }
+        }
+        cells.put("1,2,-1", BARRIER);
+        cells.put("1,3,-1", BARRIER);
+        return Template.synthetic(DOCK, -1, 0, -1, 1, 4, 1, cells);
     }
 
     /** 5x5 hut: a solid two-high shell (belts run into any wall), the roof core above. */

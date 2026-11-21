@@ -121,6 +121,13 @@ public final class GuildService {
         if (leader == null) {
             return null;
         }
+        if (!de.aetherion.guilds.util.AetherionItemsAccess.guildUnlocked(leader)
+                && !leader.hasPermission("aetherion.guild.admin")) {
+            // joining opens with your island (Level 20); founding stays mid-late game
+            leader.sendMessage(de.aetherion.guilds.util.AetherionItemsAccess.guildHint());
+            leader.sendMessage("§7You can §fjoin §7a guild already: ask a member for an invite.");
+            return null;
+        }
         if (byPlayer(leader.getUniqueId()) != null) {
             leader.sendMessage("§cYou already have a guild. Leave it first.");
             return null;

@@ -38,6 +38,8 @@ public final class HubMenu implements MenuKit.Menu {
     private static final int MARKET = 32;
     private static final int LINES = 34;
     private static final int GOAL = 40;
+    private static final int PRESS = 38;
+    private static final int DOCK = 42;
     private static final int BACK = 45;
     private static final int CLOSE = 49;
 
@@ -53,6 +55,19 @@ public final class HubMenu implements MenuKit.Menu {
 
     public void attachProgress(de.aetherion.guilds.island.FactoryProgress progress) {
         this.progress = progress;
+    }
+
+    private de.aetherion.guilds.island.DockService dock;
+    private DockMenu dockMenu;
+
+    /** Personal islands: the stage ladder, the hand press and the Dock. */
+    public void attachDock(de.aetherion.guilds.island.DockService dock, DockMenu dockMenu) {
+        this.dock = dock;
+        this.dockMenu = dockMenu;
+    }
+
+    private boolean staged(IslandHost host) {
+        return dock != null && host != null && !host.isGuild();
     }
 
     /** Island tour: the part the tour wants unlocked right now (free, the only glowing tile), or null. */
@@ -103,8 +118,12 @@ public final class HubMenu implements MenuKit.Menu {
         Inventory inventory = MenuKit.framed(this, host, 54, "§8✦ " + LogisticsService.hubName(hub.level()) + " · "
                 + hosts.title(host));
         List<String> head = new ArrayList<>();
-        head.add("§7Tier §f" + hub.level() + "§8/" + StructureUpgrades.maxLevel(StructureType.WORKSHOP)
-                + " §8· §7Island Tier §f" + hosts.tier(host));
+        if (staged(host)) {
+            head.add("§6" + de.aetherion.guilds.island.Stages.label(dock.stage(host)) + " §8· §7Island Tier §f" + hosts.tier(host));
+        } else {
+            head.add("§7Tier §f" + hub.level() + "§8/" + StructureUpgrades.maxLevel(StructureType.WORKSHOP)
+                    + " §8· §7Island Tier §f" + hosts.tier(host));
+        }
         int lines = 0;
         int running = 0;
         for (LogisticsService.Route route : logistics.routes(host)) {
@@ -126,9 +145,9 @@ public final class HubMenu implements MenuKit.Menu {
         if (tour != null) {
             PlacementService.Part tourPart = PlacementService.Part.of(tour);
             head.add("§6◆ " + tourName + ": §funlock the " + (tourPart == null ? tour.display() : tourPart.label())
-                    + " §8(glowing, free)");
+                    + " §8(glowing)");
         }
-        head.add("§8Top row: unlock new parts.");
+        head.add(staged(host) ? "§8Top row: your stage's parts to unlock." : "§8Top row: unlock new parts.");
         head.add("§8Build them anywhere with the Build Tool.");
         inventory.setItem(HEADER, MenuKit.glow(MenuKit.named(Material.LECTERN, "§6§l✦ " + LogisticsService.hubName(hub.level()), head)));
         if (progress != null) {
@@ -143,9 +162,15 @@ public final class HubMenu implements MenuKit.Menu {
         inventory.setItem(PRODUCTION, MenuKit.named(Material.BLAST_FURNACE, "§aProduction",
                 "§7Every machine: its state,", "§7its stock, its upgrade.", "", "§e▶ Open Production"));
         inventory.setItem(LINES, linesTile(host));
-        ItemStack tier = UpgradeTile.of(player, structures, hub);
-        if (tier != null) {
-            inventory.setItem(TIER, tier);
+        if (staged(host)) {
+            inventory.setItem(TIER, stageTile(player, host));
+            inventory.setItem(PRESS, pressTile(player, host));
+            inventory.setItem(DOCK, dockTile(host));
+        } else {
+            ItemStack tier = UpgradeTile.of(player, structures, hub);
+            if (tier != null) {
+                inventory.setItem(TIER, tier);
+            }
         }
         if (goals != null) {
             FactoryGoals.Goal next = goals.next(host);
@@ -196,7 +221,22 @@ public final class HubMenu implements MenuKit.Menu {
             case BUILD -> placement.openTool(player, host, null);
             case MARKET -> market.open(player, host);
             case PRODUCTION -> production.open(player, host);
+            case PRESS -> {
+                if (staged(host)) {
+                    dock.press(player, host);
+                    open(player, host);
+                }
+            }
+            case DOCK -> {
+                if (staged(host)) {
+                    openDock(player, host);
+                }
+            }
             case TIER -> {
+                if (staged(host)) {
+                    openDock(player, host);
+                    return;
+                }
                 if (hub == null || structures.nextTier(hub) == null) {
                     return;
                 }
@@ -217,8 +257,9 @@ public final class HubMenu implements MenuKit.Menu {
                 }
             }
             default -> {
-                if (slot >= UNLOCKS && slot < UNLOCKS + BuildCosts.UNLOCKS.size() && hub != null) {
-                    unlockClick(player, host, hub, BuildCosts.UNLOCKS.get(slot - UNLOCKS));
+                List<BuildCosts.Unlock> board = BuildCosts.unlocks(host);
+                if (slot >= UNLOCKS && slot < UNLOCKS + board.size() && hub != null) {
+                    unlockClick(player, host, hub, board.get(slot - UNLOCKS));
                 }
             }
         }
@@ -233,11 +274,11 @@ public final class HubMenu implements MenuKit.Menu {
         static void fill(HubMenu menu, Inventory inventory, Player player, IslandHost host, int hubLevel) {
             StructureType tour = menu.tourWants(host);
             // mid-tour only the tour's part glows; nothing else competes for the eye
-            BuildCosts.Unlock next = tour != null ? BuildCosts.unlock(tour)
+            BuildCosts.Unlock next = tour != null ? BuildCosts.unlock(host, tour)
                     : menu.touring.test(host) ? null : menu.progress.next(host);
-            for (int i = 0; i < BuildCosts.UNLOCKS.size(); i++) {
-                inventory.setItem(UNLOCKS + i, menu.unlockTile(player, host, BuildCosts.UNLOCKS.get(i), hubLevel,
-                        BuildCosts.UNLOCKS.get(i) == next));
+            List<BuildCosts.Unlock> board = BuildCosts.unlocks(host);
+            for (int i = 0; i < board.size(); i++) {
+                inventory.setItem(UNLOCKS + i, menu.unlockTile(player, host, board.get(i), hubLevel, board.get(i) == next));
             }
         }
     }
@@ -255,15 +296,19 @@ public final class HubMenu implements MenuKit.Menu {
             lore.add("§a✔ Unlocked §8· §e▶ Click: Build Tool with it");
             return MenuKit.named(icon, "§a" + name, lore);
         }
-        if (type == tourWants(host)) {
-            lore.add("§7Unlock: §afree §8(" + tourName + "'s tour)");
-            lore.add("");
-            lore.add("§e▶ Click to unlock §8· §7then build it");
-            return MenuKit.glow(MenuKit.named(icon, "§6§l" + name + " §6◆ unlock this", lore));
-        }
         lore.add("§7Unlock: " + placement.costLine(player, host, unlock.price()));
         lore.add("");
-        if (hubLevel < unlock.hubLevel()) {
+        if (staged(host) && dock.stage(host) < unlock.stage()) {
+            lore.add("§c🔒 " + de.aetherion.guilds.island.Stages.label(unlock.stage()));
+            lore.add("§8Ship the phase contract at your Dock.");
+            return MenuKit.named(icon, "§8" + name, lore);
+        }
+        if (type == tourWants(host)) {
+            String missing = structures.missing(player, host, unlock.price());
+            lore.add(missing == null ? "§e▶ Click to unlock §8· §7then build it" : "§c✖ " + missing);
+            return MenuKit.glow(MenuKit.named(icon, "§6§l" + name + " §6◆ " + tourName + ": unlock this", lore));
+        }
+        if (!staged(host) && hubLevel < unlock.hubLevel()) {
             lore.add("§c🔒 Needs Hub tier " + unlock.hubLevel() + " §8(upgrade it on the right)");
             return MenuKit.named(icon, "§8" + name, lore);
         }
@@ -286,16 +331,13 @@ public final class HubMenu implements MenuKit.Menu {
             player.sendMessage(hosts.rankHint(host, "unlock parts"));
             return;
         }
-        if (type == tourWants(host)) {
-            // the tour's unlock: free, any Hub tier, and straight into the Build Tool (no second menu)
-            progress.unlock(host, type);
-            structures.milestone(host, "first_unlock");
-            celebrateUnlock(player, host, hub, type, "free, " + tourName + "'s tour");
-            player.closeInventory();
-            placement.openTool(player, host, PlacementService.Part.of(type));
+        if (staged(host) && dock.stage(host) < unlock.stage()) {
+            player.sendMessage("§cThat opens on " + de.aetherion.guilds.island.Stages.label(unlock.stage())
+                    + ". Ship the phase contract at your Dock first.");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.8f);
             return;
         }
-        if (hub.level() < unlock.hubLevel()) {
+        if (!staged(host) && hub.level() < unlock.hubLevel()) {
             player.sendMessage("§cUpgrade your Hub to tier " + unlock.hubLevel() + " first.");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.8f);
             return;
@@ -309,7 +351,99 @@ public final class HubMenu implements MenuKit.Menu {
         progress.unlock(host, type);
         structures.milestone(host, "first_unlock");
         celebrateUnlock(player, host, hub, type, BuildCosts.describe(unlock.price()));
+        if (type == tourWants(host) || touring.test(host)) {
+            // on the tour: straight into the Build Tool with it (no second menu)
+            player.closeInventory();
+            placement.openTool(player, host, PlacementService.Part.of(type));
+            return;
+        }
         open(player, host);
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // personal islands: the stage, the hand press, the Dock
+    // ------------------------------------------------------------------------------------------------
+
+    private void openDock(Player player, IslandHost host) {
+        if (dock.dock(host) == null) {
+            player.sendMessage(structures.unlocked(host, StructureType.DOCK)
+                    ? "§7Build your Dock first: Build Tool → Dock. Contracts and the airship come there."
+                    : "§7Unlock the Dock on the top row first (" + BuildCosts.describe(BuildCosts.unlock(host,
+                    StructureType.DOCK).price()) + "), then build it.");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 1.0f);
+            return;
+        }
+        if (dockMenu != null) {
+            dockMenu.open(player, host);
+        }
+    }
+
+    private ItemStack stageTile(Player player, IslandHost host) {
+        int stage = dock.stage(host);
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Your Hub is the §f" + LogisticsService.hubName(de.aetherion.guilds.island.Stages.hubLevel(stage)));
+        lore.add("§7Island Tier §f" + hosts.tier(host) + " §8· §7quarries up to §fLv"
+                + de.aetherion.guilds.island.Stages.quarryCap(stage));
+        lore.add("");
+        if (stage >= de.aetherion.guilds.island.Stages.MAX) {
+            lore.add("§aThe top of the ladder.");
+            lore.add("§7Contracts and the daily order");
+            lore.add("§7keep coming at the Dock.");
+            return MenuKit.named(Material.NETHER_STAR, "§6§l" + de.aetherion.guilds.island.Stages.label(stage), lore);
+        }
+        de.aetherion.guilds.island.DockService.Contract phase = dock.phase(host);
+        lore.add("§7Next: §f" + de.aetherion.guilds.island.Stages.label(stage + 1));
+        lore.addAll(de.aetherion.guilds.island.Stages.perks(stage + 1));
+        lore.add("");
+        if (phase != null) {
+            lore.add("§7Phase contract §f" + phase.title() + "§7:");
+            for (de.aetherion.guilds.island.DockService.Need need : phase.needs()) {
+                long have = Math.min(need.amount(), phase.loaded(need.res()));
+                lore.add((have >= need.amount() ? "§a✔ " : "§8• ") + "§f" + GuildFormat.compact(have) + "§8/§f"
+                        + GuildFormat.compact(need.amount()) + " " + need.res().color() + need.res().display());
+            }
+        }
+        lore.add("");
+        lore.add(dock.dock(host) == null ? "§7Ship it at your §fDock §8(build one first)" : "§e▶ Open the Dock");
+        return MenuKit.tile(Material.BEACON, "§6§l" + de.aetherion.guilds.island.Stages.label(stage), lore, false);
+    }
+
+    private ItemStack pressTile(Player player, IslandHost host) {
+        long cobble = structures.stock(host, BuildCosts.COBBLE);
+        boolean can = cobble >= de.aetherion.guilds.island.DockService.PRESS_RAW;
+        boolean wanted = dock.pressed(host) == 0 && touring.test(host);
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Press §f128 Cobblestone §7from storage");
+        lore.add("§7into §a1 Compressed Cobblestone§7,");
+        lore.add("§7by hand. The Mill does it for you");
+        lore.add("§7later, all day long.");
+        lore.add("");
+        lore.add("§7In storage: " + (can ? "§a" : "§c") + GuildFormat.compact(cobble) + " §7Cobblestone");
+        lore.add("");
+        lore.add(can ? "§e▶ Press one" : "§c✖ needs " + GuildFormat.compact(de.aetherion.guilds.island.DockService.PRESS_RAW - cobble)
+                + " more Cobblestone");
+        return MenuKit.tile(Material.PISTON, "§6Hand Press", lore, wanted && can);
+    }
+
+    private ItemStack dockTile(IslandHost host) {
+        List<String> lore = new ArrayList<>();
+        if (dock.dock(host) == null) {
+            lore.add("§7Contracts, the daily order and");
+            lore.add("§7the airship. Unlock and build");
+            lore.add("§7a Dock first.");
+            return MenuKit.named(Material.SPRUCE_BOAT, "§8Dock", lore);
+        }
+        int ready = 0;
+        for (de.aetherion.guilds.island.DockService.Contract contract : dock.contracts(host)) {
+            if (contract.full()) {
+                ready++;
+            }
+        }
+        lore.add("§7Open contracts §f" + dock.contracts(host).size() + (ready > 0 ? " §8· §a" + ready + " ready" : ""));
+        lore.add("§7Dock Marks §b" + dock.marks(host));
+        lore.add("");
+        lore.add("§e▶ Open the Dock");
+        return MenuKit.tile(Material.SPRUCE_BOAT, "§b§lDock", lore, ready > 0);
     }
 
     private void celebrateUnlock(Player player, IslandHost host, PlacedStructure hub, StructureType type, String paid) {
