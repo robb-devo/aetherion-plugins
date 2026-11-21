@@ -236,7 +236,7 @@ public final class MinionService {
             return;
         }
         int cap = minion.cap();
-        minion.addStored((int) Math.min(steps * (long) minion.perTick(), Integer.MAX_VALUE), cap);
+        minion.addStored((int) Math.min(minion.produced(steps), Integer.MAX_VALUE), cap);
         minion.setLastTick(minion.lastTick() + steps * interval);
         if (AetherionItemsAccess.available()) {
             minion.processStorage();
@@ -257,7 +257,7 @@ public final class MinionService {
             if (steps > 0) {
                 int used = raw + compressed * QuarryMinion.COMPRESS_UNIT + compacted * QuarryMinion.COMPACT_UNIT;
                 int room = Math.max(0, minion.cap() - used);
-                raw += (int) Math.min(steps * (long) minion.perTick(), room);
+                raw += (int) Math.min(Math.round(steps * minion.ratePerTick()), room);
             }
         }
         if (AetherionItemsAccess.available()) {

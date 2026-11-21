@@ -87,7 +87,7 @@ public final class QuarryMenu {
         };
         int interval = Math.max(1, de.aetherion.guilds.AetherionGuilds.getInstance() == null ? 10
                 : de.aetherion.guilds.AetherionGuilds.getInstance().getConfig().getInt("minion-interval-seconds", 10));
-        long perMinute = Math.round(minion.perTick() * (60.0 / interval));
+        long perMinute = Math.round(minion.ratePerTick() * (60.0 / interval));
         String state = null;
         if (structures != null && logistics != null) {
             IslandHost stateHost = holder.personal() ? IslandHost.personal(holder.ownerId()) : IslandHost.guild(holder.ownerId());
@@ -109,7 +109,8 @@ public final class QuarryMenu {
                 "§7Raw: §e" + view.raw() + " " + type.productName(),
                 view.compressed() > 0 ? "§7Compressed: §a" + view.compressed() : "§8No compressed stored",
                 view.compacted() > 0 ? "§7Compacted: §b" + view.compacted() : "§8No compacted stored",
-                "§7Digs: §f" + de.aetherion.guilds.util.GuildFormat.compact(perMinute) + " §7" + type.productName() + " / min",
+                "§7Digs: §f" + de.aetherion.guilds.util.GuildFormat.compact(perMinute) + " §7" + type.productName() + " / min"
+                        + (minion.bonusPct() > 0 ? " §8(§bBeacon +" + minion.bonusPct() + "%§8)" : ""),
                 "§7Holds up to: §f" + minion.cap() + " goods",
                 mill,
                 type.blurb(),

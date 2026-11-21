@@ -1218,7 +1218,8 @@ public final class LogisticsService {
 
     /** A quarry's dig rate per minute (rock solid: level and interval only). */
     public long digPerMinute(QuarryMinion minion) {
-        return minion == null ? 0L : minion.quarryType().perMinute(minion.level(), intervalSeconds()) * minion.boost();
+        return minion == null ? 0L : Math.round(minion.quarryType().perMinute(minion.level(), intervalSeconds()) * minion.boost()
+                * (1.0 + minion.bonusPct() / 100.0));
     }
 
     /**

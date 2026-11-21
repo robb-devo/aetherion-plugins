@@ -78,7 +78,8 @@ public final class DockService implements Listener, LogisticsService.Export {
     public enum Kind {
         PHASE,
         DAILY,
-        REGULAR
+        REGULAR,
+        GUILD
     }
 
     /** One line of a contract: a good and how many. */
@@ -186,6 +187,34 @@ public final class DockService implements Listener, LogisticsService.Export {
         Contract phase;
         Contract daily;
         final List<Contract> regular = new ArrayList<>();
+        /** The Guild Hall's order (only while the owner's guild has a Hall); coins go to the guild bank. */
+        Contract guild;
+        long nextGuildAt;
+    }
+
+    /** What the Dock needs to know about the owner's guild (attached by the plugin; null = no guilds). */
+    public interface GuildLink {
+        /** The owner's guild name when its Guild Hall is built, else null. */
+        String hallGuild(UUID owner);
+
+        /** True when the owner's guild has finished its Harbour Beacon (+10 % quarry speed at home). */
+        boolean beacon(UUID owner);
+
+        /** Puts coins into the owner's guild bank. False when the owner has no guild. */
+        boolean payGuild(UUID owner, long coins);
+
+        /** True when the owner is in a guild at all. */
+        boolean member(UUID owner);
+    }
+
+    /** Beacon bonus on every quarry of a member's own island, in percent. */
+    public static final int BEACON_BONUS = 10;
+    /** Pause before the Guild Hall posts its next order. */
+    private static final long GUILD_PAUSE = 4L * 60L * 60L * 1000L;
+    private GuildLink guildLink;
+
+    public void attachGuild(GuildLink link) {
+        this.guildLink = link;
     }
 
     private static final String AIRSHIP_TAG = "aeg_airship";
@@ -391,8 +420,40 @@ public final class DockService implements Listener, LogisticsService.Export {
         if (state.daily != null && !state.dailyDone) {
             out.add(state.daily);
         }
+        if (state.guild != null) {
+            out.add(state.guild);
+        }
         out.addAll(state.regular);
         return out;
+    }
+
+    /** The Guild Hall's order on this Dock, or null (no guild, no Hall, or between orders). */
+    public Contract guildOrder(IslandHost host) {
+        if (!personalStages(host)) {
+            return null;
+        }
+        State state = state(host.id());
+        refresh(host, state);
+        return state.guild;
+    }
+
+    /** Why there is no guild order (for the board), or null when there is one. */
+    public String guildOrderHint(IslandHost host) {
+        if (!personalStages(host)) {
+            return null;
+        }
+        State state = state(host.id());
+        if (state.guild != null) {
+            return null;
+        }
+        if (guildLink == null || guildLink.hallGuild(host.id()) == null) {
+            return "Guilds with a finished Guild Hall send their members bigger orders here.";
+        }
+        if (state.stage < 1) {
+            return "Your guild's orders start once you reach Stage 1.";
+        }
+        long left = state.nextGuildAt - System.currentTimeMillis();
+        return "Next guild order in " + FactoryProgress.duration(Math.max(0L, left)) + ".";
     }
 
     public Contract phase(IslandHost host) {
@@ -460,6 +521,19 @@ public final class DockService implements Listener, LogisticsService.Export {
             state.regular.add(fresh);
             dirty = true;
         }
+        String hall = guildLink == null ? null : guildLink.hallGuild(host.id());
+        if (state.guild != null && hall == null) {
+            state.guild = null; // left the guild (or no guild plugin): the order goes back to the Hall
+            dirty = true;
+        }
+        if (state.guild == null && hall != null && state.stage >= 1 && now >= state.nextGuildAt) {
+            Contract fresh = generate(host, state, Kind.GUILD);
+            if (fresh != null) {
+                state.guild = new Contract(Kind.GUILD, fresh.title(), "Guild Hall · " + hall, fresh.needs(),
+                        fresh.coins(), fresh.marks(), fresh.extra());
+                dirty = true;
+            }
+        }
     }
 
     private Contract phaseContract(IslandHost host, int stage) {
@@ -493,7 +567,7 @@ public final class DockService implements Listener, LogisticsService.Export {
 
     private Contract generate(IslandHost host, State state, Kind kind) {
         long[] base = {192L, 768L, 3_072L, 12_288L};
-        long target = base[Stages.clamp(state.stage)] * (kind == Kind.DAILY ? 3L : 1L);
+        long target = base[Stages.clamp(state.stage)] * (kind == Kind.DAILY ? 3L : kind == Kind.GUILD ? 4L : 1L);
         target = Math.round(target * (0.75 + ThreadLocalRandom.current().nextDouble() * 0.75));
         List<Res> pool = new ArrayList<>();
         Set<QuarryType> types = EnumSet.of(QuarryType.COBBLESTONE);
@@ -538,6 +612,10 @@ public final class DockService implements Listener, LogisticsService.Export {
             marks = marks * 2 + 2;
             extra = state.stage >= 2 ? "core:1" : null;
             title = "Daily Order";
+        } else if (kind == Kind.GUILD) {
+            // the coins go to the guild bank; the member keeps double marks
+            marks = marks * 2;
+            title = "Guild Order";
         }
         return new Contract(kind, title, client(res.type()), List.of(new Need(res, amount)), coins, marks, extra);
     }
@@ -695,6 +773,13 @@ public final class DockService implements Listener, LogisticsService.Export {
                 }
                 state.dailyDone = true;
             }
+            case GUILD -> {
+                if (state.guild != contract) {
+                    return false;
+                }
+                state.guild = null;
+                state.nextGuildAt = System.currentTimeMillis() + GUILD_PAUSE;
+            }
             default -> {
                 if (!state.regular.remove(contract)) {
                     return false;
@@ -705,7 +790,11 @@ public final class DockService implements Listener, LogisticsService.Export {
         state.shipped++;
         state.marks += contract.marks();
         dirty = true;
-        hosts.refund(player, host, contract.coins());
+        boolean toGuild = contract.kind() == Kind.GUILD && guildLink != null
+                && guildLink.payGuild(host.id(), contract.coins());
+        if (!toGuild) {
+            hosts.refund(player, host, contract.coins());
+        }
         String extra = giveExtra(player, contract.extra());
         structures.milestone(host, "first_ship");
         int stageBefore = state.stage;
@@ -716,7 +805,8 @@ public final class DockService implements Listener, LogisticsService.Export {
             structures.milestone(host, "stage_" + state.stage);
         }
         List<String> rewards = new ArrayList<>();
-        rewards.add("§6+" + GuildFormat.compact(contract.coins()) + " coins");
+        rewards.add(toGuild ? "§6+" + GuildFormat.compact(contract.coins()) + " coins to the guild bank"
+                : "§6+" + GuildFormat.compact(contract.coins()) + " coins");
         rewards.add("§b+" + contract.marks() + " Dock Marks");
         if (extra != null) {
             rewards.add(extra);
@@ -810,6 +900,11 @@ public final class DockService implements Listener, LogisticsService.Export {
             case 3 -> List.of("The Grand Hub. Every Mill and Forge runs twice as fast now, and you can buy land.");
             default -> List.of();
         };
+        if (stage == 1 && guildLink != null && !guildLink.member(host.id())) {
+            List<String> more = new ArrayList<>(lines);
+            more.add("Guilds take goods like yours too. Anyone with an island may join one: ask around.");
+            lines = more;
+        }
         if (!lines.isEmpty()) {
             say.accept(player, lines);
         }
@@ -901,9 +996,13 @@ public final class DockService implements Listener, LogisticsService.Export {
         if (clock % 5 == 0) {
             for (PersonalIsland island : personal.all()) {
                 int boost = boostFor(state(island.ownerId()).stage);
+                int bonus = guildLink != null && guildLink.beacon(island.ownerId()) ? BEACON_BONUS : 0;
                 for (QuarryMinion minion : island.minions()) {
                     if (minion.boost() != boost) {
                         minion.setBoost(boost);
+                    }
+                    if (minion.bonusPct() != bonus) {
+                        minion.setBonusPct(bonus);
                     }
                 }
             }
@@ -1214,6 +1313,8 @@ public final class DockService implements Listener, LogisticsService.Export {
                 readLoaded(section.getStringList("phase-loaded"), state.phase);
             }
             state.daily = readContract(section.getConfigurationSection("daily"), Kind.DAILY);
+            state.guild = readContract(section.getConfigurationSection("guild"), Kind.GUILD);
+            state.nextGuildAt = section.getLong("next-guild", 0L);
             ConfigurationSection regular = section.getConfigurationSection("regular");
             if (regular != null) {
                 for (String id : regular.getKeys(false)) {
@@ -1326,6 +1427,10 @@ public final class DockService implements Listener, LogisticsService.Export {
             if (state.daily != null) {
                 writeContract(section.createSection("daily"), state.daily);
             }
+            if (state.guild != null) {
+                writeContract(section.createSection("guild"), state.guild);
+            }
+            section.set("next-guild", state.nextGuildAt);
             ConfigurationSection regular = section.createSection("regular");
             for (int i = 0; i < state.regular.size(); i++) {
                 writeContract(regular.createSection("r" + i), state.regular.get(i));

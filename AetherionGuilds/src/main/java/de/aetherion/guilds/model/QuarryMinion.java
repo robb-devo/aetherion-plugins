@@ -170,6 +170,36 @@ public final class QuarryMinion {
         return quarryType().perTick(level) * boost;
     }
 
+    /** Session-only bonus in percent on top (the guild's Harbour Beacon: +10 % on members' own islands). */
+    private transient int bonusPct;
+    /** The bonus's fractions, carried so small quarries get their share too. */
+    private transient double bonusCarry;
+
+    public int bonusPct() {
+        return bonusPct;
+    }
+
+    public void setBonusPct(int bonusPct) {
+        this.bonusPct = Math.max(0, Math.min(100, bonusPct));
+    }
+
+    /** Per tick with the bonus, for rates on menus. */
+    public double ratePerTick() {
+        return perTick() * (1.0 + bonusPct / 100.0);
+    }
+
+    /** What {@code steps} dig steps produce, bonus included (the bonus's fractions carry over). */
+    public long produced(long steps) {
+        long base = steps * (long) perTick();
+        if (bonusPct <= 0 || base <= 0L) {
+            return base;
+        }
+        double extra = base * (bonusPct / 100.0) + bonusCarry;
+        long whole = (long) extra;
+        bonusCarry = extra - whole;
+        return base + whole;
+    }
+
     public int cap() {
         return quarryType().cap(level);
     }

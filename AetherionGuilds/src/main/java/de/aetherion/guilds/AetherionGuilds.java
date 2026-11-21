@@ -176,6 +176,36 @@ public final class AetherionGuilds extends JavaPlugin {
         hubMenu.attachProgress(progress);
         // package 3: the stage ladder and the Dock (personal islands)
         dock = new de.aetherion.guilds.island.DockService(this, hosts, personal, structures, minions, islandFiles);
+        dock.attachGuild(new de.aetherion.guilds.island.DockService.GuildLink() {
+            @Override
+            public String hallGuild(UUID owner) {
+                de.aetherion.guilds.model.Guild guild = guilds.byPlayer(owner);
+                return guild != null && projects.completed(guild, de.aetherion.guilds.project.GuildProjectType.GUILD_HALL)
+                        ? guild.name() : null;
+            }
+
+            @Override
+            public boolean beacon(UUID owner) {
+                de.aetherion.guilds.model.Guild guild = guilds.byPlayer(owner);
+                return guild != null && projects.completed(guild, de.aetherion.guilds.project.GuildProjectType.HARBOUR_BEACON);
+            }
+
+            @Override
+            public boolean payGuild(UUID owner, long coins) {
+                de.aetherion.guilds.model.Guild guild = guilds.byPlayer(owner);
+                if (guild == null) {
+                    return false;
+                }
+                guild.setBankCoins(guild.bankCoins() + Math.max(0L, coins));
+                guilds.save();
+                return true;
+            }
+
+            @Override
+            public boolean member(UUID owner) {
+                return guilds.byPlayer(owner) != null;
+            }
+        });
         getServer().getPluginManager().registerEvents(dock, this);
         logistics.attachExport(dock);
         structures.attachUpgradeGate((structure, level) -> dock.upgradeGate(structure.host(), structure.type(), level));

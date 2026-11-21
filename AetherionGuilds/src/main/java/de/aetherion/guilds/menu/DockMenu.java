@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
 public final class DockMenu implements MenuKit.Menu {
 
     private static final int HEADER = 4;
-    private static final int[] CONTRACTS = {19, 21, 23, 25};
+    private static final int[] CONTRACTS = {19, 21, 23, 25, 31};
     private static final int SHOP = 39;
     private static final int LOAD_ALL = 41;
     private static final int BACK = 45;
@@ -104,6 +104,7 @@ public final class DockMenu implements MenuKit.Menu {
         List<DockService.Contract> regular = dock.regular(host);
         out.add(regular.size() > 0 ? regular.get(0) : null);
         out.add(regular.size() > 1 ? regular.get(1) : null);
+        out.add(dock.guildOrder(host));
         return out;
     }
 
@@ -112,6 +113,18 @@ public final class DockMenu implements MenuKit.Menu {
             case 0 -> MenuKit.named(Material.NETHER_STAR, "§6" + Stages.label(dock.stage(host)),
                     "§7Every stage is reached.", "§7The daily order and the", "§7contracts keep coming.");
             case 1 -> MenuKit.named(Material.CLOCK, "§7Daily order", "§7Shipped for today.", "§7A new one tomorrow.");
+            case 4 -> {
+                String hint = dock.guildOrderHint(host);
+                List<String> lore = new ArrayList<>();
+                lore.add("§8Bigger orders for your guild:");
+                lore.add("§8the coins go to its bank, you keep");
+                lore.add("§8double Dock Marks.");
+                lore.add("");
+                for (String line : wrap(hint == null ? "" : hint, 32)) {
+                    lore.add("§7" + line);
+                }
+                yield MenuKit.named(Material.WHITE_BANNER, "§7Guild Order", lore);
+            }
             default -> MenuKit.named(Material.PAPER, "§7Contract", "§7The broker is writing", "§7a new one. A minute.");
         };
     }
@@ -121,6 +134,9 @@ public final class DockMenu implements MenuKit.Menu {
         lore.add("§8" + contract.client());
         if (contract.kind() == DockService.Kind.PHASE) {
             lore.add("§6Ships you to " + Stages.label(dock.stage(host) + 1));
+        }
+        if (contract.kind() == DockService.Kind.GUILD) {
+            lore.add("§6Coins go to your guild's bank");
         }
         lore.add("");
         for (DockService.Need need : contract.needs()) {
@@ -147,10 +163,11 @@ public final class DockMenu implements MenuKit.Menu {
         Material icon = switch (contract.kind()) {
             case PHASE -> Material.BEACON;
             case DAILY -> Material.CLOCK;
+            case GUILD -> Material.YELLOW_BANNER;
             default -> Material.WRITABLE_BOOK;
         };
         String name = (contract.kind() == DockService.Kind.PHASE ? "§6§l" : contract.kind() == DockService.Kind.DAILY
-                ? "§e§l" : "§f") + contract.title() + (full ? " §a✔" : "");
+                ? "§e§l" : contract.kind() == DockService.Kind.GUILD ? "§d§l" : "§f") + contract.title() + (full ? " §a✔" : "");
         ItemStack item = MenuKit.named(full ? Material.CHEST_MINECART : icon, name, lore);
         return full || contract.kind() == DockService.Kind.PHASE ? MenuKit.glow(item) : item;
     }
@@ -170,6 +187,25 @@ public final class DockMenu implements MenuKit.Menu {
             return "§d" + extra.substring(5) + " Quarry Core";
         }
         return null;
+    }
+
+    private static List<String> wrap(String text, int width) {
+        List<String> out = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split(" ")) {
+            if (line.length() > 0 && line.length() + 1 + word.length() > width) {
+                out.add(line.toString());
+                line.setLength(0);
+            }
+            if (line.length() > 0) {
+                line.append(' ');
+            }
+            line.append(word);
+        }
+        if (line.length() > 0) {
+            out.add(line.toString());
+        }
+        return out;
     }
 
     private static String bar(double fill) {

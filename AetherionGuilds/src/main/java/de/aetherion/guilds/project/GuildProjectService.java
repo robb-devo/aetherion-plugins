@@ -263,11 +263,23 @@ public final class GuildProjectService {
     }
 
     public void contributeStorage(Player player, Guild guild) {
+        contributeFrom(player, guild, IslandHost.guild(guild.id()), "the guild storage");
+    }
+
+    /** "From my island": what the stage needs, straight out of the player's own island storage. */
+    public void contributeIsland(Player player, Guild guild) {
+        if (hosts.personalService().byOwner(player.getUniqueId()) == null) {
+            player.sendMessage("§7You have no island of your own yet. §8(Aetherion Level 20)");
+            return;
+        }
+        contributeFrom(player, guild, IslandHost.personal(player.getUniqueId()), "your island");
+    }
+
+    private void contributeFrom(Player player, Guild guild, IslandHost host, String source) {
         Active active = contributable(player, guild);
         if (active == null) {
             return;
         }
-        IslandHost host = IslandHost.guild(guild.id());
         List<String> given = new ArrayList<>();
         for (GuildProjectType.Req req : active.nextStage().reqs()) {
             long need = active.remaining(req);
@@ -293,7 +305,7 @@ public final class GuildProjectService {
         if (!given.isEmpty()) {
             structures.markDirty();
         }
-        report(player, guild, given, "the guild storage");
+        report(player, guild, given, source);
         checkStage(player, guild);
     }
 

@@ -32,7 +32,11 @@ public enum GuildProjectType {
             ),
             List.of("§7A timber-and-stone hall on the",
                     "§7harbour's north site. Long table,",
-                    "§7chimney smoke, your banners.")),
+                    "§7chimney smoke, your banners.",
+                    "",
+                    "§bOnce built: §7every member's own Dock",
+                    "§7gets Guild Orders. Their coins go to",
+                    "§7the guild bank.")),
     HARBOUR_BEACON("harbour_beacon", "Harbour Beacon", Material.SEA_LANTERN, "gp_site_beacon",
             new int[]{13, 0, -1},
             List.of(
@@ -51,7 +55,10 @@ public enum GuildProjectType {
             ),
             List.of("§7A stone signal tower with a",
                     "§7copper lamp room. Ships (and",
-                    "§7rivals) see it from far away."));
+                    "§7rivals) see it from far away.",
+                    "",
+                    "§bOnce built: §7every quarry on every",
+                    "§7member's own island digs §f+10%§7."));
 
     public record Req(String key, long amount, String label) {
         public boolean coins() {
