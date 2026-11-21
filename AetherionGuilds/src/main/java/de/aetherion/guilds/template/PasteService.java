@@ -226,10 +226,18 @@ public final class PasteService {
             if (data == null) {
                 continue;
             }
-            // Starter islands: never paste standing/wall signs (Hollis was spawning on them).
-            if (job.template.id() != null && job.template.id().startsWith("starter_")
-                    && Tag.ALL_SIGNS.isTagged(data.getMaterial())) {
-                continue;
+            if (job.template.id() != null && job.template.id().startsWith("starter_")) {
+                // Starter islands: never paste standing/wall signs (the guide was spawning on them).
+                if (Tag.ALL_SIGNS.isTagged(data.getMaterial())) {
+                    continue;
+                }
+                // ... and no grass, flowers or bushes: a clean yard to build on (trees and their leaves stay).
+                if (isPlant(data.getMaterial())) {
+                    continue;
+                }
+                if (isWaterPlant(data.getMaterial())) {
+                    data = WATER;
+                }
             }
             block.setBlockData(data, false);
             job.placed++;
@@ -302,7 +310,33 @@ public final class PasteService {
         }
     }
 
+    private static final BlockData WATER = Material.WATER.createBlockData();
+
+    /** Ground cover a starter island leaves out: grass, ferns, flowers, saplings, bushes, mushrooms, vines. */
+    static boolean isPlant(Material type) {
+        if (Tag.SMALL_FLOWERS.isTagged(type) || Tag.SAPLINGS.isTagged(type)) {
+            return true;
+        }
+        return switch (type) {
+            case SHORT_GRASS, TALL_GRASS, FERN, LARGE_FERN, DEAD_BUSH, SWEET_BERRY_BUSH, BROWN_MUSHROOM, RED_MUSHROOM,
+                 SUNFLOWER, LILAC, ROSE_BUSH, PEONY, PITCHER_PLANT, PINK_PETALS, MOSS_CARPET, VINE, GLOW_LICHEN,
+                 HANGING_ROOTS, LILY_PAD, AZALEA, FLOWERING_AZALEA, SMALL_DRIPLEAF, BIG_DRIPLEAF, BIG_DRIPLEAF_STEM,
+                 SPORE_BLOSSOM, CAVE_VINES, CAVE_VINES_PLANT, SUGAR_CANE, BAMBOO, BAMBOO_SAPLING, CACTUS,
+                 NETHER_SPROUTS, WARPED_ROOTS, CRIMSON_ROOTS, TORCHFLOWER, PITCHER_POD -> true;
+            default -> false;
+        };
+    }
+
+    /** Underwater plants: the cell stays water, the plant goes. */
+    static boolean isWaterPlant(Material type) {
+        return switch (type) {
+            case SEAGRASS, TALL_SEAGRASS, KELP, KELP_PLANT -> true;
+            default -> false;
+        };
+    }
+
     public static boolean replaceable(Block block) {
+
         Material type = block.getType();
         if (type.isAir()) {
             return true;

@@ -45,14 +45,16 @@ public final class FactoryGoals {
     private boolean dirty;
 
     /*
-     * The first five are the guided line Hollis walks (quarry → Hub → Mill → Forge → Compacted Cobble in the hut);
-     * the island bar, /island, the Hub, Production and Hollis all show the first one not done, so they always agree.
+     * The first three are the guided line the isle hand walks (Hub → quarry belted into the hut → Mill in the
+     * line); the Forge and Compacted Cobble come right after as the first goals of your own. The island bar,
+     * /island, the Hub, Production and the guide all show the first one not done, so they always agree.
      */
     private final List<Goal> goals = List.of(
+            new Goal("hub", "Found your Hub", "Build Tool → Hub, anywhere you like (unlocks machines)",
+                    3_000L, (g, h) -> g.structures.hasWorkshop(h)),
             new Goal("first_chain", "First chain", "Belt quarry chute → Storage Hut",
                     2_000L, (g, h) -> g.sourceLines(h) >= 1),
-            new Goal("hub", "Found your Hub", "Build Tool → Hub (unlocks machines)",
-                    3_000L, (g, h) -> g.structures.hasWorkshop(h)),
+
             new Goal("mill_line", "Mill in the line", "Unlock → build → belt quarry → Mill → hut",
                     5_000L, (g, h) -> g.inLine(h, StructureType.MILL)),
             new Goal("forge_line", "Forge in the line", "Unlock → build → belt Mill → Forge → hut",

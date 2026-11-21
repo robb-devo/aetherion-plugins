@@ -737,6 +737,7 @@ public final class StructureService {
         String paid = BuildCosts.describe(bill);
         PlacedStructure structure = new PlacedStructure(UUID.randomUUID(), type, host, world.getName(), ax, ay, az, rot,
                 System.currentTimeMillis());
+        structure.setFreeBuilt(bill.isEmpty());
         milestone.accept(host, switch (type) {
             case STORAGE_HUT -> "first_hut";
             case WORKSHOP -> "hub_founded";
@@ -1086,17 +1087,19 @@ public final class StructureService {
                 }
             }
         }
-        // remove first, then give back (half the goods it cost), so nothing can be paid out twice
-        List<BuildCosts.Line> bill = BuildCosts.build(structure.type(),
+        // remove first, then give back everything it cost, so moving a building never costs anything. A free one
+        // (first hut, the tour's Hub and Mill) gives nothing back, so build, take down, build again can't print goods.
+        boolean free = structure.freeBuilt();
+        List<BuildCosts.Line> bill = free ? List.of() : BuildCosts.build(structure.type(),
                 structure.type() == StructureType.STORAGE_HUT && count(host, StructureType.STORAGE_HUT) <= 1);
         remove(structure, true);
         long refund = 0L;
         for (BuildCosts.Line line : structure.itemPaid() ? List.<BuildCosts.Line>of() : bill) {
             // a machine built with a Quarry Mill/Forge item (before unlocks) gives that item back instead
             if (line.coins()) {
-                refund += line.amount() / 2L;
-            } else if (line.amount() / 2L > 0L) {
-                giveGoods(player, host, line.res(), line.amount() / 2L);
+                refund += line.amount();
+            } else if (line.amount() > 0L) {
+                giveGoods(player, host, line.res(), line.amount());
             }
         }
         hosts.refund(player, host, refund);
@@ -1108,7 +1111,8 @@ public final class StructureService {
                         .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
             }
         }
-        player.sendMessage("§7" + structure.type().display() + " taken down §8(half its cost went back to your storage)§7.");
+        player.sendMessage("§7" + structure.type().display() + " taken down §8(" + (structure.itemPaid() ? "its item went back to you"
+                : free ? "it was free, nothing to give back" : "its full cost went back") + ")§7.");
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 0.8f, 0.8f);
         return true;
     }
@@ -1538,6 +1542,9 @@ public final class StructureService {
                 if (s.itemPaid()) {
                     c.set("item-paid", true);
                 }
+                if (s.freeBuilt()) {
+                    c.set("free-built", true);
+                }
                 writeMap(c, "store", s.store());
                 writeMap(c, "in", s.input());
                 writeMap(c, "out", s.output());
@@ -1611,7 +1618,9 @@ public final class StructureService {
                 // before unlocks, a Mill/Forge took a Quarry Mill/Forge item: remember it so taking it down returns it
                 structure.setItemPaid(s.getBoolean("item-paid", files.splitting()
                         && (type == StructureType.MILL || type == StructureType.FORGE)));
+                structure.setFreeBuilt(s.getBoolean("free-built", false));
                 readMap(s.getConfigurationSection("store"), structure.store());
+
                 readMap(s.getConfigurationSection("in"), structure.input());
                 readMap(s.getConfigurationSection("out"), structure.output());
                 register(structure);
