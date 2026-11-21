@@ -39,6 +39,18 @@ public final class PlacedStructure {
     public void setItemPaid(boolean itemPaid) {
         this.itemPaid = itemPaid;
     }
+
+    /** Cost nothing to build (first hut, the tour's Hub and Mill): taking it down gives nothing back. */
+    private boolean freeBuilt;
+
+    public boolean freeBuilt() {
+        return freeBuilt;
+    }
+
+    public void setFreeBuilt(boolean freeBuilt) {
+        this.freeBuilt = freeBuilt;
+    }
+
     /** Upgrade tier (1 = as built). See {@link StructureUpgrades}. */
     private int level = 1;
     private final Map<Res, Long> store = new LinkedHashMap<>();

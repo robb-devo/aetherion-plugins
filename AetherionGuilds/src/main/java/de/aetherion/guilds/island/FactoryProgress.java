@@ -38,8 +38,8 @@ import java.util.Set;
 public final class FactoryProgress {
 
     /** The steps of the funnel, in the order a new player meets them. */
-    public static final List<String> STEPS = List.of("start", "first_hut", "first_quarry", "first_belt", "first_chain",
-            "hub_founded", "first_unlock", "first_machine", "first_piece", "first_upgrade");
+    public static final List<String> STEPS = List.of("start", "hub_founded", "first_hut", "first_quarry", "first_belt",
+            "first_chain", "first_unlock", "first_machine", "first_piece", "first_upgrade");
 
     private final JavaPlugin plugin;
     private final IslandFiles files;

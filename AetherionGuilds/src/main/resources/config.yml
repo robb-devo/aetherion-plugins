@@ -44,12 +44,12 @@ void:
   scrub: true                     # clears overworld terrain left in the island worlds (checked once per chunk)
   scrub-blocks-per-tick: 3000
 guide:
-  enabled: true                   # Hollis, the isle hand (needs FancyNpcs; talks in the TalkUx bubble)
-  name: Hollis
+  enabled: true                   # the isle hand (needs FancyNpcs; talks in the TalkUx bubble)
+  name: Corin                     # not Hollis: that's the town crier at the harbour
   title: Isle Hand
   skin: MHF_Villager
-  free-belt-tiles: 16             # the first belt Hollis hands out: these tiles cost nothing
-  factory-belt-tiles: 24          # act two (Mill, Forge): free belt tiles topped up at each machine
+  free-belt-tiles: 16             # the first belt the guide hands out: these tiles cost nothing
+  factory-belt-tiles: 24          # act two (the Mill): free belt tiles topped up for its belts
 island-bar:
   enabled: true                   # calm island status bar; quest/hint bars step aside on island worlds either way
 
