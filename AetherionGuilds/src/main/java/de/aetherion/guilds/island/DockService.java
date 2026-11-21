@@ -174,6 +174,8 @@ public final class DockService implements Listener, LogisticsService.Export {
         int marks;
         int pressed;
         int shipped;
+        /** Raw-equivalent of goods no contract wanted, sold for Dock Marks every SURPLUS_PER_MARK. */
+        long surplus;
         String paint = "white";
         final Set<String> paints = new HashSet<>(Set.of("white"));
         /** Raw-equivalent in storage when the owner last left (-1: nothing to report). */
@@ -581,10 +583,33 @@ public final class DockService implements Listener, LogisticsService.Export {
                 break;
             }
         }
+        State state = state(host.id());
+        if (left > 0L && state.stage >= 1 && !flying(host)) {
+            // what no contract wants goes on the surplus barge: Dock Marks for every full load
+            state.surplus += res.rawEquivalent(left);
+            left = 0L;
+            if (state.surplus >= SURPLUS_PER_MARK) {
+                int earned = (int) Math.min(Integer.MAX_VALUE, state.surplus / SURPLUS_PER_MARK);
+                state.surplus -= (long) earned * SURPLUS_PER_MARK;
+                state.marks += earned;
+                Player owner = Bukkit.getPlayer(host.id());
+                if (owner != null) {
+                    owner.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                            .deserialize("§b+" + earned + " Dock Mark" + (earned == 1 ? "" : "s") + " §7for surplus"));
+                }
+            }
+        }
         if (left < amount) {
             dirty = true;
         }
         return amount - left;
+    }
+
+    /** Surplus raw-equivalent sold for one Dock Mark. */
+    public static final long SURPLUS_PER_MARK = 512L;
+
+    public long surplus(IslandHost host) {
+        return host == null || host.isGuild() ? 0L : state(host.id()).surplus;
     }
 
     @Override
@@ -605,6 +630,9 @@ public final class DockService implements Listener, LogisticsService.Export {
             Need need = contract.needs().get(0);
             return "§7" + contract.title() + ": §f" + GuildFormat.compact(Math.min(need.amount(), contract.loaded(need.res())))
                     + "§8/§f" + GuildFormat.compact(need.amount()) + " " + need.res().color() + need.res().display();
+        }
+        if (stage(host) >= 1) {
+            return "§7Surplus: §f" + state(host.id()).surplus + "§8/§f" + SURPLUS_PER_MARK + " §7→ §b1 Dock Mark";
         }
         return "§8No contract open";
     }
@@ -1174,6 +1202,7 @@ public final class DockService implements Listener, LogisticsService.Export {
             state.marks = Math.max(0, section.getInt("marks", 0));
             state.pressed = Math.max(0, section.getInt("pressed", 0));
             state.shipped = Math.max(0, section.getInt("shipped", 0));
+            state.surplus = Math.max(0L, section.getLong("surplus", 0L));
             state.paint = section.getString("paint", "white");
             state.paints.addAll(section.getStringList("paints"));
             state.away = section.getLong("away", -1L);
@@ -1284,6 +1313,7 @@ public final class DockService implements Listener, LogisticsService.Export {
             section.set("marks", state.marks);
             section.set("pressed", state.pressed);
             section.set("shipped", state.shipped);
+            section.set("surplus", state.surplus);
             section.set("paint", state.paint);
             section.set("paints", new ArrayList<>(state.paints));
             section.set("away", state.away);

@@ -70,6 +70,11 @@ public final class DockMenu implements MenuKit.Menu {
         head.add("§7Or click a contract: it loads what's");
         head.add("§7missing straight from storage.");
         head.add("§7A full contract calls the airship.");
+        if (stage >= 1) {
+            head.add("§7What no contract wants is sold as");
+            head.add("§7surplus: §b1 Dock Mark §7per §f" + DockService.SURPLUS_PER_MARK + " §7raw §8("
+                    + dock.surplus(host) + "/" + DockService.SURPLUS_PER_MARK + ")");
+        }
         if (dock.flying(host)) {
             head.add("");
             head.add("§b✈ The airship is in right now.");

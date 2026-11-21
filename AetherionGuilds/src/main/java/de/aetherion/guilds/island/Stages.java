@@ -11,7 +11,7 @@ import java.util.List;
  * own (no coin upgrade for either on a personal island).
  *
  * <ul>
- *   <li><b>0 Landing</b>: Mill, Dock. Quarries Lv1 (but the first quarry digs ten times as fast while you learn).</li>
+ *   <li><b>0 First Shift</b>: Mill, Dock. Quarries Lv1 (but the first quarry digs ten times as fast while you learn).</li>
  *   <li><b>1 Werkhof</b>: Splitter, a second quarry of your starter's trade, quarries up to Lv3, the Storage Loft.</li>
  *   <li><b>2 Foreman's Hall</b>: Forge, Sorter, Overflow Gate, quarries up to Lv5, the Warehouse.</li>
  *   <li><b>3 Grand Hub</b>: every Mill and Forge twice as fast, quarries up to Lv7, buying land.</li>
@@ -33,7 +33,7 @@ public final class Stages {
             case 1 -> "Werkhof";
             case 2 -> "Foreman's Hall";
             case 3 -> "Grand Hub";
-            default -> "Landing";
+            default -> "First Shift";
         };
     }
 
