@@ -78,8 +78,16 @@ public final class BotNicknames {
         return plugin.getConfig().getBoolean("testbots.nicknames.enabled", true);
     }
 
+    /**
+     * Only old {@code QaMine01}-style logins wear a nickname. The runner's own names (Kumpel_Kalle, Testbot_Toni …)
+     * are already the funny part, so they keep them everywhere.
+     */
+    private boolean wantsNickname(Player player) {
+        return player != null && plugin.getRegistry() != null && plugin.getRegistry().byName(player.getName()) != null;
+    }
+
     public String colored(Player player, BotRole role) {
-        if (player == null || role == null || !enabled()) {
+        if (player == null || role == null || !enabled() || !wantsNickname(player)) {
             return player == null ? "" : player.getName();
         }
         List<String> pool = pool(role);
@@ -96,7 +104,7 @@ public final class BotNicknames {
     }
 
     public void apply(Player player, BotRole role) {
-        if (player == null || !player.isOnline() || !enabled()) {
+        if (player == null || !player.isOnline() || !enabled() || !wantsNickname(player)) {
             return;
         }
         String colored = colored(player, role);

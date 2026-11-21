@@ -1,167 +1,181 @@
 # Aetherion Stress / Test Bots
 
-Mineflayer clients that join **mmo-r** like real players. Wave 1 + Wave 2 QA roles start from the **Dev menu** and **`/stressbots start`**. `/botreport` dumps activity. Phase 1 `StressM*` mining still works; `StressC*` still kits as a combat alias.
+Mineflayer clients that log in **through the proxy like real players** and play the whole network: the hub's Pit, every
+job on the main world (quarries, Fell bar trees, strike-bar fishing, catch timing, farms, AH/Bazaar, quest NPCs, jump
+pads, menus, slots, parties), dungeons on mmo-d, the exile on mmo-c and private islands on mmo-i. They walk between
+servers on the players' own roads (`/aetherion`, `/dhub`, `/exile go`, `/island` …), and `/botreport` on any
+backend shows which roads worked, how long each menu took to open, what got done and what broke.
 
-## Plugin or commands?
+They have real names: German puns per job (`Kumpel_Kalle` digs, `Fischers_Fritz` fishes, `Kerker_Kurt` runs
+dungeons, `Insel_Ingo` lives on his island) and the **Testbot_** family (`Testbot_Toni`, `Testbot_Tina` …), players
+who tour everything. `names.style: "qa"` brings back `QaMine01`-style names.
 
-**Both.**
+Status (2026-11-18): plugin on mmo-r, mmo-d, mmo-c and mmo-i once `deploy-stressbots.ps1` has run; the proxy door
+ships in AetherionProxy. `testbots.enabled` defaults to `false`.
+
+## Pieces
 
 | Piece | What |
 |-------|------|
-| Plugin `AetherionStressBots` | Kits bots, TPs them to role anchors, Dev-menu bridge, `/botreport` |
-| Runner `runner/` (Node) | Mineflayer clients + localhost HTTP control plane |
+| Plugin `AetherionStressBots` (every backend but the hub) | Kits bots, sends them to role spots, keeps them out of the void, the hidden `/testbot` helper, Dev-menu bridge, `/botreport` |
+| Proxy door in `AetherionProxy` | Lets a bot log in offline when its handshake carries the secret token (loopback only); everyone else logs in online as before |
+| Runner `runner/` (Node) | The Mineflayer players, the roads between servers, the network telemetry, a localhost HTTP control plane |
 
-Bots connect **offline to MMO-R** `127.0.0.1:25567` with Velocity modern-forwarding HMAC (not through the public proxy).
+### How a bot gets in
+
+`connect.mode: "proxy"` (default): the bot connects to the proxy with `<token>.testbots` as the host it typed. The
+proxy's `plugins/aetherion-proxy/testbots.properties` (`enabled`, `token`, `loopback-only`) has the same token; a
+match from 127.0.0.1 is let in offline, so the backends see an offline (version 3) UUID and know it is a bot. The
+proxy pack is accepted like a player would. Logins are spaced 3.5 s apart (Velocity allows one per address every 3 s).
+
+`connect.mode: "direct"`, or no token set: straight into MMO-R with forged Velocity forwarding (`velocitySecret`), the
+old setup. Pit bots need the proxy (the Pit is on the hub).
+
+### The `/testbot` helper
+
+Only bots can run it (the permission is attached on join to offline-UUID players; everyone else gets "Unknown
+command"). It answers with one plain `[tb] …` line the runner reads:
+
+| Call | Answer |
+|------|--------|
+| `hello <role> <slot> [setup] [session]` | Which server and world this is; `setup` clears, kits and sends the bot to its role spot |
+| `where` | Server, world, position |
+| `stage <spot>` | Teleport to a live Hub spawn (`farm`, `capital` …) or a role's spot (`mine`, `fish` …) |
+| `near <hostile\|npc\|villager\|animal\|item\|chest\|name:text> [radius]` | The closest one, server side (a dungeon's next mob, a loot cache, the Dungeon Keeper) |
+| `quest` | Where the bot's open quest points |
+| `goto <server>` | Core's travel pipeline: the fallback when a player road did not move the bot |
+
+The hub has no plugin, so a `hello` that nobody answers means "on the hub".
+
+## Roles
+
+### Main-world jobs (they walk from the hub to MMO-R, get kitted and stay)
+
+| Role | Names | Where | Does |
+|------|-------|-------|------|
+| `mine` | `Kumpel_Kalle`, `Stollen_Steffi` … | Mining Eldervale quarry floors | Digs ores, then stone in reach. Own void floor (`-40`) |
+| `forage` | `Axel_Schweiss`, `Holzhacker_Hans` … | Forage Eldervale lodges | Clicks a log, clicks again while the **Fell** bar is green |
+| `catch` | `Kugel_Kai`, `Netz_Norbert` … | Elderwood Vale | Throws a sphere, locks on **✦ Now** |
+| `roam` | `Wander_Willi`, `Bummel_Berta` … | Origin slime pads | Local hops + plugin pad-hop; flees hostiles |
+| `combat` | `Haudrauf_Harald`, `Kloppe_Klaus` … | Hub spawn `borderlands` | Fights hostiles inside the leash |
+| `fish` | `Fischers_Fritz`, `Hering_Horst` … | Fishing Eldervale shores | Casts, reels only on green (gold = perfect) |
+| `trade` | `Feilsch_Fred`, `Taler_Theo` … | `harbour` / `capital` | Lists on AH and Bazaar, buys other bots' listings |
+| `quest` | `Quassel_Quentin`, `Plauder_Paula` … | Quest NPC spots | Talks to NPCs, answers TalkUx dialogs, accepts quests |
+| `pad` | `Hupf_Hubert`, `Flummi_Flo` … | Island jump pads | Rides the arcs |
+| `farm` | `Bauer_Bernd`, `Ruebe_Rudi` … | `/farm` (else the `farm` Hub spawn) | Harvests ripe crops with the farming hoe |
+| `menus` | `Klick_Klaus`, `Menue_Manni` … | anywhere | Opens every player menu (`/aetherion`, `/skills`, `/collection`, `/codex`, `/bestiary`, `/pets`, `/bazaar`, `/ah`, `/shardshop`, `/trades`, `/atrecipes`, `/spawns`, `/gamble`), times it, pages forward on arrows only |
+| `casino` | `Zocker_Zoe`, `Jackpot_Jens` … | `/gamble slots` | A few default-bet spins per visit, spin button only |
+| `social` | `Kumpel_Kurti`, `Freundin_Frida` … | MMO-R | Parties of four with other bots: invite, accept, `/party` chat, leave, disband, new mix every 3 min |
+
+### Network roles
+
+| Role | Names | Does |
+|------|-------|------|
+| `general` | `Testbot_Toni`, `Testbot_Tina` … | **Tours everything**: picks a step (any job above, menus, slots, a dungeon run, the exile, an island, the Pit), plays it 1–12 minutes, cleans up and picks the next. Weights in `general.weights` (0 turns a step off) |
+| `pit` | `Pit_Bulli`, `Knock_Knut` … | Hub Pit: `/pit enter`, fights **only other bots of this runner**, jump crits and strafes, walks back in after a death |
+| `dungeon` | `Kerker_Kurt`, `Gruft_Gerda` … | `/dhub`, parties of four (lowest slot leads and opens Floor 1 at the Dungeon Keeper), tell the Gate Warden "ready", fight room to room, loot the cache, leave. **Yields to people**: never starts while a person is on mmo-d, leaves a run when one shows up, 8 min per run at most (Dungeons runs one instance at a time) |
+| `exile` | `Verbannt_Bernd`, `Exil_Erwin` … | `/exile go` (the story gate decides; a bot that has not earned the ferry crosses on the `/testbot goto` fallback and the report says so), sneaks past the arrival cinematic, explores, fights, talks to people and answers their dialogs, `/exile return` |
+| `island` | `Insel_Ingo`, `Kokos_Klaus` … | `/island`, `/island create` (random starter), lives there: walks, builds a little and takes it down again, opens `/island menu`, befriends other bots and visits their islands |
+
+Island and tour bots are raised once to account level 20 (islands need it): `testbots.unlocks.account-level` and
+`account-level-roles`. Every other role earns its XP by playing.
+
+Every bot gets a mixed-tier kit from its slot, equipped role skills (XP only lands on equipped skills), a booster on
+the main tool, sometimes a pet, and coins **topped up** to `starter-coins` (trade, tour) or `pocket-coins`. Coins are
+never added on top, so respawns and reconnects do not inflate the economy. Names are stable per slot: the same slot
+comes back with the same coins, skills and island.
 
 ## Safety
 
-1. Set `testbots.enabled: true` in `plugins/AetherionStressBots/config.yml` **before** Dev-menu start (default is **false**).
-2. Keep the runner control server on `127.0.0.1` only.
-3. Copy `runner/config.example.json` → `runner/config.json` and set **`velocitySecret` only on the server**. That file is gitignored. Do not commit secrets.
-4. **Stop all** from Dev menu or `/stressbots stopall`.
+1. `testbots.enabled: true` in `plugins/AetherionStressBots/config.yml` before starting from the Dev menu (default **false**).
+2. The runner's control server stays on `127.0.0.1`. The proxy door only opens for loopback connections with the token.
+3. `runner/config.json` holds only what is local: `velocitySecret`, `connect.proxy.token`, host/port, control token.
+   Everything else comes from `config.example.json` (merged key by key, `config.json` wins). It is gitignored; the
+   token also lives in the proxy's `testbots.properties`. Never commit either.
+4. Bots never fight, invite, befriend or buy from people: Pit targets, party and friend accepts are this runner's own
+   bots by exact name; trade buys only bot listings (`trade.buyFromPlayers: true` turns that off).
+5. Dungeon bots yield to people (above). Menus bots only press page arrows; casino bots only the spin lever.
+6. **Stop all** from the Dev menu or `/stressbots stopall`.
 
-## Wave 1 roles
+The main-world jobs keep the old leash and void floor (plugin and runner). Network roles walk wherever their job takes
+them: the plugin only catches them below the world (`min height − 8`) and puts them back on the last ground they
+stood on, and their respawns are left to the server (dungeon, island, exile and Pit place their own).
 
-| Role | Names | Does | Kit |
-|------|-------|------|-----|
-| `mine` | `QaMine01…` | TP to **Eldervale interior pads**, leash + dig ores/stone | Mixed T1–T4 mining + mining skills |
-| `forage` | `QaForage01…` | TP to **Forage Isle grove/interior**, chop logs (and leaves if idle) | Mixed Kindling–Canopy axe + foraging skills |
-| `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres + timing clicks | Mixed catcher + spheres + varied pets |
-| `roam` | `QaRoam01…` | Local hops on Origin slime pads + plugin pad-hop; flees husks/skeletons | Mixed combat kit |
+## Dev menu and commands
 
-## Wave 2 roles
-
-| Role | Names | Does | Kit |
-|------|-------|------|-----|
-| `combat` | `QaCombat01…` | Leashed wander/attack near the combat pad (default Borderlands). **Velocity offline auth uses `QaCombat` like other Qa* names.** Set `prefixes.combat: StressC` only if you still want the Phase 1 names; `StressC*` still auto-kits as an alias. | Mixed combat T1–T4 + combat skills |
-| `fish` | `QaFish01…` | Walk to water near forage/origin pads, cast and reel on the green strike bar | Mixed fishing kit + fishing skills |
-| `trade` | `QaTrade01…` | `/ah` list+buy and `/bazaar` sell+buy via real GUIs. Provisioner unlocks **TRADER** + starter coins. | Mixed combat kit + surplus mats |
-| `quest` | `QaQuest01…` | Walk to known FancyNPC pads (Maren / Twig / Eldervale), click Quest Offer accept | Mixed combat kit |
-| `pad` | `QaPad01…` | Walk onto island jump pads, ride the arc, hop a different pad. `pad-flight-ms` covers mid-hop. | Mixed combat kit |
-
-### Residual risks / limits
-
-- **AH / Bazaar:** Trade bots get the **TRADER** flag + starter coins and click list/buy slots (AH list 49 / price 2 / confirm 11). Empty books still fail.
-- **Quests:** Right-click NPCs, then click Quest Offer accept (slot 11) or chat `/aetherionquest accept <id>`. Full completion trees are still best-effort.
-- **Fishing:** Casts and reels when the green strike bar / Bite! fires (`qaMinigame.biteUntil`). Water is scanned near grove/origin pads.
-- **Combat:** Default pad is Borderlands `220.5 58 160.5` (hostiles). That zone killed **roam** bots; combat bots are geared for it but can still die if they walk off the waste. `StressC*` still matches as an alias.
-- **Pads:** Real jump-pad centers including Forage lip `479.5 74 -240.5`. Mid-arc is covered by `pad-flight-ms` + leash 72 so the watchdog does not yank the hop.
-- **Forage stuck (fixed):** Safety used to mark `activity=stuck` after ~10s of no movement and cancel the dig path while the bot was approaching a log. Dig/path-to-block now uses a longer freeze window, ignores still-closing distance to the target, and **retargets / wanderOnIsland** instead of staying stuck. Forage leash is 20; logs outside that disk are not chosen (`searchLeashBonus` only expands search within the island).
-- **Skills:** XP only accrues on **equipped** loadout skills. Provisioner unlocks 3 slots and equips role skills. Bots do **not** `/skills setlevel`. There are no skill hotkeys — they peek `/skills` like a player opening the GUI.
-- **Boosters:** Applied on the main-hand tool at provision (`BoosterApplier`). Runner also clicks leftover booster items / confirm GUIs when they appear.
-- **Pets:** Catch bots throw spheres and click the timing window. Other roles vary: follow (equip), collection-only, wild spawn beside them, or none. Follow needs AetherMobs online.
-- **Language:** `Language / Sprache` is forced to English on join (plugin + runner click slot 11).
-- Still not automated: every spawn-unlock edge case, anvil booster fusion, full quest completion trees.
-
-### Player-like mix (same PR)
-
-Every role now kits mixed T1–T4 (catcher T1–T3) from the login index (`QaMine01` = T1, `02` = T2, …), equips skills so mining/foraging/fishing/combat actually levels, and runs a shared fidget/inventory/`/skills`/`/pets` loop. Goal is economy + stat + skill telemetry under **~40 concurrent** bots.
-
-### Caps
-
-`testbots.max-total: 40`, `max-per-start: 40`, per-role **8**. A mixed fleet of five roles × 8 fills the 40 cap; nine roles cannot all sit at 8 at once. Live `max-players` (60) is the other clamp. Copy these keys into the live `config.yml` — jar defaults do not overwrite an existing file.
-
-### Catch limits (wave 1)
-
-Bots **throw spheres** at nearby living entities. They do **not** play the catch timing minigame, so pets may flee or never complete. Habitat coordinates are YAML — paint real pet disks in DEV if the defaults miss live animals.
-
-## Dev menu
-
-1. `/dev` / `/adev` / `/devmenu` (op or `aetherion.dev`)
-2. Next page (page 2) → **Testbots**
-3. Per role: set count (left/right ±1, shift ±5) → **Start** / **Stop**. **More roles** pages combat / fish / trade / quest / pad.
-4. Click the role icon for a list (nickname, xyz, held item, activity)
-5. **Stop all** · **/botreport** book+chat
-
-Login names stay `QaMine01…` (Velocity). In chat, tab list, death messages, Dev menu, `/botreport`, and **Collection** top-3 they wear a quirky nickname (`Pickel-Ute`, `Ast-Anni`, `Kugel-Kai`, `Flaneur-Franz`, …). Edit `testbots.nicknames` in config. There is no Mysteries API — skipped.
-
-Counts clamp to `testbots.max-total` (40), `testbots.caps.<role>` (8), `max-per-start` (40), and the server `max-players`.
-
-## Commands
+`/dev` → page 2 → **Testbots**: count per role, Start / Stop, role lists, **Stop all**, `/botreport`.
 
 ```
-/stressbots start <mine|forage|catch|roam|combat|fish|trade|quest|pad> [count]
+/stressbots start <role> [count]     roles: mine forage catch roam combat fish trade quest pad
+                                            general farm menus casino social pit dungeon exile island
 /stressbots stop <role|all>
-/stressbots stopall
-/stressbots list
-/stressbots setup
-/stressbots reload
+/stressbots stopall · list · setup · reload
 /botreport
 ```
 
-Permission: op, `aetherion.stressbots.admin`, or `aetherion.dev`.
+Permission: op, `aetherion.stressbots.admin`, or `aetherion.dev`. Counts clamp to `testbots.max-total` (40),
+`testbots.caps.<role>` and the server's `max-players`; the runner has its own `caps` and `maxTotal`.
 
-`/botreport` dumps online bots (role, position, deaths, errors, recent actions, TPS hint) to chat and a written book. Same text is useful for AI QA.
+`/botreport` on any backend: the bots on that server (role, position, activity, deaths, errors, recent actions, TPS,
+work per role), then **Network** from the runner:
 
-## Host / runner
+```
+Bots online: mmo-r 14 · mmo-d 4 · hub 3 · mmo-i 2 (runner up 37 min)
+Roads: hub→mmo-r 21 ok avg 2.1s max 4.0s | mmo-r→mmo-c 3 ok 2 fallback avg 6.2s (/exile go did not move) | …
+Menus: /bazaar 310ms (max 820) · /skills 140ms (max 410) · /gamble never opened 2 missed …
+Done: dungeon rooms cleared 18 · islands claimed 2 · pit kills 11 · casino spins 9 · tour dungeon 4 …
+Who is where: general@mmo-d (dungeon) · pit@hub (pit) · island@mmo-i (island) …
+Problem: Kerker_Kurt: dungeon hub: no Dungeon Keeper found ×3
+```
+
+## Runner
 
 ```bash
 cd AetherionStressBots/runner
-cp config.example.json config.json
-# set velocitySecret = proxies.velocity.secret  (local only)
-
+cp config.example.json config.json   # keep only the local keys; set connect.proxy.token and velocitySecret
 npm install
-# Dev-menu daemon (0 bots until you start a role)
-npm start -- --listen
+npm start -- --listen                # Dev-menu daemon (0 bots until a role is started)
 
-# or CLI
-node src/index.js --mine 5 --forage 3 --catch 2 --roam 5
-node src/index.js --combat 3 --fish 2 --trade 2 --quest 2 --pad 2
-node src/index.js --mining 5    # Phase 1 StressM
+node src/index.js --general 6 --pit 4 --dungeon 4 --exile 2 --island 2
+node src/index.js --mine 4 --forage 3 --fish 2 --farm 2 --menus 2 --casino 1 --social 4
+node src/index.js --help
+
+npm test                             # names, helper lines, roads, telemetry, parties, windows, tour, login target …
 ```
 
-Control HTTP: `http://127.0.0.1:18765` (`/health`, `/desired`, `/stop`, `/stop-all`). Optional `control.token` must match plugin `testbots.runner.token`.
+Control HTTP on `127.0.0.1:18765`: `/health`, `/status` (every bot with server, step, uptime, kicks, stats),
+`/report.txt` (the Network lines above), `POST /desired`, `/stop`, `/stop-all`. Optional `control.token` must match
+the plugin's `testbots.runner.token`.
 
-Plugin YAML anchors should stay in sync with `runner/config.json` mine/forage/catch/roam/combat/fish/trade/quest/pad sections.
+### How the bots read the server
 
-## Island safety / tuning
+Menu titles are pack glyphs, so nothing is matched by title: windows are told apart by their slots (market browse,
+price picker, confirm page, quest offer, language picker, Dungeon Keeper, slots table, island starter pick). Text is
+1.21 NBT and decoded with prismarine-chat. Timing bars are boss bars (`Fishing [..] REEL/NOW`, `Fell [..] CHOP/NOW`,
+catch `✦ Now`). A watchdog closes a stray menu after 7 s like Escape. Loops never overlap their own ticks and can be
+stopped and started again (the tour switches jobs that way). A bot that keeps getting kicked backs off (8 s, 16 s …
+2 min) and gives up after `reconnect.maxFails` short sessions; logging out on purpose (the only road back to the hub)
+does not count.
 
-Skyblock pads are small. Wave 1 defaults now **refuse jump-pad lips, canopy-edge catch spots, and the borderlands husk waypoint**.
+### Spots
 
-| Live death loop (2026-09-19) | What changed |
-|------------------------------|--------------|
-| catch `500.5 80 -200.5` void-after-TP | Removed. Catch sits on grove / return platform / Eldervale interior |
-| forage `479.5 74 -240.5` (Canopy-Kalle) | Removed jump-pad lip. Grove `560.5 91 -200.5` + return platform + paste center |
-| roam `220.5 58 160.5` husk/skeleton | Removed. Roam stays on Origin slime pads; plugin pad-hops, runner does not walk the void |
-| death → world spawn `298 63 -400` → die again | Respawn location is the role pad immediately; void/fall damage cancelled; Y-floor watchdog TPs back |
+Spots per role come from YAML `anchors`/`waypoints`, live Hub spawns in `hub-spawns`, and quest NPC spots
+(`use-quest-npcs`). A spot without solid ground is skipped. The plugin **patches** a live `config.yml` on start
+(`testbots.config-version`, now 3): new keys and roles are added, tuned values stay.
 
-Copy `testbots.safety` + the new `roles.*.anchors` into the **live** `plugins/AetherionStressBots/config.yml` (jar defaults do not overwrite an existing file), then `/stressbots reload`. Merge the matching `anchors` / `waypoints` into `runner/config.json` and restart `--listen`.
+### Limits
 
-| Key | Safe starting point | Notes |
-|-----|---------------------|-------|
-| `scatter-radius` | 3–5 | Random disk, **solid-ground samples only**. 12–16 walks bots off pad lips |
-| `leash-radius` | 12–20 | Plugin TPs back if farther from every role pad. Forage default **20** so nearby logs count |
-| `void-floor-y` | 40 | Runner holds + plugin TPs. Raise only if a real pad is lower |
-| `idle-reanchor-ticks` | 240 | Idle mine/forage/catch hop to another pad (~12s) |
-| `pad-hop-ticks` | 1600 | Roam **and pad** plugin-teleport between Origin pads (~80s). `0` disables |
-| `gatherStuckMs` / `digStuckMs` | 18s / 28s | Runner: freeze window while pathing-to-block / breaking. Do not treat digging as stuck |
+- Exile story steps and full quest trees are best-effort; the report says when a road needed the fallback.
+- Dungeons run one instance at a time: with people on mmo-d the dungeon bots wait.
+- Islands need `/island create` to work for level 20 accounts; a locked starter pick shows up as a problem.
+- Not automated: anvil booster fusion, buying in shops, guild management.
 
-`/botreport` activity: idle / pathing / mining / foraging / catching / roaming / fighting / fishing / trading / questing / hopping / browsing / void / recovering / stuck.
-
-**Do not** add far cross-island roam/pad waypoints expecting the runner to walk them. The runner only hops `maxHop` blocks; distant pads are plugin teleports.
-
-## In-game (legacy)
-
-```
-/stressbots list
-/stressbots setup
-/stressbots reload
-```
-
-Names: `QaCombat01…` (Wave 2) and `StressC01…` (alias) / `StressM01…` still auto-kit on join.
-
-## Layout
-
-- Plugin sources: `AetherionStressBots/`
-- Runner on server: `/opt/aetherion-stress-bots/runner` (typical)
-- Config: `runner/config.json` (local, gitignored) + `plugins/AetherionStressBots/config.yml`
-
-`max-players` on MMO-R was raised to **60** for headroom.
-
-## Staged roadmap
+## History
 
 | Wave | Scope |
 |------|--------|
 | **1** | Foundation: role interface, registry, report DTO, Dev menu, `/botreport`, mine / forage / catch / roam |
-| **2 (on main)** | Forage stuck/leash fix; combat (QaCombat), fish, trade/AH, quest NPC click, jump-pad hops; player-like skills/kits/pets; ~40 mixed cap |
-| **3 (this)** | Language dismiss, real AH/Bazaar GUI list/buy, quest accept clicks, fishing strike/reel, pad-arc hops, spawn unlocks |
+| **2** | Combat, fish, trade/AH, quest NPC click, jump pads; player-like skills/kits/pets |
+| **3** | Language dismiss, AH/Bazaar GUI list/buy, quest accept clicks, fishing strike/reel, pad arcs, spawn unlocks |
+| **4 (2026-11-17)** | Today's server: NBT text, glyph menus by contents, Fell / strike / catch bars, TalkUx dialogs, live-map spots, bots-only trading, reconnect backoff, work counters, live config patch |
+| **5 (2026-11-18)** | The whole network: proxy logins, German names and the Testbot_ family, `/testbot` helper on every backend, roads between servers, Pit, farm, menus, casino, parties, dungeons, exile, islands, the tour, network `/botreport` |

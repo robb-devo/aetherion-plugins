@@ -2,13 +2,29 @@
   "host": "127.0.0.1",
   "port": 25567,
   "version": "1.21.1",
-  "joinDelayMs": 2500,
+  "connect": {
+    "mode": "proxy",
+    "proxy": {
+      "host": "127.0.0.1",
+      "port": 25565,
+      "token": "CHANGE_ME"
+    },
+    "directServer": "mmo-r"
+  },
+  "names": {
+    "style": "german"
+  },
+  "joinDelayMs": 3500,
   "velocitySecret": "CHANGE_ME",
-  "maxTotal": 40,
+  "maxTotal": 60,
   "control": {
     "bind": "127.0.0.1",
     "port": 18765,
     "token": ""
+  },
+  "reconnect": {
+    "maxFails": 8,
+    "stableMs": 60000
   },
   "prefixes": {
     "combat": "QaCombat",
@@ -20,7 +36,16 @@
     "fish": "QaFish",
     "trade": "QaTrade",
     "quest": "QaQuest",
-    "pad": "QaPad"
+    "pad": "QaPad",
+    "general": "QaGeneral",
+    "farm": "QaFarm",
+    "menus": "QaMenus",
+    "casino": "QaCasino",
+    "social": "QaSocial",
+    "pit": "QaPit",
+    "dungeon": "QaDungeon",
+    "exile": "QaExile",
+    "island": "QaIsland"
   },
   "caps": {
     "mine": 8,
@@ -32,7 +57,16 @@
     "trade": 8,
     "quest": 8,
     "pad": 8,
-    "mining": 8
+    "mining": 8,
+    "general": 12,
+    "farm": 6,
+    "menus": 4,
+    "casino": 4,
+    "social": 6,
+    "pit": 8,
+    "dungeon": 8,
+    "exile": 6,
+    "island": 4
   },
   "playstyle": {
     "starterCoins": 2500,
@@ -53,10 +87,7 @@
     "attackIntervalMs": 450,
     "wanderRadius": 8,
     "leashRadius": 22,
-    "maxDrop": 3,
-    "anchors": [
-      { "x": 220.5, "y": 58.0, "z": 160.5 }
-    ]
+    "maxDrop": 3
   },
   "mining": {
     "searchRadius": 16,
@@ -74,18 +105,14 @@
       "cobblestone",
       "deepslate",
       "cobbled_deepslate"
-    ]
+    ],
+    "voidFloorY": -40
   },
   "mine": {
     "searchRadius": 16,
     "digTimeoutMs": 10000,
     "wanderRadius": 6,
     "leashRadius": 16,
-    "anchors": [
-      { "x": 22.5, "y": 90.0, "z": 580.5 },
-      { "x": 80.5, "y": 92.0, "z": 530.5 },
-      { "x": 53.5, "y": 91.0, "z": 482.5 }
-    ],
     "ores": [
       "coal_ore",
       "copper_ore",
@@ -115,20 +142,14 @@
       "diorite",
       "granite",
       "tuff"
-    ]
+    ],
+    "voidFloorY": -40
   },
   "forage": {
     "searchRadius": 22,
     "searchLeashBonus": 6,
-    "digTimeoutMs": 12000,
     "wanderRadius": 6,
     "leashRadius": 20,
-    "anchors": [
-      { "x": 560.5, "y": 91.0, "z": -200.5 },
-      { "x": 559.5, "y": 90.0, "z": -208.5 },
-      { "x": 677.5, "y": 91.0, "z": -116.5 },
-      { "x": 560.5, "y": 90.0, "z": -160.5 }
-    ],
     "logs": [
       "oak_log",
       "spruce_log",
@@ -142,15 +163,6 @@
       "oak_wood",
       "spruce_wood",
       "birch_wood"
-    ],
-    "fallback": [
-      "oak_leaves",
-      "spruce_leaves",
-      "birch_leaves",
-      "azalea_leaves",
-      "dirt",
-      "grass_block",
-      "rooted_dirt"
     ]
   },
   "catch": {
@@ -158,13 +170,7 @@
     "wanderRadius": 5,
     "throwCooldownMs": 1800,
     "leashRadius": 12,
-    "maxDrop": 1,
-    "anchors": [
-      { "x": 560.5, "y": 91.0, "z": -200.5 },
-      { "x": 559.5, "y": 90.0, "z": -208.5 },
-      { "x": 560.5, "y": 90.0, "z": -160.5 },
-      { "x": 22.5, "y": 90.0, "z": 580.5 }
-    ]
+    "maxDrop": 1
   },
   "roam": {
     "maxHop": 12,
@@ -172,64 +178,57 @@
     "wanderRadius": 6,
     "leashRadius": 14,
     "waypoints": [
-      { "x": 22.5, "y": 56.0, "z": 305.5 },
-      { "x": 18.5, "y": 56.0, "z": 301.5 },
-      { "x": 26.5, "y": 56.0, "z": 309.5 },
-      { "x": 438.5, "y": 56.0, "z": -233.5 },
-      { "x": 434.5, "y": 56.0, "z": -229.5 },
-      { "x": 442.5, "y": 56.0, "z": -237.5 }
+      {
+        "x": 22.5,
+        "y": 56.0,
+        "z": 305.5
+      },
+      {
+        "x": 18.5,
+        "y": 56.0,
+        "z": 301.5
+      },
+      {
+        "x": 26.5,
+        "y": 56.0,
+        "z": 309.5
+      },
+      {
+        "x": 438.5,
+        "y": 56.0,
+        "z": -233.5
+      },
+      {
+        "x": 434.5,
+        "y": 56.0,
+        "z": -229.5
+      },
+      {
+        "x": 442.5,
+        "y": 56.0,
+        "z": -237.5
+      }
     ]
   },
   "fish": {
     "searchRadius": 16,
     "wanderRadius": 5,
     "leashRadius": 14,
-    "castCooldownMs": 4200,
-    "reelWaitMs": 6500,
     "maxDrop": 1,
-    "anchors": [
-      { "x": 560.5, "y": 91.0, "z": -200.5 },
-      { "x": 559.5, "y": 90.0, "z": -208.5 },
-      { "x": 560.5, "y": 90.0, "z": -160.5 },
-      { "x": 22.5, "y": 56.0, "z": 305.5 }
-    ]
+    "castWaitMs": 45000,
+    "recastMs": 1400
   },
   "trade": {
     "wanderRadius": 5,
     "leashRadius": 14,
-    "maxHop": 10,
-    "actionGapMs": 3500,
-    "commandEveryMs": 14000,
-    "clickEveryMs": 9000,
-    "commands": ["ah", "bazaar"],
-    "npcs": [
-      { "id": "auction", "name": "Auction" },
-      { "id": "bazaar", "name": "Bazaar" },
-      { "id": "trader", "name": "Trader" }
-    ],
-    "waypoints": [
-      { "x": 22.5, "y": 56.0, "z": 305.5 },
-      { "x": 18.5, "y": 56.0, "z": 301.5 },
-      { "x": 438.5, "y": 56.0, "z": -233.5 }
-    ]
+    "actionGapMs": 6000,
+    "buyFromPlayers": false
   },
   "quest": {
     "wanderRadius": 5,
     "leashRadius": 14,
-    "maxHop": 12,
-    "searchRadius": 16,
-    "clickEveryMs": 8000,
-    "npcs": [
-      { "id": "eldervale_welcome", "name": "Maren", "x": 53.5, "y": 91.0, "z": 482.5 },
-      { "id": "forage_pad_guide", "name": "Twig", "x": 438.5, "y": 56.0, "z": -233.5 },
-      { "id": "eldervale_upgrade", "name": "Forgehand", "x": 22.5, "y": 90.0, "z": 580.5 }
-    ],
-    "anchors": [
-      { "x": 53.5, "y": 91.0, "z": 482.5 },
-      { "x": 22.5, "y": 90.0, "z": 580.5 },
-      { "x": 438.5, "y": 56.0, "z": -233.5 },
-      { "x": 560.5, "y": 91.0, "z": -200.5 }
-    ]
+    "searchRadius": 12,
+    "npcCooldownMs": 60000
   },
   "pad": {
     "maxHop": 8,
@@ -238,10 +237,76 @@
     "hopTimeoutMs": 9000,
     "stuckHopMs": 5000,
     "pads": [
-      { "id": "origin_to_mining", "x": 22.5, "y": 56.0, "z": 305.5 },
-      { "id": "origin_to_forage", "x": 438.5, "y": 56.0, "z": -233.5 },
-      { "id": "mining_to_origin", "x": 53.5, "y": 91.0, "z": 482.5 },
-      { "id": "forage_to_origin", "x": 479.5, "y": 74.0, "z": -240.5 }
+      {
+        "id": "origin_to_mining",
+        "x": 22.5,
+        "y": 56.0,
+        "z": 305.5
+      },
+      {
+        "id": "origin_to_forage",
+        "x": 438.5,
+        "y": 56.0,
+        "z": -233.5
+      },
+      {
+        "id": "mining_to_origin",
+        "x": 53.5,
+        "y": 91.0,
+        "z": 482.5
+      },
+      {
+        "id": "forage_to_origin",
+        "x": 479.5,
+        "y": 74.0,
+        "z": -240.5
+      }
     ]
+  },
+  "general": {
+    "weights": {},
+    "reachMs": 150000
+  },
+  "farm": {
+    "searchRadius": 18,
+    "warp": "/farm",
+    "stage": "farm"
+  },
+  "menus": {
+    "gapMs": 4000,
+    "maxPages": 2,
+    "openTimeoutMs": 5000
+  },
+  "casino": {
+    "spinsPerVisit": 3,
+    "visitGapMs": 30000
+  },
+  "social": {
+    "partySize": 4,
+    "holdMs": 180000
+  },
+  "pit": {
+    "searchRadius": 26,
+    "attackIntervalMs": 520,
+    "reenterMs": 120000
+  },
+  "dungeon": {
+    "partySize": 4,
+    "floor": 1,
+    "maxRunMs": 480000,
+    "runsBeforeHome": 3,
+    "homeBreakMs": 120000,
+    "clearedLeaveMs": 75000,
+    "yieldToPlayers": true,
+    "attackIntervalMs": 460
+  },
+  "exile": {
+    "stayMs": 600000,
+    "roamRadius": 32,
+    "breakMs": 180000
+  },
+  "island": {
+    "stayMs": 480000,
+    "breakMs": 180000
   }
 }

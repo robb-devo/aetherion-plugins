@@ -25,8 +25,9 @@ public final class BotProvisioner {
         return handler == null ? null : handler.role();
     }
 
+    /** Offline UUID (proxy test-bot door or Velocity secret) or an old {@code QaMine01}-style name. */
     public boolean isStressBot(Player player) {
-        return roleOf(player) != null;
+        return player != null && (BotIdentity.offlineUuid(player.getUniqueId()) || roleOf(player) != null);
     }
 
     public void scheduleSetup(Player player) {
@@ -40,8 +41,13 @@ public final class BotProvisioner {
             return;
         }
         int delay = Math.max(1, delayTicks);
+        boolean legacyJoin = !plugin.getIdentity().saidHello(player);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
+                return;
+            }
+            // An old-style login kits itself on join, unless its runner said hello meanwhile (that hello kits).
+            if (legacyJoin && plugin.getIdentity().saidHello(player)) {
                 return;
             }
             setup(player, handler);
@@ -83,12 +89,21 @@ public final class BotProvisioner {
         plugin.getNicknames().applyLater(player, handler.role());
 
         Location destination = handler.destination(player);
+        if (destination == null && handler.role().free()) {
+            // Travelling roles start where they stand; the runner takes them on from here.
+            plugin.getLogger().info("Provisioned " + handler.role().id() + " bot " + player.getName()
+                    + " @ " + BotLocations.format(player.getLocation()));
+            return;
+        }
         if (destination != null) {
             player.teleport(destination);
+            if (plugin.getSafety() != null) {
+                plugin.getSafety().rememberHome(player, destination);
+            }
             plugin.getActivity().markAction(player, "teleport " + BotLocations.format(destination));
         } else {
             plugin.getLogger().warning("No destination for " + handler.role().id()
-                    + " bot " + player.getName() + " (world unloaded or missing YAML anchors)");
+                    + " bot " + player.getName() + " (world unloaded, no anchors, or no anchor has ground under it)");
             plugin.getActivity().markError(player, "no destination");
         }
         plugin.getLogger().info("Provisioned " + handler.role().id()

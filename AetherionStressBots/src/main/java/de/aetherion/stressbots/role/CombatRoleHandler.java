@@ -56,7 +56,7 @@ public final class CombatRoleHandler implements BotRoleHandler {
     @Override
     public Location destination(Player player) {
         ConfigurationSection wave = BotRoleRegistry.roleSection(plugin, BotRole.COMBAT);
-        if (wave != null && !BotLocations.readAnchors(wave).isEmpty()) {
+        if (wave != null && !BotLocations.candidates(player, wave).isEmpty()) {
             return BotLocations.pickAnchor(player, wave);
         }
         ConfigurationSection legacy = plugin.getConfig().getConfigurationSection("combat");

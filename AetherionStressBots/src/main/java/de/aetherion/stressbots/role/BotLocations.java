@@ -1,5 +1,9 @@
 package de.aetherion.stressbots.role;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.HubAccess;
+import de.aetherion.core.api.QuestProgressAccess;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -9,13 +13,14 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * YAML world/anchor helpers shared by role handlers and the provisioner.
+ * World/anchor helpers shared by role handlers, the provisioner and the safety watchdog.
  */
 public final class BotLocations {
 
@@ -32,65 +37,103 @@ public final class BotLocations {
     }
 
     /**
-     * Stable per-bot pad with solid-ground snap. Used for void/death recovery (no random scatter).
+     * Every spot a role may be sent to: the YAML {@code anchors} (or {@code waypoints}), then the live
+     * Hub spawns named in {@code hub-spawns}, then quest NPC spots when {@code use-quest-npcs} is on.
+     * Hub and NPC spots come from the running server, so they follow the map when it moves.
      */
-    public static Location assignedAnchor(Player player, ConfigurationSection section) {
+    public static List<Location> candidates(Player player, ConfigurationSection section) {
+        List<Location> out = new ArrayList<>(readAnchors(section));
         if (section == null) {
-            return null;
+            return out;
         }
-        List<Location> anchors = readAnchors(section);
-        if (anchors.isEmpty()) {
-            Location point = readPoint(section);
-            if (point == null) {
-                return null;
+        HubAccess hub = AetherServices.hub();
+        if (hub != null) {
+            for (String id : section.getStringList("hub-spawns")) {
+                Location spawn = hub.location(id);
+                if (spawn != null && spawn.getWorld() != null) {
+                    out.add(spawn.clone());
+                }
             }
-            anchors = List.of(point);
         }
-        int index = Math.floorMod(stableIndex(player == null ? "bot" : player.getName()), anchors.size());
-        return firstSolid(anchors.get(index), 6);
+        if (player != null && section.getBoolean("use-quest-npcs", false)) {
+            QuestProgressAccess quests = AetherServices.quests();
+            if (quests != null) {
+                List<Location> npcs = new ArrayList<>(quests.npcsNear(player, section.getDouble("quest-npc-radius", 1500)));
+                // Stable order, so a bot keeps the same NPC across restarts.
+                npcs.sort(Comparator.comparingDouble(Location::getX).thenComparingDouble(Location::getZ));
+                for (Location npc : npcs) {
+                    out.add(npc.clone());
+                }
+            }
+        }
+        if (out.isEmpty() && section.contains("x") && section.contains("z")) {
+            Location point = readPoint(section);
+            if (point != null) {
+                out.add(point);
+            }
+        }
+        return out;
     }
 
-    public static Location nearestAnchor(Location here, ConfigurationSection section) {
-        List<Location> anchors = readAnchors(section);
-        if (here == null) {
-            return anchors.isEmpty() ? null : firstSolid(anchors.get(0), 6);
+    /**
+     * Stable per-bot spot, snapped to solid ground. A spot that has no floor (moved build, void) is skipped
+     * for the next one; null only when no candidate has ground under it.
+     */
+    public static Location assignedAnchor(Player player, ConfigurationSection section) {
+        List<Location> spots = candidates(player, section);
+        if (spots.isEmpty()) {
+            return null;
         }
-        if (anchors.isEmpty()) {
-            Location point = readPoint(section);
-            return point == null ? null : firstSolid(point, 6);
+        int start = Math.floorMod(stableIndex(player == null ? "bot" : player.getName()), spots.size());
+        for (int i = 0; i < spots.size(); i++) {
+            Location solid = standOn(spots.get((start + i) % spots.size()), 6);
+            if (solid != null) {
+                return solid;
+            }
+        }
+        return null;
+    }
+
+    /** Nearest configured anchor by XZ, unsnapped (cheap: used every watchdog tick). */
+    public static Location nearestAnchor(Location here, ConfigurationSection section) {
+        if (here == null) {
+            return null;
         }
         Location best = null;
         double bestDist = Double.POSITIVE_INFINITY;
-        for (Location anchor : anchors) {
-            if (anchor.getWorld() != here.getWorld()) {
-                continue;
-            }
-            double dx = anchor.getX() - here.getX();
-            double dz = anchor.getZ() - here.getZ();
-            double dist = dx * dx + dz * dz;
+        for (Location anchor : readAnchors(section)) {
+            double dist = horizontalDistance(anchor, here);
             if (dist < bestDist) {
                 best = anchor;
                 bestDist = dist;
             }
         }
-        return best == null ? firstSolid(anchors.get(0), 6) : firstSolid(best, 6);
+        return best;
     }
 
     public static Location otherAnchor(Player player, ConfigurationSection section, Location avoid) {
-        List<Location> anchors = readAnchors(section);
-        if (anchors.size() < 2) {
+        List<Location> spots = candidates(player, section);
+        if (spots.size() < 2) {
             return assignedAnchor(player, section);
         }
-        Location pick = anchors.get(ThreadLocalRandom.current().nextInt(anchors.size()));
-        if (avoid != null && samePad(pick, avoid) && anchors.size() > 1) {
-            for (Location candidate : anchors) {
-                if (!samePad(candidate, avoid)) {
-                    pick = candidate;
-                    break;
-                }
+        int start = ThreadLocalRandom.current().nextInt(spots.size());
+        for (int i = 0; i < spots.size(); i++) {
+            Location pick = spots.get((start + i) % spots.size());
+            if (avoid != null && samePad(pick, avoid)) {
+                continue;
+            }
+            Location solid = standOn(pick, 6);
+            if (solid != null) {
+                return solid;
             }
         }
-        return firstSolid(pick, 6);
+        return assignedAnchor(player, section);
+    }
+
+    /** Void floor for a role: {@code void-floor-y} in its section, else {@code testbots.safety.void-floor-y}. */
+    public static double voidFloor(ConfigurationSection root, ConfigurationSection section) {
+        double global = root == null ? 40 : root.getDouble("testbots.safety.void-floor-y", 40);
+        return section == null ? global : section.getDouble("void-floor-y", global);
     }
 
     public static double horizontalDistance(Location a, Location b) {
@@ -154,7 +197,10 @@ public final class BotLocations {
         if (base == null || base.getWorld() == null) {
             return base;
         }
-        Location groundedBase = firstSolid(base, 6);
+        Location groundedBase = isSolidStand(base) ? base : standOn(base, 6);
+        if (groundedBase == null) {
+            return null;
+        }
         if (radius <= 0) {
             return groundedBase;
         }
@@ -162,8 +208,8 @@ public final class BotLocations {
             double angle = rng.nextDouble(0, Math.PI * 2);
             double dist = Math.sqrt(rng.nextDouble()) * radius;
             Location candidate = groundedBase.clone().add(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
-            Location solid = firstSolid(candidate, 2);
-            if (solid != null && isSolidStand(solid)) {
+            Location solid = standOn(candidate, 2);
+            if (solid != null && Math.abs(solid.getY() - groundedBase.getY()) <= 3) {
                 solid.setYaw(base.getYaw());
                 solid.setPitch(base.getPitch());
                 return solid;
@@ -173,16 +219,16 @@ public final class BotLocations {
     }
 
     public static Location safeStanding(Location location) {
-        return firstSolid(location, 4);
+        return standOn(location, 4);
     }
 
     /**
-     * Snap to a two-block-tall air column above a solid, non-liquid floor.
-     * If the exact column is void, spiral outward. Last resort: centered original XYZ.
+     * Snap to a two-block-tall air column above a solid, non-liquid floor, spiralling outward up to
+     * {@code xzRadius}. Null when there is no such column: never hand back a spot over the void.
      */
-    public static Location firstSolid(Location around, int xzRadius) {
+    public static Location standOn(Location around, int xzRadius) {
         if (around == null || around.getWorld() == null) {
-            return around;
+            return null;
         }
         Location centered = center(around);
         int radius = Math.max(0, xzRadius);
@@ -200,7 +246,7 @@ public final class BotLocations {
                 }
             }
         }
-        return centered;
+        return null;
     }
 
     public static boolean isSolidStand(Location feet) {

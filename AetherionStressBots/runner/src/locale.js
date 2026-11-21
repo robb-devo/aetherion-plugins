@@ -1,51 +1,33 @@
-import { clickSlot, closeWindow, isLanguageWindow, SLOTS, windowTitle } from './gui.js'
+import { clickSlot, closeWindow, KINDS, SLOTS, windowKind } from './gui.js'
 import { note } from './util.js'
 
 /**
- * Force English and dismiss Language / Sprache GUIs (Quests + Beta).
- * English is slot 11 in both menus — verified against LangMenu / LanguageMenu.
+ * Dismiss the first-join Language / Sprache picker (Quests LangMenu) by clicking English, slot 11.
+ * The plugin already sets English on join, so this only fires when that raced or Quests reloaded.
+ * The menu is recognised by its slots (English map, Deutsch book): its title is pack glyphs.
  */
 export function attachLocale(bot, log) {
   let lastDismiss = 0
 
   const dismiss = async (reason) => {
     if (Date.now() - lastDismiss < 800) return
+    if (windowKind(bot).kind !== KINDS.language) return
     lastDismiss = Date.now()
-    const title = windowTitle(bot)
-    if (!isLanguageWindow(title) && !bot.currentWindow) {
-      try { bot.chat('/language en') } catch { /* ignore */ }
-      return
-    }
-    if (!isLanguageWindow(title)) return
     try {
       await clickSlot(bot, SLOTS.languageEnglish)
-      note(bot, `language dismissed (${reason || title})`, bot.qaActivity || 'idle')
-      log(bot.stressName, `language dismissed: ${title}`)
+      note(bot, `language dismissed (${reason})`, bot.qaActivity || 'idle')
+      log(bot.stressName, 'language picker → English')
     } catch {
       try { bot.chat('/language en') } catch { /* ignore */ }
       await closeWindow(bot)
-      note(bot, 'language closed (fallback en)', bot.qaActivity || 'idle')
+      note(bot, 'language closed (fallback /language en)', bot.qaActivity || 'idle')
     }
   }
 
   bot.on('windowOpen', () => {
-    setTimeout(() => {
-      dismiss('windowOpen').catch(() => {})
-    }, 180)
+    // Slots arrive right after the open packet.
+    setTimeout(() => dismiss('windowOpen').catch(() => {}), 250)
   })
-  bot.on('spawn', () => {
-    setTimeout(() => {
-      try { bot.chat('/language en') } catch { /* ignore */ }
-      dismiss('spawn').catch(() => {})
-    }, 900)
-  })
-
-  const handle = setInterval(() => {
-    if (isLanguageWindow(windowTitle(bot))) {
-      dismiss('poll').catch(() => {})
-    }
-  }, 2500)
-  bot.once('end', () => clearInterval(handle))
 
   return { dismiss }
 }

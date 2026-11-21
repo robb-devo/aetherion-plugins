@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * every minute, so a pack swap is just: replace the zip. Players online get the new pack within a minute.
  */
 @Plugin(id = "aetherion-proxy", name = "AetherionProxy", version = "1.0.0",
-        description = "Sends the Aetherion resource pack once per session.", authors = {"Robb"})
+        description = "Sends the Aetherion resource pack once per session; lets the test bots in.", authors = {"Robb"})
 public final class AetherionProxy {
 
     private final ProxyServer proxy;
@@ -32,6 +32,7 @@ public final class AetherionProxy {
     private final Logger logger;
     /** The ops scripts touch this file ({@code ae-proxy-reload.sh}): there is no RCON on Velocity and no Crafty any more. */
     private final Path reloadRequest;
+    private final TestBotDoor botDoor;
 
     @Inject
     public AetherionProxy(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -39,11 +40,14 @@ public final class AetherionProxy {
         this.logger = logger;
         this.pack = new ResourcePack(this, proxy, logger, dataDirectory);
         this.reloadRequest = dataDirectory.resolve("reload.request");
+        this.botDoor = new TestBotDoor(logger, dataDirectory);
     }
 
     @Subscribe
     public void onInitialize(ProxyInitializeEvent event) {
         pack.reload(null);
+        botDoor.reload();
+        proxy.getEventManager().register(this, botDoor);
         proxy.getScheduler().buildTask(this, () -> pack.reload(null))
                 .delay(1, TimeUnit.MINUTES)
                 .repeat(1, TimeUnit.MINUTES)
@@ -58,6 +62,7 @@ public final class AetherionProxy {
 
     /** A {@code reload.request} file in the plugin folder runs {@code velocity reload} once, then goes away. */
     private void checkReloadRequest() {
+        botDoor.reload();
         try {
             if (!java.nio.file.Files.deleteIfExists(reloadRequest)) {
                 return;

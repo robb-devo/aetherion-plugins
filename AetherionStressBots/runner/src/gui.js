@@ -1,6 +1,14 @@
+import { stripLegacy, toPlain } from './chat.js'
+
+export { stripLegacy } from './chat.js'
+
 /**
  * Shared window helpers. Roles should call these instead of inventing click sequences.
  * Slot numbers match AetherionItems MarketService / Quests LangMenu / QuestAcceptGUI.
+ *
+ * Titles are display-only on Aetherion: the Manager book pages (ChromePage / ManagerChrome) draw the
+ * whole title from pack glyphs, so "Auction House" never appears in it. Windows are told apart by what
+ * sits in their slots, the same way the server routes them by InventoryHolder.
  */
 
 export const SLOTS = {
@@ -13,27 +21,45 @@ export const SLOTS = {
   marketInfo: 47,
   marketNext: 48,
   marketList: 49,
+  marketMine: 50,
+  marketSwitch: 51,
   marketCollect: 53,
   priceSuggested: 2,
+  priceCancel: 8,
   confirmBuy: 11,
-  confirmCancel: 15
+  confirmCancel: 15,
+  // AetherionDungeons DungeonMenu: header 4 (end portal frame), Floor 1 · Prison 20, Floor 2 22, Floor 3 24, close 49.
+  dungeonHeader: 4,
+  dungeonFloor1: 20,
+  dungeonFloor2: 22,
+  dungeonFloor3: 24,
+  dungeonClose: 49,
+  // AetherionItems CasinoGames slots table: logo 4, purse 7, bet 47, spin 51. (8 is the staff rigger, 53 auto: never.)
+  slotsLogo: 4,
+  slotsPurse: 7,
+  slotsSpin: 51,
+  // AetherionGuilds StarterSelectMenu: header 4 (nether star when open, clock when locked), starters 11 / 13 / 15.
+  starterHeader: 4,
+  starters: [11, 13, 15]
 }
 
-export function stripLegacy(text) {
-  return String(text || '').replace(/§./g, '').replace(/\u00a7./g, '')
+export const KINDS = {
+  none: 'none',
+  language: 'language',
+  market: 'market',
+  price: 'price',
+  confirm: 'confirm',
+  questOffer: 'quest_offer',
+  dungeon: 'dungeon',
+  slots: 'casino_slots',
+  starter: 'island_starter',
+  other: 'other'
 }
 
 export function windowTitle(bot) {
   const window = bot?.currentWindow
   if (!window) return ''
-  const raw = window.title ?? window.windowTitle ?? ''
-  if (typeof raw === 'string') return stripLegacy(raw)
-  try {
-    if (typeof raw.toString === 'function') return stripLegacy(raw.toString())
-  } catch {
-    /* ignore */
-  }
-  return ''
+  return toPlain(window.title ?? window.windowTitle ?? '', bot.registry)
 }
 
 export function titleMatches(title, ...needles) {
@@ -41,33 +67,118 @@ export function titleMatches(title, ...needles) {
   return needles.some((needle) => plain.includes(String(needle).toLowerCase()))
 }
 
-export function isLanguageWindow(title) {
-  const plain = stripLegacy(title).toLowerCase()
-  return plain.includes('language') || plain.includes('sprache')
+/** Slots of the top inventory only (the container, not the player's own bag). */
+export function containerSize(window) {
+  if (!window) return 0
+  if (Number.isFinite(window.inventoryStart)) return window.inventoryStart
+  return Math.max(0, (window.slots?.length || 0) - 36)
 }
 
-export function isAuctionWindow(title) {
-  return titleMatches(title, 'auction house', 'auction')
+export function slotItem(bot, slot) {
+  const window = bot?.currentWindow
+  if (!window || !window.slots) return null
+  return window.slots[slot] || null
 }
 
-export function isBazaarWindow(title) {
-  return titleMatches(title, 'bazaar')
+export function itemName(item, registry) {
+  if (!item) return ''
+  const custom = item.customName
+  if (custom != null && custom !== '') {
+    const text = toPlain(custom, registry)
+    if (text) return text
+  }
+  return stripLegacy(item.displayName || item.name || '')
 }
 
-export function isQuestOfferWindow(title) {
-  return titleMatches(title, 'quest offer', 'quest')
+export function itemLore(item, registry) {
+  if (!item) return ''
+  const lore = item.customLore
+  if (lore == null) return ''
+  return toPlain(Array.isArray(lore) ? lore : [lore], registry)
 }
 
-export function isListPriceWindow(title) {
-  return titleMatches(title, 'list ·', 'list · bazaar', 'list · auction')
+function slotName(bot, slot) {
+  return itemName(slotItem(bot, slot), bot?.registry).toLowerCase()
 }
 
-export function isConfirmPurchaseWindow(title) {
-  return titleMatches(title, 'confirm purchase')
+function slotType(bot, slot) {
+  return String(slotItem(bot, slot)?.name || '')
 }
 
-export function isBoosterWindow(title) {
-  return titleMatches(title, 'booster')
+/**
+ * What the open window is, read from its contents.
+ * Market browse also reports its counter ({@code auction} or {@code bazaar}).
+ */
+export function windowKind(bot) {
+  const window = bot?.currentWindow
+  if (!window) return { kind: KINDS.none }
+  const size = containerSize(window)
+  const title = windowTitle(bot).toLowerCase()
+
+  if (size === 27 && slotName(bot, SLOTS.languageEnglish).includes('english')
+      && slotName(bot, SLOTS.languageGerman).includes('deutsch')) {
+    return { kind: KINDS.language }
+  }
+  if (title.includes('language') || title.includes('sprache')) {
+    return { kind: KINDS.language }
+  }
+  if (size === 54 && slotType(bot, SLOTS.marketList) === 'writable_book'
+      && slotName(bot, SLOTS.marketList).includes('sell')) {
+    const info = slotName(bot, SLOTS.marketInfo)
+    const channel = info.includes('bazaar') ? 'bazaar' : info.includes('auction') ? 'auction' : 'unknown'
+    return { kind: KINDS.market, channel }
+  }
+  if (size === 9) {
+    const names = [0, 1, 2, 3].map((slot) => slotName(bot, slot))
+    if (names.filter((name) => name.includes('coins') && name.includes('%')).length >= 2) {
+      return { kind: KINDS.price }
+    }
+  }
+  if (size === 27) {
+    const accept = slotType(bot, SLOTS.confirmBuy)
+    const cancel = slotType(bot, SLOTS.confirmCancel)
+    if (accept === 'lime_wool' && cancel === 'red_wool') {
+      const label = slotName(bot, SLOTS.confirmBuy)
+      const state = label.includes('take it back') ? 'reclaim' : label.includes('not enough') ? 'broke' : 'buy'
+      return { kind: KINDS.confirm, state }
+    }
+    if ((accept === 'lime_concrete' || accept === 'barrier') && cancel === 'red_concrete') {
+      const label = slotName(bot, SLOTS.questAccept)
+      const state = accept === 'barrier' ? 'blocked' : label.includes('anyway') ? 'abort_current' : 'offer'
+      return { kind: KINDS.questOffer, state }
+    }
+  }
+  if (size === 54 && slotType(bot, SLOTS.dungeonHeader) === 'end_portal_frame'
+      && slotType(bot, SLOTS.dungeonFloor1) === 'deepslate_bricks' && slotType(bot, SLOTS.dungeonClose) === 'barrier') {
+    return { kind: KINDS.dungeon }
+  }
+  if (size === 54 && slotItem(bot, SLOTS.slotsSpin) && slotItem(bot, SLOTS.slotsLogo)
+      && (slotName(bot, SLOTS.slotsSpin).includes('spin') || slotName(bot, SLOTS.slotsLogo).includes('slot'))) {
+    return { kind: KINDS.slots }
+  }
+  if (size >= 27 && SLOTS.starters.every((slot) => slotItem(bot, slot))
+      && ['nether_star', 'clock'].includes(slotType(bot, SLOTS.starterHeader))) {
+    return { kind: KINDS.starter, state: slotType(bot, SLOTS.starterHeader) === 'nether_star' ? 'open' : 'locked' }
+  }
+  return { kind: KINDS.other, title }
+}
+
+/** Slots of the open window whose item name looks like a page-forward button (arrows only, never a buy button). */
+export function nextPageSlots(bot) {
+  const window = bot?.currentWindow
+  if (!window) return []
+  const out = []
+  for (let slot = 0; slot < containerSize(window); slot++) {
+    const item = window.slots[slot]
+    if (!item || !['arrow', 'spectral_arrow'].includes(item.name)) continue
+    const name = itemName(item, bot.registry).toLowerCase()
+    if (/next|more|weiter|vor|▶|→|»/.test(name) && !/back|prev|zurück|◀|←|«/.test(name)) out.push(slot)
+  }
+  return out
+}
+
+export function isLanguageWindow(bot) {
+  return windowKind(bot).kind === KINDS.language
 }
 
 export function hasWindow(bot) {
@@ -87,18 +198,21 @@ export async function closeWindow(bot) {
       bot.closeWindow(bot.currentWindow)
     }
   } catch {
-    try { bot.closeWindow() } catch { /* ignore */ }
+    /* ignore */
   }
 }
 
+/** Resolves once a window matching {@code predicate(kindInfo, window)} is open. */
 export function waitForWindow(bot, predicate, timeoutMs = 4000) {
   return new Promise((resolve, reject) => {
     const start = Date.now()
     const tick = () => {
-      const title = windowTitle(bot)
-      if (bot.currentWindow && predicate(title, bot.currentWindow)) {
-        resolve(title)
-        return
+      if (bot.currentWindow) {
+        const info = windowKind(bot)
+        if (predicate(info, bot.currentWindow)) {
+          resolve(info)
+          return
+        }
       }
       if (Date.now() - start > timeoutMs) {
         reject(new Error('window timeout'))
@@ -110,54 +224,31 @@ export function waitForWindow(bot, predicate, timeoutMs = 4000) {
   })
 }
 
-export function windowItems(bot) {
+export function kindIs(kind) {
+  return (info) => info.kind === kind
+}
+
+/** Market listings on the open browse page (slots 0..44), with seller and price read from the lore. */
+export function marketListings(bot) {
   const window = bot?.currentWindow
   if (!window) return []
-  return (window.slots || []).map((item, slot) => ({ slot, item }))
-}
-
-export function findClickableSlots(bot, { skipChrome = true } = {}) {
-  const chrome = new Set([
-    SLOTS.marketBack, SLOTS.marketPrev, SLOTS.marketInfo,
-    SLOTS.marketNext, SLOTS.marketList, SLOTS.marketCollect
-  ])
   const out = []
-  for (const { slot, item } of windowItems(bot)) {
+  for (let slot = 0; slot < 45; slot++) {
+    const item = window.slots[slot]
     if (!item || !item.name) continue
-    const name = item.name.toLowerCase()
-    if (name.includes('glass_pane') || name.includes('barrier')) continue
-    if (skipChrome && chrome.has(slot)) continue
-    out.push({ slot, item, name: itemName(item) })
+    if (item.name.includes('glass_pane')) continue
+    const lore = itemLore(item, bot.registry)
+    const seller = (lore.match(/Seller:\s*(\S+)/i) || [])[1] || ''
+    if (!seller) continue
+    const price = Number(((lore.match(/Buyout:\s*([\d.,]+)/i) || [])[1] || '').replace(/[.,]/g, ''))
+    out.push({
+      slot,
+      item,
+      name: itemName(item, bot.registry),
+      seller,
+      price: Number.isFinite(price) ? price : 0,
+      mine: /your listing/i.test(lore)
+    })
   }
   return out
-}
-
-export function itemName(item) {
-  if (!item) return ''
-  const display = item.customName || item.displayName || item.name || ''
-  return stripLegacy(typeof display === 'string' ? display : String(display))
-}
-
-export function itemLore(item) {
-  if (!item) return ''
-  const lore = item.customLore || item.lore || []
-  if (Array.isArray(lore)) {
-    return stripLegacy(lore.map((line) => (typeof line === 'string' ? line : String(line))).join(' '))
-  }
-  return stripLegacy(String(lore))
-}
-
-export function parseQuestAcceptCommand(text) {
-  const match = String(text || '').match(/\/aetherionquest\s+accept\s+(\S+)/i)
-  return match ? `/aetherionquest accept ${match[1]}` : null
-}
-
-export async function clickNamed(bot, matcher) {
-  const slots = findClickableSlots(bot, { skipChrome: false })
-  const hit = slots.find((entry) => matcher(entry.name, entry.item, entry.slot))
-  if (!hit) {
-    throw new Error('no matching item')
-  }
-  await clickSlot(bot, hit.slot)
-  return hit
 }

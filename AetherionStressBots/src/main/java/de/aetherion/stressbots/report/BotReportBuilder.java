@@ -125,8 +125,18 @@ public final class BotReportBuilder {
         }
         out.append(" online=").append(report.onlineTotal())
                 .append("/").append(report.maxTotal()).append('\n');
+        List<String> network = plugin.getController() == null ? List.of() : plugin.getController().networkLines();
+        if (!network.isEmpty()) {
+            out.append('\n');
+            out.append("Network (every server, from the runner):\n");
+            for (String line : network) {
+                if (!line.isBlank()) {
+                    out.append("  ").append(line).append('\n');
+                }
+            }
+        }
         out.append('\n');
-        out.append("Roles:\n");
+        out.append("Roles on this server:\n");
         for (TestBotRoleView role : report.roles()) {
             if (role.online() == 0 && role.desired() == 0 && !isQa(role.id())) {
                 continue;
@@ -140,6 +150,20 @@ public final class BotReportBuilder {
                 out.append(" error=").append(role.lastError());
             }
             out.append('\n');
+        }
+        Map<String, Map<String, Integer>> totals = new java.util.TreeMap<>();
+        for (TestBotView bot : report.bots()) {
+            Map<String, Integer> role = totals.computeIfAbsent(bot.role(), key -> new java.util.TreeMap<>());
+            countsOf(bot.name()).forEach((key, value) -> role.merge(key, value, Integer::sum));
+        }
+        if (totals.values().stream().anyMatch(map -> !map.isEmpty())) {
+            out.append('\n');
+            out.append("Work done (online bots, since plugin start):\n");
+            totals.forEach((role, counts) -> {
+                if (!counts.isEmpty()) {
+                    out.append("  - ").append(role).append(": ").append(work(counts)).append('\n');
+                }
+            });
         }
         out.append('\n');
         out.append("Bots:\n");
@@ -161,14 +185,32 @@ public final class BotReportBuilder {
                 out.append(" err=").append(bot.lastError());
             }
             out.append('\n');
+            String work = work(countsOf(bot.name()));
+            if (!work.isEmpty()) {
+                out.append("      work: ").append(work).append('\n');
+            }
             if (!bot.recentActions().isEmpty()) {
                 out.append("      recent: ").append(String.join(" | ", bot.recentActions())).append('\n');
             }
         }
         out.append('\n');
         out.append("Activities: idle/pathing/mining/foraging/catching/roaming/combat/fishing/ah/bazaar/quest_dialog/minigame/pad_hop/void/recovering/stuck.\n");
-        out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. AH/Bazaar click list/buy; quests click accept; fishing plays strike/reel; pad hops ride the arc.\n");
+        out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. Miners dig quarries; foragers play the Fell bar; fishers reel on the strike bar;\n");
+        out.append("catchers lock the catch timing; traders list and buy bot listings on AH/Bazaar; questers talk to NPCs and answer the dialog; pad hops ride the arc.\n");
+        out.append("Network roles: general tours everything; pit fights bots in the hub's Pit; dungeon, exile and island take the player roads to mmo-d, mmo-c, mmo-i;\n");
+        out.append("farm harvests, menus opens and times every menu, casino spins the slots, social builds parties and friend lists with other bots.\n");
         return out.toString();
+    }
+
+    private Map<String, Integer> countsOf(String name) {
+        Player player = name == null ? null : Bukkit.getPlayerExact(name);
+        return player == null ? Map.of() : plugin.getActivity().snapshot(player).counts();
+    }
+
+    private static String work(Map<String, Integer> counts) {
+        List<String> parts = new ArrayList<>();
+        counts.forEach((key, value) -> parts.add(key + "=" + value));
+        return String.join(" ", parts);
     }
 
     private TestBotView toView(Player player, BotRoleHandler handler) {

@@ -14,6 +14,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.Vector;
 
 import java.util.Map;
@@ -21,7 +22,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Keeps QA bots on their Skyblock pads: void/fall cancel, leash pull, idle re-anchor, pad hops.
+ * Keeps QA bots on their Skyblock pads: void cancel, leash pull, idle re-anchor, pad hops.
+ * The leash is measured from where the plugin last put each bot, so the 5-tick loop never scans blocks
+ * for a home; the floor is per role ({@code void-floor-y}), because quarry floors sit below island pads.
  */
 public final class BotSafetyWatchdog implements Listener, Runnable {
 
@@ -30,6 +33,9 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
     private final Map<UUID, Long> lastHopAt = new ConcurrentHashMap<>();
     private final Map<UUID, Long> idleSince = new ConcurrentHashMap<>();
     private final Map<UUID, Long> padFlightUntil = new ConcurrentHashMap<>();
+    private final Map<UUID, Location> homes = new ConcurrentHashMap<>();
+    /** Free roles: the last ground they stood on, where the void sends them back. */
+    private final Map<UUID, Location> lastGround = new ConcurrentHashMap<>();
 
     public BotSafetyWatchdog(AetherionStressBots plugin) {
         this.plugin = plugin;
@@ -45,23 +51,55 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             return;
         }
         DamageCause cause = event.getCause();
-        if (cause == DamageCause.VOID || cause == DamageCause.FALL) {
+        if (cause == DamageCause.VOID) {
             event.setCancelled(true);
-            recover(player, handler, cause == DamageCause.VOID ? "void" : "fall", false);
+            if (handler.role().free()) {
+                recoverFree(player, "void");
+            } else {
+                recover(player, handler, "void", false);
+            }
+            return;
+        }
+        if (cause == DamageCause.FALL) {
+            // Landing is fine (a quarry drop, a jump-pad arc). The tick below handles void and leash.
+            event.setCancelled(true);
             return;
         }
         if (handler.role() == BotRole.ROAM && isMob(cause)) {
             event.setCancelled(true);
             recover(player, handler, "hostile", true);
         }
-        if (handler.role() == BotRole.PAD && cause == DamageCause.FALL) {
-            event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        UUID id = event.getPlayer().getUniqueId();
+        homes.remove(id);
+        recoverAt.remove(id);
+        lastHopAt.remove(id);
+        idleSince.remove(id);
+        padFlightUntil.remove(id);
+        lastGround.remove(id);
+    }
+
+    /** Where the plugin last put this bot (setup, respawn, recover). The leash is measured from here. */
+    public void rememberHome(Player player, Location home) {
+        if (player != null && home != null && home.getWorld() != null) {
+            homes.put(player.getUniqueId(), home.clone());
         }
+    }
+
+    public Location homeOf(Player player) {
+        Location home = player == null ? null : homes.get(player.getUniqueId());
+        return home == null ? null : home.clone();
+    }
+
+    public double floorOf(BotRoleHandler handler) {
+        return BotLocations.voidFloor(plugin.getConfig(), handler == null ? null : roleSection(handler));
     }
 
     @Override
     public void run() {
-        double floor = plugin.getConfig().getDouble("testbots.safety.void-floor-y", 40);
         long now = System.currentTimeMillis();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             BotRoleHandler handler = plugin.getRegistry().byPlayer(player);
@@ -69,8 +107,12 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 continue;
             }
             Location loc = player.getLocation();
+            if (handler.role().free()) {
+                watchFree(player, loc);
+                continue;
+            }
             ConfigurationSection section = roleSection(handler);
-            Location home = BotLocations.assignedAnchor(player, section);
+            double floor = BotLocations.voidFloor(plugin.getConfig(), section);
             double leash = leashOf(section);
 
             trackPadFlight(player, handler, loc, now);
@@ -84,14 +126,23 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 plugin.getActivity().markActivity(player, "pad_hop", "mid-hop");
                 continue;
             }
+            Location home = homes.get(player.getUniqueId());
+            if (home == null && player.isOnGround() && BotLocations.isSolidStand(loc)) {
+                // Plugin reloaded while the bot was out: adopt where it stands.
+                rememberHome(player, loc);
+                home = loc;
+            }
             if (home != null && BotLocations.horizontalDistance(loc, home) > leash) {
-                Location nearest = BotLocations.nearestAnchor(loc, section);
-                if (nearest == null || BotLocations.horizontalDistance(loc, nearest) > leash) {
+                // Landed on another configured pad (jump pads, pad hops): that pad becomes home.
+                Location near = BotLocations.nearestAnchor(loc, section);
+                if (near != null && BotLocations.horizontalDistance(loc, near) <= leash) {
+                    rememberHome(player, near);
+                } else {
                     recover(player, handler, "leash", false);
                     continue;
                 }
             }
-            if (!BotLocations.isSolidStand(loc) && loc.getY() < floor + 15 && player.getVelocity().getY() < -0.35) {
+            if (loc.getY() < floor + 15 && player.getVelocity().getY() < -0.35 && !BotLocations.isSolidStand(loc)) {
                 recover(player, handler, "falling", false);
                 continue;
             }
@@ -122,6 +173,43 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
         }
     }
 
+    /**
+     * Travelling roles walk wherever the server lets players walk: no leash, no idle re-anchor, no pad hops, and
+     * the floor is the world's real bottom (dungeons and islands sit at other heights than the main-world pads).
+     */
+    private void watchFree(Player player, Location loc) {
+        if (loc.getWorld() == null) {
+            return;
+        }
+        if (loc.getY() < loc.getWorld().getMinHeight() - 8) {
+            recoverFree(player, "void-floor");
+            return;
+        }
+        if (player.isOnGround() && BotLocations.isSolidStand(loc)) {
+            lastGround.put(player.getUniqueId(), loc.clone());
+        }
+    }
+
+    public boolean recoverFree(Player player, String reason) {
+        long now = System.currentTimeMillis();
+        long cooldown = plugin.getConfig().getLong("testbots.safety.recover-cooldown-ms", 1500);
+        Long previous = recoverAt.get(player.getUniqueId());
+        if (previous != null && now - previous < cooldown) {
+            return false;
+        }
+        Location dest = lastGround.get(player.getUniqueId());
+        if (dest == null || dest.getWorld() == null || !dest.getWorld().equals(player.getWorld())) {
+            dest = player.getWorld().getSpawnLocation();
+        }
+        recoverAt.put(player.getUniqueId(), now);
+        player.setFallDistance(0f);
+        player.setVelocity(new Vector(0, 0, 0));
+        player.teleport(dest);
+        plugin.getActivity().markRecovering(player, reason + " → " + BotLocations.format(dest));
+        plugin.getLogger().info("Recovered " + player.getName() + " (" + reason + ") → " + BotLocations.format(dest));
+        return true;
+    }
+
     public boolean recover(Player player, BotRoleHandler handler, String reason, boolean otherPad) {
         if (player == null || handler == null || !player.isOnline()) {
             return false;
@@ -133,9 +221,13 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             return false;
         }
         ConfigurationSection section = roleSection(handler);
-        Location dest = otherPad
-                ? BotLocations.otherAnchor(player, section, player.getLocation())
-                : BotLocations.assignedAnchor(player, section);
+        Location dest;
+        if (otherPad) {
+            dest = BotLocations.otherAnchor(player, section, player.getLocation());
+        } else {
+            Location home = homes.get(player.getUniqueId());
+            dest = home != null && BotLocations.isSolidStand(home) ? home.clone() : BotLocations.assignedAnchor(player, section);
+        }
         if (dest == null) {
             dest = handler.destination(player);
         }
@@ -149,6 +241,7 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
         player.setFireTicks(0);
         player.setVelocity(new Vector(0, 0, 0));
         player.teleport(dest);
+        rememberHome(player, dest);
         plugin.getActivity().markRecovering(player, reason + " → " + BotLocations.format(dest));
         plugin.getLogger().info("Recovered " + player.getName() + " (" + reason + ") → " + BotLocations.format(dest));
         return true;
