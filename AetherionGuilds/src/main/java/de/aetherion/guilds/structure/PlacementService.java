@@ -74,7 +74,8 @@ public final class PlacementService {
         FORGE(StructureType.FORGE, "Forge", Material.BLAST_FURNACE, "Presses 128 Compressed into 1 Compacted."),
         OVERFLOW(StructureType.OVERFLOW, "Overflow Gate", Material.WAXED_WEATHERED_COPPER_GRATE, "Front first, sides take the spill."),
         SORTER(StructureType.SORTER, "Sorter", Material.WAXED_OXIDIZED_COPPER_GRATE, "One good out the front, the rest out the sides."),
-        DISMANTLE(null, "Take down", Material.BARRIER, "Removes belts and buildings. Half the cost comes back.");
+        DOCK(StructureType.DOCK, "Dock", Material.SPRUCE_BOAT, "Contracts and the airship. Belts end here."),
+        DISMANTLE(null, "Take down", Material.BARRIER, "Removes belts and buildings. Everything it cost comes back.");
 
         private final StructureType type;
         private final String label;
@@ -201,16 +202,36 @@ public final class PlacementService {
         if (part == Part.HUB) {
             return structures.hasWorkshop(host) ? "Your Hub already stands." : null;
         }
+        if (!offered(host, part)) {
+            return host.isGuild() ? "Docks are for your own island." : "Your Storage Huts do this job.";
+        }
         if (type.needsWorkshop() && !structures.hasWorkshop(host)) {
             return "Build your Hub first.";
         }
         if (!structures.unlocked(host, type)) {
-            de.aetherion.guilds.structure.BuildCosts.Unlock unlock = BuildCosts.unlock(type);
-            return unlock != null && structures.hubLevel(host) < unlock.hubLevel()
+            de.aetherion.guilds.structure.BuildCosts.Unlock unlock = BuildCosts.unlock(host, type);
+            if (unlock != null && !host.isGuild() && stageOf.applyAsInt(host) < unlock.stage()) {
+                return "Unlock it at your Hub (opens on " + de.aetherion.guilds.island.Stages.label(unlock.stage()) + ").";
+            }
+            return unlock != null && host.isGuild() && structures.hubLevel(host) < unlock.hubLevel()
                     ? "Unlock it at your Hub (needs Hub tier " + unlock.hubLevel() + ")."
                     : "Unlock it at your Hub first.";
         }
         return null;
+    }
+
+    private java.util.function.ToIntFunction<IslandHost> stageOf = host -> 0;
+
+    public void attachStage(java.util.function.ToIntFunction<IslandHost> stageOf) {
+        this.stageOf = stageOf == null ? host -> 0 : stageOf;
+    }
+
+    /** Does this kind of island have the part at all (personal: no Depot; guild: no Dock)? */
+    public static boolean offered(IslandHost host, Part part) {
+        if (host == null) {
+            return true;
+        }
+        return host.isGuild() ? part != Part.DOCK : part != Part.DEPOT;
     }
 
     /** The parts sneak+scroll walks through on this island, in order. */
@@ -226,18 +247,14 @@ public final class PlacementService {
 
     /** What a new pick defaults to: the next thing a fresh island needs, else the last pick. */
     private Part suggested(Player player, IslandHost host) {
+        if (!structures.hasWorkshop(host)) {
+            return Part.HUB; // the Hub comes first, everything else hangs off it
+        }
         if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
             return Part.STORAGE_HUT;
         }
         if (logistics.count(host) == 0) {
             return Part.BELT;
-        }
-        if (!structures.hasWorkshop(host)) {
-            for (LogisticsService.Route route : logistics.routes(host)) {
-                if (route.to() != null && route.from().type() == StructureType.QUARRY_HOUSING) {
-                    return Part.HUB; // first chain runs: the Hub is next
-                }
-            }
         }
         Part last = lastPart.get(player.getUniqueId());
         if (last != null && lockReason(host, last) == null) {
@@ -775,7 +792,7 @@ public final class PlacementService {
             session.armedUntil = now + CONFIRM_MS;
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.7f);
             actionBar(player, "§c§lRight-click again §7to take down your §f" + structure.label()
-                    + " §8(half its cost comes back)");
+                    + " §8(all of its cost comes back)");
             session.quietUntil = now + 1500L;
             return;
         }
@@ -813,7 +830,7 @@ public final class PlacementService {
         boolean armed = structure.id().equals(session.armed) && System.currentTimeMillis() <= session.armedUntil;
         bar(player, session, keep != null ? "§e" + structure.label() + " §8· §7" + keep
                 : armed ? "§c§lRight-click again §7to take down your §f" + structure.label()
-                : "§c✖ " + structure.label() + " §8· §fright-click §7take down §8(half its cost comes back)");
+                : "§c✖ " + structure.label() + " §8· §fright-click §7take down §8(all of its cost comes back)");
     }
 
     private void handleBelts(Player player, Session session, boolean rightClick, Block clicked) {

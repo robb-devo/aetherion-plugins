@@ -137,7 +137,24 @@ public final class LandService {
         return adjacentToOwned(parcels, px, pz) ? Status.BUYABLE : Status.OUT_OF_REACH;
     }
 
+    private java.util.function.Function<IslandHost, String> gate = host -> null;
+
+    /** Personal islands buy land from the Grand Hub stage on (null = allowed). */
+    public void attachGate(java.util.function.Function<IslandHost, String> gate) {
+        this.gate = gate == null ? host -> null : gate;
+    }
+
+    /** Why land can't be bought on this island yet (null when it can). */
+    public String gate(IslandHost host) {
+        return gate.apply(host);
+    }
+
     public boolean buy(Player player, IslandHost host, int px, int pz, boolean raiseLand) {
+        String closed = gate.apply(host);
+        if (closed != null) {
+            player.sendMessage("§c" + closed);
+            return false;
+        }
         if (!hosts.canAdmin(player, host)) {
             player.sendMessage(hosts.rankHint(host, "buy land (Mayor+)"));
             return false;

@@ -65,6 +65,7 @@ public final class PropBodies {
             case DEPOT -> 2.8f;
             case STORAGE_HUT -> hutWall(level) + 1.45f + (level >= 3 ? 0.5f : 0f);
             case WORKSHOP -> 0.6f + hubTower(level) + (level >= 3 ? 1.0f : 0.15f);
+            case DOCK -> 4.2f;
             default -> 3f;
         };
     }
@@ -118,12 +119,13 @@ public final class PropBodies {
             case DEPOT -> depot(parts, level);
             case STORAGE_HUT -> hut(parts, level);
             case WORKSHOP -> hub(parts, level);
+            case DOCK -> harbour(parts);
             default -> {
             }
         }
         if (type == StructureType.STORAGE_HUT) {
             wideIntakes(parts);
-        } else if (type != StructureType.WORKSHOP && (type != StructureType.QUARRY_HOUSING || !Props.QUARRY_SLIM.equals(templateId))) {
+        } else if (type != StructureType.WORKSHOP && type != StructureType.DOCK && (type != StructureType.QUARRY_HOUSING || !Props.QUARRY_SLIM.equals(templateId))) {
             ports(parts, type);
         }
         return parts;
@@ -446,6 +448,47 @@ public final class PropBodies {
         parts.add(new Part("", Bukkit.createBlockData("minecraft:chain[axis=y]"), null,
                 new Vector3f(0.05f, 2.2f, -1.2f), new Vector3f(1f, 1.0f, 1f), new Quaternionf(), false));
         lamp(parts, -1.32f, 1.15f, 1.32f);
+    }
+
+    /**
+     * The Dock: a plank quay on stilts, a mooring mast with a lantern at the back corner (where the airship ties
+     * up), a cargo crane over the loading bay and a few crates waiting. Green lips on every side: belts end here.
+     */
+    private static void harbour(List<Part> parts) {
+        box(parts, "", Material.SPRUCE_PLANKS, 0, 0.1f, 0, 3.0f, 0.2f, 3.0f);
+        box(parts, "", Material.STRIPPED_SPRUCE_LOG, 0, 0.26f, 1.42f, 3.0f, 0.12f, 0.16f);
+        box(parts, "", Material.STRIPPED_SPRUCE_LOG, 0, 0.26f, -1.42f, 3.0f, 0.12f, 0.16f);
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sz = -1; sz <= 1; sz += 2) {
+                box(parts, "", Material.STRIPPED_SPRUCE_LOG, sx * 1.3f, 0.5f, sz * 1.3f, 0.2f, 0.6f, 0.2f);
+            }
+        }
+        // the mooring mast and its lantern
+        box(parts, "", Material.STRIPPED_DARK_OAK_LOG, 1.1f, 1.9f, -1.1f, 0.26f, 3.4f, 0.26f);
+        box(parts, "", Material.DARK_OAK_PLANKS, 0.7f, 3.5f, -1.1f, 1.0f, 0.14f, 0.14f);
+        parts.add(new Part("", Bukkit.createBlockData("minecraft:lantern[hanging=true]"), null,
+                new Vector3f(0.3f, 3.15f, -1.1f), new Vector3f(0.5f, 0.5f, 0.5f), new Quaternionf(), true));
+        parts.add(new Part("", Material.RED_WOOL.createBlockData(), null, new Vector3f(1.38f, 3.3f, -1.1f),
+                new Vector3f(0.5f, 0.32f, 0.04f), new Quaternionf(), false));
+        // the cargo crane over the bay
+        box(parts, "", Material.STRIPPED_SPRUCE_LOG, -1.15f, 1.25f, -1.15f, 0.2f, 2.1f, 0.2f);
+        spin(parts, "jib", Material.SPRUCE_PLANKS, -1.15f, 2.35f, -1.15f, 2.2f, 0.16f, 0.16f, new Quaternionf());
+        parts.add(new Part("", Bukkit.createBlockData("minecraft:chain[axis=y]"), null,
+                new Vector3f(-0.15f, 1.85f, -1.15f), new Vector3f(1f, 0.9f, 1f), new Quaternionf(), false));
+        // crates on the quay
+        box(parts, "", Material.BARREL, -0.75f, 0.52f, 0.65f, 0.62f, 0.62f, 0.62f);
+        box(parts, "", Material.SPRUCE_PLANKS, -0.05f, 0.47f, 0.85f, 0.52f, 0.52f, 0.52f);
+        box(parts, "", Material.STRIPPED_OAK_WOOD, -0.7f, 1.1f, 0.65f, 0.48f, 0.48f, 0.48f);
+        lamp(parts, 1.32f, 0.95f, 1.32f);
+        // no chute: green lips on all four sides, belts end here from anywhere
+        parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(0, 0.3f, 1.52f),
+                new Vector3f(0.8f, 0.08f, 0.06f), new Quaternionf(), true));
+        parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(0, 0.3f, -1.52f),
+                new Vector3f(0.8f, 0.08f, 0.06f), new Quaternionf(), true));
+        parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(-1.52f, 0.3f, 0),
+                new Vector3f(0.06f, 0.08f, 0.8f), new Quaternionf(), true));
+        parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(1.52f, 0.3f, 0),
+                new Vector3f(0.06f, 0.08f, 0.8f), new Quaternionf(), true));
     }
 
     /** Where crates stand (fill shows as crates: empty → stacked full). The hut stacks a 4x3 grid per storey. */

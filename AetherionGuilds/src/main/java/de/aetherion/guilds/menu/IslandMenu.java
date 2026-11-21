@@ -85,6 +85,15 @@ public final class IslandMenu implements MenuKit.Menu {
         this.goals = goals;
     }
 
+    private de.aetherion.guilds.island.DockService dock;
+    private DockMenu dockMenu;
+
+    /** The stage ladder replaces the coin Island Tier on this page. */
+    public void attachDock(de.aetherion.guilds.island.DockService dock, DockMenu dockMenu) {
+        this.dock = dock;
+        this.dockMenu = dockMenu;
+    }
+
     public IslandMenu(PersonalIslandService islands, MinionService minions, FriendMenu friends, BiomeSelectMenu biomes) {
         this.islands = islands;
         this.minions = minions;
@@ -183,6 +192,11 @@ public final class IslandMenu implements MenuKit.Menu {
             lore.add("§7Buy land touching yours; new");
             lore.add("§7ground rises there in your");
             lore.add("§7island's look.");
+            String closed = landService == null ? null : landService.gate(host);
+            if (closed != null) {
+                lore.add("");
+                lore.add("§c🔒 Opens on " + de.aetherion.guilds.island.Stages.label(3));
+            }
             lore.add("");
             lore.add("§e▶ Open the land map");
             inventory.setItem(LAND, MenuKit.tile(Material.FILLED_MAP, "§b§lLand", lore, false));
@@ -190,7 +204,7 @@ public final class IslandMenu implements MenuKit.Menu {
 
         inventory.setItem(HOME, MenuKit.named(Material.OAK_DOOR, "§aGo Home", "§7Teleport to your island.", "",
                 "§e▶ Click"));
-        inventory.setItem(TIER, tierTile(island));
+        inventory.setItem(TIER, dock != null ? stageTile(island) : tierTile(island));
         inventory.setItem(GUIDE, guideTile(island));
         inventory.setItem(FRIENDS, MenuKit.named(Material.PLAYER_HEAD, "§bFriends & Visits",
                 "§7Friends can visit your island", "§7while the server is online.", "", "§e▶ Open friends"));
@@ -273,6 +287,29 @@ public final class IslandMenu implements MenuKit.Menu {
         lore.add("");
         lore.add("§e▶ Open production");
         return lore;
+    }
+
+    private ItemStack stageTile(PersonalIsland island) {
+        IslandHost host = IslandHost.personal(island.ownerId());
+        int stage = dock.stage(host);
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Island Tier §f" + island.islandLevel() + " §8· §7quarries up to §fLv"
+                + de.aetherion.guilds.island.Stages.quarryCap(stage));
+        lore.add("");
+        if (stage >= de.aetherion.guilds.island.Stages.MAX) {
+            lore.add("§aEvery stage reached.");
+            lore.add("§7Contracts keep coming at the Dock.");
+        } else {
+            lore.add("§7Next: §f" + de.aetherion.guilds.island.Stages.label(stage + 1));
+            lore.addAll(de.aetherion.guilds.island.Stages.perks(stage + 1));
+            lore.add("");
+            lore.add("§7Ship the phase contract at");
+            lore.add("§7your §fDock §7to get there.");
+        }
+        lore.add("");
+        lore.add(dock.dock(host) != null ? "§e▶ Open the Dock" : "§8No Dock yet: unlock it at the Hub.");
+        return MenuKit.named(stage >= de.aetherion.guilds.island.Stages.MAX ? Material.NETHER_STAR : Material.BEACON,
+                "§6" + de.aetherion.guilds.island.Stages.label(stage), lore);
     }
 
     private ItemStack tierTile(PersonalIsland island) {
@@ -431,6 +468,16 @@ public final class IslandMenu implements MenuKit.Menu {
                 islands.goHome(player);
             }
             case TIER -> {
+                if (dock != null) {
+                    IslandHost own = IslandHost.personal(player.getUniqueId());
+                    if (dock.dock(own) != null && dockMenu != null) {
+                        dockMenu.open(player, own);
+                    } else {
+                        player.sendMessage("§7Your island grows stage by stage: unlock and build a §fDock §7at the Hub,"
+                                + " then ship its phase contract.");
+                    }
+                    return;
+                }
                 islands.upgradeIsland(player);
                 open(player);
             }

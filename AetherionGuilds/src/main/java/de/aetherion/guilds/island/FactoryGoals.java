@@ -34,7 +34,26 @@ import java.util.function.BiPredicate;
  */
 public final class FactoryGoals {
 
-    public record Goal(String id, String title, String how, long reward, BiPredicate<FactoryGoals, IslandHost> done) {
+    /** Where a goal applies: both kinds of island, only personal ones (the stage ladder) or only guild ones. */
+    public enum Scope {
+        BOTH,
+        PERSONAL,
+        GUILD
+    }
+
+    public record Goal(String id, String title, String how, long reward, BiPredicate<FactoryGoals, IslandHost> done,
+                       Scope scope) {
+        public Goal(String id, String title, String how, long reward, BiPredicate<FactoryGoals, IslandHost> done) {
+            this(id, title, how, reward, done, Scope.BOTH);
+        }
+
+        public boolean applies(IslandHost host) {
+            return switch (scope) {
+                case PERSONAL -> host != null && !host.isGuild();
+                case GUILD -> host != null && host.isGuild();
+                default -> true;
+            };
+        }
     }
 
     private final JavaPlugin plugin;
@@ -43,44 +62,77 @@ public final class FactoryGoals {
     private final LogisticsService logistics;
     private final Map<String, Set<String>> rewarded = new HashMap<>();
     private boolean dirty;
+    /** Personal islands: their stage (0..3) and how often they pressed by hand (DockService). */
+    private java.util.function.ToIntFunction<IslandHost> stage = host -> 0;
+    private java.util.function.ToIntFunction<IslandHost> pressed = host -> 0;
+
+    public void attachStages(java.util.function.ToIntFunction<IslandHost> stage,
+                             java.util.function.ToIntFunction<IslandHost> pressed) {
+        if (stage != null) {
+            this.stage = stage;
+        }
+        if (pressed != null) {
+            this.pressed = pressed;
+        }
+    }
+
+    int stage(IslandHost host) {
+        return host == null || host.isGuild() ? -1 : stage.applyAsInt(host);
+    }
 
     /*
-     * The first three are the guided line the isle hand walks (Hub → quarry belted into the hut → Mill in the
-     * line); the Forge and Compacted Cobble come right after as the first goals of your own. The island bar,
-     * /island, the Hub, Production and the guide all show the first one not done, so they always agree.
+     * Personal islands climb the stage ladder: the tour (Hub, first chain, the hand press, the Mill in the line,
+     * the Dock, the first ship) is stage 0; then each stage's goals, its phase contract last. Guild islands keep
+     * the Hub-tier ladder. The island bar, /island, the Hub, Production and the guide all show the first one not
+     * done, so they always agree.
      */
     private final List<Goal> goals = List.of(
             new Goal("hub", "Found your Hub", "Build Tool → Hub, anywhere you like (unlocks machines)",
                     3_000L, (g, h) -> g.structures.hasWorkshop(h)),
             new Goal("first_chain", "First chain", "Belt quarry chute → Storage Hut",
                     2_000L, (g, h) -> g.sourceLines(h) >= 1),
-
+            new Goal("press", "Press Compressed Cobble by hand", "Hub lectern → Hand Press (128 Cobblestone from storage)",
+                    1_000L, (g, h) -> g.pressed.applyAsInt(h) > 0 || g.stage(h) >= 1
+                    || g.structures.count(h, StructureType.MILL) > 0, Scope.PERSONAL),
             new Goal("mill_line", "Mill in the line", "Unlock → build → belt quarry → Mill → hut",
                     5_000L, (g, h) -> g.inLine(h, StructureType.MILL)),
+            new Goal("dock", "Build your Dock", "Unlock it at the Hub (4 Compressed Cobble), then Build Tool → Dock",
+                    3_000L, (g, h) -> g.structures.count(h, StructureType.DOCK) > 0 || g.stage(h) >= 1, Scope.PERSONAL),
+            new Goal("first_ship", "Send your first ship", "Dock → First Shipment: 4 Compressed Cobble, then the airship",
+                    1_000L, (g, h) -> g.stage(h) >= 1, Scope.PERSONAL),
+            // stage 1, the Werkhof
+            new Goal("two_quarries", "Run two quarries into your line", "Set down your second quarry and belt it into a line.",
+                    8_000L, (g, h) -> g.sourceLines(h) >= 2),
+            new Goal("split", "Split a line with a Splitter", "Unlock it at the Hub. Build Tool → Splitter onto a belt, then a second belt away from its side.",
+                    10_000L, (g, h) -> g.pieceExits(h, StructureType.SPLITTER) >= 2),
+            new Goal("loft", "Grow your Storage Hut into a Loft", "Hub lectern → Production → the hut → Upgrade.",
+                    15_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 2),
+            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Then the Overflow Gate and Sorter can be unlocked.",
+                    18_000L, (g, h) -> g.structures.hubLevel(h) >= 2, Scope.GUILD),
+            new Goal("stage2", "Reach the Foreman's Hall", "Dock → Werkhof Order: Compressed Cobble and your trade's goods.",
+                    18_000L, (g, h) -> g.stage(h) >= 2, Scope.PERSONAL),
+            // stage 2, the Foreman's Hall
             new Goal("forge_line", "Forge in the line", "Unlock → build → belt Mill → Forge → hut",
                     8_000L, (g, h) -> g.inLine(h, StructureType.FORGE)),
             new Goal("compacted", "Compacted Cobble in storage", "Quarry → Mill → Forge → hut",
                     12_000L, (g, h) -> g.compactedInStorage(h) > 0L),
-            new Goal("two_quarries", "Run two quarries into your line", "Set down a second quarry and belt it into the same line.",
-                    8_000L, (g, h) -> g.sourceLines(h) >= 2),
-            new Goal("split", "Split a line with a Splitter", "Unlock it at the Hub. Build Tool → Splitter onto a belt, then a second belt away from its side.",
-                    10_000L, (g, h) -> g.pieceExits(h, StructureType.SPLITTER) >= 2),
-            new Goal("loft", "Grow your Storage Hut into a Loft", "Right-click the hut → Upgrade.",
-                    15_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 2),
-            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Then the Overflow Gate and Sorter can be unlocked.",
-                    18_000L, (g, h) -> g.structures.hubLevel(h) >= 2),
             new Goal("sort", "Sort goods with a Sorter", "Set a Sorter into a line, pick a good, give it a front and a side belt.",
                     20_000L, (g, h) -> g.sorterWorks(h)),
             new Goal("overflow", "Catch the spill with an Overflow Gate", "Front belt to one hut, side belt to another: the side fills when the front is full.",
                     25_000L, (g, h) -> g.pieceExits(h, StructureType.OVERFLOW) >= 2),
+            new Goal("warehouse", "Grow a Warehouse", "Upgrade the Storage Loft once more.",
+                    40_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 3),
+            new Goal("stage3", "Reach the Grand Hub", "Dock → Foreman's Order: Compacted Cobble and your trade's goods.",
+                    60_000L, (g, h) -> g.stage(h) >= 3, Scope.PERSONAL),
+            // stage 3, the Grand Hub
             new Goal("long_line", "Build a line through 4 machines", "Quarry → piece → Mill → Forge → hut, or any line four stops long.",
                     60_000L, (g, h) -> g.longestLine(h) >= 4),
-            new Goal("tier3", "Raise your Island Tier to 3", "Island menu → Tier. More belts and one more of every machine.",
-                    80_000L, (g, h) -> g.hosts.tier(h) >= 3),
+            new Goal("land", "Buy a parcel of land", "Island menu → Land: new ground next to yours.",
+                    40_000L, (g, h) -> g.hosts.parcels(h).size() > LandService.initialParcels().size(), Scope.PERSONAL),
+            new Goal("tier3", "Raise your Island Tier to 3", "Guild menu → Tier. More belts and one more of every machine.",
+                    80_000L, (g, h) -> g.hosts.tier(h) >= 3, Scope.GUILD),
             new Goal("hub3", "Raise the Grand Hub", "Hub lectern → Hub tier. Every Mill and Forge runs twice as fast.",
-                    100_000L, (g, h) -> g.structures.hubLevel(h) >= 3),
-            new Goal("warehouse", "Grow a Warehouse", "Right-click the Storage Loft → Upgrade.",
-                    120_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 3));
+                    100_000L, (g, h) -> g.structures.hubLevel(h) >= 3, Scope.GUILD));
 
     /** Goals whose moment someone else stages with its own title (the first chain and Hub, Hollis' finale). */
     private BiPredicate<IslandHost, String> titleOwned = (host, id) -> false;
@@ -108,7 +160,7 @@ public final class FactoryGoals {
     /** The first goal not done yet, or null when the ladder is climbed. */
     public Goal next(IslandHost host) {
         for (Goal goal : goals) {
-            if (!goal.done().test(this, host)) {
+            if (goal.applies(host) && !goal.done().test(this, host)) {
                 return goal;
             }
         }
@@ -118,7 +170,7 @@ public final class FactoryGoals {
     public int doneCount(IslandHost host) {
         int n = 0;
         for (Goal goal : goals) {
-            if (goal.done().test(this, host)) {
+            if (goal.applies(host) && goal.done().test(this, host)) {
                 n++;
             }
         }
@@ -135,7 +187,7 @@ public final class FactoryGoals {
             if (doneCount(host) > 2) {
                 // an island that was already running before the ladder existed: no burst of old beats
                 for (Goal goal : goals) {
-                    if (goal.done().test(this, host)) {
+                    if (goal.applies(host) && goal.done().test(this, host)) {
                         got.add(goal.id());
                     }
                 }
@@ -147,7 +199,7 @@ public final class FactoryGoals {
             }
         }
         for (Goal goal : goals) {
-            if (got.contains(goal.id()) || !goal.done().test(this, host)) {
+            if (!goal.applies(host) || got.contains(goal.id()) || !goal.done().test(this, host)) {
                 continue;
             }
             got.add(goal.id());

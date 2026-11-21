@@ -118,7 +118,7 @@ public final class PieceMenu implements MenuKit.Menu {
             }
         }
         inventory.setItem(DECONSTRUCT, MenuKit.named(Material.IRON_AXE, "§cTake it down",
-                "§7Only when empty. Half the coins back.", "§7The belts around it stay.", "§eShift-click §7to confirm"));
+                "§7Only when empty. Everything it cost comes back.", "§7The belts around it stay.", "§eShift-click §7to confirm"));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);

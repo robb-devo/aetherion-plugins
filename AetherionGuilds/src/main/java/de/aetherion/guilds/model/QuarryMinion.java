@@ -155,8 +155,19 @@ public final class QuarryMinion {
         this.visualId = visualId;
     }
 
+    /** Session-only speed factor (stage 0 of a personal island: the first quarry digs faster while you learn). */
+    private transient int boost = 1;
+
+    public int boost() {
+        return boost;
+    }
+
+    public void setBoost(int boost) {
+        this.boost = Math.max(1, Math.min(50, boost));
+    }
+
     public int perTick() {
-        return quarryType().perTick(level);
+        return quarryType().perTick(level) * boost;
     }
 
     public int cap() {

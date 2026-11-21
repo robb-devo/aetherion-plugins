@@ -68,7 +68,16 @@ public enum StructureType {
             6_000L, null, 4, true, true, 262_144L, 0,
             List.of("§7Pick one good. That good leaves",
                     "§7by the §ffront §7belt, everything",
-                    "§7else by the §fsides§7."));
+                    "§7else by the §fsides§7.")),
+    /*
+     * The Dock (personal islands): where contracts are filled and the airship comes in. Belts end here; what a
+     * belt brings goes straight into the open contracts (never into storage), so a full Dock backs its line up.
+     */
+    DOCK("dock", "Dock", Material.SPRUCE_BOAT, Props.DOCK, Role.EXPORT,
+            0L, null, 1, true, true, 0L, 0,
+            List.of("§7Contracts come in here. Belt",
+                    "§7goods in or load them from",
+                    "§7storage; the airship collects."));
 
     public enum Role {
         SOURCE,
@@ -77,7 +86,9 @@ public enum StructureType {
         UTILITY,
         DECOR,
         /** Splitter / Overflow Gate / Sorter: no recipe, only decides which exit goods take. */
-        ROUTER
+        ROUTER,
+        /** The Dock: belts end here and fill its contracts (goods leave the island by airship). */
+        EXPORT
     }
 
     /** Slim drill rig over a quarry, used when a full housing has no room (belts start next to it). */
@@ -185,7 +196,7 @@ public enum StructureType {
     }
 
     public boolean acceptsInput() {
-        return role == Role.SINK || role == Role.PROCESSOR || role == Role.ROUTER;
+        return role == Role.SINK || role == Role.PROCESSOR || role == Role.ROUTER || role == Role.EXPORT;
     }
 
     public boolean router() {
@@ -201,7 +212,7 @@ public enum StructureType {
         if (!buildable) {
             return Integer.MAX_VALUE;
         }
-        if (this == WORKSHOP) {
+        if (this == WORKSHOP || this == DOCK) {
             return 1;
         }
         return baseMax + IslandTiers.structureBonus(tier);

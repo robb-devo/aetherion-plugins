@@ -99,7 +99,7 @@ public final class StorageMenu implements MenuKit.Menu {
         inventory.setItem(TAKE_ALL, MenuKit.named(Material.HOPPER, "§aTake everything",
                 "§7As much as fits in your inventory."));
         inventory.setItem(DECONSTRUCT, MenuKit.named(Material.IRON_AXE, "§cTake it down",
-                "§7Only when empty. Half the coins back.",
+                "§7Only when empty. Everything it cost comes back.",
                 "§eShift-click §7to confirm"));
         org.bukkit.inventory.ItemStack upgrade = UpgradeTile.of(player, structures, structure);
         if (upgrade != null) {

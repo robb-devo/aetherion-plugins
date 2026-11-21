@@ -123,7 +123,16 @@ public final class QuarryMenu {
                         ? "§eClick"
                         : "§eClick §7for crafted packs first."
         ));
-        if (minion.canUpgrade()) {
+        String stageGate = holder.personal() && personal != null
+                ? minions.levelGate(personal.byOwner(holder.ownerId()), minion) : null;
+        if (minion.canUpgrade() && stageGate != null) {
+            inventory.setItem(UPGRADE_SLOT, named(
+                    Material.IRON_BARS,
+                    "§7Upgrade to Lv." + (minion.level() + 1) + " §8(locked)",
+                    "§c🔒 " + stageGate.replace(". ", ".\n").split("\n")[0],
+                    "§7" + (stageGate.contains(". ") ? stageGate.substring(stageGate.indexOf(". ") + 2) : "")
+            ));
+        } else if (minion.canUpgrade()) {
             inventory.setItem(UPGRADE_SLOT, named(
                     Material.EXPERIENCE_BOTTLE,
                     "§eUpgrade to Lv." + (minion.level() + 1),

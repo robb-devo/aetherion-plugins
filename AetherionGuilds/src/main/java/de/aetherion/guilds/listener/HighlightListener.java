@@ -77,6 +77,12 @@ public final class HighlightListener implements Listener {
     private de.aetherion.guilds.menu.PieceMenu pieceMenu;
     private de.aetherion.guilds.menu.HubMenu hubMenu;
 
+    private de.aetherion.guilds.menu.DockMenu dockMenu;
+
+    public void attachDock(de.aetherion.guilds.menu.DockMenu dockMenu) {
+        this.dockMenu = dockMenu;
+    }
+
     public void attachHub(de.aetherion.guilds.menu.HubMenu hubMenu) {
         this.hubMenu = hubMenu;
     }
@@ -231,6 +237,12 @@ public final class HighlightListener implements Listener {
             case PROJECT -> {
                 if (type == Material.LECTERN) {
                     projectMenu.open(player);
+                    return true;
+                }
+            }
+            case DOCK -> {
+                if (dockMenu != null) {
+                    dockMenu.open(player, structure.host());
                     return true;
                 }
             }

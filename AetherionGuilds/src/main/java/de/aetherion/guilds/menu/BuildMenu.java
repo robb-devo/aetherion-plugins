@@ -86,6 +86,9 @@ public final class BuildMenu implements MenuKit.Menu {
             if (part == PlacementService.Part.HUB && structures.hasWorkshop(host)) {
                 continue;
             }
+            if (!PlacementService.offered(host, part)) {
+                continue;
+            }
             parts.add(part);
         }
         return parts;
@@ -155,7 +158,7 @@ public final class BuildMenu implements MenuKit.Menu {
         String locked = placement.lockReason(host, part);
         lore.add("");
         if (locked != null) {
-            BuildCosts.Unlock unlock = type == null ? null : BuildCosts.unlock(type);
+            BuildCosts.Unlock unlock = type == null ? null : BuildCosts.unlock(host, type);
             lore.add("§c🔒 " + locked);
             if (unlock != null) {
                 lore.add("§7Unlock price: §f" + BuildCosts.describe(unlock.price()));

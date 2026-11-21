@@ -682,6 +682,15 @@ public final class StructureService {
         return taken;
     }
 
+    /** Takes up to {@code amount} of a good from the island's storage; returns how many it took. */
+    public long takeStock(IslandHost host, Res res, long amount) {
+        long taken = takeGoods(host, res, Math.max(0L, amount));
+        if (taken > 0L) {
+            dirty = true;
+        }
+        return taken;
+    }
+
     /** Gives goods back to the island's storage (huts with room first); what doesn't fit goes to the player. */
     public void giveGoods(Player player, IslandHost host, Res res, long amount) {
         long left = amount;
@@ -776,6 +785,7 @@ public final class StructureService {
             case MILL, FORGE -> "§7Belt in on any side, belt out from the chute at the front.";
             case DEPOT -> "§7End any belt here.";
             case SPLITTER, OVERFLOW, SORTER -> "§7Belts leading away from it are its exits.";
+            case DOCK -> "§7Belt goods in, or right-click it and load contracts from storage.";
             default -> "";
         };
     }
@@ -1215,7 +1225,11 @@ public final class StructureService {
         if (!atDesk(player, host)) {
             return "Upgrades are done at your Hub: right-click its lectern.";
         }
-        if (hosts.tier(host) < tier.minIslandTier()) {
+        String stageGate = upgradeGate.apply(structure, tier.level());
+        if (stageGate != null) {
+            return stageGate;
+        }
+        if (host.isGuild() && hosts.tier(host) < tier.minIslandTier()) {
             return "Needs Island Tier " + tier.minIslandTier() + ".";
         }
         long coinsNeeded = 0L;
@@ -1244,6 +1258,37 @@ public final class StructureService {
             return "Needs " + GuildFormat.compact(coinsNeeded - coinsHave) + " more coins.";
         }
         return spaceProblem(structure, tier.level());
+    }
+
+    private java.util.function.BiFunction<PlacedStructure, Integer, String> upgradeGate = (structure, level) -> null;
+
+    /** Personal islands: the stage decides which tiers a building may grow to (the Hub follows the stage). */
+    public void attachUpgradeGate(java.util.function.BiFunction<PlacedStructure, Integer, String> gate) {
+        this.upgradeGate = gate == null ? (structure, level) -> null : gate;
+    }
+
+    /**
+     * Raises a building to {@code level} for free (the Hub when a stage is reached). Props grow by their look,
+     * so this only sets the tier and redraws; never lowers.
+     */
+    public void raiseFree(PlacedStructure structure, int level) {
+        if (structure == null || level <= structure.level() || structure.building()) {
+            return;
+        }
+        int to = Math.min(level, StructureUpgrades.maxLevel(structure.type()));
+        if (to <= structure.level()) {
+            return;
+        }
+        structure.setLevel(to);
+        dirty = true;
+        changeListener.accept(structure.host());
+        World world = Bukkit.getWorld(structure.world());
+        milestone.accept(structure.host(), "first_upgrade");
+        if (world != null) {
+            Location top = new Location(world, structure.x() + 0.5, structure.maxY() + 1.0, structure.z() + 0.5);
+            de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 40, Math.max(1.2, 1.2), null);
+            world.playSound(top, Sound.BLOCK_SMITHING_TABLE_USE, 1f, 0.9f);
+        }
     }
 
     private static boolean legacy(PlacedStructure structure) {

@@ -71,6 +71,12 @@ public final class ProductionMenu implements MenuKit.Menu {
         this.build = build;
     }
 
+    private DockMenu dockMenu;
+
+    public void attachDock(DockMenu dockMenu) {
+        this.dockMenu = dockMenu;
+    }
+
     public void attachElevation(PieceMenu pieces, de.aetherion.guilds.island.FactoryGoals goals) {
         this.pieces = pieces;
         this.goals = goals;
@@ -173,6 +179,11 @@ public final class ProductionMenu implements MenuKit.Menu {
                     lore.add("§7Front: §f" + LogisticsService.filterName(structure.filter()));
                 }
                 lore.add(logistics.summary(structure));
+            }
+            case EXPORT -> {
+                lore.add(state.tag());
+                lore.add(logistics.summary(structure));
+                lore.add("§7Contracts and the airship.");
             }
             default -> lore.add("§7Your Hub: its lectern is the factory desk.");
         }
@@ -278,6 +289,8 @@ public final class ProductionMenu implements MenuKit.Menu {
                         machine.open(player, structure);
                     } else if (structure.type().router() && pieces != null) {
                         pieces.open(player, structure);
+                    } else if (structure.type() == StructureType.DOCK && dockMenu != null) {
+                        dockMenu.open(player, host);
                     }
                     return;
                 }

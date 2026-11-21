@@ -88,6 +88,7 @@ public final class AetherionGuilds extends JavaPlugin {
     private de.aetherion.guilds.island.FactoryGoals goals;
     private de.aetherion.guilds.island.IslandFiles islandFiles;
     private de.aetherion.guilds.island.FactoryProgress progress;
+    private de.aetherion.guilds.island.DockService dock;
     private de.aetherion.core.api.IslandAccess islandAccess;
 
     @Override
@@ -172,17 +173,35 @@ public final class AetherionGuilds extends JavaPlugin {
         de.aetherion.guilds.menu.HubMenu hubMenu = new de.aetherion.guilds.menu.HubMenu(hosts, structures, logistics,
                 placement, buildMenu, productionMenu, marketMenu, goals);
         hubMenu.attachProgress(progress);
+        // package 3: the stage ladder and the Dock (personal islands)
+        dock = new de.aetherion.guilds.island.DockService(this, hosts, personal, structures, minions, islandFiles);
+        getServer().getPluginManager().registerEvents(dock, this);
+        logistics.attachExport(dock);
+        structures.attachUpgradeGate((structure, level) -> dock.upgradeGate(structure.host(), structure.type(), level));
+        minions.attachLevelGate(dock::quarryGate);
+        personal.attachTierGate(island -> "Your Island Tier grows with your island's stage: ship the phase contract at your Dock.");
+        land.attachGate(dock::landGate);
+        placement.attachStage(dock::stage);
+        goals.attachStages(dock::stage, dock::pressed);
+        de.aetherion.guilds.menu.DockMenu dockMenu = new de.aetherion.guilds.menu.DockMenu(hosts, structures, dock);
+        dockMenu.attachHub(hubMenu::open);
+        hubMenu.attachDock(dock, dockMenu);
+        productionMenu.attachDock(dockMenu);
+        islandMenu.attachDock(dock, dockMenu);
         de.aetherion.guilds.island.HubRitual hubRitual = new de.aetherion.guilds.island.HubRitual(this);
         structures.onHubFounded(hubRitual::play);
         logistics.setHubFooter(host -> {
             de.aetherion.guilds.structure.StructureType tour = guide == null ? null : guide.tourUnlock(host);
             de.aetherion.guilds.structure.BuildCosts.Unlock unlock = tour != null
-                    ? de.aetherion.guilds.structure.BuildCosts.unlock(tour) : progress.next(host);
-            String board = tour != null
+                    ? de.aetherion.guilds.structure.BuildCosts.unlock(host, tour) : progress.next(host);
+            boolean staged = !host.isGuild() && dock != null;
+            String board = unlock == null ? ""
+                    : tour != null
                     ? "§6◆ Unlock: §f" + de.aetherion.guilds.structure.PlacementService.Part.of(tour).label()
-                    + " §8(free on " + guide.name() + "'s tour)\n"
-                    : unlock == null ? ""
-                    : structures.hubLevel(host) >= unlock.hubLevel()
+                    + " §8(" + de.aetherion.guilds.structure.BuildCosts.describe(unlock.price()) + ")\n"
+                    : staged && dock.stage(host) < unlock.stage()
+                    ? "§6◆ Next: §f" + de.aetherion.guilds.island.Stages.label(unlock.stage()) + " §8(ship the phase contract)\n"
+                    : staged || structures.hubLevel(host) >= unlock.hubLevel()
                     ? "§6◆ Next unlock: §f" + de.aetherion.guilds.structure.PlacementService.Part.of(unlock.type()).label()
                     + " §8(" + de.aetherion.guilds.structure.BuildCosts.describe(unlock.price()) + ")\n"
                     : "§6◆ Next: §fHub tier " + unlock.hubLevel() + " §8(unlocks " + de.aetherion.guilds.structure
@@ -198,6 +217,8 @@ public final class AetherionGuilds extends JavaPlugin {
         structures.attachFreeFirst(guide::freeFirst);
         goals.attachTitleOwner(guide::ownsTitle);
         guide.register();
+        guide.attachDock(dock, dockMenu::open);
+        dock.attachVoice(guide::say);
         unlock.attachGuide(guide);
         unlock.onClaim(host -> progress.milestone(host, "start"));
         unlock.attachStarterQuarry(() -> minions.createQuarryItem(de.aetherion.guilds.model.QuarryType.COBBLESTONE));
@@ -250,6 +271,7 @@ public final class AetherionGuilds extends JavaPlugin {
             guide.forget(island.ownerId());
             goals.forget(IslandHost.personal(island.ownerId()));
             progress.forget(IslandHost.personal(island.ownerId()));
+            dock.forget(island.ownerId());
         });
         guilds.setRemovalHook(guild -> {
             dropHost(IslandHost.guild(guild.id()));
@@ -270,6 +292,7 @@ public final class AetherionGuilds extends JavaPlugin {
                 placement, unlock, projects, minions, buildMenu, storageMenu, machineMenu, quarryMenu, projectMenu);
         highlightListener.attachPieces(pieceMenu);
         highlightListener.attachHub(hubMenu);
+        highlightListener.attachDock(dockMenu);
         getServer().getPluginManager().registerEvents(highlightListener, this);
 
         GuildCommand command = new GuildCommand(guilds, minions, menu);
@@ -282,6 +305,7 @@ public final class AetherionGuilds extends JavaPlugin {
         IslandCommand islandCommand = new IslandCommand(personal, islandMenu, biomeMenu);
         islandCommand.attachHighlight(highlight);
         islandCommand.attachFunnel(progress::report);
+        islandCommand.attachDock(dock);
         var island = getCommand("island");
         if (island != null) {
             island.setExecutor(islandCommand);
@@ -321,6 +345,7 @@ public final class AetherionGuilds extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, voidScrubber::tick, 60L, 1L);
         getServer().getScheduler().runTaskTimer(this, guide::tick, 60L, 2L);
         getServer().getScheduler().runTaskTimer(this, islandBar::tick, 40L, 20L);
+        getServer().getScheduler().runTaskTimer(this, dock::tick, 40L, 20L);
         getServer().getScheduler().runTaskTimer(this, () -> {
             minions.catchUpAll();
             logistics.stepAll();
@@ -332,6 +357,7 @@ public final class AetherionGuilds extends JavaPlugin {
             guide.saveIfDirty();
             goals.saveIfDirty();
             progress.saveIfDirty();
+            dock.saveIfDirty();
         }, 20L * 60, 20L * 60);
 
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -450,6 +476,10 @@ public final class AetherionGuilds extends JavaPlugin {
         }
         if (progress != null) {
             progress.saveIfDirty();
+        }
+        if (dock != null) {
+            dock.clearAirships();
+            dock.saveIfDirty();
         }
         if (projects != null) {
             projects.save();

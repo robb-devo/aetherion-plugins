@@ -50,6 +50,8 @@ guide:
   skin: MHF_Villager
   free-belt-tiles: 16             # the first belt the guide hands out: these tiles cost nothing
   factory-belt-tiles: 24          # act two (the Mill): free belt tiles topped up for its belts
+stages:
+  ramp-multiplier: 10             # stage 0 (the tour): every quarry of a personal island digs this many times as fast
 island-bar:
   enabled: true                   # calm island status bar; quest/hint bars step aside on island worlds either way
 

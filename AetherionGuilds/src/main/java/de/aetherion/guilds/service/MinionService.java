@@ -69,6 +69,18 @@ public final class MinionService {
         this.hooks = hooks;
     }
 
+    private java.util.function.BiFunction<PersonalIsland, Integer, String> levelGate = (island, level) -> null;
+
+    /** Personal islands: the island's stage caps the quarry level (null = allowed). */
+    public void attachLevelGate(java.util.function.BiFunction<PersonalIsland, Integer, String> gate) {
+        this.levelGate = gate == null ? (island, level) -> null : gate;
+    }
+
+    /** Why this quarry can't take its next level on its island's stage (null when it can, or on guild islands). */
+    public String levelGate(PersonalIsland island, QuarryMinion minion) {
+        return island == null || minion == null ? null : levelGate.apply(island, minion.level() + 1);
+    }
+
     public NamespacedKey itemKey() {
         return new NamespacedKey(plugin, "quarry_item");
     }
@@ -1099,6 +1111,11 @@ public final class MinionService {
         }
         if (!minion.canUpgrade()) {
             player.sendMessage("§cThis quarry is already max level.");
+            return false;
+        }
+        String gate = ref.isPersonal() ? levelGate.apply(ref.island(), minion.level() + 1) : null;
+        if (gate != null) {
+            player.sendMessage("§c" + gate);
             return false;
         }
         QuarryType type = minion.quarryType();
