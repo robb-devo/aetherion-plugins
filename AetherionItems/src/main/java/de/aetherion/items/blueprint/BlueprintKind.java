@@ -134,6 +134,26 @@ public enum BlueprintKind {
         return all[java.util.concurrent.ThreadLocalRandom.current().nextInt(all.length)];
     }
 
+    /**
+     * Bad-luck protection: a kind the player has not found yet, until they own every kind.
+     * After that any kind can drop again.
+     */
+    public static BlueprintKind randomMissing(java.util.Set<String> owned) {
+        if (owned == null || owned.isEmpty()) {
+            return random();
+        }
+        java.util.List<BlueprintKind> missing = new java.util.ArrayList<>();
+        for (BlueprintKind kind : values()) {
+            if (!owned.contains(kind.id)) {
+                missing.add(kind);
+            }
+        }
+        if (missing.isEmpty()) {
+            return random();
+        }
+        return missing.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(missing.size()));
+    }
+
     public static CustomItem customItem() {
         AetherionItems plugin = AetherionItems.getInstance();
         return plugin == null ? null : plugin.getCustomItem();
