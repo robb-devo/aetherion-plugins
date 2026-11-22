@@ -272,6 +272,8 @@ public final class UnlockService {
     /** Starter picked: paste, then drift down onto it. */
     public void claim(Player player, PersonalIsland island, StarterLayout starter) {
         claimed.accept(IslandHost.personal(island.ownerId()));
+        // a fresh island: the Build Tool's first-pick notes (PlacementService) come again
+        player.getPersistentDataContainer().remove(new org.bukkit.NamespacedKey(plugin, "seen_cards"));
         player.closeInventory();
         player.sendTitle("§7The island rises…", "§f" + starter.display(), 5, 80, 10);
         player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1f, 0.7f);

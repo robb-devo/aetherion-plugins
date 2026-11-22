@@ -351,6 +351,30 @@ with bearings, end walls, chamfered bends, inlet hood with chain curtain; chevro
 (`BeltBodies.TICKS_PER_TILE`, also `CargoVisuals`) in one long interpolation per loop and dive into the drums; gold
 marker cleats glow while the line is live (the old text chevrons are gone).
 
+## Paged talk and screen cards (2026-11-22, cloud session, Quests + Guilds, mmo-i first)
+
+Robb's ask: far less text. Two switches in the Quests config, both off by default, so a server only changes when
+its live config turns them on (first mmo-i; the rest of the network after Robb's OK).
+- `paged-talk.enabled` (`talk/TalkUx.java`): a bubble line waits for the player's click (left/right-click the NPC
+  or its bubble, or left-click while looking at them); a click while typing shows it at once; a breathing ▾ means
+  more is coming; reply chips come once the last line is read. NPC lines no longer go to chat: one grey log line
+  per conversation (hover = transcript, click = book of the last 12 talks, `/aetalk log`), "had more to say · N
+  unread" when the player walks off. Callers hand paged lines over at once (`DialogManager.DialogRun`,
+  `LivingNpcProfile.say`, `TalkAccessImpl.say`, Corin's `IslandGuide.pump`); follow-ups that must wait use
+  `DialogPace.whenFree`. A LOW-priority FancyNpcs bridge (`LivingNpcInteractListener.registerPagedTalk`) turns a
+  click on the talking NPC into "next line" and cancels it, so no click handler restarts the talk.
+- `hud-cards.*` (`talk/HudCards.java`): a small toast at the top (step done, what's next) and a big animated card
+  above the middle (quest done, island milestone: rows tick in, real item icons, "+250" counts up), then one summary
+  chat line. Display entities at the player's eye with billboard CENTER, so the camera-space translation keeps them
+  in front however the head turns; only the owner sees them; probed every other tick and pulled closer (same size
+  on screen) in front of walls and the talking NPC. Big cards hold paged lines back; a left-click sends one away.
+- Quest moments (`feedback/QuestFeedback.java`, `QuestManager.cardRewards`): objective done and "ready" are toasts,
+  quest complete is the big card with the rewards as rows instead of reward chat lines.
+- Other plugins: `de.aetherion.quests.api.Cards` (plain types; false = cards off, say it the old way). Guilds reaches
+  it only through `island/IslandUi` (soft hook, provided dependency on AetherionQuests): Corin's tour steps get
+  toasts, first chain / Hub founded / Compressed Cobble / stage-ups get big cards, ship, factory goals, upgrades and
+  first-pick part notes are toasts, the hand press and "built" lines go to the action bar.
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
