@@ -169,8 +169,8 @@ public final class StructureService {
         if (at.getWorld() == null || !at.getWorld().getName().equals(hub.world())) {
             return false;
         }
-        double dx = at.getX() - (hub.x() + 0.5);
-        double dz = at.getZ() - (hub.z() + 0.5);
+        double dx = at.getX() - hub.centerX();
+        double dz = at.getZ() - hub.centerZ();
         return dx * dx + dz * dz <= HUB_REACH * HUB_REACH;
     }
 
@@ -203,7 +203,9 @@ public final class StructureService {
         if (world == null) {
             return null;
         }
-        int[] front = StateRotator.rotateXZ(0, hub.maxZ() - hub.z() + 2, hub.rot());
+        // two cells in front of its front row, before the lectern (local x 0), whichever way it was turned
+        Template shape = template(hub);
+        int[] front = StateRotator.rotateXZ(0, (shape == null ? hub.maxZ() - hub.z() : shape.maxZ()) + 2, hub.rot());
         int[] f = StateRotator.rotateXZ(0, 1, hub.rot());
         int x = hub.x() + front[0];
         int z = hub.z() + front[1];
@@ -756,12 +758,12 @@ public final class StructureService {
         structure.setBuilding(true);
         register(structure);
         changeListener.accept(host);
-        world.playSound(new Location(world, ax + 0.5, ay + 1, az + 0.5), Sound.BLOCK_ANVIL_USE, 0.6f, 1.2f);
+        world.playSound(new Location(world, structure.centerX(), ay + 1, structure.centerZ()), Sound.BLOCK_ANVIL_USE, 0.6f, 1.2f);
         paste.paste(template, world, ax, ay, az, rot, PasteService.Mode.SKIP_AIR, !Props.isProp(template.id()), job -> {
             structure.setBuilding(false);
             dirty = true;
             changeListener.accept(host);
-            Location center = new Location(world, ax + 0.5, ay + 2, az + 0.5);
+            Location center = new Location(world, structure.centerX(), ay + 2, structure.centerZ());
             de.aetherion.core.api.Vfx.puff(center, Particle.CLOUD, 24, Math.max(1.6, 1.6), null);
             de.aetherion.core.api.Vfx.puff(center.clone().add(0, 1.2, 0), Particle.END_ROD, 14, Math.max(1.2, 1.2), null);
             world.playSound(center, Sound.BLOCK_SMITHING_TABLE_USE, 0.9f, 1.1f);
@@ -1285,10 +1287,18 @@ public final class StructureService {
         World world = Bukkit.getWorld(structure.world());
         milestone.accept(structure.host(), "first_upgrade");
         if (world != null) {
-            Location top = new Location(world, structure.x() + 0.5, structure.maxY() + 1.0, structure.z() + 0.5);
+            Location top = new Location(world, structure.centerX(), structure.maxY() + 1.0, structure.centerZ());
             de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 40, Math.max(1.2, 1.2), null);
             world.playSound(top, Sound.BLOCK_SMITHING_TABLE_USE, 1f, 0.9f);
         }
+    }
+
+    /** The template a structure has at its next tier. Props keep theirs (they grow by look, never by footprint). */
+    private Template nextTemplate(PlacedStructure structure, int level) {
+        if (Props.isProp(structure.templateId())) {
+            return template(structure);
+        }
+        return templates.get(StructureUpgrades.templateFor(structure.type(), level));
     }
 
     private static boolean legacy(PlacedStructure structure) {
@@ -1301,7 +1311,7 @@ public final class StructureService {
             return null;
         }
         Template from = template(structure);
-        Template to = templates.get(StructureUpgrades.templateFor(structure.type(), toLevel));
+        Template to = nextTemplate(structure, toLevel);
         World world = Bukkit.getWorld(structure.world());
         if (to == null || world == null) {
             return null;
@@ -1371,7 +1381,7 @@ public final class StructureService {
         String fromName = structure.label();
         World world = Bukkit.getWorld(structure.world());
         Template from = template(structure);
-        Template to = legacy(structure) ? null : templates.get(StructureUpgrades.templateFor(structure.type(), tier.level()));
+        Template to = legacy(structure) ? null : nextTemplate(structure, tier.level());
         player.sendMessage("§a✦ Upgrading your " + fromName + " §7→ §f" + tier.name() + " §8(" + String.join("§8, ", paid) + "§8)");
         if (to == null || world == null) {
             structure.setLevel(tier.level());
@@ -1382,7 +1392,7 @@ public final class StructureService {
         }
         structure.setBuilding(true);
         changeListener.accept(host);
-        world.playSound(new Location(world, structure.x() + 0.5, structure.y() + 2, structure.z() + 0.5),
+        world.playSound(new Location(world, structure.centerX(), structure.y() + 2, structure.centerZ()),
                 Sound.BLOCK_SCAFFOLDING_PLACE, 1f, 0.8f);
         paste.transition(from, to, world, structure.x(), structure.y(), structure.z(), structure.rot(), true, job -> {
             if (byId.get(structure.id()) != structure) {
@@ -1420,7 +1430,7 @@ public final class StructureService {
     private void celebrateUpgrade(Player player, PlacedStructure structure, StructureUpgrades.Tier tier, World world) {
         milestone.accept(structure.host(), "first_upgrade");
         if (world != null) {
-            Location top = new Location(world, structure.x() + 0.5, structure.maxY() + 1.0, structure.z() + 0.5);
+            Location top = new Location(world, structure.centerX(), structure.maxY() + 1.0, structure.centerZ());
             de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 40, Math.max(1.2, 1.2), null);
             de.aetherion.core.api.Vfx.puff(top.clone().add(0, -1.5, 0), Particle.CLOUD, 20, Math.max(1.5, 1.5), null);
             world.playSound(top, Sound.BLOCK_SMITHING_TABLE_USE, 1f, 0.9f);

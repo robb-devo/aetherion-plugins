@@ -29,8 +29,8 @@ public final class HubRitual {
         if (world == null) {
             return;
         }
-        Location base = new Location(world, hub.x() + 0.5, hub.y() + 1.0, hub.z() + 0.5);
-        Location top = new Location(world, hub.x() + 0.5, hub.maxY() + 1.0, hub.z() + 0.5);
+        Location base = new Location(world, hub.centerX(), hub.y() + 1.0, hub.centerZ());
+        Location top = new Location(world, hub.centerX(), hub.maxY() + 1.0, hub.centerZ());
         for (int i = 0; i < 3; i++) {
             int toll = i;
             later(i * 16L, () -> {

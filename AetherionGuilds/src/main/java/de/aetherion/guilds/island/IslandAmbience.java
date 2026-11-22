@@ -73,7 +73,7 @@ public final class IslandAmbience {
                 t[2] = 4;
                 PlacedStructure near = runningNear(host, at, 7.0);
                 if (near != null) {
-                    Location hum = new Location(at.getWorld(), near.x() + 0.5, near.y() + 1.5, near.z() + 0.5);
+                    Location hum = new Location(at.getWorld(), near.centerX(), near.y() + 1.5, near.centerZ());
                     player.playSound(hum, Sound.BLOCK_BEACON_AMBIENT, SoundCategory.AMBIENT, 0.22f, 0.55f);
                 }
             }
@@ -88,9 +88,9 @@ public final class IslandAmbience {
             if (structure.type().router() || structure.building()) {
                 continue;
             }
-            double dx = structure.x() + 0.5 - at.getX();
+            double dx = structure.centerX() - at.getX();
             double dy = structure.y() + 1.0 - at.getY();
-            double dz = structure.z() + 0.5 - at.getZ();
+            double dz = structure.centerZ() - at.getZ();
             double d = dx * dx + dy * dy + dz * dz;
             if (d >= bestDist) {
                 continue;

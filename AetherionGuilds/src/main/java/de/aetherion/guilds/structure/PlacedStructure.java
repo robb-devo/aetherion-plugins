@@ -246,6 +246,16 @@ public final class PlacedStructure {
         return maxZ;
     }
 
+    /** Centre of the footprint (world x): the anchor's block centre on symmetric buildings, not on the compact ones. */
+    public double centerX() {
+        return (minX + maxX + 1) / 2.0;
+    }
+
+    /** Centre of the footprint (world z). */
+    public double centerZ() {
+        return (minZ + maxZ + 1) / 2.0;
+    }
+
     public boolean contains(int bx, int by, int bz) {
         return bx >= minX && bx <= maxX && by >= minY && by <= maxY && bz >= minZ && bz <= maxZ;
     }

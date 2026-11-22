@@ -34,6 +34,19 @@ public final class Props {
     /** 3x3 Dock: a timber quay with a cargo crane and a mooring mast the airship ties up to. */
     public static final String DOCK = "prop_dock";
 
+    /**
+     * The compact set every new building uses (2x2 machines and hut, the 4x2 Hub, the 3x2 Dock). The anchor is
+     * the back-right cell, so the chute keeps its cell (0,1,1) and the belt still starts at (0,1,2). Buildings
+     * placed before keep their 3x3 / 5x5 templates and bodies.
+     */
+    public static final String V2 = "prop_v2_";
+    public static final String MILL_V2 = "prop_v2_mill";
+    public static final String FORGE_V2 = "prop_v2_forge";
+    public static final String DEPOT_V2 = "prop_v2_depot";
+    public static final String HUT_V2 = "prop_v2_hut";
+    public static final String HUB_V2 = "prop_v2_hub";
+    public static final String DOCK_V2 = "prop_v2_dock";
+
     /** Old pasted looks that get swapped for props on first visit (same 3x3 footprint, same chute). */
     public static final Set<String> OLD_PRODUCTION = Set.of(
             "sm_quarry_housing", "sm_quarry_rig",
@@ -51,18 +64,23 @@ public final class Props {
         }
         return switch (templateId) {
             case QUARRY, QUARRY_SLIM -> StructureType.QUARRY_HOUSING;
-            case MILL -> StructureType.MILL;
-            case FORGE -> StructureType.FORGE;
-            case DEPOT -> StructureType.DEPOT;
-            case HUT -> StructureType.STORAGE_HUT;
-            case HUB -> StructureType.WORKSHOP;
-            case DOCK -> StructureType.DOCK;
+            case MILL, MILL_V2 -> StructureType.MILL;
+            case FORGE, FORGE_V2 -> StructureType.FORGE;
+            case DEPOT, DEPOT_V2 -> StructureType.DEPOT;
+            case HUT, HUT_V2 -> StructureType.STORAGE_HUT;
+            case HUB, HUB_V2 -> StructureType.WORKSHOP;
+            case DOCK, DOCK_V2 -> StructureType.DOCK;
             default -> null;
         };
     }
 
     public static boolean isProp(String templateId) {
         return templateId != null && templateId.startsWith("prop_");
+    }
+
+    /** One of the compact buildings (2x2 machines and hut, the 4x2 Hub, the 3x2 Dock)? */
+    public static boolean compact(String templateId) {
+        return templateId != null && templateId.startsWith(V2);
     }
 
     public static void register(TemplateLibrary library) {
@@ -74,6 +92,96 @@ public final class Props {
         library.register(hut());
         library.register(hub());
         library.register(dock());
+        library.register(machine2(MILL_V2, 3));
+        library.register(machine2(FORGE_V2, 2));
+        library.register(depot2());
+        library.register(hut2());
+        library.register(hub2());
+        library.register(dock2());
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // the compact set: cells x -1..0, z 0..1 (Hub x -2..1, Dock x -1..1); the anchor is the back-right cell
+    // ------------------------------------------------------------------------------------------------
+
+    /** 2x2 machine: a solid shell {@code high} blocks up, the chute in the front-right cell (forge: its chimney). */
+    private static Template machine2(String id, int high) {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int y = 1; y <= high; y++) {
+            for (int x = -1; x <= 0; x++) {
+                for (int z = 0; z <= 1; z++) {
+                    cells.put(x + "," + y + "," + z, y == 1 && x == 0 && z == 1 ? CHUTE : BARRIER);
+                }
+            }
+        }
+        if (FORGE_V2.equals(id)) {
+            cells.put("-1,3,0", BARRIER);
+            cells.put("-1,4,0", BARRIER);
+        }
+        return Template.synthetic(id, -1, 0, 0, 0, 5, 1, cells);
+    }
+
+    /** 2x2 Depot: a knee-high yard shell, the chute in the front-right cell, the crate cells two high. */
+    private static Template depot2() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int x = -1; x <= 0; x++) {
+            for (int z = 0; z <= 1; z++) {
+                boolean chute = x == 0 && z == 1;
+                cells.put(x + ",1," + z, chute ? CHUTE : BARRIER);
+                if (!chute) {
+                    cells.put(x + ",2," + z, BARRIER);
+                }
+            }
+        }
+        return Template.synthetic(DEPOT_V2, -1, 0, 0, 0, 3, 1, cells);
+    }
+
+    /** 2x2 hut: a solid three-high shell (belts run into any wall); the storeys above are drawn. */
+    private static Template hut2() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int y = 1; y <= 3; y++) {
+            for (int x = -1; x <= 0; x++) {
+                for (int z = 0; z <= 1; z++) {
+                    cells.put(x + "," + y + "," + z, BARRIER);
+                }
+            }
+        }
+        return Template.synthetic(HUT_V2, -1, 0, 0, 0, 7, 1, cells);
+    }
+
+    /**
+     * 4x2 Hub: the back row is the hall (three high), the front row the porch (two high), the real lectern at
+     * (0,1,1) with free air above it so you reach it from the front.
+     */
+    private static Template hub2() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int x = -2; x <= 1; x++) {
+            for (int y = 1; y <= 3; y++) {
+                cells.put(x + "," + y + ",0", BARRIER);
+            }
+            if (x != 0) {
+                cells.put(x + ",1,1", BARRIER);
+                cells.put(x + ",2,1", BARRIER);
+            }
+        }
+        cells.put("0,1,1", "minecraft:lectern[facing=south,has_book=true,powered=false]");
+        return Template.synthetic(HUB_V2, -2, 0, 0, 1, 6, 1, cells);
+    }
+
+    /** 3x2 Dock: the quay deck is the shell's top (you walk on it), the mast and crane posts go up from it. */
+    private static Template dock2() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int x = -1; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                cells.put(x + ",1," + z, BARRIER);
+            }
+        }
+        cells.put("1,2,0", BARRIER);
+        cells.put("1,3,0", BARRIER);
+        cells.put("1,4,0", BARRIER);
+        cells.put("-1,2,0", BARRIER);
+        cells.put("-1,2,1", BARRIER);
+        return Template.synthetic(DOCK_V2, -1, 0, 0, 1, 6, 1, cells);
     }
 
     /** 3x3 Dock: a knee-high quay shell (belts run into any side), the mooring mast at the back corner. */

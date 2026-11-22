@@ -270,11 +270,39 @@ public final class AetherionGuilds extends JavaPlugin {
         menu.attachHighlight(projectMenu, buildMenu, landMenu);
         quarryMenu.attachHighlight(hosts, structures, logistics);
 
+        placement.attachQuarries(new PlacementService.Quarries() {
+            @Override
+            public org.bukkit.inventory.ItemStack find(Player player) {
+                for (org.bukkit.inventory.ItemStack item : player.getInventory().getStorageContents()) {
+                    if (minions.isQuarryItem(item) && item.getAmount() > 0) {
+                        return item;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public int count(Player player) {
+                int count = 0;
+                for (org.bukkit.inventory.ItemStack item : player.getInventory().getStorageContents()) {
+                    if (minions.isQuarryItem(item)) {
+                        count += item.getAmount();
+                    }
+                }
+                return count;
+            }
+
+            @Override
+            public boolean place(Player player, org.bukkit.block.Block ground, org.bukkit.inventory.ItemStack item) {
+                return minions.place(player, ground, item) != null;
+            }
+        });
         minions.setHooks(new MinionService.Hooks() {
             @Override
             public void placed(Player player, QuarryMinion minion, boolean personalHost, UUID hostId) {
                 IslandHost host = personalHost ? IslandHost.personal(hostId) : IslandHost.guild(hostId);
-                int rot = StateRotator.frontTowardViewer(player.getLocation().getYaw());
+                // set down with the Build Tool: its rig turns the way the hologram showed
+                int rot = placement.takeQuarryRot(player, StateRotator.frontTowardViewer(player.getLocation().getYaw()));
                 structures.milestone(host, "first_quarry");
                 player.sendMessage(switch (structures.raiseHousing(host, minion, rot)) {
                     case FULL -> "§7Its housing rises round it. Lay a belt from the §6orange mark §7(Build Tool → Belt).";

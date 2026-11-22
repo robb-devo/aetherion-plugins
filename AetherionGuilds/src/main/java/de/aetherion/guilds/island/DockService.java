@@ -394,7 +394,7 @@ public final class DockService implements Listener, LogisticsService.Export {
         PlacedStructure hub = structures.hub(host);
         World world = hosts.world(host);
         if (hub != null && world != null) {
-            Location top = new Location(world, hub.x() + 0.5, hub.y() + 2.2, hub.z() + 0.5);
+            Location top = new Location(world, hub.centerX(), hub.y() + 2.2, hub.centerZ());
             de.aetherion.core.api.Vfx.puff(top, Particle.BLOCK, 30, Math.max(0.6, 0.6), Material.COBBLESTONE.createBlockData());
             de.aetherion.core.api.Vfx.puff(top, Particle.CLOUD, 8, Math.max(0.4, 0.4), null);
         }
@@ -888,7 +888,7 @@ public final class DockService implements Listener, LogisticsService.Export {
         PlacedStructure hub = structures.hub(host);
         World world = hosts.world(host);
         if (hub != null && world != null) {
-            Location top = new Location(world, hub.x() + 0.5, hub.y() + 3.0, hub.z() + 0.5);
+            Location top = new Location(world, hub.centerX(), hub.y() + 3.0, hub.centerZ());
             de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 60, Math.max(1.0, 1.0), null);
             de.aetherion.core.api.Vfx.puff(top.clone().add(0, 1.5, 0), Particle.END_ROD, 24, Math.max(0.8, 0.8), null);
         }
@@ -1097,7 +1097,9 @@ public final class DockService implements Listener, LogisticsService.Export {
         Airship(Player player, IslandHost host, PlacedStructure dock, String paintId, Runnable done) {
             this.player = player;
             this.world = hosts.world(host);
-            this.quay = new Location(world, dock.x() + 0.5, dock.y() + 1.0, dock.z() + 0.5);
+            // the compact Dock's deck stands a block up: the crates go up from the planks
+            this.quay = new Location(world, dock.centerX(),
+                    dock.y() + (de.aetherion.guilds.structure.Props.compact(dock.templateId()) ? 2.0 : 1.0), dock.centerZ());
             this.hover = quay.clone().add(0, 6.5, 0);
             this.from = hover.clone().add(-34, 16, -6);
             this.to = hover.clone().add(36, 22, 8);

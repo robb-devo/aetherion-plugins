@@ -786,9 +786,9 @@ public final class IslandGuide implements Listener {
         State state = state(hand.owner);
         boolean gift = !state.quarryGiven;
         List<String> lines = fresh || gift
-                ? List.of("A Cobble Quarry, free. It's in your hand. It digs stone on its own, day and night.",
-                "Set it down on flat ground, wherever you like. Right-click.")
-                : List.of("Quarry's in your hand. Right-click flat ground where you want it.");
+                ? List.of("A Cobble Quarry, free. It digs stone on its own, day and night.",
+                "The Build Tool shows its rig. Look at flat ground, wherever you like, and right-click.")
+                : List.of("Quarry's in the Build Tool. Look at flat ground and right-click.");
         lead(player, hand, null, () -> {
             if (gift && !state.quarryGiven) {
                 state.quarryGiven = true;
@@ -797,6 +797,7 @@ public final class IslandGuide implements Listener {
             } else {
                 handQuarry(player, false);
             }
+            placement.openTool(player, host, PlacementService.Part.QUARRY);
             speak(player, hand, lines, List.of(
                 reply("Place the quarry", NamedTextColor.GREEN, () -> {
                     // lost it (dropped, despawned)? Hollis has one spare, once; never a dead end
@@ -808,6 +809,7 @@ public final class IslandGuide implements Listener {
                         player.sendMessage("§7" + name() + " hands you his spare quarry.");
                     }
                     handQuarry(player, spare);
+                    placement.openTool(player, host, PlacementService.Part.QUARRY);
                 }),
                 reply("Later", NamedTextColor.GRAY, null),
                 reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
@@ -1095,7 +1097,7 @@ public final class IslandGuide implements Listener {
         PlacedStructure hut = firstHut(host);
         World world = hosts.world(host);
         if (hut != null && world != null) {
-            Location top = new Location(world, hut.x() + 0.5, hut.maxY() + 1.0, hut.z() + 0.5);
+            Location top = new Location(world, hut.centerX(), hut.maxY() + 1.0, hut.centerZ());
             de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 50, Math.max(0.8, 0.8), null);
             de.aetherion.core.api.Vfx.puff(top, Particle.END_ROD, 20, Math.max(0.6, 0.6), null);
         }
@@ -1275,7 +1277,7 @@ public final class IslandGuide implements Listener {
     private void giveQuarry(Player player) {
         handQuarry(player, true);
         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 0.9f);
-        player.sendMessage("§a+ §6Cobble Quarry §8(from " + name() + ") §7· in your hand: right-click flat ground where you want it");
+        player.sendMessage("§a+ §6Cobble Quarry §8(from " + name() + ") §7· the Build Tool shows where its rig goes: right-click flat ground");
     }
 
     /** Kits bit: the one spare quarry Hollis hands out if the first went missing. */
@@ -1779,8 +1781,7 @@ public final class IslandGuide implements Listener {
         }
         PlacedStructure hut = firstHut(host);
         if (hut != null) {
-            int r = Math.max(hut.maxX() - hut.x(), hut.maxZ() - hut.z());
-            square(player, hut.x(), hut.y() + 1.1, hut.z(), r, GOLD, pulses);
+            box(player, hut.minX(), hut.maxX() + 1, hut.minZ(), hut.maxZ() + 1, hut.y() + 1.1, GOLD, pulses);
         }
     }
 

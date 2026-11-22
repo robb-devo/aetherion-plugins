@@ -99,8 +99,8 @@ public final class StructureUpgrades {
                     List.of(new Cost(COMPRESSED_COBBLE, 32L, "Compressed Cobblestone"),
                             new Cost("coins", 15_000L, "Coins")), 1)
                     : new Tier(3, "Warehouse", List.of(
-                    "§7Copper band, slate roof, a",
-                    "§7lightning rod on the ridge.",
+                    "§7A third storey on a brick base,",
+                    "§7a slate roof and its own crane.",
                     "§7Holds §f16×§7: §f" + compact(capacity(type, 3)) + " §7goods"),
                     List.of(new Cost(COMPACTED_COBBLE, 4L, "Compacted Cobblestone"),
                             new Cost(QUARRY_CORE, 1L, "Quarry Core"),
@@ -125,14 +125,14 @@ public final class StructureUpgrades {
                     List.of(new Cost(COMPRESSED_COBBLE, 12L, "Compressed Cobblestone"),
                             new Cost("coins", 4_000L, "Coins")), 1);
             case MILL -> new Tier(2, "Twin-Stone Mill", List.of(
-                    "§7A second pair of stones and a",
-                    "§7taller frame. Grinds §f3×§7 as fast:",
+                    "§7A taller tower, a slate cap, a",
+                    "§7sack hoist. Grinds §f3×§7 as fast:",
                     "§f" + compact(ratePerSecond(type, 2)) + " §7goods / s"),
                     List.of(new Cost(COMPRESSED_COBBLE, 24L, "Compressed Cobblestone"),
                             new Cost("coins", 12_000L, "Coins")), 1);
             case FORGE -> new Tier(2, "Bellows Forge", List.of(
-                    "§7A second blast furnace and a",
-                    "§7second stack. Presses §f3×§7 as fast:",
+                    "§7A second stack, a copper hood, the",
+                    "§7hammer twice. Presses §f3×§7 as fast:",
                     "§f" + compact(ratePerSecond(type, 2)) + " §7goods / s"),
                     List.of(new Cost(COMPACTED_COBBLE, 2L, "Compacted Cobblestone"),
                             new Cost(QUARRY_CORE, 1L, "Quarry Core"),

@@ -12,32 +12,33 @@ import java.util.Locale;
  * x 0, y 1 and the belt starts on the cell in front of it (see {@code StructureService.portLocal}). Sinks and
  * processors accept a belt that runs into their footprint from any side.
  *
- * <p>Live templates are the compact {@code sm_*} ones (machines 3x3, hut/workshop 5x5). Structures placed before
- * that were saved without a template id and keep their original {@link #legacyTemplateId()}.
+ * <p>New buildings use the compact display props ({@code prop_v2_*}: machines and hut 2x2, Hub 4x2, Dock 3x2).
+ * Every placed structure keeps the template it was saved with (older 3x3 / 5x5 props stay as they are);
+ * structures saved without a template id keep their original {@link #legacyTemplateId()}.
  */
 public enum StructureType {
 
-    STORAGE_HUT("storage_hut", "Storage Hut", Material.BARREL, Props.HUT, Role.SINK,
+    STORAGE_HUT("storage_hut", "Storage Hut", Material.BARREL, Props.HUT_V2, Role.SINK,
             2_000L, null, 1, false, true, 5_000_000L, 0,
             List.of("§7Where your belts end. Holds",
                     "§7everything the quarries make,",
                     "§7raw or milled. Your first is free.")),
-    WORKSHOP("workshop", "Hub", Material.LECTERN, Props.HUB, Role.UTILITY,
+    WORKSHOP("workshop", "Hub", Material.LECTERN, Props.HUB_V2, Role.UTILITY,
             1_500L, null, 1, false, true, 0L, 0,
             List.of("§7Your factory's heart. At its",
                     "§7lectern: unlocks, upgrades,",
                     "§7Coin Shortcuts.")),
-    DEPOT("depot", "Depot", Material.CHEST, Props.DEPOT, Role.SINK,
+    DEPOT("depot", "Depot", Material.CHEST, Props.DEPOT_V2, Role.SINK,
             500L, null, 2, true, true, 250_000L, 0,
             List.of("§7A crate yard. Ends any belt, and",
                     "§7passes its stock on if you lead",
                     "§7a belt away from its chute.")),
-    MILL("mill", "Mill", Material.GRINDSTONE, Props.MILL, Role.PROCESSOR,
+    MILL("mill", "Mill", Material.GRINDSTONE, Props.MILL_V2, Role.PROCESSOR,
             3_000L, "quarry_compressor", 1, true, true, 200_000L, 4_096,
             List.of("§7Belt in, belt out.",
                     "§7Grinds §eRaw §7→ §aCompressed §8(128:1)§7.",
                     "§7Everything else passes through.")),
-    FORGE("forge", "Forge", Material.BLAST_FURNACE, Props.FORGE, Role.PROCESSOR,
+    FORGE("forge", "Forge", Material.BLAST_FURNACE, Props.FORGE_V2, Role.PROCESSOR,
             8_000L, "quarry_compactor", 1, true, true, 200_000L, 4_096,
             List.of("§7Belt in, belt out.",
                     "§7Presses §aCompressed §7→ §bCompacted§7,",
@@ -73,7 +74,7 @@ public enum StructureType {
      * The Dock (personal islands): where contracts are filled and the airship comes in. Belts end here; what a
      * belt brings goes straight into the open contracts (never into storage), so a full Dock backs its line up.
      */
-    DOCK("dock", "Dock", Material.SPRUCE_BOAT, Props.DOCK, Role.EXPORT,
+    DOCK("dock", "Dock", Material.SPRUCE_BOAT, Props.DOCK_V2, Role.EXPORT,
             0L, null, 1, true, true, 0L, 0,
             List.of("§7Contracts come in here. Belt",
                     "§7goods in or load them from",
