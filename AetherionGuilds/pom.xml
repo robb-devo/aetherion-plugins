@@ -24,6 +24,13 @@
       <artifactId>AetherionCore</artifactId>
       <scope>provided</scope>
     </dependency>
+    <!-- Screen cards + paged talk (de.aetherion.quests.api.Cards), reached through island/IslandUi only -->
+    <dependency>
+      <groupId>de.aetherion</groupId>
+      <artifactId>AetherionQuests</artifactId>
+      <version>${aetherion.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>me.clip</groupId>
       <artifactId>placeholderapi</artifactId>

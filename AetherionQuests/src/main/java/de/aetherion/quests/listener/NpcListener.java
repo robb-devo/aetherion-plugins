@@ -106,6 +106,11 @@ public class NpcListener implements Listener {
     }
 
     private void handleClick(Player player, QuestNPC npc) {
+        // Paged talk with this NPC: a click goes on to the next line (it never restarts the conversation).
+        de.aetherion.quests.talk.TalkUx paging = de.aetherion.quests.talk.TalkUx.get();
+        if (paging != null && paging.advance(player, npc.getId())) {
+            return;
+        }
         // Absorb double-fires (Entity + AtEntity, hologram + body) and spam clicks.
         int tick = Bukkit.getCurrentTick();
         UUID id = player.getUniqueId();
@@ -1624,7 +1629,7 @@ public class NpcListener implements Listener {
             }
             if (plugin != null) {
                 long afterLast = de.aetherion.quests.dialog.DialogPace.untilFree(player) + 4L;
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                de.aetherion.quests.dialog.DialogPace.whenFree(plugin, player, afterLast, () -> {
                     if (player.isOnline()) {
                         de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger", "/capital");
                         player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -1632,7 +1637,7 @@ public class NpcListener implements Listener {
                                         "Kit on · Nether Star (slot 9) → Teleports → Capital · or /capital"),
                                 net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
                     }
-                }, afterLast);
+                });
             } else {
                 de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger", "/capital");
             }

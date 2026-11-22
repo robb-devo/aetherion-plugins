@@ -169,9 +169,15 @@ public class DialogManager implements Listener {
         }, delay);
     }
 
-    /** Follow-up once whatever was just said has typed out and been read (speech clock). */
+    /**
+     * Follow-up once whatever was just said has typed out and been read (speech clock; with paged talk, once the
+     * player has clicked through the bubble).
+     */
     public void afterDialog(Player player, Runnable action) {
-        afterDialog(player, Math.max(20L, DialogPace.untilFree(player) + 4L), action);
+        if (player == null || action == null) {
+            return;
+        }
+        DialogPace.whenFree(plugin, player, Math.max(20L, DialogPace.untilFree(player) + 4L), action);
     }
 
     public void clearPendingChoice(Player player) {
@@ -662,6 +668,26 @@ public class DialogManager implements Listener {
                     }
                 }
                 return;
+            }
+            de.aetherion.quests.talk.TalkUx paged = de.aetherion.quests.talk.TalkUx.get();
+            if (paged != null && npc != null && paged.wouldPage(player, npc.getId())) {
+                // Paged talk: the bubble keeps every line until the player clicks on, so it gets the rest now
+                // (no chat copy). The offer / topics follow at once and wait in the bubble until all is read.
+                while (index < lines.length) {
+                    String next = de.aetherion.quests.talk.TalkText.fill(player, lines[index]);
+                    if (next == null || next.isBlank() || "__BLANK__".equals(next)) {
+                        index++;
+                        continue;
+                    }
+                    if (!paged.line(player, npc.getId(), npc.getName(), next)) {
+                        break; // the bubble couldn't take it: the rest goes the classic way
+                    }
+                    index++;
+                }
+                if (index >= lines.length) {
+                    run();
+                    return;
+                }
             }
             long busy = DialogPace.untilFree(player);
             if (busy > 0L) {

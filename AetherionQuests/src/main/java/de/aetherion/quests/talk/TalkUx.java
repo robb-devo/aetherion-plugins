@@ -15,6 +15,7 @@ import de.aetherion.quests.ui.QuestMarkerManager;
 
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 
+import net.kyori.adventure.inventory.Book;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -25,6 +26,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
@@ -32,6 +34,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
@@ -54,6 +57,7 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -64,6 +68,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -82,12 +87,19 @@ import java.util.concurrent.ThreadLocalRandom;
  * still owns pacing, gates and quest state. When the in-world path can't run (FancyNpcs
  * missing, NPC not found, player too far, player picked "classic"), callers fall back to
  * the chest {@link de.aetherion.quests.ui.QuestAcceptGUI}.
+ * <p>
+ * <b>Paged talk</b> ({@code paged-talk.enabled}, off by default): every line stays in the bubble until the player
+ * clicks (the NPC, the bubble, or anywhere while looking at them); a click while it types shows it at once, a ▾
+ * says more is coming, and lines that arrive meanwhile wait their turn. The chat no longer repeats the lines:
+ * one grey log line per conversation (hover = the whole talk, click = a book of the recent ones).
  */
 public final class TalkUx implements Listener {
 
     /** Same tag Core janitors honour via {@link de.aetherion.core.entity.DisplayEntities#TALK_UI_TAG}. */
     public static final String TAG = de.aetherion.core.entity.DisplayEntities.TALK_UI_TAG;
     private static final String CMD = "/aetalk";
+    /** Paged talk: more is coming. */
+    private static final String CUE = "▾";
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
 
     /** The bubble leans this far toward its listener. */
@@ -118,6 +130,33 @@ public final class TalkUx implements Listener {
     private float bubbleScale;
     /** QA / stress bots click the chest Quest Offer — keep them on the classic path. */
     private List<String> classicPrefixes = List.of();
+
+    // Paged talk (paged-talk.*): a typed line waits for a click, the chat keeps one log line per conversation.
+    private boolean paged;
+    private int lastLineTicks;
+    private int logMinLines;
+    /** Clicks-to-continue per player this uptime: the "click to continue" hint stops after a few. */
+    private final Map<UUID, Integer> advances = new HashMap<>();
+    /** Recent conversations per player (oldest first), for the log book. Memory only. */
+    private final Map<UUID, ArrayDeque<TalkLog>> logs = new HashMap<>();
+    /** For the FancyNpcs click bridge, which may run off the main thread: whose paged talk is up, and where. */
+    private final Map<UUID, Target> clickTargets = new ConcurrentHashMap<>();
+    /** Where the player's last conversation stood, for a few seconds after it ends (screen cards keep clear of it). */
+    private final Map<UUID, Recent> recentNpc = new HashMap<>();
+
+    private record Recent(Location at, long tick) {
+    }
+
+    /** The NPC of a running paged conversation (a snapshot, safe from any thread). */
+    public record Target(String npcId, String world, double x, double y, double z) {
+    }
+
+    /** One line of a conversation as the log keeps it ({@code you} = the player's own reply). */
+    private record LogLine(boolean you, String text) {
+    }
+
+    private record TalkLog(String npcName, TextColor accent, long at, List<LogLine> lines, int heard) {
+    }
 
     /**
      * One reply chip. {@code chatCommand}: durable chat button for this reply (e.g. the
@@ -182,6 +221,21 @@ public final class TalkUx implements Listener {
         long lastRefresh;
         long lastBlip;
         long timeoutTicks;
+        /** Paged: lines waiting for the player's click, in order. */
+        final ArrayDeque<String> queue = new ArrayDeque<>();
+        /** Paged: what was said and answered so far (the log line and the book). */
+        final List<LogLine> transcript = new ArrayList<>();
+        boolean paged;
+        /** Paged: the line on show was clicked away or answered, so the next one may replace it. */
+        boolean acked = true;
+        /** Reply chips (and quest card) waiting until the last queued line has typed out. */
+        Runnable pending;
+        /** A pending quest offer: what the chat gets if the talk ends before its chips came. */
+        Runnable pendingLost;
+        long lastAdvance = -100;
+        long lastHint = -1000;
+        boolean cueOn;
+        Interaction bubbleHit;
 
         Session(UUID playerId, String npcId, int token) {
             this.playerId = playerId;
@@ -229,6 +283,10 @@ public final class TalkUx implements Listener {
         chipTimeoutTicks = Math.max(200, cfg.getInt("talk-ux.reply-timeout-seconds", 40) * 20);
         lingerTicks = Math.max(20, cfg.getInt("talk-ux.linger-ticks", 90));
         bubbleScale = (float) Math.max(0.3, Math.min(1.2, cfg.getDouble("talk-ux.bubble-scale", 0.56)));
+        paged = cfg.getBoolean("paged-talk.enabled", false);
+        lastLineTicks = Math.max(60, cfg.getInt("paged-talk.last-line-seconds", 8) * 20);
+        logMinLines = Math.max(1, cfg.getInt("paged-talk.log-min-lines", 2));
+        plugin.getLogger().info("Talk UX: paged talk " + (paged ? "on" : "off") + ".");
         de.aetherion.quests.dialog.DialogPace.configure(
                 cfg.getDouble("talk-ux.chars-per-tick", 2.2),
                 cfg.getLong("talk-ux.read-gap-ticks", 28L));
@@ -249,6 +307,7 @@ public final class TalkUx implements Listener {
             destroy(s, false);
         }
         sessions.clear();
+        clickTargets.clear();
         for (Bark b : barks.values()) {
             if (b.panel != null) {
                 b.panel.kill();
@@ -279,6 +338,87 @@ public final class TalkUx implements Listener {
         }
         NpcMemory memory = NpcMemory.get();
         return memory == null || !memory.prefersClassic(player.getUniqueId());
+    }
+
+    /** QA / stress bots (name prefix): always the classic chat and chest path. */
+    public boolean isBot(Player player) {
+        if (player == null) {
+            return false;
+        }
+        String name = player.getName();
+        for (String prefix : classicPrefixes) {
+            if (prefix != null && !prefix.isEmpty() && name.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Paged talk for this player: bubble lines wait for a click and the chat only keeps a log. */
+    public boolean pagedFor(Player player) {
+        return paged && enabledFor(player);
+    }
+
+    /** A line from {@code npcId} would go into a paged bubble right now (living / guest NPC in reach). */
+    public boolean wouldPage(Player player, String npcId) {
+        if (!pagedFor(player) || npcId == null) {
+            return false;
+        }
+        String id = npcId.toLowerCase(Locale.ROOT);
+        if (!LivingNpcService.isLiving(id) && !GuestSpeakers.has(id)) {
+            return false;
+        }
+        Session s = sessions.get(player.getUniqueId());
+        if (s != null && s.npcId.equals(id)) {
+            return true;
+        }
+        return near(player, NpcPresence.locate(id), maxDistance + 2.0);
+    }
+
+    /**
+     * A paged conversation is still being read: a line typing, lines waiting, replies about to land, or the last line
+     * typed out less than a read gap ago and not clicked away yet. Reply chips on show don't count (that's a choice).
+     */
+    public boolean pagingBusy(Player player) {
+        Session s = player == null ? null : sessions.get(player.getUniqueId());
+        if (s == null || !s.paged || !s.chips.isEmpty()) {
+            return false;
+        }
+        if (s.shown < s.total || !s.queue.isEmpty() || s.pending != null) {
+            return true;
+        }
+        return !s.acked && s.typedAt >= 0 && tick - s.typedAt < de.aetherion.quests.dialog.DialogPace.readGapTicks();
+    }
+
+    /** The NPC this player is talking to, or talked to in the last ten seconds (null = none). */
+    public Location npcNear(Player player) {
+        if (player == null) {
+            return null;
+        }
+        Session s = sessions.get(player.getUniqueId());
+        if (s != null && s.npcAt != null) {
+            return s.npcAt;
+        }
+        Recent recent = recentNpc.get(player.getUniqueId());
+        return recent != null && tick - recent.tick() < 200 ? recent.at() : null;
+    }
+
+    /** The FancyNpcs click bridge (any thread): the NPC of this player's paged talk, or null. */
+    public Target clickTarget(UUID playerId) {
+        return playerId == null ? null : clickTargets.get(playerId);
+    }
+
+    /**
+     * The player clicked to go on: the typing line shows at once, else the next line comes, else the last line
+     * folds away. {@code npcId} null = whoever they are talking to. False = not a paged talk (or the replies are
+     * up): the click is someone else's.
+     */
+    public boolean advance(Player player, String npcId) {
+        Session s = sessionFor(player);
+        if (s == null || !s.paged || (npcId != null && !s.npcId.equalsIgnoreCase(npcId))) {
+            return false;
+        }
+        return advance(player, s);
     }
 
     /** How close a listener must stand for the bubble to open and stay (blocks). */
@@ -346,35 +486,57 @@ public final class TalkUx implements Listener {
      * One spoken line reached {@code player}. Starts / continues the bubble when the NPC is
      * a living host within reach; otherwise chat stays the only channel.
      */
-    public void line(Player player, String npcId, String displayName, String legacyLine) {
+    public boolean line(Player player, String npcId, String displayName, String legacyLine) {
         if (!enabledFor(player) || npcId == null || legacyLine == null || legacyLine.isBlank()) {
-            return;
+            return false;
         }
         String id = npcId.toLowerCase(Locale.ROOT);
         if (!LivingNpcService.isLiving(id) && !GuestSpeakers.has(id)) {
-            return;
+            return false;
         }
         Session s = sessions.get(player.getUniqueId());
         if (s == null || !s.npcId.equals(id)) {
             Location at = NpcPresence.locate(id);
             if (!near(player, at, maxDistance + 2.0)) {
-                return;
+                return false;
             }
             if (s != null) {
                 destroy(s, true);
             }
             s = open(player, id, displayName, at);
             if (s == null) {
-                return;
+                return false;
             }
         }
         if (displayName != null && !displayName.isBlank()) {
             s.npcName = displayName;
         }
-        clearChips(s, true);
         String filled = TalkText.fill(player, legacyLine);
+        if (s.paged) {
+            // Nothing replaces a line the player hasn't clicked away yet: it waits its turn (▾ in the bubble).
+            if (!s.acked || !s.queue.isEmpty() || HudCards.blocking(player)) {
+                s.queue.add(filled);
+                if (s.shown >= s.total && s.typedAt >= 0) {
+                    renderBubble(s, false);
+                }
+                return true;
+            }
+        } else {
+            clearChips(s, true);
+        }
+        showLine(player, s, filled);
+        return true;
+    }
+
+    /** Put {@code filled} in the bubble now and start typing it. */
+    private void showLine(Player player, Session s, String filled) {
+        String id = s.npcId;
         if (s.current != null && !s.current.isBlank() && s.typedAt >= 0) {
             s.previous = s.current;
+        }
+        if (s.paged) {
+            s.acked = false;
+            s.transcript.add(new LogLine(false, filled));
         }
         s.current = TalkText.wrap("§f" + filled, de.aetherion.quests.dialog.DialogPace.WRAP_PX);
         s.total = TalkText.visibleLength(s.current);
@@ -385,6 +547,9 @@ public final class TalkUx implements Listener {
         s.typedAt = -1;
         s.lastLineAt = tick;
         renderBubble(s, true);
+        if (s.paged) {
+            fitBubbleHit(player, s);
+        }
         LivingNpcLife life = LivingNpcLife.get();
         if (life != null) {
             life.gesture(player, id, filled);
@@ -452,22 +617,47 @@ public final class TalkUx implements Listener {
                     CastBook.declineLabel(id, player), declineCmd));
             choices.add(new Choice(ui(player, "details", "Details…"), NamedTextColor.GRAY, details, false, null, detailsCmd));
         }
-        s.questOffer = true;
-        s.onTimeout = gateFail != null ? null : () -> player.sendMessage(Component.text("  » ", NamedTextColor.DARK_GRAY)
+        Runnable stands = gateFail != null ? null : () -> player.sendMessage(Component.text("  » ", NamedTextColor.DARK_GRAY)
                 .append(Component.text(ui(player, "offer_stands", "{0}'s offer stands. ").replace("{0}", npc.getName()), NamedTextColor.GRAY))
                 .append(chatButton(ui(player, "accept_button", "[Accept]"), NamedTextColor.GREEN, "/aetherionquest accept " + quest.getId(),
                         ui(player, "accept_hover", "Take {0}").replace("{0}", title)))
                 .append(Component.text(" ", NamedTextColor.GRAY))
                 .append(chatButton(ui(player, "decline_button", "[Decline]"), NamedTextColor.RED, "/aetherionquest decline " + quest.getId(),
                         ui(player, "decline_hover", "Maybe another time"))));
-        showCard(player, s, quest, conflicting);
-        s.timeoutTicks = chipTimeoutTicks;
-        showChips(player, s, choices);
-        LivingNpcLife life = LivingNpcLife.get();
-        if (life != null) {
-            life.emote(player, id, "?");
-        }
+        final Session session = s;
+        presentWhenRead(session, () -> {
+            session.questOffer = true;
+            session.onTimeout = stands;
+            showCard(player, session, quest, conflicting);
+            session.timeoutTicks = chipTimeoutTicks;
+            showChips(player, session, choices);
+            LivingNpcLife life = LivingNpcLife.get();
+            if (life != null) {
+                life.emote(player, id, "?");
+            }
+        }, stands);
         return true;
+    }
+
+    /** Paged: reply chips wait until the last queued line has typed out (the ticker brings them); else now. */
+    private void presentWhenRead(Session s, Runnable present, Runnable lost) {
+        if (s.paged && (s.shown < s.total || !s.queue.isEmpty())) {
+            s.pending = present;
+            s.pendingLost = lost;
+            return;
+        }
+        s.pending = null;
+        s.pendingLost = null;
+        present.run();
+    }
+
+    private void runPending(Session s) {
+        Runnable present = s.pending;
+        s.pending = null;
+        s.pendingLost = null;
+        if (present != null) {
+            present.run();
+        }
     }
 
     /** Generic reply chips (topics, help desk, "bye"). */
@@ -493,11 +683,14 @@ public final class TalkUx implements Listener {
                 return false;
             }
         }
-        s.questOffer = false;
-        s.onTimeout = null;
-        // Small talk is optional: short-lived, and it never grabs the hotbar wheel.
-        s.timeoutTicks = Math.min(chipTimeoutTicks, 20L * 18L);
-        showChips(player, s, choices);
+        final Session session = s;
+        presentWhenRead(session, () -> {
+            session.questOffer = false;
+            session.onTimeout = null;
+            // Small talk is optional: short-lived, and it never grabs the hotbar wheel.
+            session.timeoutTicks = Math.min(chipTimeoutTicks, 20L * 18L);
+            showChips(player, session, choices);
+        }, null);
         return true;
     }
 
@@ -609,6 +802,7 @@ public final class TalkUx implements Listener {
             return null;
         }
         Session s = new Session(player.getUniqueId(), npcId, ++tokenSeq);
+        s.paged = pagedFor(player);
         s.npcName = displayName == null || displayName.isBlank() ? npcId : displayName;
         QuestMarkerManager markers = plugin.getMarkerManager();
         s.accent = TalkChrome.accentOf(npcId);
@@ -651,6 +845,25 @@ public final class TalkUx implements Listener {
 
     private void destroy(Session s, boolean animate) {
         sessions.remove(s.playerId, s);
+        clickTargets.remove(s.playerId);
+        if (s.npcAt != null) {
+            recentNpc.put(s.playerId, new Recent(s.npcAt.clone(), tick));
+        }
+        kill(s.bubbleHit);
+        s.bubbleHit = null;
+        if (s.paged) {
+            Runnable lost = s.pending != null ? s.pendingLost : null;
+            s.pending = null;
+            s.pendingLost = null;
+            if (lost != null) {
+                try {
+                    lost.run();
+                } catch (RuntimeException ignored) {
+                    // the offer line is a courtesy
+                }
+            }
+            logConversation(s);
+        }
         clearChips(s, animate);
         if (animate) {
             if (s.bubble != null) {
@@ -705,7 +918,7 @@ public final class TalkUx implements Listener {
             out = out.append(Component.text(" " + TalkText.strip(s.npcName) + " ", s.accent, TextDecoration.BOLD));
             first = false;
         }
-        if (previousLine && s.previous != null && !s.previous.isBlank()) {
+        if (previousLine && !s.paged && s.previous != null && !s.previous.isBlank()) {
             for (String line : TalkText.strip(s.previous).split("\n")) {
                 if (!first) {
                     out = out.append(Component.newline());
@@ -725,6 +938,13 @@ public final class TalkUx implements Listener {
             String rest = TalkText.rest(s.current, shown);
             current = current.append(Component.text(rest.replace("\n", " \n "), TalkChrome.inkText(s.accent)));
         }
+        if (s.paged) {
+            // ▾ = more is coming, click; it breathes while it waits (drawn in ink, so the box never changes)
+            boolean more = shown >= s.total && !s.queue.isEmpty();
+            TextColor cue = !more ? TalkChrome.inkText(s.accent)
+                    : s.cueOn ? s.accent : TalkChrome.mix(s.accent, TalkChrome.FAINT, 0.55);
+            current = current.append(Component.text(" " + CUE, cue));
+        }
         return out.append(current.append(Component.text(" ")));
     }
 
@@ -736,14 +956,19 @@ public final class TalkUx implements Listener {
             width = TalkChrome.width(" " + TalkText.strip(s.npcName) + " ", true);
             lines++;
         }
-        if (previousLine && s.previous != null && !s.previous.isBlank()) {
+        if (previousLine && !s.paged && s.previous != null && !s.previous.isBlank()) {
             for (String line : TalkText.strip(s.previous).split("\n")) {
                 width = Math.max(width, 8 + TalkChrome.width(line, false));
                 lines++;
             }
         }
-        for (String line : s.current.split("\n", -1)) {
-            width = Math.max(width, 8 + TalkChrome.legacyWidth(line));
+        String[] rows = s.current.split("\n", -1);
+        for (int i = 0; i < rows.length; i++) {
+            int w = 8 + TalkChrome.legacyWidth(rows[i]);
+            if (s.paged && i == rows.length - 1) {
+                w += TalkChrome.width(" " + CUE, false);
+            }
+            width = Math.max(width, w);
             lines++;
         }
         return new int[] {width, Math.max(1, lines)};
@@ -751,6 +976,8 @@ public final class TalkUx implements Listener {
 
     private void showChips(Player player, Session s, List<Choice> choices) {
         clearChips(s, true);
+        kill(s.bubbleHit);
+        s.bubbleHit = null;
         Location npcAt = s.npcAt != null ? s.npcAt : NpcPresence.locate(s.npcId);
         if (npcAt == null) {
             return;
@@ -808,7 +1035,7 @@ public final class TalkUx implements Listener {
         }
         s.hover = -1;
         s.chipsAt = tick;
-        if (chatReplies) {
+        if (chatReplies && !s.paged) {
             sendChatReplies(player, s);
         }
         if (s.questOffer) {
@@ -1126,6 +1353,7 @@ public final class TalkUx implements Listener {
         }
         // Chips: hover + timeout
         if (!s.chips.isEmpty()) {
+            clickTargets.remove(s.playerId);
             if (tick % 2 == 0) {
                 updateHover(player, s);
             }
@@ -1137,10 +1365,283 @@ public final class TalkUx implements Listener {
             }
             return;
         }
+        if (s.paged) {
+            tickPaged(player, s);
+            return;
+        }
         // No chips: fade after the line has been on screen long enough
         if (s.typedAt >= 0 && tick - s.typedAt > lingerTicks && tick - s.lastLineAt > lingerTicks) {
             destroy(s, true);
         }
+    }
+
+    /** Paged: hold a typed line until the click, bring the chips once all is read, fold the last line late. */
+    private void tickPaged(Player player, Session s) {
+        if (s.npcAt != null && s.npcAt.getWorld() != null) {
+            clickTargets.put(s.playerId, new Target(s.npcId, s.npcAt.getWorld().getName(),
+                    s.npcAt.getX(), s.npcAt.getY(), s.npcAt.getZ()));
+        }
+        // Opened while a big card was up: the first line comes once the card has gone.
+        if ((s.current == null || s.current.isBlank()) && !s.queue.isEmpty()) {
+            if (!HudCards.blocking(player)) {
+                showLine(player, s, s.queue.poll());
+            }
+            return;
+        }
+        if (s.typedAt < 0 || s.shown < s.total) {
+            return;
+        }
+        if (!s.queue.isEmpty()) {
+            if (tick % 10 == 0) {
+                s.cueOn = !s.cueOn;
+                renderBubble(s, false);
+            }
+            if (advances.getOrDefault(s.playerId, 0) < 3 && tick - s.typedAt >= 30 && tick - s.lastHint >= 80) {
+                s.lastHint = tick;
+                player.sendActionBar(TalkGlyphs.leftClick()
+                        .append(Component.text(ui(player, "continue_hint", "Click to continue"), TalkChrome.HINT)));
+            }
+            return;
+        }
+        if (s.pending != null) {
+            if (tick - s.typedAt >= de.aetherion.quests.dialog.DialogPace.REPLY_LAG_TICKS) {
+                runPending(s);
+            }
+            return;
+        }
+        if (tick - s.typedAt > lastLineTicks) {
+            destroy(s, true);
+        }
+    }
+
+    /** One click on: finish the typing line, show the next, bring the waiting chips, or fold the last line. */
+    private boolean advance(Player player, Session s) {
+        if (!s.chips.isEmpty()) {
+            return false;
+        }
+        if (HudCards.dismiss(player) || HudCards.clickUsed(player)) {
+            return true; // the card in front goes first (and this click already sent one away)
+        }
+        if (tick - s.lastAdvance < 4) {
+            return true; // the same click arriving twice (entity + swing)
+        }
+        s.lastAdvance = tick;
+        if (s.shown < s.total) {
+            s.shown = s.total;
+            s.acc = 0;
+            s.typedAt = tick;
+            renderBubble(s, false);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, 0.16f, 1.75f);
+            return true;
+        }
+        if (!s.queue.isEmpty()) {
+            if (HudCards.blocking(player)) {
+                return true;
+            }
+            advances.merge(s.playerId, 1, Integer::sum);
+            s.acked = true;
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, 0.22f, 1.35f);
+            showLine(player, s, s.queue.poll());
+            return true;
+        }
+        if (s.pending != null) {
+            runPending(s);
+            return true;
+        }
+        advances.merge(s.playerId, 1, Integer::sum);
+        destroy(s, true);
+        return true;
+    }
+
+    /** Looking at the NPC or its bubble (a cone that widens up close), with no block in between. */
+    private boolean lookingAt(Player player, Session s, double coneDegrees) {
+        if (s.npcAt == null || s.npcAt.getWorld() == null || !s.npcAt.getWorld().equals(player.getWorld())) {
+            return false;
+        }
+        Location eye = player.getEyeLocation();
+        Vector origin = eye.toVector();
+        Vector dir = eye.getDirection().normalize();
+        Vector feet = s.npcAt.toVector();
+        Vector[] spots = {
+                feet.clone().add(new Vector(0, 0.9, 0)),
+                feet.clone().add(new Vector(0, 1.6, 0)),
+                bubblePos(s, s.npcAt).toVector().add(new Vector(0, 0.18, 0))
+        };
+        double best = Double.MAX_VALUE;
+        double bestDist = 0;
+        for (Vector spot : spots) {
+            Vector to = spot.clone().subtract(origin);
+            double dist = to.length();
+            if (dist < 0.2 || dist > maxDistance + 1.5) {
+                continue;
+            }
+            double angle = Math.toDegrees(dir.angle(to));
+            double allowed = Math.max(coneDegrees, Math.toDegrees(Math.atan(0.55 / dist)));
+            if (angle <= allowed && angle < best) {
+                best = angle;
+                bestDist = dist;
+            }
+        }
+        if (best == Double.MAX_VALUE) {
+            return false;
+        }
+        RayTraceResult wall = player.getWorld().rayTraceBlocks(eye, dir, Math.max(0.5, bestDist - 0.3),
+                FluidCollisionMode.NEVER, true);
+        return wall == null || wall.getHitBlock() == null;
+    }
+
+    /** Paged: a click box over the bubble, so right-clicking the bubble itself goes on too. */
+    private void fitBubbleHit(Player player, Session s) {
+        if (s.npcAt == null || !s.chips.isEmpty()) {
+            return;
+        }
+        int[] box = bubbleBox(s);
+        float w = (float) Math.max(0.6, Math.min(2.6, box[0] * TalkChrome.PX * bubbleScale));
+        float h = (float) Math.max(0.3, box[1] * TalkChrome.LINE_PX * TalkChrome.PX * bubbleScale + 0.1);
+        Location at = hitPos(s);
+        if (s.bubbleHit == null || !s.bubbleHit.isValid()) {
+            s.bubbleHit = spawn(at, Interaction.class, it -> {
+                it.setInteractionWidth(w);
+                it.setInteractionHeight(h);
+                it.setResponsive(false);
+            });
+            if (s.bubbleHit != null) {
+                player.showEntity(plugin, s.bubbleHit);
+            }
+        } else {
+            s.bubbleHit.setInteractionWidth(w);
+            s.bubbleHit.setInteractionHeight(h);
+            teleportSmooth(s.bubbleHit, at);
+        }
+    }
+
+    private Location hitPos(Session s) {
+        return bubblePos(s, s.npcAt).add(0, -0.05, 0);
+    }
+
+    /* =====================================================================
+     * Paged talk: the chat log and its book
+     * ===================================================================== */
+
+    /** One grey chat line for a finished conversation: hover = all of it, click = the recent ones in a book. */
+    private void logConversation(Session s) {
+        Player player = Bukkit.getPlayer(s.playerId);
+        if (player == null || !player.isOnline() || (s.transcript.isEmpty() && s.queue.isEmpty())) {
+            return;
+        }
+        List<LogLine> lines = new ArrayList<>(s.transcript);
+        int heard = lines.size();
+        for (String waiting : s.queue) {
+            lines.add(new LogLine(false, waiting));
+        }
+        int said = 0;
+        for (LogLine line : lines) {
+            if (!line.you()) {
+                said++;
+            }
+        }
+        int unheard = lines.size() - heard;
+        String name = TalkText.strip(s.npcName == null ? s.npcId : s.npcName);
+        ArrayDeque<TalkLog> history = logs.computeIfAbsent(s.playerId, k -> new ArrayDeque<>());
+        history.addLast(new TalkLog(name, s.accent, System.currentTimeMillis(), List.copyOf(lines), heard));
+        while (history.size() > 12) {
+            history.removeFirst();
+        }
+        if (said < logMinLines && unheard == 0) {
+            return;
+        }
+        String tail = unheard > 0
+                ? ui(player, "log_more", " had more to say · {0} unread").replace("{0}", String.valueOf(unheard))
+                : ui(player, "log_lines", " · {0} lines").replace("{0}", String.valueOf(said));
+        Component row = Component.text("  » ", TalkChrome.mix(s.accent, TalkChrome.FAINT, 0.35))
+                .append(Component.text(name, TalkChrome.mix(s.accent, TalkChrome.MUTED, 0.3)))
+                .append(Component.text(tail, TalkChrome.FAINT))
+                .append(Component.text("  " + ui(player, "log_read", "[Read]"), TalkChrome.MUTED))
+                .hoverEvent(HoverEvent.showText(transcriptHover(player, name, s.accent, lines, heard)))
+                .clickEvent(ClickEvent.runCommand(CMD + " log"));
+        player.sendMessage(row);
+    }
+
+    private Component transcriptHover(Player player, String name, TextColor accent, List<LogLine> lines, int heard) {
+        Component out = Component.text(name, accent, TextDecoration.BOLD);
+        String you = ui(player, "you", "You: ");
+        for (int i = 0; i < lines.size(); i++) {
+            if (i == heard) {
+                out = out.append(Component.newline())
+                        .append(Component.text(ui(player, "log_unheard", "Not heard yet:"), TalkChrome.FAINT, TextDecoration.ITALIC));
+            }
+            LogLine line = lines.get(i);
+            if (line.you()) {
+                String text = TalkText.wrap("§7" + you + TalkText.strip(line.text()), 220);
+                out = out.append(Component.newline()).append(Component.text(TalkText.strip(text), TalkChrome.MUTED, TextDecoration.ITALIC));
+            } else {
+                String text = TalkText.wrap("§f" + line.text(), 220);
+                out = out.append(Component.newline()).append(LEGACY.deserialize(text));
+            }
+        }
+        return out.append(Component.newline())
+                .append(Component.text(ui(player, "log_click", "Click: your recent conversations"), TalkChrome.FAINT));
+    }
+
+    /** The recent conversations, newest first, as a book (opened, never given). */
+    private void openLog(Player player) {
+        ArrayDeque<TalkLog> history = logs.get(player.getUniqueId());
+        if (history == null || history.isEmpty()) {
+            player.sendActionBar(Component.text(ui(player, "log_empty", "No conversations yet."), TalkChrome.HINT));
+            return;
+        }
+        TextColor ink = TextColor.color(0x2B2B33);
+        TextColor soft = TextColor.color(0x5E6070);
+        String you = ui(player, "you", "You: ");
+        List<Component> rows = new ArrayList<>();
+        List<TalkLog> list = new ArrayList<>(history);
+        java.util.Collections.reverse(list);
+        long now = System.currentTimeMillis();
+        for (TalkLog log : list) {
+            TextColor head = TalkChrome.mix(log.accent(), TextColor.color(0x000000), 0.5);
+            rows.add(Component.text(log.npcName(), head, TextDecoration.BOLD)
+                    .append(Component.text("  " + ago(player, now - log.at()), soft)));
+            for (int i = 0; i < log.lines().size(); i++) {
+                LogLine line = log.lines().get(i);
+                boolean unheard = i >= log.heard();
+                String plain = line.you() ? you + TalkText.strip(line.text()) : TalkText.strip(line.text());
+                for (String part : TalkText.wrap(plain, 108).split("\n")) {
+                    rows.add(Component.text(part, line.you() || unheard ? soft : ink)
+                            .decoration(TextDecoration.ITALIC, line.you()));
+                }
+            }
+            rows.add(Component.text(" "));
+        }
+        List<Component> pages = new ArrayList<>();
+        Component page = Component.empty();
+        int used = 0;
+        for (Component row : rows) {
+            if (used >= 13) {
+                pages.add(page);
+                page = Component.empty();
+                used = 0;
+                if (pages.size() >= 50) {
+                    break;
+                }
+            }
+            page = used == 0 ? row : page.append(Component.newline()).append(row);
+            used++;
+        }
+        if (used > 0 && pages.size() < 50) {
+            pages.add(page);
+        }
+        player.openBook(Book.book(Component.text(ui(player, "log_title", "Conversations")), Component.text("Aetherion"), pages));
+    }
+
+    private static String ago(Player player, long ms) {
+        long min = ms / 60_000L;
+        if (min < 1) {
+            return ui(player, "log_now", "just now");
+        }
+        if (min < 60) {
+            return ui(player, "log_minutes", "{0} min ago").replace("{0}", String.valueOf(min));
+        }
+        return ui(player, "log_hours", "{0} h ago").replace("{0}", String.valueOf(min / 60));
     }
 
     /** Put every piece of the conversation where it belongs for the current NPC spot / facing. */
@@ -1153,6 +1654,9 @@ public final class TalkUx implements Listener {
             s.bubble.teleport(pos);
         }
         teleportSmooth(s.tail, tailPos(pos, bubbleScale));
+        if (s.bubbleHit != null) {
+            teleportSmooth(s.bubbleHit, hitPos(s));
+        }
         for (ChipView chip : s.chips) {
             Location home = chipHome(s, s.npcAt, chip.index);
             if (chip.panel != null) {
@@ -1236,9 +1740,13 @@ public final class TalkUx implements Listener {
         }
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, 0.35f, 1.25f);
         if (chip.choice.echo() != null) {
-            player.sendMessage(Component.text("  » ", s.accent)
-                    .append(Component.text(ui(player, "you", "You: "), NamedTextColor.GRAY))
-                    .append(Component.text(chip.choice.echo(), NamedTextColor.WHITE, TextDecoration.ITALIC)));
+            if (s.paged) {
+                s.transcript.add(new LogLine(true, chip.choice.echo()));
+            } else {
+                player.sendMessage(Component.text("  » ", s.accent)
+                        .append(Component.text(ui(player, "you", "You: "), NamedTextColor.GRAY))
+                        .append(Component.text(chip.choice.echo(), NamedTextColor.WHITE, TextDecoration.ITALIC)));
+            }
         }
         clearChips(s, true);
         collapseCard(s);
@@ -1248,6 +1756,7 @@ public final class TalkUx implements Listener {
         s.typedAt = tick;
         // They answered, so they've read it: the reaction doesn't sit out the read gap.
         de.aetherion.quests.dialog.DialogPace.release(player);
+        s.acked = true;
         Runnable action = chip.choice.action();
         if (action != null) {
             try {
@@ -1255,6 +1764,10 @@ public final class TalkUx implements Listener {
             } catch (RuntimeException ex) {
                 plugin.getLogger().warning("Talk reply failed: " + ex.getMessage());
             }
+        }
+        // A line that came in while the replies were up is next.
+        if (s.paged && sessions.get(s.playerId) == s && s.chips.isEmpty() && s.acked && !s.queue.isEmpty()) {
+            showLine(player, s, s.queue.poll());
         }
     }
 
@@ -1285,6 +1798,13 @@ public final class TalkUx implements Listener {
             return;
         }
         Session s = sessionFor(event.getPlayer());
+        if (isBubbleHit(s, event.getRightClicked())) {
+            event.setCancelled(true);
+            if (event.getHand() == EquipmentSlot.HAND && !(event instanceof PlayerInteractAtEntityEvent)) {
+                advance(event.getPlayer(), s);
+            }
+            return;
+        }
         int index = chipIndexOf(s, event.getRightClicked());
         if (index < 0) {
             if (event.getRightClicked().getScoreboardTags().contains(TAG)) {
@@ -1304,6 +1824,10 @@ public final class TalkUx implements Listener {
             return;
         }
         Session s = sessionFor(event.getPlayer());
+        if (isBubbleHit(s, event.getRightClicked())) {
+            event.setCancelled(true);
+            return;
+        }
         int index = chipIndexOf(s, event.getRightClicked());
         if (index >= 0 || event.getRightClicked().getScoreboardTags().contains(TAG)) {
             event.setCancelled(true);
@@ -1316,6 +1840,13 @@ public final class TalkUx implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onChipLeftClick(PrePlayerAttackEntityEvent event) {
         Session s = sessionFor(event.getPlayer());
+        if (isBubbleHit(s, event.getAttacked())) {
+            event.setCancelled(true);
+            if (!HudCards.clickUsed(event.getPlayer())) {
+                advance(event.getPlayer(), s);
+            }
+            return;
+        }
         int index = chipIndexOf(s, event.getAttacked());
         if (index >= 0 || event.getAttacked().getScoreboardTags().contains(TAG)) {
             event.setCancelled(true);
@@ -1331,10 +1862,24 @@ public final class TalkUx implements Listener {
             return;
         }
         Session s = sessionFor(event.getPlayer());
-        if (s == null || s.chips.isEmpty() || s.hover < 0) {
+        if (s == null) {
             return;
         }
-        pick(event.getPlayer(), s, s.hover);
+        if (!s.chips.isEmpty()) {
+            if (s.hover >= 0) {
+                pick(event.getPlayer(), s, s.hover);
+            }
+            return;
+        }
+        // Paged: a left-click while looking at the one who talks goes on.
+        if (s.paged && !HudCards.clickUsed(event.getPlayer()) && lookingAt(event.getPlayer(), s, 18.0)) {
+            advance(event.getPlayer(), s);
+        }
+    }
+
+    private static boolean isBubbleHit(Session s, Entity entity) {
+        return s != null && s.bubbleHit != null && entity != null
+                && s.bubbleHit.getUniqueId().equals(entity.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -1346,11 +1891,21 @@ public final class TalkUx implements Listener {
             return;
         }
         Session s = sessionFor(event.getPlayer());
-        if (s == null || s.chips.isEmpty() || s.hover < 0) {
+        if (s == null) {
             return;
         }
-        event.setCancelled(true);
-        pick(event.getPlayer(), s, s.hover);
+        if (!s.chips.isEmpty()) {
+            if (s.hover >= 0) {
+                event.setCancelled(true);
+                pick(event.getPlayer(), s, s.hover);
+            }
+            return;
+        }
+        // Paged: right-click into the air at them (an item in hand) goes on as well.
+        if (s.paged && event.getAction() == Action.RIGHT_CLICK_AIR && lookingAt(event.getPlayer(), s, 12.0)
+                && advance(event.getPlayer(), s)) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -1384,6 +1939,10 @@ public final class TalkUx implements Listener {
         }
         event.setCancelled(true);
         String[] parts = msg.substring(1).trim().split("\\s+");
+        if (parts.length >= 2 && "log".equalsIgnoreCase(parts[1])) {
+            openLog(event.getPlayer());
+            return;
+        }
         if (parts.length < 4 || !"pick".equalsIgnoreCase(parts[1])) {
             return;
         }
@@ -1406,10 +1965,15 @@ public final class TalkUx implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        Session s = sessions.get(event.getPlayer().getUniqueId());
+        UUID id = event.getPlayer().getUniqueId();
+        Session s = sessions.get(id);
         if (s != null) {
             destroy(s, false);
         }
+        logs.remove(id);
+        advances.remove(id);
+        clickTargets.remove(id);
+        recentNpc.remove(id);
     }
 
     @EventHandler
@@ -1563,7 +2127,7 @@ public final class TalkUx implements Listener {
     private void purgeLeftovers() {
         int removed = 0;
         for (World world : Bukkit.getWorlds()) {
-            for (Entity e : world.getEntitiesByClasses(TextDisplay.class, Interaction.class)) {
+            for (Entity e : world.getEntitiesByClasses(TextDisplay.class, Interaction.class, ItemDisplay.class)) {
                 if (e.getScoreboardTags().contains(TAG)) {
                     e.remove();
                     removed++;

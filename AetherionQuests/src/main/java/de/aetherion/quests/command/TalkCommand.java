@@ -85,7 +85,11 @@ public final class TalkCommand implements CommandExecutor, TabCompleter {
                 if (talk != null) {
                     talk.reload();
                 }
-                sender.sendMessage("§aTalk UX config reloaded.");
+                de.aetherion.quests.talk.HudCards cards = de.aetherion.quests.talk.HudCards.get();
+                if (cards != null) {
+                    cards.reload();
+                }
+                sender.sendMessage("§aTalk UX config reloaded (paged talk + screen cards too).");
                 return true;
             }
             default -> {

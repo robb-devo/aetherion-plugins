@@ -41,7 +41,8 @@ public final class TalkAccessImpl implements TalkAccess {
 
     /**
      * Guest lines ride the same speech clock as ours ({@link DialogPace}): several {@code say}
-     * calls in one tick play one after another at the shared typing speed + read gap.
+     * calls in one tick play one after another at the shared typing speed + read gap. With paged
+     * talk they go straight into the bubble's queue and the player clicks from one to the next.
      */
     @Override
     public boolean say(Player player, String speakerId, String line) {
@@ -51,6 +52,9 @@ public final class TalkAccessImpl implements TalkAccess {
             return false;
         }
         String filled = de.aetherion.quests.talk.TalkText.fill(player, line);
+        if (ux.wouldPage(player, speakerId) && ux.line(player, speakerId, GuestSpeakers.displayName(speakerId), filled)) {
+            return true;
+        }
         long delay = DialogPace.reserve(player, filled);
         if (delay <= 0L) {
             ux.line(player, speakerId, GuestSpeakers.displayName(speakerId), filled);
@@ -69,7 +73,10 @@ public final class TalkAccessImpl implements TalkAccess {
         return true;
     }
 
-    /** Chips land once the queued lines have typed out (never under a line that's still coming). */
+    /**
+     * Chips land once the queued lines have typed out (never under a line that's still coming). Paged talk holds
+     * them itself until the last line is read, so they are handed over at once.
+     */
     @Override
     public boolean replies(Player player, String speakerId, List<Reply> replies) {
         TalkUx ux = TalkUx.get();

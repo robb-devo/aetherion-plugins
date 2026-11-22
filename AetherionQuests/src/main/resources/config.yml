@@ -87,6 +87,27 @@ talk-ux:
   bubble-frame: true          # thin name-colour edge on bubble, quest card + focused reply
   pack-glyphs: false          # true only once the server pack ships aetherion:talk
 
+# Paged talk: a bubble line waits for the player's click (left/right-click the NPC or its bubble, or left-click
+# while looking at them); a click while it types shows it at once, ▾ = more is coming. NPC lines no longer go to
+# chat: one grey log line per conversation (hover = the whole talk, click = a book of the recent ones, /aetalk log).
+paged-talk:
+  enabled: false
+  last-line-seconds: 8        # the last line folds away on its own after this
+  log-min-lines: 2            # shorter talks leave no chat line (unless the player walked off mid-talk)
+
+# Screen cards: a small toast at the top for a step done, a big animated card above the middle for a quest done or
+# an island milestone (rewards as rows, "+250" counts up), then one summary line in chat. Only the player sees them.
+hud-cards:
+  enabled: false
+  depth: 2.0                  # blocks in front of the eye (pulled closer by itself in front of walls / NPCs)
+  big-y: 0.30                 # big card height above the middle of the view
+  toast-y: 0.98               # toast height above the middle of the view
+  big-scale: 0.25
+  title-scale: 0.42
+  toast-scale: 0.24
+  big-hold-ticks: 80          # after the rows are in; a left-click sends it away early
+  toast-hold-ticks: 56
+
 # Soft-hint waypoints (QuestHint "spot:<key>") — isle jump pads on the hub side.
 # Code defaults match the live pads; set a key here only if a pad moves.
 # road-spots:

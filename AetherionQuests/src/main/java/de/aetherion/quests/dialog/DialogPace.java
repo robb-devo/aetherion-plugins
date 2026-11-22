@@ -1,9 +1,12 @@
 package de.aetherion.quests.dialog;
 
+import de.aetherion.quests.talk.HudCards;
 import de.aetherion.quests.talk.TalkText;
+import de.aetherion.quests.talk.TalkUx;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import java.util.Map;
 import java.util.UUID;
@@ -21,6 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * Knobs live under {@code talk-ux:} ({@code chars-per-tick}, {@code read-gap-ticks}); code
  * defaults apply when the live config doesn't set them.
+ * <p>
+ * Paged talk ({@code TalkUx}, {@code paged-talk.enabled}): lines that go into a paged bubble skip this clock, because
+ * the player clicks from one to the next. Callers hand them over at once, and a follow-up that must wait until the
+ * player has read everything uses {@link #whenFree}.
  */
 public final class DialogPace {
 
@@ -150,6 +157,33 @@ public final class DialogPace {
         long now = now();
         CLOCKS.computeIfPresent(player.getUniqueId(),
                 (k, c) -> c.typedAt() <= now ? null : c);
+    }
+
+    /**
+     * Run {@code action} once {@code player} has nothing left to read: the clock is free, no paged bubble still has a
+     * line typing, waiting for a click or freshly typed, and no big screen card is up. Checked every few ticks, at
+     * the earliest after {@code minDelay}; after three minutes it runs anyway. Nothing runs if the player left.
+     */
+    public static void whenFree(Plugin plugin, Player player, long minDelay, Runnable action) {
+        if (plugin == null || player == null || action == null) {
+            return;
+        }
+        long deadline = now() + 3600L;
+        Runnable[] poll = new Runnable[1];
+        poll[0] = () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            long busy = untilFree(player);
+            TalkUx talk = TalkUx.get();
+            boolean reading = (talk != null && talk.pagingBusy(player)) || HudCards.blocking(player);
+            if ((busy > 0L || reading) && now() < deadline) {
+                Bukkit.getScheduler().runTaskLater(plugin, poll[0], reading ? 5L : Math.max(1L, Math.min(busy, 40L)));
+                return;
+            }
+            action.run();
+        };
+        Bukkit.getScheduler().runTaskLater(plugin, poll[0], Math.max(1L, Math.max(minDelay, untilFree(player))));
     }
 
     /** Conversation dropped (walked off, quit, new dialog took over): clear the clock. */

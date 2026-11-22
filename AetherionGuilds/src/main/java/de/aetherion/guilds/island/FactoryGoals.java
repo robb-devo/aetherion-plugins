@@ -206,6 +206,12 @@ public final class FactoryGoals {
             dirty = true;
             hosts.refund(player, host, goal.reward());
             Goal next = next(host);
+            if (IslandUi.toast(player, goal.title(),
+                    "§6+" + GuildFormat.compact(goal.reward()) + " §7" + hosts.fundsLabel(host),
+                    next == null ? "§7Every factory goal done." : "§8Next: §f" + next.title() + " §8— §7" + next.how())) {
+                de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.END_ROD, 24, Math.max(0.6, 0.6), null);
+                return; // one beat at a time
+            }
             if (!goal.id().equals("first_chain") && !goal.id().equals("hub") && !titleOwned.test(host, goal.id())) {
                 // (the first chain gets Hollis' own title, the Hub its ritual, the tour's finale its own)
                 player.sendTitle("§b✦ " + goal.title() + " §b✦", next == null ? "§7Every factory goal done."

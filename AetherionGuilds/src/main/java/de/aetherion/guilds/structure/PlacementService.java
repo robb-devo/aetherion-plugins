@@ -557,12 +557,16 @@ public final class PlacementService {
             return;
         }
         data.set(key, org.bukkit.persistence.PersistentDataType.STRING, seen.isEmpty() ? id : seen + "," + id);
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
+        if (de.aetherion.guilds.island.IslandUi.note(player, "✦", part.label() + " · new part",
+                java.util.List.of("§f" + card[0], "§aIn: §7" + card[1], "§6Out: §7" + card[2]), null)) {
+            return;
+        }
         player.sendMessage("");
         player.sendMessage("§6§l" + part.label() + " §8· §7new part");
         player.sendMessage("§8▪ §f" + card[0]);
         player.sendMessage("§8▪ §aIn: §7" + card[1]);
         player.sendMessage("§8▪ §6Out: §7" + card[2]);
-        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
     }
 
     /**
