@@ -450,6 +450,14 @@ public final class MineLesson {
         bar.color(color);
     }
 
+    /**
+     * The lesson bar is up. Strike Rhythm keeps its own bar down meanwhile, so the first mining
+     * lesson shows one bar on top, not two that say the same thing (R-28).
+     */
+    boolean barShown(UUID id) {
+        return bars.containsKey(id);
+    }
+
     private void hide(UUID id) {
         BossBar bar = bars.remove(id);
         Player player = Bukkit.getPlayer(id);
