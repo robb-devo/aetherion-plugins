@@ -11,7 +11,7 @@ glossary:
     "Health": "Leben"
     "Defense": "Verteidigung"
     "Undead Resist": "Untoten-Resistenz"
-    "Speed": "Tempo"
+    "Speed": "Geschwindigkeit"
     "Mining Power": "Abbaukraft"
     "Fortune": "Glück"
     "Spread": "Streuung"
@@ -877,7 +877,7 @@ text:
   - {en: "§8Slow. Heavy. Final.", de: "§8Langsam. Schwer. Final."}
   - {en: "§7A hammer carved from volcanic glass.", de: "§7Ein Hammer, gehauen aus Vulkanglas."}
   - {en: "§7Light as a cobweb. Almost as comforting.", de: "§7Leicht wie Spinnweben. Fast genauso kuschelig."}
-  - {en: "§8Full set: §7+5% Speed", de: "§8Vollständiges Set: §7+5% Tempo"}
+  - {en: "§8Full set: §7+5% Speed", de: "§8Vollständiges Set: §7+5% Geschwindigkeit"}
   - {en: "§bBlueprint: Vein Siphon", de: "§bBauplan: Erzader-Sauger"}
   - {en: "§7Schematic for a suction mining tool.", de: "§7Bauplan für ein Saug-Abbauwerkzeug."}
   - {en: "§bBlueprint Tier: §fI/IV", de: "§bBauplan-Stufe: §fI/IV"}
@@ -1695,6 +1695,11 @@ text:
   - {en: "GOD Kit 2 Test", de: "GOTT-Kit 2 Test"}
   - {en: "Starter hunting bow", de: "Starter-Jagdbogen"}
 patterns:
+  - {en: "⚡ Tempo: Very fast ({0}/s)", de: "§7⚡ Tempo: §fSehr schnell §8({0}/s)"}
+  - {en: "⚡ Tempo: Fast ({0}/s)", de: "§7⚡ Tempo: §fSchnell §8({0}/s)"}
+  - {en: "⚡ Tempo: Medium ({0}/s)", de: "§7⚡ Tempo: §fMittel §8({0}/s)"}
+  - {en: "⚡ Tempo: Slow ({0}/s)", de: "§7⚡ Tempo: §fLangsam §8({0}/s)"}
+  - {en: "⚡ Tempo: Very slow ({0}/s)", de: "§7⚡ Tempo: §fSehr langsam §8({0}/s)"}
   - {en: "Value: {0} coins each", de: "§8Wert: §6{0} Münzen §7pro Stück"}
   - {en: "AH value: {0} coins", de: "§8AH-Wert: §6{0} Münzen"}
   - {en: "Trade value: {0} coins", de: "§8Handelswert: §6{0} Münzen"}

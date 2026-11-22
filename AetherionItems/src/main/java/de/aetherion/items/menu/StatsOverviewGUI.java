@@ -43,7 +43,7 @@ public class StatsOverviewGUI {
             new Stat(4, Material.DIAMOND_SWORD, "§c", "Damage", "Schaden", ItemCapability.DAMAGE, false),
             new Stat(6, Material.GHAST_TEAR, "§f", "Crit Chance", "Krit-Chance", ItemCapability.CRIT_CHANCE, true),
             new Stat(8, Material.BLAZE_POWDER, "§6", "Crit Damage", "Krit-Schaden", ItemCapability.CRIT_DAMAGE, true),
-            new Stat(18, Material.SUGAR, "§e", "Speed", "Tempo", ItemCapability.SPEED, true),
+            new Stat(18, Material.SUGAR, "§e", "Speed", "Geschwindigkeit", ItemCapability.SPEED, true),
             new Stat(20, Material.REDSTONE, "§c", "Attack Spread", "Angriffsstreuung", ItemCapability.ATTACK_SPREAD, false),
             new Stat(22, Material.IRON_PICKAXE, "§7", "Mining Power", "Abbaukraft", ItemCapability.MINING_POWER, false),
             new Stat(24, Material.RABBIT_FOOT, "§e", "Fortune", "Glück", ItemCapability.FORTUNE, false),

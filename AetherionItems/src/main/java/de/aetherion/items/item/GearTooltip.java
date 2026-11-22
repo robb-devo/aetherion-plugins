@@ -131,24 +131,36 @@ public final class GearTooltip implements Listener {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> refresh(player), 20L);
     }
 
-    /** Weapon tempo under the stat block of a melee item ({@code ⚡ Tempo: Slow (0.8/s)}), rebuilt every refresh. */
+    /**
+     * Weapon tempo of a melee item ({@code ⚡ Tempo: Slow (0.8/s)}), rebuilt every refresh. It always sits in the same
+     * slot, the line right under the base Damage line, so it no longer slides with each weapon's stat count (R-63).
+     */
     private static void addTempo(List<String> lore, ItemStack item, String itemId) {
         String tempo = de.aetherion.items.combat.system.CombatSystem.tempoLine(item, itemId);
         if (tempo == null) {
             return;
         }
-        int at = -1;
+        int base = -1;
+        int any = -1;
         for (int i = 0; i < lore.size(); i++) {
-            if (lore.get(i) != null && ChatColor.stripColor(lore.get(i)).toLowerCase(Locale.ROOT).contains("damage:")) {
-                at = i;
+            if (lore.get(i) == null) {
+                continue;
+            }
+            String plain = ChatColor.stripColor(lore.get(i)).toLowerCase(Locale.ROOT);
+            if (!plain.contains("damage:")) {
+                continue;
+            }
+            if (any < 0) {
+                any = i;
+            }
+            if (!plain.contains("crit damage:") && !plain.contains("undead damage:")) {
+                base = i;
                 break;
             }
         }
+        int at = base >= 0 ? base : any;
         if (at < 0) {
             return;
-        }
-        while (at + 1 < lore.size() && lore.get(at + 1) != null && isStatLine(lore.get(at + 1))) {
-            at++;
         }
         lore.add(at + 1, tempo);
     }
