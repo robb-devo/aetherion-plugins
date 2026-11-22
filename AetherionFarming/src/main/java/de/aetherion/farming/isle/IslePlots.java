@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Named areas of Eldervale — fields, landmarks, water — from {@code farm-isle-plots} in config.
@@ -47,7 +48,14 @@ public final class IslePlots {
         }
     }
 
-    public record Plot(String id, String name, Kind kind, String blurb, List<Circle> circles) {
+    /**
+     * The few places that get the big screen title on a first visit. Every other place shows a
+     * short line instead, so the isle doesn't throw a title at every step. A plot can override
+     * this with {@code major: true|false} in config.
+     */
+    static final Set<String> MAJOR_PLACES = Set.of("harvest_hall", "mirror_pond", "southfield_hamlet");
+
+    public record Plot(String id, String name, Kind kind, String blurb, List<Circle> circles, boolean major) {
 
         public boolean contains(Location at) {
             for (Circle circle : circles) {
@@ -135,12 +143,14 @@ public final class IslePlots {
                 } catch (IllegalArgumentException ignored) {
                     kind = Kind.FIELD;
                 }
+                String key = id.toLowerCase(Locale.ROOT);
                 loaded.add(new Plot(
-                        id.toLowerCase(Locale.ROOT),
+                        key,
                         section.getString("name", id),
                         kind,
                         section.getString("blurb", ""),
-                        List.copyOf(circles)
+                        List.copyOf(circles),
+                        section.getBoolean("major", MAJOR_PLACES.contains(key))
                 ));
             }
         }

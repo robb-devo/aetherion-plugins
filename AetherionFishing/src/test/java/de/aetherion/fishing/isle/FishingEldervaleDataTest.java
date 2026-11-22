@@ -59,6 +59,15 @@ class FishingEldervaleDataTest {
     }
 
     @Test
+    void onlyTheMainWatersGetABigTitle() {
+        List<String> majors = waters.stream().filter(Waters.Water::major).map(Waters.Water::id).sorted().toList();
+        assertEquals(List.of("mirror_reach", "south_deep", "wishing_fountain"), majors);
+        for (String id : Waters.MAJOR_PLACES) {
+            assertNotNull(water(id), id + " exists in config");
+        }
+    }
+
+    @Test
     void twelveWatersParse() {
         assertEquals(12, waters.size());
         assertEquals(7, waters.stream().filter(w -> w.kind() == Waters.Kind.LAKE).count());

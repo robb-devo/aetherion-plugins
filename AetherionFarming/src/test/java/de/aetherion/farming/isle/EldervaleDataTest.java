@@ -50,6 +50,15 @@ class EldervaleDataTest {
     }
 
     @Test
+    void onlyTheMainPlacesGetABigTitle() {
+        List<String> majors = plots.stream().filter(IslePlots.Plot::major).map(IslePlots.Plot::id).sorted().toList();
+        assertEquals(List.of("harvest_hall", "mirror_pond", "southfield_hamlet"), majors);
+        for (String id : IslePlots.MAJOR_PLACES) {
+            assertTrue(plots.stream().anyMatch(p -> p.id().equals(id)), id + " exists in config");
+        }
+    }
+
+    @Test
     void lookupOrderIsLandmarkWaterField() {
         int last = -1;
         for (IslePlots.Plot plot : plots) {

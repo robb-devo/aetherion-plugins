@@ -31,6 +31,8 @@ public final class MineCompass {
     private static final int CARTOGRAPHER_XP = 600;
     private static final long GUIDE_MS = 180_000L;
     private static final double ARRIVE_DISTANCE = 5.0d;
+    /** How long a small place's discovery line stays before the guide arrow takes the bar back. */
+    private static final long DISCOVERY_LINE_MS = 2_500L;
     private static final List<MineRole> TOUR = List.of(
             MineRole.LAMPWARDEN, MineRole.CLERK, MineRole.COOK, MineRole.ASSAYER, MineRole.FORGEMASTER, MineRole.HERMIT);
 
@@ -41,6 +43,7 @@ public final class MineCompass {
     private final Map<UUID, String> lastDistrict = new ConcurrentHashMap<>();
     private final Map<UUID, MineDistricts.Band> lastBand = new ConcurrentHashMap<>();
     private final Map<UUID, Guide> guides = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> barHeld = new ConcurrentHashMap<>();
     private BukkitTask task;
 
     MineCompass(MineIsle isle) {
@@ -59,12 +62,14 @@ public final class MineCompass {
         lastDistrict.clear();
         lastBand.clear();
         guides.clear();
+        barHeld.clear();
     }
 
     void forget(UUID id) {
         lastDistrict.remove(id);
         lastBand.remove(id);
         guides.remove(id);
+        barHeld.remove(id);
     }
 
     // ------------------------------------------------------------------ guiding
@@ -200,8 +205,12 @@ public final class MineCompass {
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.7f, 1.5f);
             return;
         }
-        MineText.bar(player, "§e" + MineText.arrow(player, guide.target()) + " §f" + guide.label()
-                + " §8· §7" + (int) Math.round(distance) + "m" + MineText.vertical(player, guide.target()));
+        Long held = barHeld.get(player.getUniqueId());
+        if (held == null || now >= held) {
+            barHeld.remove(player.getUniqueId());
+            MineText.bar(player, "§e" + MineText.arrow(player, guide.target()) + " §f" + guide.label()
+                    + " §8· §7" + (int) Math.round(distance) + "m" + MineText.vertical(player, guide.target()));
+        }
         if (Bukkit.getCurrentTick() % 40 < 10) {
             Location from = player.getLocation().add(0, 1.2, 0);
             var step = guide.target().toVector().subtract(from.toVector()).normalize().multiply(2.2);
@@ -219,13 +228,21 @@ public final class MineCompass {
             isle.profiles().markDirty();
             int found = countKnown(profile);
             int total = isle.districts().size();
-            player.showTitle(Title.title(
-                    MineText.legacy(district.colored()),
-                    MineText.legacy("§7Discovered §8· §f" + found + "§7/§f" + total
-                            + (district.blurb().isBlank() ? "" : " §8· §7" + district.blurb())),
-                    Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1800), Duration.ofMillis(400))
-            ));
-            player.playSound(player.getLocation(), Sound.UI_TOAST_IN, SoundCategory.PLAYERS, 0.9f, 0.9f);
+            if (district.major()) {
+                player.showTitle(Title.title(
+                        MineText.legacy(district.colored()),
+                        MineText.legacy("§7Discovered §8· §f" + found + "§7/§f" + total
+                                + (district.blurb().isBlank() ? "" : " §8· §7" + district.blurb())),
+                        Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1800), Duration.ofMillis(400))
+                ));
+                player.playSound(player.getLocation(), Sound.UI_TOAST_IN, SoundCategory.PLAYERS, 0.9f, 0.9f);
+            } else {
+                // Small places: one short line, no screen title.
+                MineText.bar(player, "§e✦ " + district.colored()
+                        + (district.blurb().isBlank() ? "" : " §8· §7" + district.blurb())
+                        + " §8· §f" + found + "§7/§f" + total);
+                barHeld.put(player.getUniqueId(), System.currentTimeMillis() + DISCOVERY_LINE_MS);
+            }
             player.playSound(player.getLocation(), district.kind() == MineDistricts.Kind.SHAFT
                     ? Sound.AMBIENT_CAVE : Sound.BLOCK_LANTERN_PLACE, SoundCategory.PLAYERS, 0.7f, 1.0f);
             MineSkills.bonus(player, DISCOVERY_XP * (district.kind() == MineDistricts.Kind.SHAFT ? 2 : 1));
