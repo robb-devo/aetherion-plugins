@@ -246,6 +246,8 @@ public final class AetherionGuilds extends JavaPlugin {
         guide.attachLectern(hubMenu::open);
         hubMenu.attachTour(guide::tourUnlock, guide::inFactoryTour, guide.name());
         structures.attachFreeFirst(guide::freeFirst);
+        guide.attachUnlocker(progress::unlock);
+        placement.attachBoardHint(guide::boardHint);
         goals.attachTitleOwner(guide::ownsTitle);
         guide.register();
         guide.attachDock(dock, dockMenu::open);

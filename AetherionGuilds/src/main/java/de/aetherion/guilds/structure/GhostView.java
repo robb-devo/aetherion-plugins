@@ -24,7 +24,8 @@ import java.util.List;
  * One player's placement preview, made of BlockDisplays only that player can see (nobody else gets the
  * packets). A structure shows as a glowing hologram of its real blocks (green outline = fits, red = blocked)
  * over a tinted footprint plate; big templates fall back to an outline box. The Belt Layer shows a cursor
- * plate, the planned run as one or two flat strips, and orange markers on the chutes nearby.
+ * plate, the planned run as one or two flat strips, and orange markers on the chutes nearby. Beside a part's
+ * hologram stands its {@link PartBoard}: what it does, what goes in and out, what it costs.
  *
  * <p>Nothing is saved: the displays are non-persistent and die with the session.
  */
@@ -439,6 +440,36 @@ final class GhostView {
         clearStructure();
         clearBelts();
         clearMark();
+        clearBoard();
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // the signboard beside the hologram (what the part does, in / out, cost, where it fits)
+    // ------------------------------------------------------------------------------------------------
+
+    private PartBoard board;
+
+    /** Half the board's width at this distance, so the caller can stand it clear of the hologram. */
+    double boardHalfWidth(PartBoard.Spec spec, double distance) {
+        return board().halfWidth(spec, distance);
+    }
+
+    /** Shows or moves the board: {@code (x, y, z)} is the foot of its post, {@code yaw} the way it faces. */
+    void board(World in, double x, double y, double z, float yaw, double distance, PartBoard.Spec spec) {
+        board().show(in, x, y, z, yaw, distance, spec);
+    }
+
+    void clearBoard() {
+        if (board != null) {
+            board.clear();
+        }
+    }
+
+    private PartBoard board() {
+        if (board == null) {
+            board = new PartBoard(plugin, viewer);
+        }
+        return board;
     }
 
     // ------------------------------------------------------------------------------------------------

@@ -81,24 +81,24 @@ public final class FactoryGoals {
     }
 
     /*
-     * Personal islands climb the stage ladder: the tour (Hub, first chain, the hand press, the Mill in the line,
-     * the Dock, the first ship) is stage 0; then each stage's goals, its phase contract last. Guild islands keep
-     * the Hub-tier ladder. The island bar, /island, the Hub, Production and the guide all show the first one not
-     * done, so they always agree.
+     * Personal islands climb the stage ladder: the tour (Hub, the first chain quarry → Mill → hut, the Dock, the
+     * first ship) is stage 0; then each stage's goals, its phase contract last. Guild islands keep the Hub-tier
+     * ladder (their first chain ends straight in a hut, the Mill comes as its own step). The island bar, /island,
+     * the Hub, Production and the guide all show the first one not done, so they always agree. A goal id may
+     * appear once per scope (the first chain reads differently on the two kinds of island).
      */
     private final List<Goal> goals = List.of(
             new Goal("hub", "Found your Hub", "Build Tool → Hub, anywhere you like (unlocks machines)",
                     3_000L, (g, h) -> g.structures.hasWorkshop(h)),
+            new Goal("first_chain", "First chain", "Belt quarry → Mill → Storage Hut",
+                    5_000L, (g, h) -> g.inLine(h, StructureType.MILL) || g.stage(h) >= 1, Scope.PERSONAL),
             new Goal("first_chain", "First chain", "Belt quarry chute → Storage Hut",
-                    2_000L, (g, h) -> g.sourceLines(h) >= 1),
-            new Goal("press", "Press Compressed Cobble by hand", "Hub lectern → Hand Press (128 Cobblestone from storage)",
-                    1_000L, (g, h) -> g.pressed.applyAsInt(h) > 0 || g.stage(h) >= 1
-                    || g.structures.count(h, StructureType.MILL) > 0, Scope.PERSONAL),
+                    2_000L, (g, h) -> g.sourceLines(h) >= 1, Scope.GUILD),
             new Goal("mill_line", "Mill in the line", "Unlock → build → belt quarry → Mill → hut",
-                    5_000L, (g, h) -> g.inLine(h, StructureType.MILL)),
-            new Goal("dock", "Build your Dock", "Unlock it at the Hub (4 Compressed Cobble), then Build Tool → Dock",
+                    5_000L, (g, h) -> g.inLine(h, StructureType.MILL), Scope.GUILD),
+            new Goal("dock", "Build your Dock", "Unlock it at the Hub (1 Compressed Cobble), then Build Tool → Dock",
                     3_000L, (g, h) -> g.structures.count(h, StructureType.DOCK) > 0 || g.stage(h) >= 1, Scope.PERSONAL),
-            new Goal("first_ship", "Send your first ship", "Dock → First Shipment: 4 Compressed Cobble, then the airship",
+            new Goal("first_ship", "Send your first ship", "Dock → First Shipment: 2 Compressed Cobble, then the airship",
                     1_000L, (g, h) -> g.stage(h) >= 1, Scope.PERSONAL),
             // stage 1, the Werkhof
             new Goal("two_quarries", "Run two quarries into your line", "Set down your second quarry and belt it into a line.",
@@ -165,6 +165,17 @@ public final class FactoryGoals {
             }
         }
         return null;
+    }
+
+    /** How many goals this kind of island climbs (each scope has its own ladder). */
+    public int total(IslandHost host) {
+        int n = 0;
+        for (Goal goal : goals) {
+            if (goal.applies(host)) {
+                n++;
+            }
+        }
+        return n;
     }
 
     public int doneCount(IslandHost host) {
@@ -254,7 +265,7 @@ public final class FactoryGoals {
     /** Is this goal done on the island right now (by id; false for an unknown id)? */
     public boolean done(IslandHost host, String id) {
         for (Goal goal : goals) {
-            if (goal.id().equals(id)) {
+            if (goal.id().equals(id) && goal.applies(host)) {
                 return goal.done().test(this, host);
             }
         }

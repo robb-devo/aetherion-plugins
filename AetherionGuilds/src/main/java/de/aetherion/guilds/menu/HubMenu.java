@@ -411,18 +411,17 @@ public final class HubMenu implements MenuKit.Menu {
     private ItemStack pressTile(Player player, IslandHost host) {
         long cobble = structures.stock(host, BuildCosts.COBBLE);
         boolean can = cobble >= de.aetherion.guilds.island.DockService.PRESS_RAW;
-        boolean wanted = dock.pressed(host) == 0 && touring.test(host);
         List<String> lore = new ArrayList<>();
         lore.add("§7Press §f128 Cobblestone §7from storage");
         lore.add("§7into §a1 Compressed Cobblestone§7,");
-        lore.add("§7by hand. The Mill does it for you");
-        lore.add("§7later, all day long.");
+        lore.add("§7by hand, right now. Your Mill");
+        lore.add("§7does the same all day long.");
         lore.add("");
         lore.add("§7In storage: " + (can ? "§a" : "§c") + GuildFormat.compact(cobble) + " §7Cobblestone");
         lore.add("");
         lore.add(can ? "§e▶ Press one" : "§c✖ needs " + GuildFormat.compact(de.aetherion.guilds.island.DockService.PRESS_RAW - cobble)
                 + " more Cobblestone");
-        return MenuKit.tile(Material.PISTON, "§6Hand Press", lore, wanted && can);
+        return MenuKit.tile(Material.PISTON, "§6Hand Press", lore, false); // a side door, never the tour's glow
     }
 
     private ItemStack dockTile(IslandHost host) {

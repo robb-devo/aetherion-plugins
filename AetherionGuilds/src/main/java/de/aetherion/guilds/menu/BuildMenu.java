@@ -184,6 +184,12 @@ public final class BuildMenu implements MenuKit.Menu {
         }
         return switch (next.id()) {
             case "hub" -> type == StructureType.WORKSHOP;
+            // personal first chain: the Mill first, then the hut behind it (the quarry comes from the pack)
+            case "first_chain" -> !host.isGuild() && (type == StructureType.MILL
+                    ? structures.count(host, StructureType.MILL) == 0
+                    : type == StructureType.STORAGE_HUT && structures.count(host, StructureType.MILL) > 0
+                    && structures.count(host, StructureType.STORAGE_HUT) == 0);
+            case "dock" -> type == StructureType.DOCK;
             case "mill_line" -> type == StructureType.MILL;
             case "split" -> type == StructureType.SPLITTER;
             case "sort" -> type == StructureType.SORTER;
