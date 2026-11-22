@@ -46,6 +46,7 @@ import java.util.UUID;
  *   <li><b>Take down</b>: look at a belt or a building (it turns red), right-click. Buildings ask for a second
  *   click; half their cost goes back to storage.</li>
  *   <li>Right-click one of your buildings with a part picked: it opens, like without the tool.</li>
+ *   <li><b>Quarry</b>: sets a quarry from your pack down; the hologram is the rig that rises round it.</li>
  * </ul>
  * Clicks are only captured while the tool is in the main hand: scroll to another slot and you play normally,
  * scroll back and the tool still holds your pick. <b>Q</b> puts it away. The holograms are display entities only
@@ -60,12 +61,27 @@ public final class PlacementService {
         /** Splitter / Overflow Gate / Sorter: one cell, straight onto a belt or a free spot. */
         PIECE,
         /** Take belts and buildings down. */
-        DISMANTLE
+        DISMANTLE,
+        /** A quarry from the player's pack, with its housing as the hologram. */
+        QUARRY
+    }
+
+    /** Where the quarries come from (the items in a player's pack) and how one is set down. */
+    public interface Quarries {
+        /** The first quarry item in the player's pack, or null. */
+        ItemStack find(Player player);
+
+        /** How many quarries the player carries. */
+        int count(Player player);
+
+        /** Sets the quarry down on this ground block (it stands on top). True when it stands. */
+        boolean place(Player player, Block ground, ItemStack item);
     }
 
     /** What the Build Tool can hold, in the order sneak+scroll walks them. */
     public enum Part {
         BELT(null, "Belt", Material.IRON_TRAPDOOR, "Carries goods from a quarry to a hut or machine."),
+        QUARRY(null, "Quarry", Material.IRON_PICKAXE, "Sets a quarry from your pack down. It digs on its own."),
         STORAGE_HUT(StructureType.STORAGE_HUT, "Storage Hut", Material.BARREL, "Holds what your belts bring in."),
         HUB(StructureType.WORKSHOP, "Hub", Material.LECTERN, "Your factory's heart: unlocks and upgrades."),
         DEPOT(StructureType.DEPOT, "Depot", Material.CHEST, "More storage. Belts can end here or pass through."),
@@ -158,6 +174,9 @@ public final class PlacementService {
     private final NamespacedKey toolKey;
     private final Map<UUID, Session> sessions = new HashMap<>();
     private final Map<UUID, Part> lastPart = new HashMap<>();
+    private Quarries quarries;
+    /** The turn a quarry is being set down with (read once by the housing as it rises). */
+    private final Map<UUID, Integer> quarryRot = new HashMap<>();
     private java.util.function.BiConsumer<Player, IslandHost> picker = (player, host) -> {
     };
 
@@ -168,6 +187,22 @@ public final class PlacementService {
         this.structures = structures;
         this.logistics = logistics;
         this.toolKey = new NamespacedKey(plugin, "build_tool");
+    }
+
+    /** Where the Build Tool's quarries come from (the quarry service). */
+    public void attachQuarries(Quarries quarries) {
+        this.quarries = quarries;
+    }
+
+    /** How many quarries the player carries (0 without the quarry service). */
+    public int quarriesIn(Player player) {
+        return quarries == null || player == null ? 0 : quarries.count(player);
+    }
+
+    /** The turn the Build Tool set a quarry down with, else {@code fallback} (placed by hand). Read once. */
+    public int takeQuarryRot(Player player, int fallback) {
+        Integer rot = player == null ? null : quarryRot.remove(player.getUniqueId());
+        return rot == null ? fallback : rot;
     }
 
     /** The picker screen (F with the tool in hand). */
@@ -255,6 +290,9 @@ public final class PlacementService {
         if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
             return Part.STORAGE_HUT;
         }
+        if (structures.count(host, StructureType.QUARRY_HOUSING) == 0 && quarriesIn(player) > 0) {
+            return Part.QUARRY;
+        }
         if (logistics.count(host) == 0) {
             return Part.BELT;
         }
@@ -316,6 +354,9 @@ public final class PlacementService {
                     lore.add("§7Cost: " + costLine(player, session.host, structures.buildCost(session.host, part.type())));
                 } else if (part == Part.BELT) {
                     lore.add("§7Cost: §f" + BuildCosts.BELT_COBBLE + " Cobblestone §7a tile");
+                } else if (part == Part.QUARRY) {
+                    int carried = quarriesIn(player);
+                    lore.add("§7In your pack: " + (carried > 0 ? "§a" + carried : "§cnone §8(the Market at your Hub sells them)"));
                 }
                 lore.add("");
                 switch (part) {
@@ -437,7 +478,7 @@ public final class PlacementService {
 
     /** Sets what the tool holds (fields only; the caller refreshes the item). False if the part can't be held. */
     private boolean apply(Player player, Session session, Part part) {
-        StructureType type = part.type();
+        StructureType type = part == Part.QUARRY ? StructureType.QUARRY_HOUSING : part.type();
         Template template = null;
         if (type != null && !type.router()) {
             template = structures.templates().get(type.templateId());
@@ -453,6 +494,7 @@ public final class PlacementService {
         session.kind = switch (part) {
             case BELT -> Kind.BELTS;
             case DISMANTLE -> Kind.DISMANTLE;
+            case QUARRY -> Kind.QUARRY;
             default -> type.router() ? Kind.PIECE : Kind.STRUCTURE;
         };
         session.beltStart = null;
@@ -472,6 +514,9 @@ public final class PlacementService {
         String[] card = switch (part) {
             case BELT -> new String[]{"Carries goods, tile by tile.", "From an orange chute, or another belt.",
                     "Into a hut, a machine or the Dock (green pads)."};
+            case QUARRY -> new String[]{"Digs on its own, day and night, even while you're away.",
+                    "Nothing: set it on flat ground, its rig rises round it.",
+                    "Raw goods, out of its orange chute onto a belt."};
             case STORAGE_HUT -> new String[]{"Keeps what your belts bring in.", "Belts from any side, any good.",
                     "Your storage: the Hub and every menu draw from it."};
             case HUB -> new String[]{"Your island's heart: the board, unlocks, the hand press.", "Nothing, it runs on you.",
@@ -565,6 +610,8 @@ public final class PlacementService {
             case BELT -> "§7Belt: §fright-click §7the §6orange chute§7, then §fright-click §7the hut or machine §8(§agreen pads§8)§7 — it snaps in."
                     + " Ending in the open keeps chaining. §fLeft-click §7cancels the start.";
             case DISMANTLE -> "§7Take down: look at a belt or building, it turns §cred§7, then §fright-click§7.";
+            case QUARRY -> "§7Quarry: the hologram is its rig. Look at flat ground, §fright-click §7sets the quarry from your"
+                    + " pack down, §fleft-click §7turns its chute.";
             case SPLITTER, OVERFLOW, SORTER -> "§7" + part.label() + ": §fright-click §7a belt to cut it in. "
                     + part.line();
             default -> "§7" + part.label() + ": look at the ground, §fright-click §7builds, §fleft-click §7turns.";
@@ -676,7 +723,8 @@ public final class PlacementService {
     /** Does a right-click on one of the island's buildings open it (instead of building)? */
     public boolean opensBuildings(Player player) {
         Session session = sessions.get(player.getUniqueId());
-        return session != null && (session.kind == Kind.STRUCTURE || session.kind == Kind.PIECE);
+        return session != null && (session.kind == Kind.STRUCTURE || session.kind == Kind.PIECE
+                || session.kind == Kind.QUARRY);
     }
 
     /** A click with the build tool. The caller always cancels the event. */
@@ -725,9 +773,14 @@ public final class PlacementService {
             player.sendMessage("§cThat's not on this island.");
             return;
         }
+        int[] anchor = anchorFor(player, session.template, ground, rot);
+        if (session.kind == Kind.QUARRY) {
+            placeQuarry(player, session, ground.getWorld().getBlockAt(anchor[0], ground.getY(), anchor[1]), rot, now);
+            return;
+        }
         if (session.kind == Kind.STRUCTURE) {
-            PlacedStructure placed = structures.place(player, session.host, session.type, ground.getX(), ground.getY(),
-                    ground.getZ(), rot, logistics::isBelt);
+            PlacedStructure placed = structures.place(player, session.host, session.type, anchor[0], ground.getY(),
+                    anchor[1], rot, logistics::isBelt);
             if (placed != null) {
                 session.lastBuild = now;
                 afterBuild(player, session);
@@ -742,6 +795,69 @@ public final class PlacementService {
         }
         end(player);
         session.onConfirm.confirm(player, ground.getX(), ground.getY(), ground.getZ(), rot);
+    }
+
+    /** The Build Tool's quarry: one from the pack goes down where the hologram stands, its rig turned the same way. */
+    private void placeQuarry(Player player, Session session, Block ground, int rot, long now) {
+        ItemStack item = quarries == null ? null : quarries.find(player);
+        if (item == null) {
+            player.sendMessage("§cNo quarry in your pack. §7The Market at your Hub sells them.");
+            return;
+        }
+        StructureService.Validation validation = structures.validate(session.host, session.template, ground.getWorld(),
+                ground.getX(), ground.getY(), ground.getZ(), rot, logistics::isBelt);
+        if (!validation.ok()) {
+            player.sendMessage("§c" + validation.reason() + ".");
+            return;
+        }
+        quarryRot.put(player.getUniqueId(), rot);
+        boolean placed;
+        try {
+            placed = quarries.place(player, ground, item);
+        } finally {
+            quarryRot.remove(player.getUniqueId());
+        }
+        if (!placed) {
+            return;
+        }
+        item.setAmount(item.getAmount() - 1);
+        session.lastBuild = now;
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.6f, 1.2f);
+        if (quarriesIn(player) > 0) {
+            refreshTool(player, session);
+        } else if (apply(player, session, Part.BELT)) {
+            // the quarry stands: what it needs next is a belt from its orange chute
+            refreshTool(player, session);
+            announce(player, session, false);
+        }
+    }
+
+    /**
+     * Where a building's anchor goes for the block the player looks at: on the compact buildings (2x2, 4x2, 3x2)
+     * the footprint is centred under the crosshair instead of hanging off the looked-at block.
+     */
+    private static int[] anchorFor(Player player, Template template, Block ground, int rot) {
+        if (template == null || !Props.compact(template.id())) {
+            return new int[]{ground.getX(), ground.getZ()};
+        }
+        double cx = (template.minX() + template.maxX()) / 2.0;
+        double cz = (template.minZ() + template.maxZ()) / 2.0;
+        if (cx == 0.0 && cz == 0.0) {
+            return new int[]{ground.getX(), ground.getZ()};
+        }
+        for (int i = 0; i < Math.floorMod(rot, 4); i++) {
+            double nx = -cz;
+            cz = cx;
+            cx = nx;
+        }
+        double px = ground.getX() + 0.5;
+        double pz = ground.getZ() + 0.5;
+        org.bukkit.util.RayTraceResult hit = player.rayTraceBlocks(24.0);
+        if (hit != null && hit.getHitPosition() != null) {
+            px = Math.max(ground.getX(), Math.min(ground.getX() + 1, hit.getHitPosition().getX()));
+            pz = Math.max(ground.getZ(), Math.min(ground.getZ() + 1, hit.getHitPosition().getZ()));
+        }
+        return new int[]{(int) Math.floor(px - cx), (int) Math.floor(pz - cz)};
     }
 
     /** After a build the tool stays; if that part can't be built again here (the Hub), it moves on to belts. */
@@ -1418,7 +1534,7 @@ public final class PlacementService {
 
     private void renderGhost(Player player, Session session) {
         Block looked = player.getTargetBlockExact(24);
-        if (looked != null && session.kind == Kind.STRUCTURE) {
+        if (looked != null && (session.kind == Kind.STRUCTURE || session.kind == Kind.QUARRY)) {
             PlacedStructure mine = structures.owner(looked);
             if (mine != null && mine.host().equals(session.host)) {
                 session.ghost.clearStructure();
@@ -1435,14 +1551,17 @@ public final class PlacementService {
         int rot = session.autoRot ? StateRotator.frontTowardViewer(player.getLocation().getYaw()) : session.rot;
         session.rot = rot;
         World world = ground.getWorld();
-        int ax = ground.getX();
+        int[] anchor = anchorFor(player, session.template, ground, rot);
+        int ax = anchor[0];
         int ay = ground.getY();
-        int az = ground.getZ();
+        int az = anchor[1];
         StructureService.Validation validation = structures.validate(session.host, session.template, world, ax, ay, az,
                 rot, logistics::isBelt);
         IslandHost here = hosts.at(ground.getLocation());
         boolean onIsland = here != null && here.equals(session.host);
-        String blocked = session.kind == Kind.STRUCTURE ? structures.blockedReason(player, session.host, session.type) : null;
+        String blocked = session.kind == Kind.STRUCTURE ? structures.blockedReason(player, session.host, session.type)
+                : session.kind == Kind.QUARRY && quarriesIn(player) == 0 ? "No quarry in your pack (the Market at your Hub)"
+                : null;
         List<BuildCosts.Line> bill = session.kind == Kind.STRUCTURE ? structures.buildCost(session.host, session.type)
                 : List.of();
         String missing = blocked == null ? structures.missing(player, session.host, bill) : null;
@@ -1468,6 +1587,8 @@ public final class PlacementService {
             text = "§c✖ " + (onIsland ? validation.reason() : "Not on this island") + cost + " §8· §fleft-click §7turn";
         } else if (missing != null) {
             text = "§e✖ " + session.label + " §8· §c" + missing + cost;
+        } else if (session.kind == Kind.QUARRY) {
+            text = "§a✔ Quarry §8(§f" + quarriesIn(player) + " §8in your pack) · §fright-click §7set it down §8· §fleft-click §7turn";
         } else {
             text = "§a✔ " + session.label + cost + " §8· §fright-click §7build §8· §fleft-click §7turn";
         }

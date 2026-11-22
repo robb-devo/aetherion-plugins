@@ -26,7 +26,7 @@ import java.util.List;
  * Tool; in the world, sneak + scroll walks the same row and F brings this screen back.
  * <pre>
  *   [Belt] [Storage Hut] [Hub] [Depot] [Mill] [Splitter] [Forge] [Overflow] [Sorter]
- *                         [Quarries?]  [Take down]  [Border]
+ *                         [Quarry]  [Take down]  [Border]
  * </pre>
  * Locked parts show where they unlock (the Hub). Nothing else lives here: upgrades, unlocks and Coin Shortcuts
  * are at the Hub.
@@ -80,8 +80,8 @@ public final class BuildMenu implements MenuKit.Menu {
     private List<PlacementService.Part> row(IslandHost host) {
         List<PlacementService.Part> parts = new ArrayList<>();
         for (PlacementService.Part part : PlacementService.Part.values()) {
-            if (part == PlacementService.Part.DISMANTLE) {
-                continue;
+            if (part == PlacementService.Part.DISMANTLE || part == PlacementService.Part.QUARRY) {
+                continue; // they have their own tiles below the row
             }
             if (part == PlacementService.Part.HUB && structures.hasWorkshop(host)) {
                 continue;
@@ -117,12 +117,17 @@ public final class BuildMenu implements MenuKit.Menu {
         for (int i = 0; i < parts.size() && i < 9; i++) {
             inventory.setItem(ROW + i, tile(player, host, parts.get(i), parts.get(i) == current));
         }
-        inventory.setItem(QUARRIES, MenuKit.named(Material.IRON_PICKAXE, "§fQuarries",
-                "§7A quarry is an item: hold it and",
-                "§7place it like a block on your land.",
-                "§7Its belt starts at the §6orange §7mark.",
+        int carried = placement.quarriesIn(player);
+        boolean quarryInHand = current == PlacementService.Part.QUARRY;
+        ItemStack quarryTile = MenuKit.named(Material.IRON_PICKAXE, (quarryInHand ? "§a§l" : "§e") + "Quarry",
+                "§7Sets a quarry from your pack down.",
+                "§7The hologram is the rig that rises",
+                "§7round it; its belt starts at the §6orange §7mark.",
+                "§7In your pack: " + (carried > 0 ? "§a" + carried : "§cnone"),
                 "",
-                market != null && structures.hasWorkshop(host) ? "§7Buy more at your §6Hub§7." : "§7More come from your §6Hub§7."));
+                carried > 0 ? (quarryInHand ? "§a◀ In your hand" : "§e▶ Click to pick")
+                        : market != null && structures.hasWorkshop(host) ? "§7Buy more at your §6Hub§7." : "§7More come from your §6Hub§7.");
+        inventory.setItem(QUARRIES, quarryInHand ? MenuKit.glow(quarryTile) : quarryTile);
         inventory.setItem(DISMANTLE, tile(player, host, PlacementService.Part.DISMANTLE,
                 current == PlacementService.Part.DISMANTLE));
         inventory.setItem(BORDER, MenuKit.named(Material.SPYGLASS, "§eShow my land",
@@ -206,8 +211,14 @@ public final class BuildMenu implements MenuKit.Menu {
             land.sendBorderMessage(player);
             return;
         }
-        if (slot == QUARRIES && market != null && structures.hasWorkshop(host) && structures.atDesk(player, host)) {
-            market.open(player, host);
+        if (slot == QUARRIES) {
+            if (placement.quarriesIn(player) > 0) {
+                placement.openTool(player, host, PlacementService.Part.QUARRY);
+            } else if (market != null && structures.hasWorkshop(host) && structures.atDesk(player, host)) {
+                market.open(player, host);
+            } else {
+                player.sendMessage("§7No quarry in your pack. §fThe Market at your Hub §7sells them.");
+            }
             return;
         }
         PlacementService.Part part = null;

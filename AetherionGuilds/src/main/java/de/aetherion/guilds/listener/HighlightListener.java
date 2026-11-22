@@ -216,7 +216,8 @@ public final class HighlightListener implements Listener {
                 }
             }
             case WORKSHOP -> {
-                if (type == Material.LECTERN) {
+                // the lectern, or anywhere on the hall itself (the compact Hub is its body)
+                if (type == Material.LECTERN || type == Material.BARRIER) {
                     if (hubMenu != null) {
                         hubMenu.open(player, structure.host());
                     } else {

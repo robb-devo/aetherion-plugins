@@ -126,6 +126,9 @@ final class GhostView {
             // the prop itself, as a hologram: what you see is what stands there after the click
             for (de.aetherion.guilds.logistics.PropBodies.Part part
                     : de.aetherion.guilds.logistics.PropBodies.body(propType, 1, template.id())) {
+                if (part.item() != null && !part.item().getType().isBlock()) {
+                    continue; // a hung tool, a clock, a paper: too small to matter in the hologram
+                }
                 de.aetherion.guilds.logistics.PropBodies.Part solid = part.item() == null ? part
                         : new de.aetherion.guilds.logistics.PropBodies.Part(part.role(),
                         part.item().getType().createBlockData(), null, part.pivot(), part.size(), part.own(), false);

@@ -455,7 +455,7 @@ public final class HubMenu implements MenuKit.Menu {
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.2f);
         org.bukkit.World world = hosts.world(host);
         if (world != null) {
-            org.bukkit.Location top = new org.bukkit.Location(world, hub.x() + 0.5, hub.maxY() + 1.0, hub.z() + 0.5);
+            org.bukkit.Location top = new org.bukkit.Location(world, hub.centerX(), hub.maxY() + 1.0, hub.centerZ());
             de.aetherion.core.api.Vfx.puff(top, org.bukkit.Particle.TOTEM_OF_UNDYING, 40, Math.max(0.8, 0.8), null);
         }
     }

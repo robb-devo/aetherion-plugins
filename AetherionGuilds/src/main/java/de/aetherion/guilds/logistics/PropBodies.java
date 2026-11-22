@@ -56,6 +56,9 @@ public final class PropBodies {
 
     /** How tall the body stands above its ground (for the status tag). */
     public static float height(StructureType type, int level, String templateId) {
+        if (CompactBodies.handles(templateId)) {
+            return CompactBodies.height(type, level);
+        }
         return switch (type) {
             case QUARRY_HOUSING -> Props.QUARRY_SLIM.equals(templateId)
                     ? 2.2f + 0.3f * quarryTier(level) + 0.7f
@@ -99,6 +102,9 @@ public final class PropBodies {
 
     public static List<Part> body(StructureType type, int level, String templateId,
                                   de.aetherion.guilds.model.QuarryType quarry) {
+        if (CompactBodies.handles(templateId)) {
+            return CompactBodies.body(type, level);
+        }
         List<Part> parts = new ArrayList<>();
         switch (type) {
             case QUARRY_HOUSING -> {
@@ -489,6 +495,21 @@ public final class PropBodies {
                 new Vector3f(0.06f, 0.08f, 0.8f), new Quaternionf(), true));
         parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(1.52f, 0.3f, 0),
                 new Vector3f(0.06f, 0.08f, 0.8f), new Quaternionf(), true));
+    }
+
+    /** Crates of any building: the compact hut stacks 2x2, three high per storey. */
+    public static List<Part> crates(int count, int level, StructureType type, String templateId) {
+        if (CompactBodies.handles(templateId)) {
+            return type == StructureType.STORAGE_HUT ? CompactBodies.hutCrates(count, level) : CompactBodies.depotCrates(count, level);
+        }
+        return crates(count, level, type);
+    }
+
+    public static int crateSlots(int level, StructureType type, String templateId) {
+        if (CompactBodies.handles(templateId)) {
+            return type == StructureType.STORAGE_HUT ? CompactBodies.hutSlots(level) : CompactBodies.depotSlots(level);
+        }
+        return crateSlots(level, type);
     }
 
     /** Where crates stand (fill shows as crates: empty → stacked full). The hut stacks a 4x3 grid per storey. */

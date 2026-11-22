@@ -590,7 +590,7 @@ public final class LogisticsService {
                 structures.milestone(host, "first_chain");
             }
             Location port = route.path.isEmpty()
-                    ? new Location(world, route.to().x() + 0.5, route.to().y() + 1.2, route.to().z() + 0.5)
+                    ? new Location(world, route.to().centerX(), route.to().y() + 1.2, route.to().centerZ())
                     : new Location(world, route.path.get(route.path.size() - 1).nextX() + 0.5,
                     route.path.get(route.path.size() - 1).y() + 0.5, route.path.get(route.path.size() - 1).nextZ() + 0.5);
             de.aetherion.core.api.Vfx.puff(port, Particle.ELECTRIC_SPARK, 18, Math.max(0.25, 0.25), null);
@@ -1104,8 +1104,9 @@ public final class LogisticsService {
             if (type == StructureType.WORKSHOP) {
                 double boardY = de.aetherion.guilds.structure.Props.isProp(s.templateId())
                         ? s.y() + 1.0 + PropBodies.height(type, s.level(), s.templateId()) + 0.5 : s.maxY() + 1.2;
+                // "working" = its gem turns and hums, always (the Hub is the island's heart)
                 views.add(new MachineFx.View(s, s.building() ? MachineState.BUILDING : MachineState.LECTERN, hubTitle(s),
-                        hubBoard(host), !s.building(), null, null, List.of(), List.of(), null, false, boardY, 0.0,
+                        hubBoard(host), !s.building(), null, null, List.of(), List.of(), null, !s.building(), boardY, 0.0,
                         s.level(), null));
                 continue;
             }
@@ -1878,7 +1879,7 @@ public final class LogisticsService {
             case STORAGE_HUT, DEPOT -> {
                 Long received = net.receivedAt.get(structure.id());
                 if (received != null && now - received < 1500L) {
-                    world.spawnParticle(Particle.WAX_ON, structure.x() + 0.5, structure.y() + 1.6, structure.z() + 0.5,
+                    world.spawnParticle(Particle.WAX_ON, structure.centerX(), structure.y() + 1.6, structure.centerZ(),
                             3, 0.8, 0.4, 0.8, 0);
                 }
             }

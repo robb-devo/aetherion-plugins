@@ -113,6 +113,8 @@ final class MachineFx {
         int x;
         int y;
         int z;
+        double cx;
+        double cz;
         int level;
         long lastSound;
     }
@@ -196,6 +198,8 @@ final class MachineFx {
             props.x = s.x();
             props.y = s.y();
             props.z = s.z();
+            props.cx = s.centerX();
+            props.cz = s.centerZ();
             props.level = view.level();
             props.working = view.working();
             if (entities < global) {
@@ -212,8 +216,8 @@ final class MachineFx {
     private static double nearest(PlacedStructure s, Collection<Location> viewers) {
         double best = Double.MAX_VALUE;
         for (Location viewer : viewers) {
-            double dx = viewer.getX() - (s.x() + 0.5);
-            double dz = viewer.getZ() - (s.z() + 0.5);
+            double dx = viewer.getX() - s.centerX();
+            double dz = viewer.getZ() - s.centerZ();
             best = Math.min(best, dx * dx + dz * dz);
         }
         return best;
@@ -232,7 +236,7 @@ final class MachineFx {
         String text = view.title() + "\n" + view.state().tag() + (view.sub() == null || view.sub().isEmpty() ? "" : "\n" + view.sub());
         if (props.tag == null || !props.tag.isValid()) {
             PlacedStructure s = view.structure();
-            Location at = new Location(world, s.x() + 0.5, view.tagY(), s.z() + 0.5);
+            Location at = new Location(world, s.centerX(), view.tagY(), s.centerZ());
             props.tag = world.spawn(at, TextDisplay.class, d -> {
                 d.setBillboard(Display.Billboard.CENTER);
                 d.setDefaultBackground(false);
@@ -522,13 +526,14 @@ final class MachineFx {
                 props.body.add(new BodyPart(spawnPart(world, s, part, props.assemble, i++), part));
             }
             if (s.type() == StructureType.FORGE) {
-                PropBodies.Part hammer = new PropBodies.Part("hammer", null, new ItemStack(Material.MACE),
+                PropBodies.Part hammer = CompactBodies.handles(s.templateId()) ? CompactBodies.hammer()
+                        : new PropBodies.Part("hammer", null, new ItemStack(Material.MACE),
                         new org.joml.Vector3f(0.95f, 1.32f, 0.75f), new org.joml.Vector3f(0.9f, 0.9f, 0.9f),
                         new Quaternionf(), false);
                 props.hammer = new BodyPart(spawnPart(world, s, hammer, props.assemble, i), hammer);
             }
             if (props.assemble) {
-                Location at = new Location(world, s.x() + 0.5, s.y() + 1.5, s.z() + 0.5);
+                Location at = new Location(world, s.centerX(), s.y() + 1.5, s.centerZ());
                 world.playSound(at, Sound.BLOCK_SCAFFOLDING_PLACE, SoundCategory.BLOCKS, 0.9f, 0.8f);
                 world.playSound(at, Sound.BLOCK_CHAIN_PLACE, SoundCategory.BLOCKS, 0.8f, 0.7f);
                 int last = Math.max(0, i - 1);
@@ -560,7 +565,7 @@ final class MachineFx {
     }
 
     private void crates(World world, Props props, PlacedStructure s, double fill) {
-        int slots = PropBodies.crateSlots(s.level(), s.type());
+        int slots = PropBodies.crateSlots(s.level(), s.type(), s.templateId());
         int want = fill <= 0.0 ? 0 : Math.max(1, (int) Math.round(fill * slots));
         if (!aliveParts(props.crates)) {
             killParts(props.crates);
@@ -569,7 +574,7 @@ final class MachineFx {
         if (want == have) {
             return;
         }
-        List<PropBodies.Part> all = PropBodies.crates(want, s.level(), s.type());
+        List<PropBodies.Part> all = PropBodies.crates(want, s.level(), s.type(), s.templateId());
         if (want < have) {
             while (props.crates.size() > want) {
                 BodyPart last = props.crates.remove(props.crates.size() - 1);
@@ -632,12 +637,17 @@ final class MachineFx {
         if (!working || props.body.isEmpty()) {
             return;
         }
-        int phase = (int) ((tick / 20L) % 4L);
+        long beat = tick / 20L;
+        int phase = (int) (beat % 4L);
+        // sails step a quarter turn a second (the compact Twin-Stone Mill three eighths, it grinds 3x as fast; the old
+        // one an eighth). Count eight steps round so the client never turns them back at the wrap.
+        int sailStep = s.level() >= 2 ? (int) (beat % 8L) : phase;
+        double sailTurn = s.level() < 2 ? Math.PI / 2 : CompactBodies.handles(s.templateId()) ? 3 * Math.PI / 4 : Math.PI / 4;
         for (BodyPart bp : props.body) {
             String role = bp.part().role();
             Quaternionf turn = switch (role) {
                 case "wheel" -> new Quaternionf().rotateX((float) (phase * Math.PI / 2));
-                case "sails" -> new Quaternionf().rotateZ((float) (-phase * Math.PI / (s.level() >= 2 ? 4 : 2)));
+                case "sails" -> new Quaternionf().rotateZ((float) (-sailStep * sailTurn));
                 case "stone" -> new Quaternionf().rotateY((float) (phase * Math.PI / 2));
                 case "stone2" -> new Quaternionf().rotateY((float) (-phase * Math.PI / 2));
                 case "jib" -> new Quaternionf().rotateY((float) (Math.sin(tick / 40.0) * 0.45));
@@ -649,6 +659,10 @@ final class MachineFx {
             bp.entity().setInterpolationDelay(0);
             bp.entity().setInterpolationDuration(20);
             bp.entity().setTransformation(PropBodies.transform(bp.part(), s.rot(), turn, 0f, 0f));
+        }
+        if (CompactBodies.handles(s.templateId())) {
+            compactFx(world, s);
+            return;
         }
         Location center = new Location(world, s.x() + 0.5, s.y() + 1.0, s.z() + 0.5);
         switch (s.type()) {
@@ -700,6 +714,49 @@ final class MachineFx {
         }
     }
 
+    /** Smoke, flour, sparks and light where the compact buildings really have their chimney, bay and gem. */
+    private void compactFx(World world, PlacedStructure s) {
+        switch (s.type()) {
+            case MILL -> de.aetherion.core.api.Vfx.puff(local(world, s, 0.0, 0.5, 1.25), Particle.WHITE_ASH,
+                    s.level() >= 2 ? 10 : 6, Math.max(0.35, 0.35), null);
+            case FORGE -> {
+                Location stack = local(world, s, -1.0, 4.25, -0.1);
+                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, stack, 1, 0.08, 0.1, 0.08, 0.01);
+                if (s.level() >= 2) {
+                    world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, local(world, s, 0.0, 3.55, -0.2), 1, 0.06, 0.1, 0.06, 0.01);
+                }
+                world.spawnParticle(Particle.FLAME, local(world, s, 0.0, 1.32, 0.56), s.level() >= 2 ? 4 : 2,
+                        0.16, 0.12, 0.02, 0.004);
+                world.spawnParticle(Particle.SMOKE, local(world, s, -1.0, 1.0, 0.25), 2, 0.12, 0.1, 0.1, 0.005);
+            }
+            case WORKSHOP -> {
+                // the gem in the turret hums; the Grand Hub sends a light up its spire
+                de.aetherion.core.api.Vfx.puff(local(world, s, -0.5, 4.73, 0.5), Particle.ENCHANT, 4, Math.max(0.5, 0.5), null);
+                if (s.level() >= 3) {
+                    de.aetherion.core.api.Vfx.puff(local(world, s, -0.5, 6.45, 0.5), Particle.END_ROD, 1, Math.max(0.12, 0.12), null);
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    /** A point in a structure's machine space (x right, y up from its ground top, z toward its front) in the world. */
+    private static Location local(World world, PlacedStructure s, double mx, double my, double mz) {
+        return local(world, s.x(), s.y(), s.z(), s.rot(), mx, my, mz);
+    }
+
+    private static Location local(World world, int x, int y, int z, int rot, double mx, double my, double mz) {
+        double rx = mx;
+        double rz = mz;
+        for (int i = 0; i < Math.floorMod(rot, 4); i++) {
+            double nx = -rz;
+            rz = rx;
+            rx = nx;
+        }
+        return new Location(world, x + 0.5 + rx, y + 1.0 + my, z + 0.5 + rz);
+    }
+
     /** Every tick: parts flying into place, the forge hammer and bellows, the quarry drill. */
     void tick(long tick) {
         clock = tick;
@@ -748,6 +805,14 @@ final class MachineFx {
                 if (!props.working || props.body.isEmpty()) {
                     continue;
                 }
+                if (CompactBodies.handles(props.templateId) && props.type != StructureType.FORGE) {
+                    // the compact buildings' hoists: a sack, a barrel, a crate goes down and up on its rope
+                    if (phase == 0) {
+                        props.drillDown = !props.drillDown;
+                        hoist(props, props.drillDown);
+                    }
+                    continue;
+                }
                 switch (props.type) {
                     case QUARRY_HOUSING -> {
                         if (phase % 10 == 0) {
@@ -769,6 +834,23 @@ final class MachineFx {
         }
     }
 
+    private static final float HOIST = 0.3f;
+
+    private static void hoist(Props props, boolean down) {
+        for (BodyPart bp : props.body) {
+            String role = bp.part().role();
+            if (!bp.entity().isValid() || (!"drill".equals(role) && !"rope".equals(role))) {
+                continue;
+            }
+            bp.entity().setInterpolationDelay(0);
+            bp.entity().setInterpolationDuration(18);
+            // the load drops, its rope pays out with it (the rope's top stays on the beam)
+            bp.entity().setTransformation("rope".equals(role)
+                    ? PropBodies.transform(bp.part(), props.rot, null, down ? -HOIST : 0f, down ? bp.part().size().y + HOIST : 0f)
+                    : PropBodies.transform(bp.part(), props.rot, null, down ? -HOIST : 0f, 0f));
+        }
+    }
+
     private void forgeBeat(Props props, int phase) {
         boolean bellows = props.level >= 2 ? phase % 10 == 0 : phase == 0;
         if (bellows) {
@@ -787,7 +869,9 @@ final class MachineFx {
         if (beat) {
             Location at = props.hammer.entity().getLocation().add(0, 0, 0);
             int[] r = de.aetherion.guilds.template.StateRotator.rotateXZ(1, 1, props.rot);
-            Location anvil = new Location(at.getWorld(), props.x + 0.5 + r[0] * 0.9, props.y + 1.9, props.z + 0.5 + r[1] * 0.75);
+            Location anvil = CompactBodies.handles(props.templateId)
+                    ? local(at.getWorld(), props.x, props.y, props.z, props.rot, -1.0, 1.2, 1.0)
+                    : new Location(at.getWorld(), props.x + 0.5 + r[0] * 0.9, props.y + 1.9, props.z + 0.5 + r[1] * 0.75);
             World world = anvil.getWorld();
             if (world != null) {
                 de.aetherion.core.api.Vfx.puff(anvil, Particle.ELECTRIC_SPARK, 6, Math.max(0.15, 0.15), null);
@@ -817,7 +901,7 @@ final class MachineFx {
         if (!sounds || !props.working || tick - props.lastSound < 50L) {
             return;
         }
-        Location at = new Location(world, props.x + 0.5, props.y + 1.5, props.z + 0.5);
+        Location at = new Location(world, props.cx, props.y + 1.5, props.cz);
         boolean close = false;
         for (Location viewer : viewers) {
             if (viewer.getWorld() == world && viewer.distanceSquared(at) < 196) {
