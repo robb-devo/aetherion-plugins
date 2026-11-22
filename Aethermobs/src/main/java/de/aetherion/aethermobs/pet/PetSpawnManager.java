@@ -34,7 +34,8 @@ public class PetSpawnManager {
     /** Hard local density — stops clumps even when nearby radius still has room. */
     private static final int MAX_PETS_PER_CHUNK = 4;
 
-    private static final int SURFACE_NEARBY_CAP = 14;
+    /** Wild surface pets around one player (A-41, R-38: 14 felt like a zoo). */
+    private static final int SURFACE_NEARBY_CAP = 10;
     private static final int CAVE_NEARBY_CAP = 8;
     private static final int AQUATIC_NEARBY_CAP = 12;
     private static final int SKY_NEARBY_CAP = 6;
