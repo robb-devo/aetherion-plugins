@@ -345,6 +345,16 @@ public final class StrikeRhythm {
     }
 
     private void paint(Player player, State state) {
+        MineLesson lesson = isle.lesson();
+        if (lesson != null && lesson.barShown(player.getUniqueId())) {
+            // The lesson bar already mirrors the meter: one bar on top while the lesson runs.
+            if (state.bar != null) {
+                player.hideBossBar(state.bar);
+                state.bar = null;
+                QuestBars.release(player.getUniqueId(), LEASE);
+            }
+            return;
+        }
         float progress = (float) Math.max(0.0d, Math.min(1.0d, state.stacks / MAX));
         String seam = state.seamOre != null && state.seam > 0
                 ? " §8· " + state.seamOre.color() + "Seam " + state.seam + "/" + seamLength(player)
