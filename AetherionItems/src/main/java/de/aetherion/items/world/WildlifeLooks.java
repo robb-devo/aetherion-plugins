@@ -277,6 +277,59 @@ public final class WildlifeLooks implements Listener {
         return nearVex(at, VEX_T1_RADIUS_SQ);
     }
 
+    /** Outer edge of the T1 band around Vex (A-43, R-40): starter mobs live from the no-mob bubble out to here. */
+    public static final double VEX_BAND_RADIUS = 75.0;
+    private static final double VEX_BAND_RADIUS_SQ = VEX_BAND_RADIUS * VEX_BAND_RADIUS;
+
+    public static boolean nearVexBand(Location at) {
+        return nearVex(at, VEX_BAND_RADIUS_SQ);
+    }
+
+    /**
+     * True on the far side of Vex's gate from the Borderlands, the road back to the Capital. Measured along the
+     * Vex to rite altar axis, so it only means something close to Vex; callers use it inside the band.
+     */
+    public static boolean behindVexGate(Location at) {
+        if (at == null || at.getWorld() == null) {
+            return false;
+        }
+        refreshVexCenter();
+        if (!at.getWorld().getName().equalsIgnoreCase(vexWorld)) {
+            return false;
+        }
+        double ax = BorderlandsRiteService.ALTAR_X - vexX;
+        double az = BorderlandsRiteService.ALTAR_Z - vexZ;
+        if (ax * ax + az * az < 1.0) {
+            return false;
+        }
+        return (at.getX() - vexX) * ax + (at.getZ() - vexZ) * az < 0.0;
+    }
+
+    /**
+     * A random point between {@code inner} and {@code outer} blocks from Vex on the Borderlands side of the gate,
+     * spread evenly over the area; null outside Vex's world or after a few unlucky draws. The caller still checks
+     * ground, zone disk and safe zones.
+     */
+    public static Location vexBandPoint(World world, double inner, double outer) {
+        if (world == null || outer <= inner) {
+            return null;
+        }
+        refreshVexCenter();
+        if (!world.getName().equalsIgnoreCase(vexWorld)) {
+            return null;
+        }
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int i = 0; i < 8; i++) {
+            double r = Math.sqrt(inner * inner + random.nextDouble() * (outer * outer - inner * inner));
+            double angle = random.nextDouble() * Math.PI * 2;
+            Location point = new Location(world, vexX + Math.cos(angle) * r, vexY, vexZ + Math.sin(angle) * r);
+            if (!behindVexGate(point)) {
+                return point;
+            }
+        }
+        return null;
+    }
+
     /**
      * Surface T1 lane: from the Vex gate through the vial altar.
      * Past the altar (toward Seraphine) is T2/T3 waste.

@@ -55,8 +55,12 @@ public class MobZoneService implements Runnable {
      * Keep this lean — each mob also carries a TextDisplay HP label.
      */
     private static final double SURFACE_DENSITY = 0.00028;
-    private static final int SURFACE_MIN = 16;
-    private static final int SURFACE_MAX = 36;
+    /**
+     * Borderlands surface budget (was 16 to 36). A-43 (R-40): room for the full Vex band (14) plus a few more out in
+     * the waste than before, so both feel alive. Fixed caps; every mob is non-persistent.
+     */
+    private static final int SURFACE_MIN = 24;
+    private static final int SURFACE_MAX = 52;
     /** Crypt hostiles — own budget, never counted toward surface. */
     private static final double CRYPT_DENSITY = 0.00028;
     private static final int CRYPT_MIN = 8;
@@ -65,8 +69,13 @@ public class MobZoneService implements Runnable {
     private static final double ELDERVALE_DENSITY = 0.0012;
     private static final int ELDERVALE_MIN = 14;
     private static final int ELDERVALE_MAX = 40;
-    /** Soft gate around Vex — max surface mobs in the thin entrance bubble. */
-    private static final int VEX_SURFACE_CAP = 6;
+    /**
+     * T1 mobs at most in the band around Vex (no-mob bubble out to {@link WildlifeLooks#VEX_BAND_RADIUS}). A-43,
+     * R-40: before, 6 in a 32-block ring and only 12 % of rolls could land there, so the gate felt dead.
+     */
+    private static final int VEX_BAND_CAP = 14;
+    /** Share of surface spawn rolls aimed straight into the Vex band while it is under its cap. */
+    private static final double VEX_BAND_SHARE = 0.45;
     /** Absolute no-mob bubble at Vex — spawn + walk-in forbidden. */
     private static final double VEX_TABOO_RADIUS = 15.0;
     private static final double VEX_TABOO_RADIUS_SQ = VEX_TABOO_RADIUS * VEX_TABOO_RADIUS;
@@ -1163,8 +1172,8 @@ public class MobZoneService implements Runnable {
     }
 
     /**
-     * Soft entrance around Vex: spawn rules stay T1 + cap.
-     * Wander-in T2/T3 are pushed out of the ~60 block ring.
+     * T1 band around Vex (bubble to 75 blocks): spawn rules stay T1 + cap.
+     * Wander-in T2/T3 and extras past the cap are pushed out past the band.
      */
     private void trimVexRing(List<LivingEntity> members, AnimalZone zone, World world) {
         List<LivingEntity> ringT1 = new ArrayList<>();
@@ -1179,14 +1188,14 @@ public class MobZoneService implements Runnable {
             if (WildlifeLooks.nearVex(at, VEX_TABOO_RADIUS_SQ)) {
                 continue;
             }
-            if (!WildlifeLooks.nearVexStarter(at)) {
+            if (!WildlifeLooks.nearVexBand(at)) {
                 continue;
             }
             byte tier = WildlifeLooks.tierOf(living);
             if (tier != WildlifeLooks.TIER_NORMAL) {
                 members.remove(living);
                 if (!de.aetherion.core.AetherEntities.isSystemOwned(living)) {
-                    if (!WildlifeLooks.ejectFromVexRadius(living, WildlifeLooks.VEX_T1_RADIUS)) {
+                    if (!WildlifeLooks.ejectFromVexRadius(living, WildlifeLooks.VEX_BAND_RADIUS)) {
                         removeHostile(living);
                     }
                 }
@@ -1194,12 +1203,12 @@ public class MobZoneService implements Runnable {
             }
             ringT1.add(living);
         }
-        while (ringT1.size() > VEX_SURFACE_CAP) {
+        while (ringT1.size() > VEX_BAND_CAP) {
             LivingEntity extra = ringT1.remove(ringT1.size() - 1);
             members.remove(extra);
             if (!de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
                 // Excess T1: push outward past the ring instead of deleting.
-                if (!WildlifeLooks.ejectFromVexRadius(extra, WildlifeLooks.VEX_T1_RADIUS)) {
+                if (!WildlifeLooks.ejectFromVexRadius(extra, WildlifeLooks.VEX_BAND_RADIUS)) {
                     removeHostile(extra);
                 }
             }
@@ -1362,9 +1371,18 @@ public class MobZoneService implements Runnable {
                     dist = 8 + random.nextDouble() * Math.max(10, zone.getRadius() - 8);
                 }
             } else if (borderlands && !preferCrypt) {
-                // Area-uniform across the whole disk (sqrt), never player-anchored.
-                anchor = center;
-                dist = Math.max(12.0, reach * Math.sqrt(random.nextDouble()));
+                // A share goes straight into the T1 band around Vex while it has room (A-43); the rest is
+                // area-uniform across the whole disk (sqrt), never player-anchored.
+                Location band = vexHave < VEX_BAND_CAP && random.nextDouble() < VEX_BAND_SHARE
+                        ? WildlifeLooks.vexBandPoint(world, VEX_TABOO_RADIUS + 1.0, WildlifeLooks.VEX_BAND_RADIUS)
+                        : null;
+                if (band != null) {
+                    anchor = band;
+                    dist = 0.0;
+                } else {
+                    anchor = center;
+                    dist = Math.max(12.0, reach * Math.sqrt(random.nextDouble()));
+                }
             } else if (borderlands && preferCrypt) {
                 // Crypt: random disk samples, search downward — not player-anchored.
                 anchor = center;
@@ -1433,13 +1451,9 @@ public class MobZoneService implements Runnable {
                 if (!preferCrypt && WildlifeLooks.nearVex(ground, VEX_TABOO_RADIUS_SQ)) {
                     continue;
                 }
-                // Soft entrance beyond taboo: keep it thin. Prefer the outer waste.
-                if (!preferCrypt && WildlifeLooks.nearVexStarter(ground)) {
-                    if (vexHave >= VEX_SURFACE_CAP) {
-                        continue;
-                    }
-                    // Even under the cap, only ~12% of surface rolls may land in the gate ring.
-                    if (random.nextDouble() >= 0.12) {
+                // T1 band beyond the bubble: capped, and never on the Capital side of the gate.
+                if (!preferCrypt && WildlifeLooks.nearVexBand(ground)) {
+                    if (vexHave >= VEX_BAND_CAP || WildlifeLooks.behindVexGate(ground)) {
                         continue;
                     }
                 }
@@ -1474,7 +1488,7 @@ public class MobZoneService implements Runnable {
             if (WildlifeLooks.nearVex(at, VEX_TABOO_RADIUS_SQ)) {
                 continue;
             }
-            if (WildlifeLooks.nearVexStarter(at)) {
+            if (WildlifeLooks.nearVexBand(at)) {
                 count++;
             }
         }
@@ -1524,7 +1538,7 @@ public class MobZoneService implements Runnable {
             if (WildlifeLooks.nearVex(at, VEX_TABOO_RADIUS_SQ)) {
                 continue;
             }
-            if (WildlifeLooks.nearVexStarter(at)) {
+            if (WildlifeLooks.nearVexBand(at)) {
                 atGate.add(living);
             } else {
                 outer.add(living);
@@ -1532,7 +1546,7 @@ public class MobZoneService implements Runnable {
         }
         int moved = 0;
         // Always bleed the gate down to the soft cap.
-        while (atGate.size() > VEX_SURFACE_CAP && moved < 24) {
+        while (atGate.size() > VEX_BAND_CAP && moved < 24) {
             LivingEntity living = atGate.remove(atGate.size() - 1);
             Location spot = findOuterSurfaceSpot(zone, world);
             if (spot == null) {
@@ -1548,7 +1562,7 @@ public class MobZoneService implements Runnable {
             moved++;
         }
         // Keep bleeding the gate — never let more than the soft cap camp the entrance.
-        while (atGate.size() > VEX_SURFACE_CAP && moved < 48) {
+        while (atGate.size() > VEX_BAND_CAP && moved < 48) {
             LivingEntity living = atGate.remove(atGate.size() - 1);
             Location spot = findOuterSurfaceSpot(zone, world);
             if (spot == null) {
@@ -1591,7 +1605,7 @@ public class MobZoneService implements Runnable {
             if (ground.getY() <= CRYPT_CEILING_Y || ground.getY() > SURFACE_MAX_Y) {
                 continue;
             }
-            if (WildlifeLooks.nearVexStarter(ground) || WildlifeLooks.nearVex(ground, VEX_TABOO_RADIUS_SQ)) {
+            if (WildlifeLooks.nearVexBand(ground) || WildlifeLooks.nearVex(ground, VEX_TABOO_RADIUS_SQ)) {
                 continue;
             }
             if (BorderlandsRiteService.isMobSafeZone(ground)) {
