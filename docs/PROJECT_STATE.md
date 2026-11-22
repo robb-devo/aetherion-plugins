@@ -79,11 +79,18 @@ AetherMobs on every mmo backend; BossEngine on hub, mmo-r, mmo-d, mmo-c; Mining 
 Farming, Fishing on mmo-r and mmo-c; Dungeons and Beta on mmo-r and mmo-d; Guilds on mmo-i only (parked on mmo-r and mmo-d);
 Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmProxy` on the proxy.
 
-Merged on `main` but **not live** yet (2026-11-22 19:40 CET):
+Merged on `main` but **not live** yet (2026-11-22 20:15 CET):
 - #160 Items on mmo-i and mmo-m (held back while the island tests run there).
 - #159 Quests on mmo-r, mmo-d, mmo-c, mmo-m (both switches default off; turning them on network-wide waits for Robb).
 - #161 Guilds (island tour in flow order, Build Tool board) and #162 Quests (card look) on mmo-i.
 - #163 Core + Items (A-04: `/guild` and the Manager tile open from Level 20) on every backend that loads them.
+- Beta work list step 3, merged 2026-11-22: #165 Items (A-14 Ore Trolls take pickaxe damage only), #166 Quests
+  (A-15 accepting a quest never drops a finished one, warns before dropping progress), #167 Items (A-16 Tempo line
+  sits under Damage, armour says Speed/"Geschwindigkeit"), #168 BossEngine (A-17 `/helios enter` needs the new
+  `helios.enter` permission, default op), #169 Items (A-18 Aetherion Summons recipe off), #170 Items (A-19 The Hush
+  hidden in the Codex), #171 Hub (A-20 Farm Isle `/spawn` text, mmo-r only), #172 Items (A-21 Quarry Core Shard
+  rolls for every boss fighter over the loot threshold). Before shipping BossEngine, check that no LuckPerms player
+  group grants `*` or `helios.*`.
 
 Deploys swap jars by plugin name only where a server already runs that plugin, back the old ones up and
 restart each backend once (graceful RCON stop). The host also runs a standalone vanilla server (own port,
