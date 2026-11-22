@@ -109,6 +109,8 @@ mine-isle-footprint:
 
 # Named places. circles: "x z radius" (several allowed). min-y / max-y bound shafts and water.
 # kind: hall | quarry | shaft | water. anchor = where the compass points (optional).
+# major: true|false (optional) = big screen title on first visit; default only landing,
+# north_pit, great_works and rootdeep. Every other place shows a short action-bar line.
 mine-isle-districts:
   enabled: true
   districts:

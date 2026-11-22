@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Named places of Mining Eldervale — halls, quarries, shafts, the lake — from
@@ -112,8 +113,15 @@ public final class MineDistricts {
         }
     }
 
+    /**
+     * The few places that get the big screen title on a first visit. Every other place shows a
+     * short line instead, so the isle doesn't throw two dozen titles at a new player. A district
+     * can override this with {@code major: true|false} in config.
+     */
+    static final Set<String> MAJOR_PLACES = Set.of("landing", "north_pit", "great_works", "rootdeep");
+
     public record District(String id, String name, Kind kind, String blurb, List<Circle> circles,
-                           double minY, double maxY, Location anchor) {
+                           double minY, double maxY, Location anchor, boolean major) {
 
         public boolean contains(Location at) {
             if (at.getY() < minY || at.getY() > maxY) {
@@ -223,15 +231,17 @@ public final class MineDistricts {
                                 section.getDouble("anchor.z"), (float) section.getDouble("anchor.yaw", 0.0d), 0.0f);
                     }
                 }
+                String key = id.toLowerCase(Locale.ROOT);
                 loaded.add(new District(
-                        id.toLowerCase(Locale.ROOT),
+                        key,
                         section.getString("name", id),
                         kind,
                         section.getString("blurb", ""),
                         List.copyOf(circles),
                         section.getDouble("min-y", -64.0d),
                         section.getDouble("max-y", 320.0d),
-                        anchor
+                        anchor,
+                        section.getBoolean("major", MAJOR_PLACES.contains(key))
                 ));
             }
         }

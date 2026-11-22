@@ -136,6 +136,8 @@ isle-events:
 # Named areas (discovery, Bee Bloom fields, wayfinder). Circles are "x z radius" in world
 # coordinates, measured from Farming-Eldervale-Island.schem at the live paste
 # (world = -481 + x, y - 92, 420 + z). Landmarks win over water, water over fields.
+# major: true|false (optional) = big screen title on first visit; default only harvest_hall,
+# mirror_pond and southfield_hamlet. Every other plot shows a short action-bar line.
 farm-isle-plots:
   enabled: true
   plots:

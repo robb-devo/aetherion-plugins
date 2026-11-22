@@ -29,6 +29,8 @@ public final class IsleCompass {
     private static final int CARTOGRAPHER_XP = 400;
     private static final long GUIDE_MS = 120_000L;
     private static final double ARRIVE_DISTANCE = 6.0d;
+    /** How long a small place's discovery line stays before the guide arrow takes the bar back. */
+    private static final long DISCOVERY_LINE_MS = 2_500L;
 
     private record Guide(String label, Location target, long until) {
     }
@@ -36,6 +38,7 @@ public final class IsleCompass {
     private final FarmIsle isle;
     private final Map<UUID, String> lastPlot = new ConcurrentHashMap<>();
     private final Map<UUID, Guide> guides = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> barHeld = new ConcurrentHashMap<>();
     private BukkitTask task;
 
     IsleCompass(FarmIsle isle) {
@@ -53,11 +56,13 @@ public final class IsleCompass {
         }
         lastPlot.clear();
         guides.clear();
+        barHeld.clear();
     }
 
     void forget(UUID id) {
         lastPlot.remove(id);
         guides.remove(id);
+        barHeld.remove(id);
     }
 
     /** Point {@code player} at {@code target} for two minutes (or until they arrive). */
@@ -112,8 +117,12 @@ public final class IsleCompass {
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.7f, 1.5f);
             return;
         }
-        IsleText.bar(player, "§e" + IsleText.arrow(player, guide.target()) + " §f" + guide.label()
-                + " §8· §7" + (int) Math.round(distance) + "m");
+        Long held = barHeld.get(player.getUniqueId());
+        if (held == null || now >= held) {
+            barHeld.remove(player.getUniqueId());
+            IsleText.bar(player, "§e" + IsleText.arrow(player, guide.target()) + " §f" + guide.label()
+                    + " §8· §7" + (int) Math.round(distance) + "m");
+        }
         if (Bukkit.getCurrentTick() % 40 < 10) {
             Location from = player.getLocation().add(0, 1.2, 0);
             var step = guide.target().toVector().subtract(from.toVector()).normalize().multiply(2.2);
@@ -127,13 +136,21 @@ public final class IsleCompass {
             isle.profiles().markDirty();
             int found = countKnown(profile);
             int total = isle.plots().size();
-            player.showTitle(Title.title(
-                    IsleText.legacy(plot.colored()),
-                    IsleText.legacy("§7Discovered §8· §f" + found + "§7/§f" + total
-                            + (plot.blurb().isBlank() ? "" : " §8· §7" + plot.blurb())),
-                    Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1800), Duration.ofMillis(400))
-            ));
-            player.playSound(player.getLocation(), Sound.UI_TOAST_IN, SoundCategory.PLAYERS, 0.9f, 1.1f);
+            if (plot.major()) {
+                player.showTitle(Title.title(
+                        IsleText.legacy(plot.colored()),
+                        IsleText.legacy("§7Discovered §8· §f" + found + "§7/§f" + total
+                                + (plot.blurb().isBlank() ? "" : " §8· §7" + plot.blurb())),
+                        Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1800), Duration.ofMillis(400))
+                ));
+                player.playSound(player.getLocation(), Sound.UI_TOAST_IN, SoundCategory.PLAYERS, 0.9f, 1.1f);
+            } else {
+                // Small places: one short line, no screen title.
+                IsleText.bar(player, "§e✦ " + plot.colored()
+                        + (plot.blurb().isBlank() ? "" : " §8· §7" + plot.blurb())
+                        + " §8· §f" + found + "§7/§f" + total);
+                barHeld.put(player.getUniqueId(), System.currentTimeMillis() + DISCOVERY_LINE_MS);
+            }
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.PLAYERS, 0.6f, 1.4f);
             FarmingSkills.bonus(player, DISCOVERY_XP);
             if (found >= total && !profile.cartographer && player.getGameMode() == org.bukkit.GameMode.SURVIVAL) {

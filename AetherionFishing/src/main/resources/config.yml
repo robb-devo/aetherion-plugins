@@ -29,6 +29,8 @@ fish-isle:
   lake-surface-y: 89
 
 # Named waters. circles: "x z radius" (world). kind: lake (lake level only), tarn (above it), fountain.
+# major: true|false (optional) = big screen title on first visit; default only wishing_fountain,
+# mirror_reach and south_deep. Every other water shows a short action-bar line.
 waters:
   mirror_reach:
     name: Mirror Reach

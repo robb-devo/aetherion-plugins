@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The named waters of Fishing Eldervale from {@code waters} in config. Default circles were fitted
@@ -56,7 +57,14 @@ public final class Waters {
         }
     }
 
-    public record Water(String id, String name, Kind kind, String blurb, List<Circle> circles) {
+    /**
+     * The few places that get the big screen title on a first visit. Every other place shows a
+     * short line instead, so the isle doesn't throw a title at every step. A water can override
+     * this with {@code major: true|false} in config.
+     */
+    static final Set<String> MAJOR_PLACES = Set.of("wishing_fountain", "mirror_reach", "south_deep");
+
+    public record Water(String id, String name, Kind kind, String blurb, List<Circle> circles, boolean major) {
 
         public boolean contains(Location at) {
             if (at == null) {
@@ -149,8 +157,10 @@ public final class Waters {
                 } catch (IllegalArgumentException ignored) {
                     kind = Kind.LAKE;
                 }
-                loaded.add(new Water(id.toLowerCase(Locale.ROOT), section.getString("name", id), kind,
-                        section.getString("blurb", ""), List.copyOf(circles)));
+                String key = id.toLowerCase(Locale.ROOT);
+                loaded.add(new Water(key, section.getString("name", id), kind,
+                        section.getString("blurb", ""), List.copyOf(circles),
+                        section.getBoolean("major", MAJOR_PLACES.contains(key))));
             }
         }
         loaded.sort(Comparator.comparingInt((Water water) -> water.kind().priority)
