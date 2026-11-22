@@ -792,17 +792,31 @@ public class QuestManager {
          * =====================================================
          */
 
-        if (announce) {
-            QuestFeedback feedback = feedback();
-            if (feedback != null) {
-                feedback.playComplete(player, quest);
-            }
+        // Screen cards on: the rewards go onto the big card instead of the chat (one summary line stays).
+        QuestFeedback feedback = announce ? feedback() : null;
+        boolean card = feedback != null && feedback.cards(player);
+        if (card) {
+            cardRewards.put(player.getUniqueId(), new ArrayList<>());
+        } else if (feedback != null) {
+            feedback.playComplete(player, quest);
         }
 
-        giveRewards(
-                player,
-                quest
-        );
+        try {
+            giveRewards(
+                    player,
+                    quest
+            );
+        } finally {
+            if (card) {
+                List<de.aetherion.quests.talk.HudCards.Row> rows = cardRewards.remove(player.getUniqueId());
+                if (!feedback.playCompleteCard(player, quest, rows)) {
+                    feedback.playComplete(player, quest);
+                    for (de.aetherion.quests.talk.HudCards.Row row : rows == null ? List.<de.aetherion.quests.talk.HudCards.Row>of() : rows) {
+                        sendReward(player, de.aetherion.quests.talk.TalkText.strip(row.text()));
+                    }
+                }
+            }
+        }
 
         // Story side effects (Chronicle pages, storybook, Veil Quay) — no-op for other quests.
         de.aetherion.quests.story.StoryState.onQuestCompleted(player, quest);
@@ -1183,7 +1197,7 @@ public class QuestManager {
     }
 
     private void endRewardBatch(Player player) {
-        if (player != null && player.isOnline()) {
+        if (player != null && player.isOnline() && !cardRewards.containsKey(player.getUniqueId())) {
             player.sendMessage("");
         }
         AetherionItems items = AetherionItems.getInstance();
@@ -1197,6 +1211,23 @@ public class QuestManager {
             return;
         }
         player.sendMessage("§b✦ §3Reward: §f" + detail);
+    }
+
+    /** Quest rewards collected for the big screen card (player → rows), only while one is being paid out. */
+    private final Map<UUID, List<de.aetherion.quests.talk.HudCards.Row>> cardRewards = new HashMap<>();
+
+    /** A screen card is collecting this payout: the reward becomes a card row (true) instead of a chat line. */
+    private boolean cardRow(Player player, String row, ItemStack icon) {
+        List<de.aetherion.quests.talk.HudCards.Row> rows = player == null ? null : cardRewards.get(player.getUniqueId());
+        if (rows == null) {
+            return false;
+        }
+        rows.add(new de.aetherion.quests.talk.HudCards.Row(row, icon == null ? null : icon.clone()));
+        return true;
+    }
+
+    private boolean collectingCard(Player player) {
+        return player != null && cardRewards.containsKey(player.getUniqueId());
     }
 
 
@@ -1281,10 +1312,10 @@ public class QuestManager {
         }
         try {
             boolean given = hub.giveUnlockItem(player, id);
-            if (given) {
-                sendReward(player, id.replace('_', ' ') + " §7marker");
-            } else {
+            if (!given) {
                 player.sendMessage("§cCould not give Homestead Marker.");
+            } else if (!cardRow(player, "§a" + id.replace('_', ' ') + " §7marker", new ItemStack(Material.COMPASS))) {
+                sendReward(player, id.replace('_', ' ') + " §7marker");
             }
         } catch (Exception exception) {
             Bukkit.getLogger().warning(
@@ -1327,9 +1358,13 @@ public class QuestManager {
             if (unlocked) {
                 if (announce) {
                     String pretty = spawnId.replace('_', ' ');
-                    sendReward(player, pretty + " §7teleport unlocked");
-                    player.sendMessage("§7Open Aetherion Manager → Teleports to travel there.");
-                    player.sendMessage("");
+                    if (cardRow(player, "§d" + pretty + " §7teleport unlocked", new ItemStack(Material.ENDER_PEARL))) {
+                        player.sendMessage("§7Open Aetherion Manager → Teleports to travel there.");
+                    } else {
+                        sendReward(player, pretty + " §7teleport unlocked");
+                        player.sendMessage("§7Open Aetherion Manager → Teleports to travel there.");
+                        player.sendMessage("");
+                    }
                 }
                 de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
                 if (progress != null) {
@@ -1358,13 +1393,13 @@ public class QuestManager {
         AetherionItems items = AetherionItems.getInstance();
         if (items == null || items.getSkills() == null) {
             player.giveExp(amount);
-            if (announce) {
+            if (announce && !cardRow(player, "§b+" + amount + " §fXP", new ItemStack(Material.EXPERIENCE_BOTTLE))) {
                 sendReward(player, amount + " XP");
             }
             return;
         }
         items.getSkills().addBonusXp(player, amount);
-        if (announce) {
+        if (announce && !cardRow(player, "§b+" + amount + " §fAetherion XP", new ItemStack(Material.EXPERIENCE_BOTTLE))) {
             sendReward(player, amount + " Aetherion XP");
         }
     }
@@ -1428,7 +1463,9 @@ public class QuestManager {
             return;
         }
         items.getCoins().add(player, amount);
-        sendReward(player, amount + " coins");
+        if (!cardRow(player, "§6+" + amount + " §fCoins", new ItemStack(Material.GOLD_NUGGET))) {
+            sendReward(player, amount + " coins");
+        }
     }
 
 
@@ -1456,7 +1493,9 @@ public class QuestManager {
         ItemStack stack = de.aetherion.items.economy.CompressedResource.DIAMOND.compacted();
         stack.setAmount(count);
         giveItem(player, stack, "Compacted Diamond Block");
-        sendReward(player, count + " Compacted Diamond Block" + (count == 1 ? "" : "s"));
+        if (!collectingCard(player)) {
+            sendReward(player, count + " Compacted Diamond Block" + (count == 1 ? "" : "s"));
+        }
     }
 
 
@@ -1494,7 +1533,9 @@ public class QuestManager {
                     : "Catch Sphere";
             giveItem(player, stack, name);
             if (reward) {
-                sendReward(player, amount + " " + name);
+                if (!collectingCard(player)) { // on a screen card, giveItem already put it there
+                    sendReward(player, amount + " " + name);
+                }
             } else {
                 player.sendMessage("§6Lark §8» §7" + amount + " common spheres. Don't eat them.");
             }
@@ -1643,6 +1684,10 @@ public class QuestManager {
 
         de.aetherion.items.storage.BoosterDelivery.giveQuestReward(player, item);
 
+
+        if (cardRow(player, "§f+" + item.getAmount() + " " + displayName, item)) {
+            return;
+        }
 
         sendReward(
                 player,

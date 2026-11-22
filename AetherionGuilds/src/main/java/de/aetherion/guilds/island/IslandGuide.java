@@ -52,6 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -336,6 +337,27 @@ public final class IslandGuide implements Listener {
             case PRESS, MILL, FORGE, COMPACT, DOCK, SHIP -> factoryObjective(IslandHost.personal(owner), step);
             default -> null;
         };
+    }
+
+    /**
+     * A tour step just got done: a small screen card at the top ("✔ Storage Hut built", step n/8, what's next).
+     * Steps with their own big moment (Hub, first chain, the ship) get none. False = no card (cards off).
+     */
+    private boolean stepToast(Player owner, Step done) {
+        String title = switch (done) {
+            case HUT -> "Storage Hut built";
+            case QUARRY -> "Quarry set down";
+            case PRESS -> "First press by hand";
+            case MILL, FORGE, COMPACT -> "Mill in the line";
+            case DOCK -> "Dock built";
+            default -> null;
+        };
+        if (title == null) {
+            return false;
+        }
+        String next = objective(owner.getUniqueId());
+        return IslandUi.toast(owner, title, "§7Island tour · step " + progress(owner.getUniqueId()) + "/" + total(),
+                next == null ? null : "§8Next: §7" + next);
     }
 
     /** Steps in the whole tour (for "step n/8"). */
@@ -630,6 +652,9 @@ public final class IslandGuide implements Listener {
             return;
         }
         clickCool.put(player.getUniqueId(), now);
+        if (IslandUi.advance(player, hand.speakerId)) {
+            return; // paged talk with him: the click goes on to his next line
+        }
         TalkAccess talk = AetherServices.talk();
         if (talk != null) {
             if (talk.recentlyPicked(player)) {
@@ -867,8 +892,18 @@ public final class IslandGuide implements Listener {
     private void finishTour(Player player, Hand hand) {
         State state = state(hand.owner);
         dirty = true;
-        player.sendTitle("§6✦ First Chain Running ✦", "§7quarry §8→ §7belt §8→ §7hut", 10, 60, 20);
-        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.9f, 1.1f);
+        boolean card = IslandUi.big(player, "Island milestone", "First chain running", List.of(
+                        "§fQuarry §7digs the stone",
+                        "§fBelt §7carries it",
+                        "§fStorage Hut §7keeps it"),
+                Arrays.asList(new ItemStack(Material.COBBLESTONE), new ItemStack(Material.RAIL),
+                        new ItemStack(Material.BARREL)),
+                state.step.actTwo() ? "§7Next: make it worth more, first by hand at the Hub" : null, "§6",
+                "§6✦ §eFirst chain running §8· §7quarry → belt → hut");
+        if (!card) {
+            player.sendTitle("§6✦ First Chain Running ✦", "§7quarry §8→ §7belt §8→ §7hut", 10, 60, 20);
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.9f, 1.1f);
+        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.3f);
@@ -1086,8 +1121,18 @@ public final class IslandGuide implements Listener {
     /** The first Compressed Cobble in the hut: the tour's last beat. */
     private void factoryFinale(Player player, Hand hand) {
         IslandHost host = IslandHost.personal(hand.owner);
-        player.sendTitle("§b✦ Compressed Cobble ✦", "§7quarry §8→ §7mill §8→ §7hut", 10, 70, 20);
-        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        boolean card = IslandUi.big(player, "Island milestone", "Compressed Cobble", List.of(
+                        "§fQuarry §7digs",
+                        "§fMill §7presses 128 stones into one block",
+                        "§fStorage Hut §7keeps it"),
+                Arrays.asList(new ItemStack(Material.COBBLESTONE), new ItemStack(Material.STONECUTTER),
+                        new ItemStack(Material.BARREL)),
+                "§7Next: the Dock and your first contract", "§b",
+                "§b✦ §fCompressed Cobble §8· §7quarry → mill → hut");
+        if (!card) {
+            player.sendTitle("§b✦ Compressed Cobble ✦", "§7quarry §8→ §7mill §8→ §7hut", 10, 70, 20);
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.5f, 1.4f);
@@ -1277,7 +1322,10 @@ public final class IslandGuide implements Listener {
     private void giveQuarry(Player player) {
         handQuarry(player, true);
         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 0.9f);
-        player.sendMessage("§a+ §6Cobble Quarry §8(from " + name() + ") §7· the Build Tool shows where its rig goes: right-click flat ground");
+        if (!IslandUi.toast(player, "Cobble Quarry from " + name(), "§7It's in your bag.",
+                "§8Next: §7Build Tool shows its rig, right-click flat ground")) {
+            player.sendMessage("§a+ §6Cobble Quarry §8(from " + name() + ") §7· the Build Tool shows where its rig goes: right-click flat ground");
+        }
     }
 
     /** Kits bit: the one spare quarry Hollis hands out if the first went missing. */
@@ -1430,6 +1478,20 @@ public final class IslandGuide implements Listener {
             return;
         }
         String line = chat.lines.poll();
+        if (line != null && IslandUi.paged(player)) {
+            // Paged talk: the bubble takes every line now and the player clicks from one to the next; the
+            // replies wait in it until the last line is read. Nothing goes to chat but the log line.
+            for (String next = line; next != null; next = chat.lines.poll()) {
+                if (!talk.say(player, hand.speakerId, next)) {
+                    player.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§e§l" + name() + " §8» §f" + next));
+                }
+            }
+            chats.remove(player.getUniqueId());
+            if (!chat.replies.isEmpty() && !talk.replies(player, hand.speakerId, chat.replies)) {
+                chatFallback(player, List.of(), chat.replies);
+            }
+            return;
+        }
         if (line != null) {
             if (!talk.say(player, hand.speakerId, line)) {
                 player.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§e§l" + name() + " §8» §f" + line));
@@ -1684,7 +1746,9 @@ public final class IslandGuide implements Listener {
             if (talk != null) {
                 talk.end(owner);
             }
-            owner.playSound(owner.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 1.4f);
+            if (!stepToast(owner, before)) {
+                owner.playSound(owner.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 1.4f);
+            }
             switch (state.step) {
                 case HUB -> hubPrompt(owner, hand, false);
                 case HUT -> {

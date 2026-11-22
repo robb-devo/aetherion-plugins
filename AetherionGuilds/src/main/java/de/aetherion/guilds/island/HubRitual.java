@@ -14,7 +14,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * The moment the first Workshop stands: the factory has a heart. A bell tolls three times, a beam of light
  * climbs out of the roof, sparks ring the yard, and the player is told — once, plainly — what the Hub does
- * from now on. About four seconds, then the board over the Workshop lights up.
+ * from now on (a big screen card when Quests has them on, else a title and a few chat lines). About four
+ * seconds, then the board over the Workshop lights up.
  */
 public final class HubRitual {
 
@@ -57,6 +58,19 @@ public final class HubRitual {
             de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 40, Math.max(1.2, 1.2), null);
             world.playSound(top, Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.9f, 1.1f);
             if (!player.isOnline()) {
+                return;
+            }
+            if (IslandUi.big(player, "Island milestone", "Your Hub stands", java.util.List.of(
+                            "§7At its §flectern§7:",
+                            "§fUnlock §7— Mill, Depot, Splitter and more",
+                            "§fHub tier §7— a bigger Hub, more to unlock",
+                            "§6Coin Shortcuts §7— quarries and parts for coins"),
+                    java.util.Arrays.asList(new org.bukkit.inventory.ItemStack(org.bukkit.Material.LECTERN),
+                            new org.bukkit.inventory.ItemStack(org.bukkit.Material.SMITHING_TABLE),
+                            new org.bukkit.inventory.ItemStack(org.bukkit.Material.BEACON),
+                            new org.bukkit.inventory.ItemStack(org.bukkit.Material.GOLD_NUGGET)),
+                    "§7Build it all with the §fBuild Tool§7.", "§6",
+                    "§6✦ §eYour Hub stands §8· §7unlocks, Hub tier and Coin Shortcuts at its lectern")) {
                 return;
             }
             player.sendTitle("§6§l✦ THE HUB IS FOUNDED ✦", "§7new machines unlock at its lectern", 8, 80, 20);

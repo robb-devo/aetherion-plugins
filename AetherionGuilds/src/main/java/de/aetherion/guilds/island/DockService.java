@@ -398,7 +398,13 @@ public final class DockService implements Listener, LogisticsService.Export {
             de.aetherion.core.api.Vfx.puff(top, Particle.BLOCK, 30, Math.max(0.6, 0.6), Material.COBBLESTONE.createBlockData());
             de.aetherion.core.api.Vfx.puff(top, Particle.CLOUD, 8, Math.max(0.4, 0.4), null);
         }
-        player.sendMessage("§a✦ Pressed by hand: §f128 Cobblestone §8→ §a1 Compressed Cobblestone §8(in storage)");
+        if (IslandUi.cards(player)) {
+            // a repeat action: one line in the action bar, the chat stays free
+            player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                    .deserialize("§a✦ Pressed: §f128 Cobblestone §8→ §a1 Compressed Cobblestone §8(in storage)"));
+        } else {
+            player.sendMessage("§a✦ Pressed by hand: §f128 Cobblestone §8→ §a1 Compressed Cobblestone §8(in storage)");
+        }
         return true;
     }
 
@@ -811,7 +817,10 @@ public final class DockService implements Listener, LogisticsService.Export {
         if (extra != null) {
             rewards.add(extra);
         }
-        player.sendMessage("§a✦ " + contract.title() + " shipped §8(" + contract.client() + ")§a: " + String.join("§7, ", rewards));
+        if (!IslandUi.toast(player, contract.title() + " shipped", String.join("§7, ", rewards),
+                "§8for " + contract.client() + " · the airship is on its way")) {
+            player.sendMessage("§a✦ " + contract.title() + " shipped §8(" + contract.client() + ")§a: " + String.join("§7, ", rewards));
+        }
         int stageAfter = state.stage;
         flying.add(host.id());
         Airship airship = new Airship(player, host, dock, state.paint, () -> {
@@ -870,20 +879,28 @@ public final class DockService implements Listener, LogisticsService.Export {
                 .forEach(rest -> player.getWorld().dropItemNaturally(player.getLocation(), rest));
     }
 
-    /** The stage-up beat: title, what it opened, the isle hand's line. */
+    /** The stage-up beat: a big screen card (or title + chat) with what it opened, then the isle hand's line. */
     private void stageBeat(Player player, IslandHost host, int stage) {
-        player.sendTitle("§6✦ " + Stages.label(stage) + " §6✦", "§7" + stripColor(Stages.perks(stage).get(0)), 10, 70, 20);
-        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        String hubName = de.aetherion.guilds.logistics.LogisticsService.hubName(Stages.hubLevel(stage));
+        List<String> perks = Stages.perks(stage);
+        boolean card = IslandUi.big(player, "Island stage " + Stages.clamp(stage), stripColor(Stages.name(stage)),
+                perks, stageIcons(perks.size()), "§7Your Hub is the §f" + hubName + " §7now.", "§6",
+                "§6✦ §e" + Stages.label(stage) + " §8· §7" + stripColor(perks.isEmpty() ? "" : perks.get(0)));
+        if (!card) {
+            player.sendTitle("§6✦ " + Stages.label(stage) + " §6✦", "§7" + stripColor(Stages.perks(stage).get(0)), 10, 70, 20);
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.1f);
                 player.playSound(player.getLocation(), Sound.BLOCK_BELL_USE, 0.9f, 1.2f);
             }
         }, 10L);
-        player.sendMessage("§6✦ " + Stages.label(stage) + "§7. Your Hub is the §f"
-                + de.aetherion.guilds.logistics.LogisticsService.hubName(Stages.hubLevel(stage)) + " §7now:");
-        for (String perk : Stages.perks(stage)) {
-            player.sendMessage(" §8• " + perk);
+        if (!card) {
+            player.sendMessage("§6✦ " + Stages.label(stage) + "§7. Your Hub is the §f" + hubName + " §7now:");
+            for (String perk : perks) {
+                player.sendMessage(" §8• " + perk);
+            }
         }
         PlacedStructure hub = structures.hub(host);
         World world = hosts.world(host);
@@ -913,6 +930,16 @@ public final class DockService implements Listener, LogisticsService.Export {
 
     private static String stripColor(String text) {
         return text == null ? "" : text.replaceAll("§.", "");
+    }
+
+    /** One icon per stage perk row on the big card. */
+    private static List<ItemStack> stageIcons(int rows) {
+        Material[] pick = {Material.SMITHING_TABLE, Material.COBBLESTONE, Material.CHEST, Material.BEACON};
+        List<ItemStack> icons = new ArrayList<>();
+        for (int i = 0; i < rows; i++) {
+            icons.add(new ItemStack(pick[Math.min(i, pick.length - 1)]));
+        }
+        return icons;
     }
 
     // ------------------------------------------------------------------------------------------------

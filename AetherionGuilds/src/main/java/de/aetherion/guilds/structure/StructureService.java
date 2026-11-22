@@ -774,7 +774,12 @@ public final class StructureService {
             }
             if (player.isOnline()) {
                 player.sendTitle("§6✦ " + type.display() + " §6✦", "§7built on " + hosts.title(host), 5, 40, 15);
-                player.sendMessage("§a" + type.display() + " built §8(" + paid + ")§a. " + nextHint(type));
+                if (de.aetherion.guilds.island.IslandUi.cards(player)) {
+                    player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                            .deserialize("§a" + type.display() + " built §8(" + paid + ")§a. " + nextHint(type)));
+                } else {
+                    player.sendMessage("§a" + type.display() + " built §8(" + paid + ")§a. " + nextHint(type));
+                }
             }
         });
         return structure;
@@ -1382,7 +1387,12 @@ public final class StructureService {
         World world = Bukkit.getWorld(structure.world());
         Template from = template(structure);
         Template to = legacy(structure) ? null : nextTemplate(structure, tier.level());
-        player.sendMessage("§a✦ Upgrading your " + fromName + " §7→ §f" + tier.name() + " §8(" + String.join("§8, ", paid) + "§8)");
+        if (de.aetherion.guilds.island.IslandUi.cards(player)) {
+            player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                    .deserialize("§a✦ Upgrading your " + fromName + " §7→ §f" + tier.name() + " §8(" + String.join("§8, ", paid) + "§8)"));
+        } else {
+            player.sendMessage("§a✦ Upgrading your " + fromName + " §7→ §f" + tier.name() + " §8(" + String.join("§8, ", paid) + "§8)");
+        }
         if (to == null || world == null) {
             structure.setLevel(tier.level());
             dirty = true;
@@ -1442,8 +1452,10 @@ public final class StructureService {
                     : structure.type().role() == StructureType.Role.PROCESSOR
                     ? "§f" + GuildFormat.compact((long) structure.ratePerSecond()) + " §7goods / s"
                     : "§7holds §f" + GuildFormat.compact(structure.capacity()) + " §7goods";
-            player.sendTitle("§6✦ " + tier.name() + " §6✦", perk, 5, 50, 15);
-            player.sendMessage("§a" + tier.name() + " stands. " + perk + "§7.");
+            if (!de.aetherion.guilds.island.IslandUi.toast(player, tier.name() + " stands", perk, null)) {
+                player.sendTitle("§6✦ " + tier.name() + " §6✦", perk, 5, 50, 15);
+                player.sendMessage("§a" + tier.name() + " stands. " + perk + "§7.");
+            }
         }
     }
 

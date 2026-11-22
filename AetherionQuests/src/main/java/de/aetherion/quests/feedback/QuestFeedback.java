@@ -1,10 +1,16 @@
 package de.aetherion.quests.feedback;
 
 
+import de.aetherion.quests.AetherionQuests;
+import de.aetherion.quests.lang.LangPack;
+import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.model.Objective;
 import de.aetherion.quests.model.Quest;
 import de.aetherion.quests.npc.QuestNPC;
 import de.aetherion.quests.npc.QuestNPCRegistry;
+import de.aetherion.quests.talk.HudCards;
+import de.aetherion.quests.talk.TalkChrome;
+import de.aetherion.quests.talk.TalkText;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -26,8 +32,15 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 
+/**
+ * Sounds, titles and chat lines for quest moments. With screen cards on ({@code hud-cards.enabled}) a finished
+ * objective and "ready to turn in" become a small toast at the top, a finished quest becomes the big card with its
+ * rewards, and the chat keeps a single summary line; counts stay in the action bar.
+ */
 public class QuestFeedback implements Listener {
 
 
@@ -126,6 +139,14 @@ public class QuestFeedback implements Listener {
 
         if (objectiveComplete) {
 
+            if (cards(player)) {
+                String next = nextObjective(player, quest, objective);
+                HudCards.get().show(player, new HudCards.Card(HudCards.Kind.TOAST, null, progressText, TalkChrome.READY,
+                        List.of(HudCards.Row.of("§7" + questTitle(player, quest))),
+                        next == null ? null : "§8" + LangPack.ui(player, "card.next", "Next:") + " §7" + next, null));
+                return;
+            }
+
             player.playSound(
                     player.getLocation(),
                     Sound.ENTITY_PLAYER_LEVELUP,
@@ -166,6 +187,15 @@ public class QuestFeedback implements Listener {
                 ),
                 NamedTextColor.GREEN
         ));
+
+        if (cards(player)) {
+            HudCards.get().show(player, new HudCards.Card(HudCards.Kind.TOAST, null,
+                    LangPack.ui(player, "card.objectives_done", "Objectives complete"), TalkChrome.READY,
+                    List.of(HudCards.Row.of("§7" + questTitle(player, quest))),
+                    "§8" + LangPack.ui(player, "card.next", "Next:") + " §7"
+                            + LangPack.format(player, "progress.return_to", "Return to {0}", npcName), null));
+            return;
+        }
 
         player.sendMessage("");
         player.sendMessage(de.aetherion.quests.lang.LangPack.ui(player, "objectives_complete", "§a§lOBJECTIVES COMPLETE"));
@@ -242,6 +272,70 @@ public class QuestFeedback implements Listener {
 
     }
 
+
+    /** Screen cards are on for this player (else the chat lines above). */
+    public boolean cards(Player player) {
+        HudCards cards = HudCards.get();
+        return cards != null && cards.enabledFor(player);
+    }
+
+    /**
+     * The big card for a finished quest: title, the rewards as rows (icons, "+250" counts up), one summary line in
+     * chat once it has gone. False = it could not show: the caller says it the old way.
+     */
+    public boolean playCompleteCard(Player player, Quest quest, List<HudCards.Row> rewards) {
+        if (player == null || quest == null || !cards(player)) {
+            return false;
+        }
+        String title = questTitle(player, quest);
+        List<HudCards.Row> rows = rewards == null ? List.of() : List.copyOf(rewards);
+        StringBuilder summary = new StringBuilder("§6✦ §e")
+                .append(LangPack.ui(player, "card.quest_done_summary", "Quest complete:"))
+                .append(" §f").append(TalkText.strip(title));
+        List<String> paid = new ArrayList<>();
+        for (HudCards.Row row : rows) {
+            if (row != null && row.text() != null && paid.size() < 4) {
+                paid.add(TalkText.strip(row.text()));
+            }
+        }
+        if (!paid.isEmpty()) {
+            summary.append(" §8· §7").append(String.join(", ", paid));
+        }
+        boolean shown = HudCards.get().show(player, new HudCards.Card(HudCards.Kind.BIG,
+                LangPack.ui(player, "card.quest_complete", "Quest complete"), title, TalkChrome.QUEST, rows, null,
+                summary.toString()));
+        if (shown) {
+            spawnRewardFirework(player);
+        }
+        return shown;
+    }
+
+    private static String questTitle(Player player, Quest quest) {
+        if (quest == null) {
+            return "Quest";
+        }
+        return LangPack.questTitle(player, quest.getId(), quest.getTitle());
+    }
+
+    /** The first objective still open after {@code done}, as "Label 0/5" (null = none left). */
+    private static String nextObjective(Player player, Quest quest, Objective done) {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        QuestManager quests = plugin == null ? null : plugin.getQuestManager();
+        if (quests == null || quest == null || quest.getObjectives() == null) {
+            return null;
+        }
+        for (Objective objective : quest.getObjectives()) {
+            if (objective == null || objective == done || objective.getAmount() <= 0) {
+                continue;
+            }
+            int have = quests.getProgress(player, quest.getId(), objective.getTarget());
+            if (have < objective.getAmount()) {
+                String label = objective.getDisplayName() != null ? objective.getDisplayName() : objective.getTarget();
+                return TalkText.strip(label) + " " + have + "/" + objective.getAmount();
+            }
+        }
+        return null;
+    }
 
     public void spawnRewardFirework(Player player) {
 

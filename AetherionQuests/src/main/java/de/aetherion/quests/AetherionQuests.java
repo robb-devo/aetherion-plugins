@@ -286,6 +286,8 @@ public final class AetherionQuests extends JavaPlugin {
         de.aetherion.quests.npc.NpcMemory.start(this);
         de.aetherion.quests.npc.LivingNpcSkins.start(this);
         de.aetherion.quests.talk.TalkUx.start(this);
+        // Screen cards (quest done, island milestones); off unless hud-cards.enabled.
+        de.aetherion.quests.talk.HudCards.start(this);
 
 
 
@@ -545,6 +547,9 @@ public final class AetherionQuests extends JavaPlugin {
         de.aetherion.quests.npc.LivingNpcAtmosphere.stopSocial();
         if (de.aetherion.quests.npc.LivingNpcLife.get() != null) {
             de.aetherion.quests.npc.LivingNpcLife.get().shutdown();
+        }
+        if (de.aetherion.quests.talk.HudCards.get() != null) {
+            de.aetherion.quests.talk.HudCards.get().shutdown();
         }
         if (de.aetherion.quests.talk.TalkUx.get() != null) {
             de.aetherion.quests.talk.TalkUx.get().shutdown();

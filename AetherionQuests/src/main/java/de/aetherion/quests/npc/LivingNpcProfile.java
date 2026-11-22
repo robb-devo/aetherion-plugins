@@ -443,7 +443,8 @@ public final class LivingNpcProfile {
     /**
      * Queue a line on the player's speech clock ({@link de.aetherion.quests.dialog.DialogPace}):
      * it starts once whatever is being said has typed out and had its read gap — same rhythm
-     * at the start of a conversation and in the middle of it.
+     * at the start of a conversation and in the middle of it. With paged talk the bubble is the
+     * queue: the line goes straight in and waits for the player's click (no chat copy).
      */
     private static void enqueueSay(
             org.bukkit.entity.Player player,
@@ -457,6 +458,11 @@ public final class LivingNpcProfile {
             return;
         }
         String filled = de.aetherion.quests.talk.TalkText.fill(player, line);
+        de.aetherion.quests.talk.TalkUx paged = de.aetherion.quests.talk.TalkUx.get();
+        if (paged != null && of(npcId) != null && paged.wouldPage(player, npcId)
+                && paged.line(player, npcId, displayName, filled)) {
+            return;
+        }
         long delay = de.aetherion.quests.dialog.DialogPace.reserve(player, filled);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
@@ -474,6 +480,10 @@ public final class LivingNpcProfile {
         String filled = de.aetherion.quests.talk.TalkText.fill(player, line);
         LivingNpcProfile profile = of(npcId);
         if (profile != null) {
+            de.aetherion.quests.talk.TalkUx paged = de.aetherion.quests.talk.TalkUx.get();
+            if (paged != null && paged.wouldPage(player, npcId) && paged.line(player, npcId, displayName, filled)) {
+                return; // paged bubble took it: the chat only gets the log line later
+            }
             player.sendMessage(profile.formatChatLine(displayName, filled));
             NpcPresence.cue(player, npcId);
             // Same line, spoken in-world: bubble above the NPC for this player only.

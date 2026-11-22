@@ -96,6 +96,26 @@ ui:
     hint_topics: "Antwort anschauen + klicken — oder einfach weitergehen"
     scroll: "Klicken zum Wählen · scrollen zum Wechseln"
     moved_on: "Das Gespräch ist vorbei. Nochmal rechtsklicken."
+    # Paged talk (paged-talk.*): click to go on, the chat keeps one log line per conversation
+    continue_hint: "Klicken zum Weiterlesen"
+    log_more: " hatte noch mehr zu sagen · {0} ungelesen"
+    log_lines: " · {0} Zeilen"
+    log_read: "[Lesen]"
+    log_unheard: "Noch nicht gehört:"
+    log_click: "Klick: deine letzten Gespräche"
+    log_empty: "Noch keine Gespräche."
+    log_title: "Gespräche"
+    log_now: "gerade eben"
+    log_minutes: "vor {0} Min."
+    log_hours: "vor {0} Std."
+    # Screen cards (hud-cards.*): the chat line a big card leaves
+    card_details: "[Details]"
+  # Screen cards for quest moments (hud-cards.*)
+  card:
+    next: "Weiter:"
+    objectives_done: "Ziele erledigt"
+    quest_complete: "Quest abgeschlossen"
+    quest_done_summary: "Quest abgeschlossen:"
   # Action-bar hints spoken around talk
   tip:
     isle_forage: "→ Forage-Isle-Pad · Miss Canopy bringt dir die Insel bei"
