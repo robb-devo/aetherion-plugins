@@ -266,6 +266,9 @@ msg:
   done_fallback: "Wir sind hier fertig. Nerv ein anderes Klemmbrett."
   chests_unlocked: "§aKisten frei. §7Probekiste beim Merchant + Welt-Kisten sind aktiv."
   harbour_pad: "§a✦ §7Hafen-Pad: §aTwig§7 zeigt dir den Schleimsprung → §aForage Isle§7."
+  quest_switch:
+    warn: "§e⚠ §7Mit §f{0}§7 fällt §f{1}§7 weg, samt Fortschritt."
+    confirm: "§7Nimm sie innerhalb einer Minute noch einmal an, dann wechselst du. Fertige Quests bleiben immer."
 
 quests:
   lesson_combat:
