@@ -296,6 +296,20 @@ public final class AetherionGuilds extends JavaPlugin {
             public boolean place(Player player, org.bukkit.block.Block ground, org.bukkit.inventory.ItemStack item) {
                 return minions.place(player, ground, item) != null;
             }
+
+            @Override
+            public de.aetherion.guilds.model.QuarryType type(org.bukkit.inventory.ItemStack item) {
+                return minions.typeOf(item);
+            }
+
+            @Override
+            public int level(org.bukkit.inventory.ItemStack item) {
+                if (item == null || !item.hasItemMeta()) {
+                    return 1;
+                }
+                return Math.max(1, item.getItemMeta().getPersistentDataContainer()
+                        .getOrDefault(minions.levelKey(), org.bukkit.persistence.PersistentDataType.INTEGER, 1));
+            }
         });
         minions.setHooks(new MinionService.Hooks() {
             @Override

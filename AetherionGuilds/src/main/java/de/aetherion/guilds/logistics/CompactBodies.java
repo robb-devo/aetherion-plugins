@@ -31,8 +31,8 @@ final class CompactBodies {
     }
 
     // 2x2 centre (machine space)
-    private static final float CX = -0.5f;
-    private static final float CZ = 0.5f;
+    static final float CX = -0.5f;
+    static final float CZ = 0.5f;
 
     /** Centre of the footprint in machine space (x, z). */
     static float[] centre(String templateId) {
@@ -51,13 +51,19 @@ final class CompactBodies {
             case STORAGE_HUT -> hutWall(level) + 1.3f;
             case WORKSHOP -> 6.2f;
             case DOCK -> 6.0f;
+            case QUARRY_HOUSING -> QuarryBodies.height(level);
             default -> 3f;
         };
     }
 
     static List<PropBodies.Part> body(StructureType type, int level) {
+        return body(type, level, null);
+    }
+
+    static List<PropBodies.Part> body(StructureType type, int level, de.aetherion.guilds.model.QuarryType quarry) {
         List<PropBodies.Part> p = new ArrayList<>();
         switch (type) {
+            case QUARRY_HOUSING -> QuarryBodies.yard(p, level, quarry);
             case MILL -> mill(p, level);
             case FORGE -> forge(p, level);
             case STORAGE_HUT -> hut(p, level);
@@ -635,44 +641,44 @@ final class CompactBodies {
         lip(p, 0.53f, 0.3f, 0.0f, 0.06f, 0.7f);
     }
 
-    private static void lip(List<PropBodies.Part> p, float x, float y, float z, float sx, float sz) {
+    static void lip(List<PropBodies.Part> p, float x, float y, float z, float sx, float sz) {
         p.add(new PropBodies.Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(x, y, z),
                 new Vector3f(sx, 0.08f, sz), new Quaternionf(), true));
     }
 
-    private static void lamp(List<PropBodies.Part> p, float x, float y, float z) {
+    static void lamp(List<PropBodies.Part> p, float x, float y, float z) {
         p.add(new PropBodies.Part("lamp", Material.LIGHT_GRAY_CONCRETE.createBlockData(), null, new Vector3f(x, y, z),
                 new Vector3f(0.24f, 0.24f, 0.24f), new Quaternionf(), true));
     }
 
-    private static void box(List<PropBodies.Part> p, Material m, float x, float y, float z, float sx, float sy, float sz) {
+    static void box(List<PropBodies.Part> p, Material m, float x, float y, float z, float sx, float sy, float sz) {
         p.add(new PropBodies.Part("", m.createBlockData(), null, new Vector3f(x, y, z), new Vector3f(sx, sy, sz),
                 new Quaternionf(), false));
     }
 
-    private static void boxR(List<PropBodies.Part> p, Material m, float x, float y, float z, float sx, float sy, float sz,
+    static void boxR(List<PropBodies.Part> p, Material m, float x, float y, float z, float sx, float sy, float sz,
                              Quaternionf q) {
         p.add(new PropBodies.Part("", m.createBlockData(), null, new Vector3f(x, y, z), new Vector3f(sx, sy, sz), q, false));
     }
 
-    private static void state(List<PropBodies.Part> p, String state, float x, float y, float z, float sx, float sy, float sz) {
+    static void state(List<PropBodies.Part> p, String state, float x, float y, float z, float sx, float sy, float sz) {
         p.add(new PropBodies.Part("", Bukkit.createBlockData(state), null, new Vector3f(x, y, z), new Vector3f(sx, sy, sz),
                 new Quaternionf(), false));
     }
 
-    private static void block(List<PropBodies.Part> p, String role, String state, float x, float y, float z,
+    static void block(List<PropBodies.Part> p, String role, String state, float x, float y, float z,
                               float sx, float sy, float sz, boolean bright) {
         p.add(new PropBodies.Part(role, Bukkit.createBlockData(state), null, new Vector3f(x, y, z),
                 new Vector3f(sx, sy, sz), new Quaternionf(), bright));
     }
 
-    private static void spin(List<PropBodies.Part> p, String role, Material m, float x, float y, float z,
+    static void spin(List<PropBodies.Part> p, String role, Material m, float x, float y, float z,
                              float sx, float sy, float sz, Quaternionf own) {
         p.add(new PropBodies.Part(role, null, new ItemStack(m), new Vector3f(x, y, z), new Vector3f(sx, sy, sz), own, false));
     }
 
     /** A flat item (tool, paper, clock, map) hung on a wall, facing the front. */
-    private static void item(List<PropBodies.Part> p, Material m, float x, float y, float z, float size, Quaternionf q) {
+    static void item(List<PropBodies.Part> p, Material m, float x, float y, float z, float size, Quaternionf q) {
         p.add(new PropBodies.Part("", null, new ItemStack(m), new Vector3f(x, y, z), new Vector3f(size, size, size), q, false));
     }
 }
