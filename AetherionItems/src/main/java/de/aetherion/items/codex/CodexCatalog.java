@@ -648,9 +648,16 @@ public final class CodexCatalog {
         return null;
     }
 
-    /** BossEngine test rigs never show up in the Bestiary. */
+    /**
+     * Bosses players cannot reach stay out of the Codex: The Hush is staff-only while it stays hidden (Beta E5,
+     * work list A-19). Take an id out here once its door opens for players.
+     */
+    private static final java.util.Set<String> UNREACHABLE_BOSSES = java.util.Set.of("the_hush");
+
+    /** BossEngine test rigs and unreachable bosses never show up in the Bestiary. */
     public static boolean hiddenBoss(String templateId) {
-        return templateId == null || templateId.startsWith("test_") || templateId.startsWith("dev_");
+        return templateId == null || templateId.startsWith("test_") || templateId.startsWith("dev_")
+                || UNREACHABLE_BOSSES.contains(templateId);
     }
 
     private static Material fallbackIcon(String id, Material live) {
