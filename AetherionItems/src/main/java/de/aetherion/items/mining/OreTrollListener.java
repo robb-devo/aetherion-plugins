@@ -289,13 +289,7 @@ public final class OreTrollListener implements Listener {
         if (!(event.getEntity() instanceof LivingEntity target) || !isOreTroll(target)) {
             return;
         }
-        Player attacker = null;
-        if (event.getDamager() instanceof Player player) {
-            attacker = player;
-        } else if (event.getDamager() instanceof org.bukkit.entity.Projectile projectile
-                && projectile.getShooter() instanceof Player player) {
-            attacker = player;
-        }
+        Player attacker = attackerOf(event);
         if (attacker == null) {
             event.setCancelled(true);
             return;
@@ -319,6 +313,42 @@ public final class OreTrollListener implements Listener {
         event.setCancelled(false);
         event.setDamage(dmg);
         target.setNoDamageTicks(0);
+    }
+
+    /**
+     * Last word on every hit a troll takes. Combat listeners at HIGH un-cancel refused hits on purpose (WorldGuard,
+     * invulnerable wildlife), which let swords, bows and pets through to trolls (R-25). Here, after all of them, a hit
+     * stands only as a pickaxe swing, with the flat pickaxe damage.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void enforcePickaxeOnly(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity target) || !isOreTroll(target)) {
+            return;
+        }
+        Player attacker = attackerOf(event);
+        if (attacker == null || !(event.getDamager() instanceof Player)) {
+            event.setCancelled(true);
+            return;
+        }
+        int dmg = miningBossDamage(attacker.getInventory().getItemInMainHand());
+        if (dmg <= 0) {
+            event.setCancelled(true);
+            return;
+        }
+        if (!event.isCancelled()) {
+            event.setDamage(dmg);
+        }
+    }
+
+    private static Player attackerOf(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player player) {
+            return player;
+        }
+        if (event.getDamager() instanceof org.bukkit.entity.Projectile projectile
+                && projectile.getShooter() instanceof Player player) {
+            return player;
+        }
+        return null;
     }
 
     /** Troll → player: soft tap only. */
