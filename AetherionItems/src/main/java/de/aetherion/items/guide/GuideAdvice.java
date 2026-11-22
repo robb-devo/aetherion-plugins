@@ -79,7 +79,8 @@ public final class GuideAdvice {
             if (!progress.island(player)) {
                 tips.add(strip(progress.islandHint()));
             } else if (!progress.guild(player)) {
-                tips.add(strip(progress.guildHint()));
+                tips.add("Guilds take members from Level 20: ask one for an invite (/guild). "
+                        + strip(progress.guildHint()));
             }
         }
         if (tips.isEmpty()) {

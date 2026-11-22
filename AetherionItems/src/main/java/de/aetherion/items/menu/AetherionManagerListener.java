@@ -470,8 +470,8 @@ public class AetherionManagerListener implements Listener {
                     player.sendMessage("§cGuilds are not loaded.");
                     return;
                 }
-                if (progress != null && !progress.guild(player)) {
-                    player.sendMessage(progress.guildHint());
+                if (progress != null && !progress.guildJoin(player)) {
+                    player.sendMessage(progress.guildJoinHint());
                     return;
                 }
                 player.closeInventory();

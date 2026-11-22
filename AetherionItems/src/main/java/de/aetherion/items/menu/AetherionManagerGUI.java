@@ -233,10 +233,10 @@ public class AetherionManagerGUI {
                 "§7Your personal island, quarries",
                 "§7and friend visits.",
                 "§8Opens in chat.");
-        put(inventory, GUILD_SLOT, guildPlugin && (progress == null || progress.guild(player)),
+        put(inventory, GUILD_SLOT, guildPlugin && (progress == null || progress.guildJoin(player)),
                 Material.YELLOW_BANNER, "§6Guild",
                 !guildPlugin ? "§7Requires AetherionGuilds."
-                        : (progress == null ? "§7Level 75. Mid–late game club." : progress.guildHint()),
+                        : (progress == null ? "§7Level 20. Join a guild, found one at 75." : progress.guildJoinHint()),
                 "§7Shared island, invites, ranks",
                 "§7and guild quarries.",
                 "§8Opens in chat.");
@@ -759,7 +759,7 @@ public class AetherionManagerGUI {
         gates.add(new Gate(CODEX_SLOT, codexOpen(player, progress), "codex", "Codex", progress.collectionHint()));
         if (NetworkHooks.islandsAvailable()) {
             gates.add(new Gate(ISLAND_SLOT, progress.island(player), "island", "Island", progress.islandHint()));
-            gates.add(new Gate(GUILD_SLOT, progress.guild(player), "guild", "Guild", progress.guildHint()));
+            gates.add(new Gate(GUILD_SLOT, progress.guildJoin(player), "guild", "Guild", progress.guildJoinHint()));
         }
         return gates;
     }

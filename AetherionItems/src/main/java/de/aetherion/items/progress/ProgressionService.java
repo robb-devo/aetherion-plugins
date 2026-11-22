@@ -20,6 +20,8 @@ public final class ProgressionService {
 
     public static final int ISLAND_LEVEL = 20;
     public static final int GUILD_LEVEL = 75;
+    /** Joining a guild (and opening /guild) comes with the island; founding one stays at {@link #GUILD_LEVEL}. */
+    public static final int GUILD_JOIN_LEVEL = ISLAND_LEVEL;
 
     public enum Flag {
         TRADER,
@@ -136,9 +138,16 @@ public final class ProgressionService {
         return skills != null && skills.accountLevel(player) >= ISLAND_LEVEL;
     }
 
+    /** Founding a guild (Level 75). For joining and the /guild menu use {@link #guildJoin(Player)}. */
     public boolean guild(Player player) {
         SkillService skills = plugin.getSkills();
         return skills != null && skills.accountLevel(player) >= GUILD_LEVEL;
+    }
+
+    /** Joining a guild and opening /guild (Level 20, same as the island), as Guilds itself allows it. */
+    public boolean guildJoin(Player player) {
+        SkillService skills = plugin.getSkills();
+        return skills != null && skills.accountLevel(player) >= GUILD_JOIN_LEVEL;
     }
 
     public boolean spawns(Player player) {
@@ -173,7 +182,12 @@ public final class ProgressionService {
     }
 
     public String guildHint() {
-        return "§7Reach Aetherion Level §f" + GUILD_LEVEL + "§7. Guilds are mid–late game.";
+        return "§7Found your own guild at Aetherion Level §f" + GUILD_LEVEL + "§7.";
+    }
+
+    public String guildJoinHint() {
+        return "§7Reach Aetherion Level §f" + GUILD_JOIN_LEVEL + "§7 to join a guild. Founding one opens at §f"
+                + GUILD_LEVEL + "§7.";
     }
 
     private boolean hubHasBonusSpawn(Player player) {

@@ -163,8 +163,11 @@ public final class IslandLink implements Listener {
                 player.sendMessage(progress.islandHint());
                 return false;
             }
-            if (label.equals("guild") && !progress.guild(player)) {
-                player.sendMessage(progress.guildHint());
+            // Joining a guild opens with the island (Level 20), as /guild on the Isles allows it;
+            // founding one still checks Level 75 over there.
+            if (label.equals("guild") && !progress.island(player) && !progress.guild(player)) {
+                player.sendMessage(progress.islandHint());
+                player.sendMessage("§7Guilds take members from §fLevel 20§7, founding one opens at §fLevel 75§7.");
                 return false;
             }
         } catch (RuntimeException ex) {
