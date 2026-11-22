@@ -43,7 +43,7 @@ import java.util.logging.Level;
 
 /**
  * Early pathblocker: sluggish giant, dual held blades, a blade cyclone that drags you in, an iron verdict that
- * falls where runners are about to be, 25%-HP tracking beam, energy-guillotine death.
+ * falls where runners are about to be, 25%-HP tracking beam, energy-guillotine death: the cut takes his helm, he sinks to his knees and bursts into light.
  *
  * <p>Circling him used to dodge everything (he only smashed inside 3 blocks and spun in place). Now the cyclone
  * drifts after the nearest player and pulls, the smash reaches 4 blocks, the beam leads its target, and anyone who
@@ -66,7 +66,11 @@ final class PathwardenDirector {
     private static final int BEAM_FIRE = 14;
     private static final double BEAM_ZONE = 4.2;
     private static final double BEAM_BLAST = 4.2;
-    private static final int DEATH_TICKS = 128;
+    private static final int DEATH_TICKS = 156;
+    /** After the cut the body sags this far into the floor (he drops to his knees) until the shatter. */
+    private static final int SHATTER_TICK = 136;
+    private static final int PATH_OPEN_TICK = 142;
+    private static final double SINK_DEPTH = 4.2;
     private static final double SPIN_DRIFT = 0.12;
     private static final double SPIN_PULL = 12.0;
     private static final double SMASH_REACH = 4.0;
@@ -101,6 +105,7 @@ final class PathwardenDirector {
     private UUID beamTarget;
     private int deathTicks = -1;
     private Location deathFocus;
+    private double deathSink;
     private Location bladeAzure;
     private Location bladeCrimson;
     private Location deathAzureStart;
@@ -175,6 +180,7 @@ final class PathwardenDirector {
         LivingEntity entity = instance.getEntity();
         clearCombatFx();
         deathTicks = 0;
+        deathSink = 0.0;
         deathFocus = entity != null && entity.isValid()
                 ? entity.getLocation().clone()
                 : instance.getSpawnLocation().clone();
@@ -898,18 +904,31 @@ final class PathwardenDirector {
             paintEnergyBlade(bladeCrimson, toward(bladeCrimson, strike), CRIMSON, 2.2f, true);
             if (deathTicks == 100) {
                 guillotineImpact(world, strike);
+                decapitate(world, entity, strike);
             }
             return false;
         }
 
-        // 103-end: aftermath storm
+        // 103-135: the cut lands. He staggers and drops to his knees, the floor gives under him
+        if (deathTicks < SHATTER_TICK) {
+            double t = (deathTicks - 103) / (double) (SHATTER_TICK - 103);
+            deathSink = SINK_DEPTH * easeIn(t);
+            aftermathStorm(world, strikePoint(), t);
+            collapse(world, entity, t);
+            return false;
+        }
+
+        // 136: what is left of him bursts into light
+        if (deathTicks == SHATTER_TICK) {
+            shatter(world, entity);
+            return false;
+        }
+
+        // 137-end: the light settles, then the gate he guarded unlatches
         if (deathTicks < DEATH_TICKS) {
-            aftermathStorm(world, strike, (deathTicks - 103) / (double) (DEATH_TICKS - 103));
-            if (deathTicks == DEATH_TICKS - 12) {
+            settle(world, (deathTicks - SHATTER_TICK) / (double) (DEATH_TICKS - SHATTER_TICK));
+            if (deathTicks == PATH_OPEN_TICK) {
                 pathOpens(world);
-            }
-            if (entity != null && entity.isValid()) {
-                entity.teleport(deathFocus.clone().add(0, -0.05, 0));
             }
             return false;
         }
@@ -1037,7 +1056,7 @@ final class PathwardenDirector {
     }
 
     private Location strikePoint() {
-        return deathFocus.clone().add(0, 8.8, 0);
+        return deathFocus.clone().add(0, 8.8 - deathSink, 0);
     }
 
     private void initEnergyBlades(Location origin) {
@@ -1174,6 +1193,127 @@ final class PathwardenDirector {
                     new Particle.DustOptions(i % 2 == 0 ? AZURE : CRIMSON, 1.6f)
             );
         }
+    }
+
+    /** The guillotine takes his helm: it bursts into iron shards and his head flashes red. */
+    private void decapitate(World world, LivingEntity entity, Location strike) {
+        if (entity != null && entity.isValid()) {
+            EntityEquipment equipment = entity.getEquipment();
+            if (equipment != null) {
+                equipment.setHelmet(null);
+            }
+            entity.playHurtAnimation(0f);
+        }
+        Location head = strike.clone().add(0, 1.6, 0);
+        if (!de.aetherion.core.api.Vfx.chips(head, Material.IRON_BLOCK.createBlockData(), 26, 1.1)) {
+            world.spawnParticle(Particle.BLOCK, head, 60, 1.2, 0.8, 1.2, 0.2, Material.IRON_BLOCK.createBlockData());
+        }
+        world.spawnParticle(Particle.BLOCK, head, 24, 1.0, 0.6, 1.0, 0.2, Material.LAPIS_BLOCK.createBlockData());
+        world.playSound(head, Sound.ENTITY_ITEM_BREAK, 1.4f, 0.5f);
+        world.playSound(head, Sound.BLOCK_ANVIL_BREAK, 1.1f, 0.6f);
+        Location floor = deathFocus.clone().add(0, 0.2, 0);
+        if (!de.aetherion.core.api.Vfx.wave(floor, WHITE, 8.5, 16)) {
+            for (int i = 0; i < 48; i++) {
+                double ang = Math.PI * 2 * i / 48.0;
+                world.spawnParticle(Particle.CLOUD, floor.clone().add(Math.cos(ang) * 4.0, 0, Math.sin(ang) * 4.0),
+                        0, Math.cos(ang) * 0.35, 0.02, Math.sin(ang) * 0.35);
+            }
+        }
+    }
+
+    /** The headless body sways and sinks to its knees; dust and grit burst off the floor around him. */
+    private void collapse(World world, LivingEntity entity, double t) {
+        if (entity != null && entity.isValid()) {
+            Location at = deathFocus.clone().add(0, -0.05 - deathSink, 0);
+            at.setYaw(deathFocus.getYaw() + (float) (Math.sin(deathTicks * 0.9) * 6.0 * (1.0 - t)));
+            at.setPitch(0f);
+            instance.runInternalTeleport(() -> {
+                if (entity.isValid()) {
+                    entity.teleport(at);
+                }
+            });
+        }
+        Location floor = deathFocus.clone().add(0, 0.3, 0);
+        org.bukkit.block.data.BlockData ground = floorBlock();
+        if (deathTicks % 2 == 0) {
+            world.spawnParticle(Particle.BLOCK, floor, 22, 2.8, 0.3, 2.8, 0.0, ground);
+            world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, floor, 3, 2.2, 0.1, 2.2, 0.01);
+        }
+        if (deathTicks % 6 == 0) {
+            world.playSound(floor, Sound.BLOCK_DEEPSLATE_BREAK, 1.2f, 0.45f);
+            world.playSound(floor, Sound.BLOCK_GRINDSTONE_USE, 0.5f, 0.4f);
+        }
+        // His knees hit the ground.
+        if (deathTicks == SHATTER_TICK - 6) {
+            world.playSound(floor, Sound.BLOCK_ANVIL_LAND, 1.4f, 0.45f);
+            world.playSound(floor, Sound.ENTITY_IRON_GOLEM_DAMAGE, 1.3f, 0.4f);
+            world.playSound(floor, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 0.5f);
+            if (!de.aetherion.core.api.Vfx.chips(floor, ground, 30, 1.0)) {
+                world.spawnParticle(Particle.BLOCK, floor, 80, 3.2, 0.4, 3.2, 0.3, ground);
+            }
+            de.aetherion.core.api.Vfx.wave(floor, Color.fromRGB(190, 180, 165), 6.5, 14);
+        }
+    }
+
+    /** Body and armour burst into azure, crimson and white light, a column rises and his iron rains as shards. */
+    private void shatter(World world, LivingEntity entity) {
+        Location core = deathFocus.clone().add(0, Math.max(1.5, 5.0 - deathSink), 0);
+        if (entity != null && entity.isValid()) {
+            EntityEquipment equipment = entity.getEquipment();
+            if (equipment != null) {
+                equipment.clear();
+            }
+            entity.setGlowing(false);
+            entity.setInvisible(true);
+        }
+        world.playSound(core, Sound.ENTITY_GENERIC_EXPLODE, 1.6f, 0.55f);
+        world.playSound(core, Sound.ENTITY_IRON_GOLEM_DEATH, 1.4f, 0.45f);
+        world.playSound(core, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f);
+        world.playSound(core, Sound.BLOCK_BEACON_DEACTIVATE, 1.4f, 0.4f);
+        world.playSound(core, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.4f, 0.5f);
+        if (de.aetherion.core.api.Vfx.burst(core, WHITE, 8.0, 16)) {
+            de.aetherion.core.api.Vfx.burst(core.clone().add(1.2, 0.8, 0), AZURE, 6.0, 14);
+            de.aetherion.core.api.Vfx.burst(core.clone().add(-1.2, -0.4, 0), CRIMSON, 6.0, 14);
+            de.aetherion.core.api.Vfx.pillar(deathFocus.clone().add(0, 0.1, 0), Color.fromRGB(255, 236, 190), 1.8, 18.0, 30);
+            de.aetherion.core.api.Vfx.wave(deathFocus.clone().add(0, 0.2, 0), AZURE, 10.0, 18);
+            de.aetherion.core.api.Vfx.wave(deathFocus.clone().add(0, 0.25, 0), CRIMSON, 7.0, 16);
+            de.aetherion.core.api.Vfx.motes(core, WHITE, 10, 2.4, new Vector(0, 3.0, 0), 40);
+        } else {
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLASH, 2, 0.2, null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.EXPLOSION_EMITTER, 1, 0.0, null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.END_ROD, 80, 2.4, null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SOUL_FIRE_FLAME, 40, 2.0, null);
+        }
+        world.spawnParticle(Particle.BLOCK, core, 70, 2.6, 2.6, 2.6, 0.4, Material.IRON_BLOCK.createBlockData());
+        world.spawnParticle(Particle.BLOCK, core, 25, 2.2, 2.2, 2.2, 0.4, Material.LAPIS_BLOCK.createBlockData());
+        world.spawnParticle(Particle.BLOCK, core, 25, 2.2, 2.2, 2.2, 0.4, Material.REDSTONE_BLOCK.createBlockData());
+        bloodBurst(world, core);
+        net.kyori.adventure.title.Title.Times times = net.kyori.adventure.title.Title.Times.times(
+                java.time.Duration.ofMillis(150), java.time.Duration.ofMillis(2600), java.time.Duration.ofMillis(800));
+        for (Player player : musicAudience()) {
+            player.showTitle(de.aetherion.bossengine.util.BossTitlesDe.title(player,
+                    "&4&lTHE PATHWARDEN FALLS", "&7The iron gives way.", times));
+        }
+    }
+
+    /** Embers of his light drift up from where he knelt. */
+    private void settle(World world, double t) {
+        Location spot = deathFocus.clone().add(0, 0.6, 0);
+        if (deathTicks % 3 == 0 && !de.aetherion.core.api.Vfx.motes(spot, t < 0.5 ? AZURE : CRIMSON, 3, 1.8,
+                new Vector(0, 1.8, 0), 30)) {
+            world.spawnParticle(Particle.END_ROD, spot, 4, 1.6, 0.4, 1.6, 0.02);
+        }
+        if (deathTicks % 5 == 0) {
+            world.spawnParticle(Particle.SOUL, spot, 3, 1.4, 0.2, 1.4, 0.01);
+        }
+    }
+
+    private org.bukkit.block.data.BlockData floorBlock() {
+        Material type = deathFocus.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getType();
+        if (type.isAir() || !type.isSolid()) {
+            type = Material.STONE;
+        }
+        return type.createBlockData();
     }
 
     /** Final beat: the gate he guarded unlatches. */

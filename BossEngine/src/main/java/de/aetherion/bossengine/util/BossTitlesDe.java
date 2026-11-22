@@ -15,6 +15,9 @@ import java.util.Map;
 public final class BossTitlesDe {
 
     private static final Map<String, String> DE = Map.ofEntries(
+            // Pathwarden (death)
+            Map.entry("&4&lTHE PATHWARDEN FALLS", "&4&lDER PATHWARDEN FÄLLT"),
+            Map.entry("&7The iron gives way.", "&7Das Eisen gibt nach."),
             // Hollow Sun
             Map.entry("&6&lTHE HOLLOW SUN", "&6&lDIE HOHLE SONNE"),
             Map.entry("&7A star fell here. It wore the forge home.", "&7Hier stürzte ein Stern. Die Schmiede trägt er als Rüstung."),
