@@ -351,6 +351,27 @@ with bearings, end walls, chamfered bends, inlet hood with chain curtain; chevro
 (`BeltBodies.TICKS_PER_TILE`, also `CargoVisuals`) in one long interpolation per loop and dive into the drums; gold
 marker cleats glow while the line is live (the old text chevrons are gone).
 
+Island tour in flow order (2026-11-22, branch `claude/island-chain-onboarding`, Guilds only, after Robb's test):
+- `island/IslandGuide.java`: Hub, then Corin's starter kit (Cobble Quarry into the hand, the Mill unlocked through
+  `FactoryProgress.unlock`, `guide.kit-belt-tiles` free belt tiles, default 32; the first hut is always free), then
+  quarry, Mill in front of its chute, belt into the Mill (he tops the Mill's hopper up to 128 once, so the first
+  block comes at once), hut behind the Mill, belt into the hut, the "First chain running" card, then the Hub
+  lectern: the Dock unlock costs 1 Compressed Cobble (was 4), the First Shipment 2 (was 4). Every piece is placed
+  once; nothing is pre-built and there are no marked spots. The hand press stays at the lectern but is out of the tour.
+- Corin never walks: he greets where the owner lands and takes a fixed post beside the Hub once it stands
+  (a puff, he appears there). Too far for the bubble, his lines go to chat with clickable chips.
+- Saves: `island_guide.yml` has `version: 2`; older files (hut-first tour) keep DOCK/SHIP, every other tour step
+  restarts at HUB and `advance()` skips what the island already shows. Old quarry→hut belts get a "Pull up old
+  belt" chip in the Mill-feeding step.
+- Build Tool board (`structure/PartBoard.java`, shown by `PlacementService.showBoard` and `beltSpec`): a small sign
+  on a post beside the hologram, never in it (dark panel in a copper frame, the part's name on a copper tab, a copper
+  arrow toward the hologram, real items for In and Out, the cost, and the tour's hint via
+  `IslandGuide.boardHint`). It stays while the part is held, turns to the player and grows with distance. It replaces
+  the old first-pick notes. Belts get one too, beside the start chute.
+- Machine tags: Mill/Forge show "128 Cobblestone → 1 Compressed" and "▸ 37/128 in the hopper"; a quarry without a
+  belt shows its rate and "belt its chute". Personal factory goals: the first chain means quarry → Mill → hut
+  (`mill_line` and the old `press` goal are guild-only or gone), bar total counts only the island's own ladder.
+
 ## Paged talk and screen cards (2026-11-22, cloud session, Quests + Guilds, mmo-i first)
 
 Robb's ask: far less text. Two switches in the Quests config, both off by default, so a server only changes when

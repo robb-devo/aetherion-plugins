@@ -193,7 +193,7 @@ public final class IslandBar implements Listener {
         }
         if (next != null) {
             int done = goals.doneCount(host);
-            int total = goals.all().size();
+            int total = goals.total(host);
             // One sentence next step — title + how, same text Hollis / /island use.
             String how = "first_chain".equals(next.id()) ? firstStep(host, next.how()) : next.how();
             String line = how == null || how.isBlank() ? next.title() : next.title() + " §8— §7" + how;
@@ -206,8 +206,24 @@ public final class IslandBar implements Listener {
         return null;
     }
 
-    /** Before the first chain: the one thing missing (hut, quarry, belt), same order Hollis walks. */
+    /**
+     * Before the first chain: the one thing missing. Personal islands go with the flow of goods (quarry, Mill in
+     * front of its chute, hut behind the Mill), the same order the guide's tour uses; guild islands start with the
+     * hut and a quarry beside it.
+     */
     private String firstStep(IslandHost host, String fallback) {
+        if (!host.isGuild()) {
+            if (hosts.minions(host).isEmpty()) {
+                return "set your quarry down, then Build Tool → Mill in front of its chute";
+            }
+            if (structures.count(host, StructureType.MILL) == 0) {
+                return "Build Tool → Mill, in front of the quarry's chute";
+            }
+            if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
+                return "Build Tool → Storage Hut behind the Mill (free)";
+            }
+            return fallback;
+        }
         if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
             return "Build Tool → Storage Hut (free)";
         }

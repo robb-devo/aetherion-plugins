@@ -167,8 +167,6 @@ public final class PlacementService {
         long quietUntil;
         UUID armed;
         long armedUntil;
-        Part cardPart;
-        long cardDue;
 
         Session(IslandHost host, SiteConfirm onConfirm, GhostView ghost) {
             this.host = host;
@@ -513,60 +511,168 @@ public final class PlacementService {
         session.quietUntil = 0L;
         session.ghost.clear();
         lastPart.put(player.getUniqueId(), part);
-        // the first-pick card waits until the player rests on the part (scrolling past shows nothing)
-        session.cardPart = part;
-        session.cardDue = System.currentTimeMillis() + 1200L;
         return true;
     }
 
-    /** The first time a player picks a part: three lines, what it does, what goes in, what comes out. */
-    private void firstCard(Player player, Part part) {
-        String[] card = switch (part) {
-            case BELT -> new String[]{"Carries goods, tile by tile.", "From an orange chute, or another belt.",
-                    "Into a hut, a machine or the Dock (green pads)."};
-            case QUARRY -> new String[]{"Digs on its own, day and night, even while you're away.",
-                    "Nothing: set it on flat ground, its rig rises round it.",
-                    "Raw goods, out of its orange chute onto a belt."};
-            case STORAGE_HUT -> new String[]{"Keeps what your belts bring in.", "Belts from any side, any good.",
-                    "Your storage: the Hub and every menu draw from it."};
-            case HUB -> new String[]{"Your island's heart: the board, unlocks, the hand press.", "Nothing, it runs on you.",
-                    "What to build next, and what it costs."};
-            case DEPOT -> new String[]{"More storage on the line.", "Belts from any side.", "Belts can pass through it."};
-            case MILL -> new String[]{"Grinds raw goods into Compressed.", "128 raw of one kind.",
-                    "1 Compressed, out of its orange chute."};
-            case FORGE -> new String[]{"Presses Compressed into Compacted.", "128 Compressed of one kind.",
-                    "1 Compacted, out of its orange chute."};
-            case SPLITTER -> new String[]{"Shares one belt out evenly.", "One belt, from behind.",
-                    "An equal share to every belt leading away."};
-            case OVERFLOW -> new String[]{"Keeps the front fed first.", "One belt, from behind.",
-                    "Front first; the sides only take the spill."};
-            case SORTER -> new String[]{"Picks one good off the line.", "One belt, from behind.",
-                    "Your pick out the front, the rest out the sides."};
-            case DOCK -> new String[]{"Ships your goods off the island.", "Belts with what the contracts ask for.",
-                    "An airship, coins and Dock Marks."};
-            default -> null;
-        };
-        if (card == null) {
+    private java.util.function.BiFunction<Player, Part, String> boardHint = (player, part) -> null;
+
+    /** The island tour's line for the board beside the hologram ("in front of the quarry's chute"), if any. */
+    public void attachBoardHint(java.util.function.BiFunction<Player, Part, String> hint) {
+        if (hint != null) {
+            this.boardHint = hint;
+        }
+    }
+
+    private static final de.aetherion.guilds.logistics.Res COBBLE =
+            de.aetherion.guilds.logistics.Res.of(de.aetherion.guilds.model.QuarryType.COBBLESTONE,
+                    de.aetherion.guilds.logistics.Res.Form.RAW);
+    private static final de.aetherion.guilds.logistics.Res COMPRESSED =
+            de.aetherion.guilds.logistics.Res.of(de.aetherion.guilds.model.QuarryType.COBBLESTONE,
+                    de.aetherion.guilds.logistics.Res.Form.COMPRESSED);
+    private static final de.aetherion.guilds.logistics.Res COMPACTED =
+            de.aetherion.guilds.logistics.Res.of(de.aetherion.guilds.model.QuarryType.COBBLESTONE,
+                    de.aetherion.guilds.logistics.Res.Form.COMPACTED);
+
+    /**
+     * What the board beside the hologram says for the part in hand: one line on what it does, then In and Out
+     * with the real goods (green in, orange out, like the pads and chutes), the cost, and the tour's hint.
+     */
+    private PartBoard.Spec boardSpec(Player player, Session session, List<BuildCosts.Line> bill) {
+        Part part = session.part;
+        List<PartBoard.Row> rows = new ArrayList<>();
+        String title = part.label();
+        ItemStack belt = new ItemStack(Material.IRON_TRAPDOOR);
+        switch (part) {
+            case QUARRY -> {
+                ItemStack next = quarries == null ? null : quarries.find(player);
+                de.aetherion.guilds.model.QuarryType type = next == null ? null : quarries.type(next);
+                int level = next == null ? 1 : quarries.level(next);
+                de.aetherion.guilds.logistics.Res raw = type == null ? null
+                        : de.aetherion.guilds.logistics.Res.of(type, de.aetherion.guilds.logistics.Res.Form.RAW);
+                title = (type == null ? "Quarry" : GuildFormat.shortName(type) + " Quarry") + " §7Lv " + level;
+                rows.add(PartBoard.Row.of("§7Digs on its own, day and night"));
+                rows.add(new PartBoard.Row("§aIn  §fnothing, just flat ground", new ItemStack(Material.GRASS_BLOCK)));
+                rows.add(new PartBoard.Row("§6Out §f" + (raw == null ? "raw goods" : raw.display()) + ", from its chute",
+                        raw == null ? new ItemStack(Material.COBBLESTONE) : raw.icon()));
+            }
+            case MILL -> {
+                rows.add(PartBoard.Row.of("§7Presses raw goods into blocks"));
+                rows.add(new PartBoard.Row("§aIn  §f128 of one raw good", COBBLE.icon()));
+                rows.add(new PartBoard.Row("§6Out §f1 Compressed block", COMPRESSED.icon()));
+            }
+            case FORGE -> {
+                rows.add(PartBoard.Row.of("§7Presses Compressed once more"));
+                rows.add(new PartBoard.Row("§aIn  §f128 Compressed blocks", COMPRESSED.icon()));
+                rows.add(new PartBoard.Row("§6Out §f1 Compacted block", COMPACTED.icon()));
+            }
+            case STORAGE_HUT -> {
+                rows.add(PartBoard.Row.of("§7Keeps what your belts bring"));
+                rows.add(new PartBoard.Row("§aIn  §fany good, from any side", belt));
+                rows.add(new PartBoard.Row("§6Out §fthe stock you build with", new ItemStack(Material.BARREL)));
+            }
+            case DEPOT -> {
+                rows.add(PartBoard.Row.of("§7More storage on the line"));
+                rows.add(new PartBoard.Row("§aIn  §fany good, from any side", belt));
+                rows.add(new PartBoard.Row("§6Out §fbelts can run on through", new ItemStack(Material.CHEST)));
+            }
+            case HUB -> {
+                rows.add(PartBoard.Row.of("§7Your island's heart"));
+                rows.add(new PartBoard.Row("§aIn  §fgoods from your huts", new ItemStack(Material.BARREL)));
+                rows.add(new PartBoard.Row("§6Out §fnew parts and upgrades", new ItemStack(Material.LECTERN)));
+            }
+            case DOCK -> {
+                rows.add(PartBoard.Row.of("§7Ships goods off the island"));
+                rows.add(new PartBoard.Row("§aIn  §fwhat a contract asks for", COMPRESSED.icon()));
+                rows.add(new PartBoard.Row("§6Out §fcoins, Dock Marks, stages", new ItemStack(Material.GOLD_NUGGET)));
+            }
+            case SPLITTER -> {
+                rows.add(PartBoard.Row.of("§7Shares one belt out evenly"));
+                rows.add(new PartBoard.Row("§aIn  §fone belt, from behind", belt));
+                rows.add(new PartBoard.Row("§6Out §fan equal share per exit", new ItemStack(part.icon())));
+            }
+            case OVERFLOW -> {
+                rows.add(PartBoard.Row.of("§7Keeps the front fed first"));
+                rows.add(new PartBoard.Row("§aIn  §fone belt, from behind", belt));
+                rows.add(new PartBoard.Row("§6Out §ffront first, sides spill", new ItemStack(part.icon())));
+            }
+            case SORTER -> {
+                rows.add(PartBoard.Row.of("§7Picks one good off a belt"));
+                rows.add(new PartBoard.Row("§aIn  §fone belt, from behind", belt));
+                rows.add(new PartBoard.Row("§6Out §fyour pick out the front", new ItemStack(part.icon())));
+            }
+            default -> {
+                return null;
+            }
+        }
+        if (session.kind == Kind.QUARRY) {
+            rows.add(PartBoard.Row.of("§7From your pack §f" + quarriesIn(player) + " §7left"));
+        } else {
+            rows.add(PartBoard.Row.of("§7Cost " + (bill.isEmpty() ? "§ffree" : "§f" + BuildCosts.describe(bill))));
+        }
+        String hint = boardHint.apply(player, part);
+        if (hint != null && !hint.isBlank()) {
+            rows.add(PartBoard.Row.of("§e➜ §f" + hint));
+        }
+        return new PartBoard.Spec(title, rows);
+    }
+
+    /**
+     * The board stands beside the hologram (never in it): on the player's right, a step toward them, turned to
+     * face them. {@code (x0, z0)-(x1, z1)} is the footprint in block bounds, {@code floorY} what it stands on.
+     */
+    private void showBoard(Player player, Session session, World world, double floorY, double x0, double z0,
+                           double x1, double z1, List<BuildCosts.Line> bill) {
+        placeBoard(player, session, world, floorY, x0, z0, x1, z1, boardSpec(player, session, bill));
+    }
+
+    /** The board for laying belts: where a run starts and ends, what it costs, the tour's hint. */
+    private PartBoard.Spec beltSpec(Player player, Session session, boolean started) {
+        List<PartBoard.Row> rows = new ArrayList<>();
+        rows.add(PartBoard.Row.of("§7Carries goods from chute to pad"));
+        rows.add(new PartBoard.Row((started ? "§a✔ §7Start: " : "§6Start §f") + "an orange chute",
+                new ItemStack(Material.ORANGE_CONCRETE)));
+        rows.add(new PartBoard.Row((started ? "§aEnd §f" : "§7End §7") + "a green pad, machine or hut",
+                new ItemStack(Material.LIME_CONCRETE)));
+        int free = logistics.freeTiles(session.host);
+        rows.add(PartBoard.Row.of("§7Cost §f" + (free > 0 ? free + " tiles free"
+                : GuildFormat.compact(BuildCosts.BELT_COBBLE) + " Cobble a tile")));
+        String hint = boardHint.apply(player, Part.BELT);
+        if (hint != null && !hint.isBlank()) {
+            rows.add(PartBoard.Row.of("§e➜ §f" + hint));
+        }
+        return new PartBoard.Spec("Belt", rows);
+    }
+
+    private void placeBoard(Player player, Session session, World world, double floorY, double x0, double z0,
+                            double x1, double z1, PartBoard.Spec spec) {
+        if (spec == null) {
+            session.ghost.clearBoard();
             return;
         }
-        org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(plugin, "seen_cards");
-        org.bukkit.persistence.PersistentDataContainer data = player.getPersistentDataContainer();
-        String seen = data.getOrDefault(key, org.bukkit.persistence.PersistentDataType.STRING, "");
-        String id = part.name().toLowerCase(java.util.Locale.ROOT);
-        if (("," + seen + ",").contains("," + id + ",")) {
-            return;
+        org.bukkit.Location eye = player.getEyeLocation();
+        double cx = (x0 + x1) / 2.0;
+        double cz = (z0 + z1) / 2.0;
+        double fx = eye.getX() - cx;
+        double fz = eye.getZ() - cz;
+        double len = Math.hypot(fx, fz);
+        if (len < 0.01) {
+            fx = 0.0;
+            fz = 1.0;
+            len = 1.0;
         }
-        data.set(key, org.bukkit.persistence.PersistentDataType.STRING, seen.isEmpty() ? id : seen + "," + id);
-        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
-        if (de.aetherion.guilds.island.IslandUi.note(player, "✦", part.label() + " · new part",
-                java.util.List.of("§f" + card[0], "§aIn: §7" + card[1], "§6Out: §7" + card[2]), null)) {
-            return;
-        }
-        player.sendMessage("");
-        player.sendMessage("§6§l" + part.label() + " §8· §7new part");
-        player.sendMessage("§8▪ §f" + card[0]);
-        player.sendMessage("§8▪ §aIn: §7" + card[1]);
-        player.sendMessage("§8▪ §6Out: §7" + card[2]);
+        fx /= len;
+        fz /= len;
+        // the viewer's right, seen from where they stand (they look along -f)
+        double rx = fz;
+        double rz = -fx;
+        double extent = 0.5 * (Math.abs(rx) * (x1 - x0) + Math.abs(rz) * (z1 - z0));
+        double out = extent + 0.3 + session.ghost.boardHalfWidth(spec, len);
+        double bx = cx + rx * out + fx * 0.6;
+        double bz = cz + rz * out + fz * 0.6;
+        double tx = eye.getX() - bx;
+        double tz = eye.getZ() - bz;
+        float yaw = (float) Math.toDegrees(Math.atan2(-tx, tz));
+        session.ghost.board(world, bx, floorY, bz, yaw, Math.hypot(tx, tz), spec);
     }
 
     /**
@@ -1445,12 +1551,15 @@ public final class PlacementService {
         Block target = player.getTargetBlockExact(24);
         if (target == null) {
             session.ghost.clearRun();
+            session.ghost.clearBoard();
             bar(player, session, "§6⚒ §7Look at a belt to cut a " + session.label + " into it");
             return;
         }
         int[] cell = pieceCell(world, target);
         String problem = logistics.pieceProblem(session.host, world, cell[0], cell[1], cell[2]);
         session.ghost.cursor(world, cell[0], cell[1], cell[2], problem == null);
+        List<BuildCosts.Line> bill = structures.buildCost(session.host, session.type);
+        showBoard(player, session, world, cell[1], cell[0], cell[2], cell[0] + 1, cell[2] + 1, bill);
         Belt belt = logistics.belt(world, cell[0], cell[1], cell[2]);
         BlockFace front = belt != null ? belt.dir()
                 : session.autoRot ? StateRotator.facingOfYaw(player.getLocation().getYaw()) : faceOfRot(session.rot);
@@ -1461,7 +1570,6 @@ public final class PlacementService {
             bar(player, session, "§c✖ " + problem);
             return;
         }
-        List<BuildCosts.Line> bill = structures.buildCost(session.host, session.type);
         String missing = structures.missing(player, session.host, bill);
         bar(player, session, (missing != null ? "§e✖ " + session.label + " §8· §c" + missing
                 : (belt != null ? "§a✔ Cut into this belt" : "§a✔ Set down here") + " §8· §7front → §f" + pretty(front))
@@ -1507,12 +1615,6 @@ public final class PlacementService {
                 sessions.remove(entry.getKey());
                 continue;
             }
-            if (session.cardPart != null && now >= session.cardDue) {
-                if (session.cardPart == session.part) {
-                    firstCard(player, session.cardPart);
-                }
-                session.cardPart = null;
-            }
             if (now - session.lastAction > IDLE_MS) {
                 cancel(player, "§7Build Tool put away (unused for a while).");
                 continue;
@@ -1552,6 +1654,7 @@ public final class PlacementService {
             PlacedStructure mine = structures.owner(looked);
             if (mine != null && mine.host().equals(session.host)) {
                 session.ghost.clearStructure();
+                session.ghost.clearBoard();
                 bar(player, session, "§7Your §f" + mine.label() + " §8· §fright-click §7opens it");
                 return;
             }
@@ -1559,6 +1662,7 @@ public final class PlacementService {
         Block ground = groundOf(player);
         if (ground == null) {
             session.ghost.clearStructure();
+            session.ghost.clearBoard();
             bar(player, session, "§6⚒ §e" + session.label + " §8· §7look at the ground §8· §fsneak + scroll §7other part");
             return;
         }
@@ -1587,6 +1691,8 @@ public final class PlacementService {
             session.ghost.quarry(next == null ? null : quarries.type(next), next == null ? 1 : quarries.level(next));
         }
         session.ghost.structure(session.template, world, ax, ay, az, rot, ok, port);
+        int[] fp = session.template.rotatedFootprint(rot);
+        showBoard(player, session, world, ay + 1, ax + fp[0], az + fp[1], ax + fp[2] + 1, az + fp[3] + 1, bill);
         if (!fits && session.clock % 2 == 0) {
             int shown = 0;
             Particle.DustOptions bad = new Particle.DustOptions(GhostView.BAD, 1.2f);
@@ -1663,6 +1769,8 @@ public final class PlacementService {
                 return;
             }
             PlacedStructure source = ownerOfPort(session.host, cell);
+            placeBoard(player, session, world, cell[1], cell[0], cell[2], cell[0] + 1, cell[2] + 1,
+                    beltSpec(player, session, false));
             bar(player, session, problem == null
                     ? (source != null ? "§a✔ Start at your §f" + source.label() + "§a's chute" : "§a✔ Start here")
                     + " §8· §fright-click §7· belts §f" + logistics.count(session.host) + "§8/"
@@ -1670,6 +1778,9 @@ public final class PlacementService {
                     : "§c✖ " + problem);
             return;
         }
+        int[] start = session.beltStart; // the board waits beside the start while the run is aimed
+        placeBoard(player, session, world, start[1], start[0], start[2], start[0] + 1, start[2] + 1,
+                beltSpec(player, session, true));
         if (target == null) {
             session.ghost.clearRun();
             bar(player, session, "§6⚒ §7Aim at a §fhut §7or machine §8(§agreen pads§8) §8· §fleft-click §7cancel start");

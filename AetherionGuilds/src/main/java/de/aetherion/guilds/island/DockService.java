@@ -546,7 +546,7 @@ public final class DockService implements Listener, LogisticsService.Export {
         QuarryType trade = trade(host);
         return switch (Stages.clamp(stage)) {
             case 0 -> new Contract(Kind.PHASE, "First Shipment", "Quarry Broker, Southwood",
-                    List.of(new Need(BuildCosts.COMPRESSED, 4L)), 2_000L, 5, "quarry:" + trade.name());
+                    List.of(new Need(BuildCosts.COMPRESSED, 2L)), 2_000L, 5, "quarry:" + trade.name());
             case 1 -> new Contract(Kind.PHASE, "Werkhof Order", "Quarry Broker, Southwood",
                     List.of(new Need(BuildCosts.COMPRESSED, 32L), new Need(Res.of(trade, Res.Form.RAW), 128L)),
                     10_000L, 15, "core:1");

@@ -671,7 +671,25 @@ public final class LogisticsService {
         return true;
     }
 
-    /** Takes up every belt tile leading away from this structure (Hollis' "pull up the old belt"). Tiles refund. */
+    /**
+     * The isle hand's starter load: tops a machine's input up to {@code upTo} of {@code res} (never past its room),
+     * so the first batch presses at once. Returns how much went in.
+     */
+    public long prime(PlacedStructure machine, Res res, long upTo) {
+        if (machine == null || res == null || machine.type().role() != StructureType.Role.PROCESSOR) {
+            return 0L;
+        }
+        long have = machine.input().getOrDefault(res, 0L);
+        long room = Math.max(0L, machine.capacity() - PlacedStructure.total(machine.input()));
+        long add = Math.min(Math.max(0L, upTo - have), room);
+        if (add > 0L) {
+            PlacedStructure.add(machine.input(), res, add);
+            structures.markDirty();
+        }
+        return add;
+    }
+
+    /** Takes up every belt tile leading away from this structure (the guide's "pull up the old belt"). Tiles refund. */
     public int pullUp(Player player, IslandHost host, PlacedStructure from) {
         List<Belt> tiles = new ArrayList<>();
         for (Route route : exits(from)) {
@@ -1181,8 +1199,7 @@ public final class LogisticsService {
             String sub = switch (type.role()) {
                 case SINK -> fillBar(used, s.capacity())
                         + (feed > 0 ? "\n§7▸ fed " + perMinute(feed) + fullIn(s.capacity() - used, feed) : "");
-                case PROCESSOR -> (type == StructureType.FORGE ? "§8Compressed → Compacted" : "§8Raw → Compressed")
-                        + (feed > 0 ? "\n§7▸ fed " + perMinute(feed) : "");
+                case PROCESSOR -> recipeLine(s) + batchLine(s) + (feed > 0 ? "\n§7▸ fed " + perMinute(feed) : "");
                 case ROUTER -> (type == StructureType.SORTER
                         ? (s.filter() == null ? "§8front: nothing picked" : "§8front: §f" + filterName(s.filter()))
                         : type == StructureType.OVERFLOW ? "§8front first, then sides" : "§8shares evenly")
@@ -1382,6 +1399,44 @@ public final class LogisticsService {
             return;
         }
         in.add(new int[]{x, y, z, into.ordinal()});
+    }
+
+    /** "128 Cobblestone → 1 Compressed" (the good it works on, else the general recipe). */
+    private static String recipeLine(PlacedStructure machine) {
+        boolean forge = machine.type() == StructureType.FORGE;
+        Res working = batchRes(machine);
+        if (working == null) {
+            return forge ? "§7128 Compressed §8→ §f1 Compacted" : "§7128 raw §8→ §f1 Compressed";
+        }
+        Res made = Res.of(working.type(), working.form().next());
+        return "§7" + Res.UNIT + " " + working.display() + " §8→ §f1 " + made.display();
+    }
+
+    /** "▸ 37/128 in the hopper" while a batch fills up (nothing when the hopper is empty). */
+    private static String batchLine(PlacedStructure machine) {
+        Res working = batchRes(machine);
+        if (working == null) {
+            return "";
+        }
+        long have = machine.input().getOrDefault(working, 0L) % Res.UNIT;
+        long ready = PlacedStructure.total(machine.output()) > 0 ? 1 : 0;
+        return "\n§e▸ " + have + "§7/" + Res.UNIT + " in the hopper" + (ready > 0 ? " §8· §aout waiting" : "");
+    }
+
+    /** The good this machine presses right now: the fullest one in its hopper that it can press. */
+    private static Res batchRes(PlacedStructure machine) {
+        boolean forge = machine.type() == StructureType.FORGE;
+        Res best = null;
+        long most = 0L;
+        for (Map.Entry<Res, Long> entry : machine.input().entrySet()) {
+            Res res = entry.getKey();
+            boolean presses = res.form() == Res.Form.RAW || (forge && res.form() == Res.Form.COMPRESSED);
+            if (presses && entry.getValue() > most) {
+                best = res;
+                most = entry.getValue();
+            }
+        }
+        return best;
     }
 
     static String fillBar(long used, long cap) {
@@ -2234,7 +2289,7 @@ public final class LogisticsService {
         }
         Route route = routeFrom(housing);
         if (route == null) {
-            return " §6○ needs belt out";
+            return " §8· §f" + perMinute(digPerMinute(minion)) + " §6○ belt its chute";
         }
         if (route.deadEnd()) {
             return " §c✖ belt leads nowhere";

@@ -272,7 +272,7 @@ public final class UnlockService {
     /** Starter picked: paste, then drift down onto it. */
     public void claim(Player player, PersonalIsland island, StarterLayout starter) {
         claimed.accept(IslandHost.personal(island.ownerId()));
-        // a fresh island: the Build Tool's first-pick notes (PlacementService) come again
+        // the old first-pick notes are gone (the Build Tool's board shows every time): drop their marker
         player.getPersistentDataContainer().remove(new org.bukkit.NamespacedKey(plugin, "seen_cards"));
         player.closeInventory();
         player.sendTitle("§7The island rises…", "§f" + starter.display(), 5, 80, 10);
