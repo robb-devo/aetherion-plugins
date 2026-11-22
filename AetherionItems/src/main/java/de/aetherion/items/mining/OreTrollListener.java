@@ -42,9 +42,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Tiny Ore Troll — ~1% from any Shabby Mine ore (T1) after Surveyor speak + tutorial.
- * Soft ores (coal / iron / copper) can still spawn them outside the mine.
- * Crawls out of the vein toward the player. Pickaxe-only; ~50% blueprint drop.
+ * Tiny Ore Troll — 0.7% from any Shabby Mine ore (T1) once the Shaft Foreman has handed out the
+ * First Shift (or the Surveyor already opened the hunt). Soft ores (coal / iron / copper) can still
+ * spawn them outside the mine. Crawls out of the vein toward the player. Pickaxe-only; 65% blueprint
+ * drop, and a kind the player hasn't found yet until they own all six.
  */
 public final class OreTrollListener implements Listener {
 
@@ -53,10 +54,12 @@ public final class OreTrollListener implements Listener {
     /** Soft slap — not a real fight threat. */
     private static final double TROLL_ATTACK = 2.0d;
     private static final double TROLL_HIT_CAP = 2.5d;
-    private static final double SPAWN_CHANCE = 0.01d;
+    private static final double SPAWN_CHANCE = 0.007d;
     /** Before a player's first page: trolls come quickly and the first one always drops (the mining road waits on it). */
     private static final double FIRST_SPAWN_CHANCE = 0.12d;
-    private static final double BLUEPRINT_CHANCE = 0.50d;
+    private static final double BLUEPRINT_CHANCE = 0.65d;
+    /** The Shaft Foreman's quest. Trolls start crawling once it has been handed out. */
+    private static final String FOREMAN_QUEST = "first_shift";
     private static final double KEEP_RANGE = 48.0d;
 
     private final JavaPlugin plugin;
@@ -64,6 +67,8 @@ public final class OreTrollListener implements Listener {
     private final NamespacedKey tag;
     /** Live trolls — kept even if their target dies / walks off briefly. */
     private final Map<UUID, UUID> liveTrolls = new ConcurrentHashMap<>();
+    /** Players for whom trolls are open. Once open it stays open, so the quest lookup runs only until then. */
+    private final java.util.Set<UUID> trollsOpen = ConcurrentHashMap.newKeySet();
 
     public OreTrollListener(JavaPlugin plugin, ItemManager itemManager) {
         this.plugin = plugin;
@@ -112,10 +117,7 @@ public final class OreTrollListener implements Listener {
         if (player.getGameMode() == GameMode.CREATIVE) {
             return;
         }
-        if (!tutorialDone(player)) {
-            return;
-        }
-        if (!BlueprintHunt.unlocked(player)) {
+        if (!trollsOpen(player)) {
             return;
         }
         if (ThreadLocalRandom.current().nextDouble() >= (firstPage(player) ? FIRST_SPAWN_CHANCE : SPAWN_CHANCE)) {
@@ -143,7 +145,24 @@ public final class OreTrollListener implements Listener {
         return items.blueprintUnlocks().collectedOf(player).isEmpty() && !items.blueprintUnlocks().hasStampedAny(player);
     }
 
-    private static boolean tutorialDone(Player player) {
+    /**
+     * Trolls crawl for everyone from the Shaft Foreman on (R-24): First Shift handed out, running or done.
+     * Players the Surveyor already sent hunting stay open too.
+     */
+    private boolean trollsOpen(Player player) {
+        UUID id = player.getUniqueId();
+        if (trollsOpen.contains(id)) {
+            return true;
+        }
+        if (BlueprintHunt.unlocked(player) || foremanShiftStarted(player)) {
+            trollsOpen.add(id);
+            return true;
+        }
+        return false;
+    }
+
+    /** First Shift is ACTIVE, READY or COMPLETED. Uses only long-standing Quests API, so old Quests jars still answer. */
+    private static boolean foremanShiftStarted(Player player) {
         try {
             Object quests = Class.forName("de.aetherion.quests.AetherionQuests")
                     .getMethod("getInstance")
@@ -152,10 +171,17 @@ public final class OreTrollListener implements Listener {
                 return false;
             }
             Object qm = quests.getClass().getMethod("getQuestManager").invoke(quests);
-            Object done = Class.forName("de.aetherion.quests.util.QuestStoryGate")
-                    .getMethod("tutorialDone", Player.class, Class.forName("de.aetherion.quests.manager.QuestManager"))
-                    .invoke(null, player, qm);
-            return done instanceof Boolean b && b;
+            if (qm == null) {
+                return false;
+            }
+            Object quest = qm.getClass().getMethod("getQuest", String.class).invoke(qm, FOREMAN_QUEST);
+            if (quest == null) {
+                return false;
+            }
+            Object state = qm.getClass()
+                    .getMethod("getQuestState", Player.class, Class.forName("de.aetherion.quests.model.Quest"))
+                    .invoke(qm, player, quest);
+            return state instanceof Enum<?> e && !"AVAILABLE".equals(e.name());
         } catch (Throwable ignored) {
             return false;
         }
@@ -421,11 +447,13 @@ public final class OreTrollListener implements Listener {
             killer.sendMessage("§6Tiny Ore Troll §7crumbles — no schematic this time.");
             return;
         }
-        BlueprintKind kind = BlueprintKind.random();
         AetherionItems items = AetherionItems.getInstance();
         if (items == null || items.getCustomItem() == null) {
             return;
         }
+        BlueprintKind kind = items.blueprintUnlocks() == null
+                ? BlueprintKind.random()
+                : BlueprintKind.randomMissing(items.blueprintUnlocks().collectedOf(killer));
         ItemStack blueprint = kind.createBlueprint(items.getCustomItem());
         InventoryDrops.setDropAt(event.getEntity().getLocation());
         try {
