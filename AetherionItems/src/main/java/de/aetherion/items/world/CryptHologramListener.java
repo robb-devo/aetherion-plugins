@@ -7,6 +7,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
 public final class CryptHologramListener implements Listener {
@@ -45,5 +46,10 @@ public final class CryptHologramListener implements Listener {
             return;
         }
         holograms.place(block.getLocation(), player);
+    }
+
+    @EventHandler
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        holograms.onEntitiesLoaded(event.getChunk(), event.getEntities());
     }
 }

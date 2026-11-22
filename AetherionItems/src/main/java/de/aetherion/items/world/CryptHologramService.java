@@ -5,6 +5,7 @@ import de.aetherion.items.core.ItemKeys;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -35,6 +36,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Placeable Crypt entrance hologram (DEV tool) — warning text at the cave mouth.
+ *
+ * <p>The display is never saved with the chunk: it goes up while the spot's chunk and entities are loaded and is
+ * dropped with them. The old version saved it and re-spawned it whenever its id was not found, which happens every
+ * time the chunk is unloaded, so one more display piled up every 10 s (293k on mmo-d by 2026-11-22, a 311 MB chunk
+ * saved over and over). Displays saved by that version are removed when their chunk loads.
  */
 public final class CryptHologramService {
 
@@ -123,9 +129,13 @@ public final class CryptHologramService {
         if (world == null) {
             return;
         }
+        Location at = holo.location(world);
+        if (!ready(at)) {
+            // Never spawn into an unloaded chunk; the chunk-load hook puts it up once someone is near.
+            return;
+        }
         // Drop any leftover displays for this id / spot (prevents stacked text).
         removeDisplay(holo);
-        Location at = holo.location(world);
         TextDisplay display = world.spawn(at, TextDisplay.class, spawned -> {
             spawned.text(LegacyComponentSerializer.legacySection().deserialize(
                     LINE_1 + "\n" + LINE_2
@@ -135,7 +145,7 @@ public final class CryptHologramService {
             spawned.setShadowed(true);
             spawned.setAlignment(TextDisplay.TextAlignment.CENTER);
             spawned.setBackgroundColor(Color.fromARGB(140, 18, 8, 28));
-            spawned.setPersistent(true);
+            spawned.setPersistent(false);
             spawned.setGravity(false);
             spawned.setInvulnerable(true);
             spawned.setTransformation(new Transformation(
@@ -167,18 +177,11 @@ public final class CryptHologramService {
             return;
         }
         Location at = holo.location(world);
-        for (Entity entity : world.getEntitiesByClass(TextDisplay.class)) {
-            String id = entity.getPersistentDataContainer().get(
-                    ItemKeys.cryptHoloDisplay(),
-                    PersistentDataType.STRING
-            );
-            boolean ours = holo.id().toString().equals(id)
-                    || entity.getScoreboardTags().contains("aetherion_crypt_holo");
-            if (!ours) {
-                continue;
-            }
-            // Same hologram id, or orphan crypt holo stacked on this spot.
-            if (holo.id().toString().equals(id) || entity.getLocation().distanceSquared(at) <= 2.25) {
+        if (!ready(at)) {
+            return;
+        }
+        for (Entity entity : world.getNearbyEntities(at, 2.0, 3.0, 2.0)) {
+            if (isCryptHolo(entity)) {
                 entity.remove();
             }
         }
@@ -188,6 +191,9 @@ public final class CryptHologramService {
         for (PlacedHolo holo : placed.values()) {
             World world = Bukkit.getWorld(holo.world());
             if (world == null) {
+                continue;
+            }
+            if (!ready(holo.location(world))) {
                 continue;
             }
             Entity entity = holo.displayId() == null ? null : Bukkit.getEntity(holo.displayId());
@@ -208,21 +214,52 @@ public final class CryptHologramService {
         if (world == null) {
             return;
         }
-        Location at = holo.location(world);
-        for (Entity entity : world.getEntitiesByClass(TextDisplay.class)) {
-            if (entity.getUniqueId().equals(keepId)) {
-                continue;
-            }
-            String id = entity.getPersistentDataContainer().get(
-                    ItemKeys.cryptHoloDisplay(),
-                    PersistentDataType.STRING
-            );
-            boolean ours = holo.id().toString().equals(id)
-                    || entity.getScoreboardTags().contains("aetherion_crypt_holo");
-            if (ours && entity.getLocation().distanceSquared(at) <= 2.25) {
+        for (Entity entity : world.getNearbyEntities(holo.location(world), 2.0, 3.0, 2.0)) {
+            if (!entity.getUniqueId().equals(keepId) && isCryptHolo(entity)) {
                 entity.remove();
             }
         }
+    }
+
+    /**
+     * Chunk-load hook: drops crypt displays that an older build saved into the chunk, then puts up the holograms
+     * that stand in it (next tick, once the load has settled).
+     */
+    public void onEntitiesLoaded(Chunk chunk, List<Entity> entities) {
+        int purged = 0;
+        for (Entity entity : entities) {
+            if (isCryptHolo(entity)) {
+                entity.remove();
+                purged++;
+            }
+        }
+        if (purged > 0) {
+            plugin.getLogger().info("Crypt hologram: removed " + purged + " saved display(s) in chunk "
+                    + chunk.getX() + "," + chunk.getZ() + " of " + chunk.getWorld().getName() + ".");
+        }
+        String worldName = chunk.getWorld().getName();
+        for (PlacedHolo holo : placed.values()) {
+            if (holo.world().equals(worldName)
+                    && ((int) Math.floor(holo.x()) >> 4) == chunk.getX()
+                    && ((int) Math.floor(holo.z()) >> 4) == chunk.getZ()) {
+                holo.displayId(null);
+                plugin.getServer().getScheduler().runTask(plugin, () -> spawnDisplay(holo));
+            }
+        }
+    }
+
+    private static boolean isCryptHolo(Entity entity) {
+        return entity instanceof TextDisplay
+                && (entity.getScoreboardTags().contains("aetherion_crypt_holo")
+                || entity.getPersistentDataContainer().has(ItemKeys.cryptHoloDisplay(), PersistentDataType.STRING));
+    }
+
+    /** True once the spot's chunk and its entities are loaded (never loads the chunk itself). */
+    private static boolean ready(Location at) {
+        World world = at.getWorld();
+        int cx = at.getBlockX() >> 4;
+        int cz = at.getBlockZ() >> 4;
+        return world != null && world.isChunkLoaded(cx, cz) && world.getChunkAt(cx, cz).isEntitiesLoaded();
     }
 
     private PlacedHolo nearest(Location location, double max) {

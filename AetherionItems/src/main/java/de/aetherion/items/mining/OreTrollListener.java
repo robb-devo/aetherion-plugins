@@ -29,6 +29,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -356,6 +357,19 @@ public final class OreTrollListener implements Listener {
                     mob.setTarget(next);
                     liveTrolls.put(mob.getUniqueId(), next.getUniqueId());
                 }
+            }
+        }
+    }
+
+    /**
+     * Trolls are saved with their chunk, but the hunt that owns them ends once the chunk unloads (or the server
+     * restarts). Untracked trolls coming back with a chunk are leftovers: remove them so none pile up.
+     */
+    @EventHandler
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        for (Entity entity : event.getEntities()) {
+            if (isOreTroll(entity) && !liveTrolls.containsKey(entity.getUniqueId())) {
+                entity.remove();
             }
         }
     }
