@@ -44,11 +44,12 @@ final class CompactBodies {
 
     static float height(StructureType type, int level) {
         return switch (type) {
-            case MILL -> level >= 2 ? 5.0f : 4.7f;
+            // above the sails' highest sweep and the spires, so the status tag never sits in them
+            case MILL -> level >= 2 ? 5.8f : 5.4f;
             case FORGE -> 4.3f;
             case DEPOT -> 2.6f;
             case STORAGE_HUT -> hutWall(level) + 1.3f;
-            case WORKSHOP -> level >= 3 ? 6.0f : 5.6f;
+            case WORKSHOP -> 6.2f;
             case DOCK -> 6.0f;
             default -> 3f;
         };

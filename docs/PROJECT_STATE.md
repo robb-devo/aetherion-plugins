@@ -322,12 +322,23 @@ since 2026-11-21 17:03 CET. PR #156 adds P2-P4, deployed to mmo-i with one resta
   rewards are booked at ship start. Saved in each island file, section `dock`.
 - Look and feel: build thunk, own tops for Splitter/Sorter/Overflow, island sound bed (`ambience.enabled`),
   five-second landing sweep on a new island (`landing-camera.enabled`, spectator camera, game mode restored on
-  quit/next join), first-pick cards in the Build Tool. Footprints unchanged (3x3 machines, 5x5 hut/Hub, 3x3 Dock).
+  quit/next join), first-pick cards in the Build Tool.
 - Guild: Harbour Beacon gives members' own quarries +10 %; project board "Give from my island"; guild joining from
   Level 20 in Guilds (`/guild` on mmo-i), founding still Level 75. Core IslandLink and the Items Manager tile still
   gate `/guild` at 75 on the other backends (follow-up needs a Core + Items deploy).
-- Not done: 2x2 / Hub 4x2 footprints and resource-pack building models, quarry inside the Build Tool, building
-  hologram snapping, Southwood broker board, account XP and booster rewards.
+- Not done: building hologram snapping, Southwood broker board, account XP and booster rewards.
+
+Compact buildings (2026-11-22, PR #157, Guilds only): every new building is a display-prop body on a small barrier
+shell (`structure/Props.java` `prop_v2_*` templates, bodies in `logistics/CompactBodies.java`, no resource pack).
+Mill, Forge, Depot and Storage Hut 2x2, Hub 4x2 (real lectern at local 0,1,1), Dock 3x2 (you walk on its deck).
+Anchor = back-right cell, so the chute stays at (0,1,1) and belts start at (0,1,2). Older 3x3/5x5 props keep their
+templates and bodies (props keep their template on upgrade); effects, tags and reach use `PlacedStructure.centerX/Z`.
+Looks: calcite smock windmill (sails, fantail and sack hoist at tier 2), brick smithy (chimney, blast furnace over
+the chute, anvil yard, copper hood at tier 2), half-timbered store that grows a storey per tier (Warehouse: brick
+base, slate roof, crane), market-hall Hub (copper roof whose patina grows per tier, clock turret, turning gem, gold
+at the Grand Hub), raised quay Dock (mooring mast, crow's nest, crane, contract board). The Build Tool has a Quarry
+part (hologram = the rig, the tour hands the first quarry through it) and centres compact footprints under the
+crosshair. Quarries stay 3x3.
 
 ## Content state (verified against live 2026-10-19)
 
