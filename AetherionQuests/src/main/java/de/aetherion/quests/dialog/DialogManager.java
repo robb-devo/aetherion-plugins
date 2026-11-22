@@ -1380,10 +1380,12 @@ public class DialogManager implements Listener {
         }
 
 
-        questManager.startQuest(
+        if (!questManager.startQuest(
                 player,
                 quest
-        );
+        )) {
+            return; // not started: done before, or a switch waiting for the second accept (A-15)
+        }
         reactToOffer(player, quest, true);
 
         // Vex's drill: the training golem goes up beside the player (TalkUx or classic, chips or not).

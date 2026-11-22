@@ -2402,10 +2402,12 @@ public class NpcListener implements Listener {
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.to_work", "Let's get to work."));
 
 
-        questManager.startQuest(
+        if (!questManager.startQuest(
                 player,
                 quest
-        );
+        )) {
+            return;
+        }
 
 
         showQuestProgress(

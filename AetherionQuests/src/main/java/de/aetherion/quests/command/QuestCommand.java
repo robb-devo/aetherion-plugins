@@ -117,10 +117,12 @@ public class QuestCommand implements CommandExecutor {
             }
 
 
-            questManager.startQuest(
+            if (!questManager.startQuest(
                     player,
                     quest
-            );
+            )) {
+                return true;
+            }
 
 
             player.sendMessage(

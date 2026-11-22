@@ -508,7 +508,11 @@ public class QuestManager {
      * =========================================================
      */
 
-    public void startQuest(
+    /**
+     * Starts a quest. False when it did not start: done before, a gate, or a switch that still waits for the
+     * player's second accept (A-15). A quest the player already holds counts as started (true).
+     */
+    public boolean startQuest(
             Player player,
             Quest quest
     ) {
@@ -518,7 +522,7 @@ public class QuestManager {
                         || quest == null
         ) {
 
-            return;
+            return false;
 
         }
 
@@ -538,7 +542,7 @@ public class QuestManager {
 
         if (currentState == QuestState.COMPLETED) {
 
-            return;
+            return false;
 
         }
 
@@ -570,7 +574,7 @@ public class QuestManager {
                     && !de.aetherion.quests.util.QuestStoryGate.isTutorialQuest(quest.getId())) {
                 de.aetherion.quests.util.QuestStoryGate.redirectToTutorial(player, "Quest Desk");
             }
-            return;
+            return false;
         }
 
 
@@ -588,8 +592,17 @@ public class QuestManager {
                     player
             );
 
-            return;
+            return true;
 
+        }
+
+
+        // A-15: finished quests (READY) are never dropped. Dropping an active quest that has progress waits for a
+        // second accept of the same quest within a minute, so nobody loses work by clicking the wrong chip.
+        List<Quest> atRisk = activeWithProgress(player, quest);
+        if (!atRisk.isEmpty() && !confirmSwitch(player, quest)) {
+            warnSwitch(player, quest, atRisk);
+            return false;
         }
 
 
@@ -699,6 +712,7 @@ public class QuestManager {
         }
         // Fishing rod / coin rewards wait until turn-in (see completeQuest).
 
+        return true;
     }
 
     private static void unlockProgressFeature(Player player, String flag, String title, String subtitle) {
@@ -2416,7 +2430,9 @@ public class QuestManager {
             return;
         }
 
-        abandonOtherQuests(player, keep);
+        // One active quest at a time; finished ones (READY) wait for their turn-in beside it (A-15).
+        Quest keepActive = getQuestState(player, keep) == QuestState.ACTIVE ? keep : firstActiveQuest(player);
+        abandonOtherQuests(player, keepActive);
         trackQuest(player, keep);
 
     }
@@ -2494,7 +2510,8 @@ public class QuestManager {
 
             QuestState state = getQuestState(player, quest);
 
-            if (state != QuestState.ACTIVE && state != QuestState.READY) {
+            // READY = every objective done, only the turn-in is left: it stays (A-15).
+            if (state != QuestState.ACTIVE) {
                 continue;
             }
 
@@ -2507,6 +2524,75 @@ public class QuestManager {
 
     }
 
+
+    private Quest firstActiveQuest(Player player) {
+        for (Quest quest : quests.values()) {
+            if (quest != null && getQuestState(player, quest) == QuestState.ACTIVE) {
+                return quest;
+            }
+        }
+        return null;
+    }
+
+    /** Active quests other than {@code keep} with at least one counted objective step. */
+    private List<Quest> activeWithProgress(Player player, Quest keep) {
+        List<Quest> out = new ArrayList<>();
+        for (Quest quest : quests.values()) {
+            if (quest == null || (keep != null && quest.getId().equalsIgnoreCase(keep.getId()))) {
+                continue;
+            }
+            if (getQuestState(player, quest) != QuestState.ACTIVE) {
+                continue;
+            }
+            PlayerQuestData data = getOrLoadPlayerData(player, quest.getId());
+            for (Objective objective : quest.getObjectives()) {
+                if (objective != null && data.getProgress(quest.getId(), objective.getTarget()) > 0) {
+                    out.add(quest);
+                    break;
+                }
+            }
+        }
+        return out;
+    }
+
+    private record SwitchWarning(String questId, long at) {
+    }
+
+    private static final long SWITCH_CONFIRM_MS = 60_000L;
+
+    private final Map<UUID, SwitchWarning> switchWarnings = new HashMap<>();
+
+    /** True when the player was warned about this very switch less than a minute ago (second accept). */
+    private boolean confirmSwitch(Player player, Quest quest) {
+        SwitchWarning warning = switchWarnings.get(player.getUniqueId());
+        if (warning == null || !warning.questId().equalsIgnoreCase(quest.getId())
+                || System.currentTimeMillis() - warning.at() > SWITCH_CONFIRM_MS) {
+            return false;
+        }
+        switchWarnings.remove(player.getUniqueId());
+        return true;
+    }
+
+    private void warnSwitch(Player player, Quest quest, List<Quest> atRisk) {
+        switchWarnings.put(player.getUniqueId(), new SwitchWarning(quest.getId(), System.currentTimeMillis()));
+        List<String> titles = new ArrayList<>();
+        for (Quest old : atRisk) {
+            titles.add(titleFor(player, old));
+        }
+        String dropped = String.join("§7, §f", titles);
+        player.sendMessage(de.aetherion.quests.lang.LangPack.format(player, "msg.quest_switch.warn",
+                "§e⚠ §7Taking §f{0}§7 drops §f{1}§7, and its progress is lost.",
+                titleFor(player, quest), dropped));
+        player.sendMessage(de.aetherion.quests.lang.LangPack.msg(player, "quest_switch.confirm",
+                "§7Accept it again within a minute to switch. Finished quests always stay."));
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
+    }
+
+    private static String titleFor(Player player, Quest quest) {
+        String english = de.aetherion.quests.editor.QuestCatalog.title(quest);
+        return org.bukkit.ChatColor.stripColor(
+                de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), english));
+    }
 
     private void markReady(
             Player player,
