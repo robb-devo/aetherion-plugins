@@ -48,7 +48,7 @@ public final class WildlifeCombatListener implements Listener {
             return;
         }
         // Ore Trolls run their own pickaxe-only gate (OreTrollListener); never re-open a hit it refused.
-        if (de.aetherion.items.mining.OreTrollListener.isOreTroll(target)) {
+        if (de.aetherion.items.mining.OreTrollListener.isOreTroll((org.bukkit.entity.Entity) target)) {
             return;
         }
         if (!allowsPlayerHit(attacker, target)) {
