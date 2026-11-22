@@ -93,6 +93,13 @@ public enum PetHabitat {
         return presentAt(location);
     }
 
+    /**
+     * Sand samples (every 2nd block, 29x29 by 11 high) a desert floor needs: below the floor it is no desert,
+     * at the dense mark sandstone may count too. A sand path or a small beach stays under the floor.
+     */
+    private static final int DESERT_SAND_FLOOR = 40;
+    private static final int DESERT_SAND_DENSE = 60;
+
     private static volatile HabitatCache habitatCache;
 
     private record HabitatCache(
@@ -564,40 +571,35 @@ public enum PetHabitat {
     }
 
     /**
-     * Desert needs real arid signature — plain sandstone walls on custom
-     * maps (forage ruins, temples) must not flip the whole biotope to camel.
+     * Desert needs a real sandy floor first, then a desert sign: cactus, dead bushes or red sand, or dense
+     * sandstone away from water. Terracotta and sandstone are building blocks on the custom maps (roofs, walls,
+     * paths); before A-41 three terracotta blocks near any house were enough and camels showed up all over the
+     * island (R-38). A real desert without those signs gets a painted habitat zone instead.
+     * The sand scan runs first and ends the check for almost every spot, so this is cheaper than before.
      */
     public static boolean isDesertConfirmed(
             Location location
     ) {
 
-        int strong =
-                countNearby(
-                        location,
-                        14,
-                        PetHabitat::isStrongDesertBlock,
-                        4
-                );
-        if (strong >= 3) {
-            return true;
-        }
-
-        int sandstone =
-                countNearby(
-                        location,
-                        14,
-                        PetHabitat::isSandstoneBlock,
-                        16
-                );
         int sand =
                 countNearby(
                         location,
                         14,
                         PetHabitat::isLooseDesertSand,
-                        8
+                        DESERT_SAND_DENSE
                 );
-        // Dense sandstone only counts with actual sand dunes underfoot.
-        return sandstone >= 14 && sand >= 6;
+        if (sand < DESERT_SAND_FLOOR) {
+            return false;
+        }
+
+        if (countNearby(location, 14, PetHabitat::isStrongDesertBlock, 3) >= 3) {
+            return true;
+        }
+
+        // Sandstone counts only on a dense dune floor and away from water (beaches are SHORE).
+        return sand >= DESERT_SAND_DENSE
+                && countNearby(location, 14, PetHabitat::isSandstoneBlock, 14) >= 14
+                && countNearby(location, 10, name -> name.equals("WATER"), 2) < 2;
     }
 
     public boolean matches(
@@ -887,13 +889,15 @@ public enum PetHabitat {
                 || isLooseDesertSand(name);
     }
 
-    /** Cactus / terracotta / red sand — not decorative sandstone walls. */
+    /**
+     * Cactus, dead bush, red sand: things only a desert or badlands grows. Terracotta is left out on purpose,
+     * the maps use it as a building block (A-41); badlands still read through their red sand.
+     */
     private static boolean isStrongDesertBlock(String name) {
         return name.equals("CACTUS")
                 || name.equals("DEAD_BUSH")
                 || name.equals("RED_SAND")
-                || name.equals("SUSPICIOUS_SAND")
-                || name.contains("TERRACOTTA");
+                || name.equals("SUSPICIOUS_SAND");
     }
 
     private static boolean isSandstoneBlock(String name) {

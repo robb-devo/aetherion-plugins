@@ -1392,8 +1392,9 @@ public class PetFactory {
                 PetHabitat.DESERT
         );
 
+        // A-41 (R-38): rarer, the camel was the most seen wild pet on the island.
         camel.setSpawnWeight(
-                9.0
+                4.0
         );
 
         addRarity(camel, Rarity.COMMON, 6.3, 12.6, COMMON);
