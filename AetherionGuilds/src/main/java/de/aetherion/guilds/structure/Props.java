@@ -46,6 +46,11 @@ public final class Props {
     public static final String HUT_V2 = "prop_v2_hut";
     public static final String HUB_V2 = "prop_v2_hub";
     public static final String DOCK_V2 = "prop_v2_dock";
+    /**
+     * 2x2 quarry: the quarry stands on the anchor cell (back right) and its core turns there, so that cell stays
+     * open at foot height (capped above it, nobody walks in); the chute is the front-right cell as on every 2x2.
+     */
+    public static final String QUARRY_V2 = "prop_v2_quarry";
 
     /** Old pasted looks that get swapped for props on first visit (same 3x3 footprint, same chute). */
     public static final Set<String> OLD_PRODUCTION = Set.of(
@@ -63,7 +68,7 @@ public final class Props {
             return null;
         }
         return switch (templateId) {
-            case QUARRY, QUARRY_SLIM -> StructureType.QUARRY_HOUSING;
+            case QUARRY, QUARRY_SLIM, QUARRY_V2 -> StructureType.QUARRY_HOUSING;
             case MILL, MILL_V2 -> StructureType.MILL;
             case FORGE, FORGE_V2 -> StructureType.FORGE;
             case DEPOT, DEPOT_V2 -> StructureType.DEPOT;
@@ -98,6 +103,19 @@ public final class Props {
         library.register(hut2());
         library.register(hub2());
         library.register(dock2());
+        library.register(quarry2());
+    }
+
+    /** 2x2 quarry: the core's cell open at foot height under a cap, a knee-high shell on the yard, the chute. */
+    private static Template quarry2() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        cells.put("0,2,0", BARRIER);
+        cells.put("0,1,1", CHUTE);
+        cells.put("-1,1,0", BARRIER);
+        cells.put("-1,1,1", BARRIER);
+        cells.put("-1,2,0", BARRIER);
+        cells.put("-1,2,1", BARRIER);
+        return Template.synthetic(QUARRY_V2, -1, 0, 0, 0, 4, 1, cells);
     }
 
     // ------------------------------------------------------------------------------------------------

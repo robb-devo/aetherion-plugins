@@ -61,9 +61,9 @@ import java.util.UUID;
  *   (existing math), their storage drains into the route target, processors convert with a speed limit and
  *   push on, sinks fill to capacity. Back-pressure: a full target leaves stock upstream, so a quarry with
  *   nowhere to send stops at its cap exactly like before.</li>
- *   <li><b>Visuals</b> only exist while someone is on the island: conveyor dressing on the plates (belt, rails,
- *   rollers, chevrons that glide while goods move, see {@link BeltVisuals}), gliding cargo, a turning millstone,
- *   forge fire, a working drill. Islands nobody visits cost one catch-up per minute.</li>
+ *   <li><b>Visuals</b> only exist while someone is on the island: conveyor dressing on the plates (belt, timber
+ *   rails, drums, chevron cleats that run with the goods, see {@link BeltVisuals}), gliding cargo, a turning
+ *   millstone, forge fire, a working drill. Islands nobody visits cost one catch-up per minute.</li>
  * </ul>
  */
 public final class LogisticsService {
@@ -71,7 +71,7 @@ public final class LogisticsService {
     static final String FX_TAG = "aeg_fx";
     /** The conveyor tile block. */
     public static final Material BELT_BLOCK = Material.IRON_TRAPDOOR;
-    /** Cargo rides on the belt surface of {@link BeltVisuals} (plate 3/16 + belt). */
+    /** Cargo rides on the belt surface of {@link BeltBodies} (plate 3/16 + belt). */
     private static final double CARGO_Y = 0.36;
 
     public static final class Route {

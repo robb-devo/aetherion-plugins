@@ -651,6 +651,8 @@ final class MachineFx {
                 case "stone" -> new Quaternionf().rotateY((float) (phase * Math.PI / 2));
                 case "stone2" -> new Quaternionf().rotateY((float) (-phase * Math.PI / 2));
                 case "jib" -> new Quaternionf().rotateY((float) (Math.sin(tick / 40.0) * 0.45));
+                // sheaves and winding drums (their spokes stand in the x-y plane)
+                case "reel" -> new Quaternionf().rotateZ((float) (-phase * Math.PI / 2));
                 default -> null;
             };
             if (turn == null || !bp.entity().isValid()) {
@@ -661,7 +663,7 @@ final class MachineFx {
             bp.entity().setTransformation(PropBodies.transform(bp.part(), s.rot(), turn, 0f, 0f));
         }
         if (CompactBodies.handles(s.templateId())) {
-            compactFx(world, s);
+            compactFx(world, s, view);
             return;
         }
         Location center = new Location(world, s.x() + 0.5, s.y() + 1.0, s.z() + 0.5);
@@ -715,8 +717,9 @@ final class MachineFx {
     }
 
     /** Smoke, flour, sparks and light where the compact buildings really have their chimney, bay and gem. */
-    private void compactFx(World world, PlacedStructure s) {
+    private void compactFx(World world, PlacedStructure s, View view) {
         switch (s.type()) {
+            case QUARRY_HOUSING -> quarryFx(world, s, view);
             case MILL -> de.aetherion.core.api.Vfx.puff(local(world, s, 0.0, 0.5, 1.25), Particle.WHITE_ASH,
                     s.level() >= 2 ? 10 : 6, Math.max(0.35, 0.35), null);
             case FORGE -> {
@@ -737,6 +740,39 @@ final class MachineFx {
                 }
             }
             default -> {
+            }
+        }
+    }
+
+    /** The compact quarries: the winding house smokes, leaves drift, the pond splashes, souls rise from the cage. */
+    private void quarryFx(World world, PlacedStructure s, View view) {
+        int tier = PropBodies.quarryTier(view.level());
+        switch (PropBodies.skinOf(view.quarry())) {
+            case FARMING -> de.aetherion.core.api.Vfx.puff(local(world, s, -1.0, 0.55, 1.0), Particle.COMPOSTER, 2,
+                    Math.max(0.3, 0.3), null);
+            case FORAGING -> de.aetherion.core.api.Vfx.puff(local(world, s, -1.05, 2.2, -0.05),
+                    view.quarry() == de.aetherion.guilds.model.QuarryType.CHERRY_LOG ? Particle.CHERRY_LEAVES
+                            : Particle.SPORE_BLOSSOM_AIR, 2, Math.max(0.45, 0.45), null);
+            case FISHING -> {
+                de.aetherion.core.api.Vfx.puff(local(world, s, -0.88, 0.25, 0.95), Particle.SPLASH, 6, Math.max(0.25, 0.25), null);
+                de.aetherion.core.api.Vfx.puff(local(world, s, -1.0, 0.2, 1.1), Particle.BUBBLE_POP, 2, Math.max(0.3, 0.3), null);
+                // the smoker in the hut
+                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, local(world, s, -1.3, 2.2, -0.3), 1, 0.04, 0.06, 0.04, 0.006);
+            }
+            case COMBAT -> {
+                de.aetherion.core.api.Vfx.puff(local(world, s, -1.0, 0.75, 0.15), Particle.SOUL, 1, Math.max(0.15, 0.15), null);
+                de.aetherion.core.api.Vfx.puff(local(world, s, -1.0, 2.1, 0.0), Particle.SOUL_FIRE_FLAME, 1, Math.max(0.05, 0.05), null);
+                de.aetherion.core.api.Vfx.puff(local(world, s, 0.0, 1.2, 0.0), Particle.CRIT, 2, Math.max(0.25, 0.25), null);
+            }
+            default -> {
+                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, local(world, s, -1.25, 2.75, -0.27), 1, 0.05, 0.08, 0.05, 0.008);
+                if (tier >= 2) {
+                    de.aetherion.core.api.Vfx.puff(local(world, s, 0.0, 0.9, 0.0), Particle.ELECTRIC_SPARK, 2 + tier,
+                            Math.max(0.2, 0.2), null);
+                }
+                if (tier >= 3) {
+                    de.aetherion.core.api.Vfx.puff(local(world, s, -0.36, 3.75, 0.0), Particle.END_ROD, 1, Math.max(0.12, 0.12), null);
+                }
             }
         }
     }
@@ -806,10 +842,16 @@ final class MachineFx {
                     continue;
                 }
                 if (CompactBodies.handles(props.templateId) && props.type != StructureType.FORGE) {
-                    // the compact buildings' hoists: a sack, a barrel, a crate goes down and up on its rope
-                    if (phase == 0) {
+                    // the compact buildings' hoists: a sack, a barrel, a crate goes down and up on its rope; the
+                    // quarries keep their trade's beat (the drill pumps, the log drops to the saw, the net dips slowly)
+                    boolean quarry = props.type == StructureType.QUARRY_HOUSING;
+                    long every = quarry ? pumpEvery(props.quarry) : 20L;
+                    if (tick % every == 0L) {
                         props.drillDown = !props.drillDown;
-                        hoist(props, props.drillDown);
+                        hoist(props, props.drillDown, quarry ? (int) Math.max(4L, every * (props.drillDown ? 2L : 4L) / 5L) : 18);
+                        if (quarry && props.drillDown && sounds) {
+                            pumpSound(props);
+                        }
                     }
                     continue;
                 }
@@ -836,14 +878,42 @@ final class MachineFx {
 
     private static final float HOIST = 0.3f;
 
-    private static void hoist(Props props, boolean down) {
+    /** Ticks between the quarry hoist's moves, by trade. */
+    private static long pumpEvery(de.aetherion.guilds.model.QuarryType quarry) {
+        return switch (PropBodies.skinOf(quarry)) {
+            case MINING -> 10L;
+            case FISHING -> 40L;
+            default -> 20L;
+        };
+    }
+
+    /** The knock of the drill on the ore, the saw biting the log. */
+    private void pumpSound(Props props) {
+        if (props.body.isEmpty()) {
+            return;
+        }
+        World world = props.body.get(0).entity().getWorld();
+        Location at = local(world, props.x, props.y, props.z, props.rot, 0.0, 1.0, 0.0);
+        switch (PropBodies.skinOf(props.quarry)) {
+            case MINING -> {
+                if (clock % 20L == 0L) {
+                    world.playSound(at, Sound.BLOCK_STONE_HIT, SoundCategory.BLOCKS, 0.35f, 0.7f);
+                }
+            }
+            case FORAGING -> world.playSound(at, Sound.UI_STONECUTTER_TAKE_RESULT, SoundCategory.BLOCKS, 0.18f, 0.8f);
+            default -> {
+            }
+        }
+    }
+
+    private static void hoist(Props props, boolean down, int duration) {
         for (BodyPart bp : props.body) {
             String role = bp.part().role();
             if (!bp.entity().isValid() || (!"drill".equals(role) && !"rope".equals(role))) {
                 continue;
             }
             bp.entity().setInterpolationDelay(0);
-            bp.entity().setInterpolationDuration(18);
+            bp.entity().setInterpolationDuration(duration);
             // the load drops, its rope pays out with it (the rope's top stays on the beam)
             bp.entity().setTransformation("rope".equals(role)
                     ? PropBodies.transform(bp.part(), props.rot, null, down ? -HOIST : 0f, down ? bp.part().size().y + HOIST : 0f)

@@ -25,7 +25,8 @@ import java.util.Map;
 final class CargoVisuals {
 
     static final String TAG = "aeg_cargo";
-    private static final int STEP_TICKS = 4;
+    /** One tile per step, at the belt's own pace, so goods ride the cleats. */
+    private static final int STEP_TICKS = BeltBodies.TICKS_PER_TILE;
 
     private static final class Cargo {
         final String hostKey;

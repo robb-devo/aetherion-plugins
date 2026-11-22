@@ -12,7 +12,7 @@ import java.util.Locale;
  * x 0, y 1 and the belt starts on the cell in front of it (see {@code StructureService.portLocal}). Sinks and
  * processors accept a belt that runs into their footprint from any side.
  *
- * <p>New buildings use the compact display props ({@code prop_v2_*}: machines and hut 2x2, Hub 4x2, Dock 3x2).
+ * <p>New buildings use the compact display props ({@code prop_v2_*}: machines, hut and quarries 2x2, Hub 4x2, Dock 3x2).
  * Every placed structure keeps the template it was saved with (older 3x3 / 5x5 props stay as they are);
  * structures saved without a template id keep their original {@link #legacyTemplateId()}.
  */
@@ -43,7 +43,7 @@ public enum StructureType {
             List.of("§7Belt in, belt out.",
                     "§7Presses §aCompressed §7→ §bCompacted§7,",
                     "§7and grinds §eRaw §7on the way.")),
-    QUARRY_HOUSING("quarry_housing", "Quarry Housing", Material.IRON_PICKAXE, Props.QUARRY, Role.SOURCE,
+    QUARRY_HOUSING("quarry_housing", "Quarry Housing", Material.IRON_PICKAXE, Props.QUARRY_V2, Role.SOURCE,
             0L, null, 0, false, false, 0L, 0,
             List.of("§7Raised around every quarry.",
                     "§7Its chute feeds the belt in front.")),

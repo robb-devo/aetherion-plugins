@@ -42,6 +42,9 @@ final class GhostView {
 
     // structure hologram
     private Template shown;
+    /** The quarry the hologram shows (its trade picks the yard, its level the look), or null. */
+    private de.aetherion.guilds.model.QuarryType quarry;
+    private int quarryLevel = 1;
     private World world;
     private int ax;
     private int ay;
@@ -68,6 +71,15 @@ final class GhostView {
     // ------------------------------------------------------------------------------------------------
     // structures
     // ------------------------------------------------------------------------------------------------
+
+    /** Which quarry the next hologram draws; a different one rebuilds it. */
+    void quarry(de.aetherion.guilds.model.QuarryType type, int level) {
+        if (type != quarry || level != quarryLevel) {
+            quarry = type;
+            quarryLevel = level;
+            clearStructure();
+        }
+    }
 
     void structure(Template template, World in, int x, int y, int z, int rotation, boolean fits, int[] portLocal) {
         clearBelts();
@@ -125,7 +137,9 @@ final class GhostView {
         if (propType != null) {
             // the prop itself, as a hologram: what you see is what stands there after the click
             for (de.aetherion.guilds.logistics.PropBodies.Part part
-                    : de.aetherion.guilds.logistics.PropBodies.body(propType, 1, template.id())) {
+                    : de.aetherion.guilds.logistics.PropBodies.body(propType,
+                    propType == StructureType.QUARRY_HOUSING ? quarryLevel : 1, template.id(),
+                    propType == StructureType.QUARRY_HOUSING ? quarry : null)) {
                 if (part.item() != null && !part.item().getType().isBlock()) {
                     continue; // a hung tool, a clock, a paper: too small to matter in the hologram
                 }

@@ -76,6 +76,16 @@ public final class PlacementService {
 
         /** Sets the quarry down on this ground block (it stands on top). True when it stands. */
         boolean place(Player player, Block ground, ItemStack item);
+
+        /** Which quarry this item is (its trade picks the hologram's yard), or null. */
+        default de.aetherion.guilds.model.QuarryType type(ItemStack item) {
+            return null;
+        }
+
+        /** The level this quarry item carries (its look follows it). */
+        default int level(ItemStack item) {
+            return 1;
+        }
     }
 
     /** What the Build Tool can hold, in the order sneak+scroll walks them. */
@@ -1568,6 +1578,10 @@ public final class PlacementService {
         boolean fits = validation.ok() && onIsland;
         boolean ok = fits && blocked == null && missing == null;
         int[] port = session.type != null && session.type.hasOutput() ? StructureService.portLocal(session.template) : null;
+        if (session.kind == Kind.QUARRY && quarries != null) {
+            ItemStack next = quarries.find(player);
+            session.ghost.quarry(next == null ? null : quarries.type(next), next == null ? 1 : quarries.level(next));
+        }
         session.ghost.structure(session.template, world, ax, ay, az, rot, ok, port);
         if (!fits && session.clock % 2 == 0) {
             int shown = 0;

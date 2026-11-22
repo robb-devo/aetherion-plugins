@@ -338,7 +338,18 @@ the chute, anvil yard, copper hood at tier 2), half-timbered store that grows a 
 base, slate roof, crane), market-hall Hub (copper roof whose patina grows per tier, clock turret, turning gem, gold
 at the Grand Hub), raised quay Dock (mooring mast, crow's nest, crane, contract board). The Build Tool has a Quarry
 part (hologram = the rig, the tour hands the first quarry through it) and centres compact footprints under the
-crosshair. Quarries stay 3x3.
+crosshair.
+
+Compact quarries and conveyor polish (2026-11-22, Guilds only, follow-up to PR #157): new quarry housings use
+`prop_v2_quarry` (2x2, minion on the anchor cell, chute (0,1,1), port (0,1,2)); bodies in `logistics/QuarryBodies.java`,
+one look per trade and four tiers (`PropBodies.quarryTier`: timber / iron / copper / crowned): mine headframe with
+winding house, farm barn + silo (crops, paddock or coop by product), grove saw shed under its tree, fishery hut on
+stilts by a pond, mob keep with a grinder pit. The slim rig got the same lattice tower. Old 3x3 housings keep their
+template and body. The Build Tool hologram shows the carried quarry's trade and level. Conveyors
+(`logistics/BeltBodies.java` look, `BeltVisuals` motion): timber rails with copper caps, iron posts per joint, drums
+with bearings, end walls, chamfered bends, inlet hood with chain curtain; chevron cleats run at the cargo's pace
+(`BeltBodies.TICKS_PER_TILE`, also `CargoVisuals`) in one long interpolation per loop and dive into the drums; gold
+marker cleats glow while the line is live (the old text chevrons are gone).
 
 ## Content state (verified against live 2026-10-19)
 

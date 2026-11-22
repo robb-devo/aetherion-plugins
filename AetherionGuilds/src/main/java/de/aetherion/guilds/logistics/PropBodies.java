@@ -61,7 +61,7 @@ public final class PropBodies {
         }
         return switch (type) {
             case QUARRY_HOUSING -> Props.QUARRY_SLIM.equals(templateId)
-                    ? 2.2f + 0.3f * quarryTier(level) + 0.7f
+                    ? 2.95f + 0.15f * quarryTier(level)
                     : 2.4f + 0.35f * quarryTier(level) + 1.6f;
             case MILL -> level >= 2 ? 4.8f : 4.4f;
             case FORGE -> 3.8f;
@@ -103,13 +103,13 @@ public final class PropBodies {
     public static List<Part> body(StructureType type, int level, String templateId,
                                   de.aetherion.guilds.model.QuarryType quarry) {
         if (CompactBodies.handles(templateId)) {
-            return CompactBodies.body(type, level);
+            return CompactBodies.body(type, level, quarry);
         }
         List<Part> parts = new ArrayList<>();
         switch (type) {
             case QUARRY_HOUSING -> {
                 if (Props.QUARRY_SLIM.equals(templateId)) {
-                    slimQuarry(parts, quarryTier(level));
+                    QuarryBodies.slim(parts, level);
                 } else {
                     switch (skinOf(quarry)) {
                         case FARMING -> farm(parts, quarryTier(level), quarry);
@@ -370,24 +370,6 @@ public final class PropBodies {
             }
         }
         lamp(parts, -1.3f, h + 0.25f, -1.3f);
-    }
-
-    private static void slimQuarry(List<Part> parts, int t) {
-        float h = 2.2f + 0.3f * t;
-        for (int s = -1; s <= 1; s += 2) {
-            box(parts, "", POST[t], s * 0.42f, h / 2f, 0, 0.14f, h, 0.14f);
-        }
-        float axle = h;
-        box(parts, "", BEAM[t], 0, axle, 0, 1.0f, 0.12f, 0.12f);
-        for (int i = 0; i < 2; i++) {
-            spin(parts, "wheel", SPOKE[t], 0, axle, 0, 0.06f, 0.9f, 0.1f,
-                    new Quaternionf().rotateX((float) (i * Math.PI / 2)));
-        }
-        parts.add(new Part("", Bukkit.createBlockData("minecraft:chain[axis=y]"), null,
-                new Vector3f(0, (axle + 1.6f) / 2f, 0), new Vector3f(1f, axle - 1.6f, 1f), new Quaternionf(), false));
-        parts.add(new Part("drill", Bukkit.createBlockData("minecraft:pointed_dripstone[thickness=tip,vertical_direction=down]"),
-                null, new Vector3f(0, 1.4f, 0), new Vector3f(0.5f, 0.6f, 0.5f), new Quaternionf(), false));
-        lamp(parts, 0.42f, h + 0.25f, 0f);
     }
 
     private static void mill(List<Part> parts, int level) {
