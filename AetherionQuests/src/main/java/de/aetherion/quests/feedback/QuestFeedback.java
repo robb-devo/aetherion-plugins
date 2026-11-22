@@ -20,6 +20,7 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Firework;
@@ -27,6 +28,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -303,7 +305,7 @@ public class QuestFeedback implements Listener {
         }
         boolean shown = HudCards.get().show(player, new HudCards.Card(HudCards.Kind.BIG,
                 LangPack.ui(player, "card.quest_complete", "Quest complete"), title, TalkChrome.QUEST, rows, null,
-                summary.toString()));
+                summary.toString(), new ItemStack(Material.NETHER_STAR)));
         if (shown) {
             spawnRewardFirework(player);
         }

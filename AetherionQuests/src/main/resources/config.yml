@@ -102,8 +102,8 @@ hud-cards:
   depth: 2.0                  # blocks in front of the eye (pulled closer by itself in front of walls / NPCs)
   big-y: 0.30                 # big card height above the middle of the view
   toast-y: 0.98               # toast height above the middle of the view
-  big-scale: 0.25
-  title-scale: 0.42
+  big-scale: 0.22             # card px size of the big card (crest, ribbon, plate)
+  title-scale: 0.37           # its title
   toast-scale: 0.24
   big-hold-ticks: 80          # after the rows are in; a left-click sends it away early
   toast-hold-ticks: 56
