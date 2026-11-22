@@ -1,9 +1,9 @@
 # Aetherion — Project state (read this first)
 
-Snapshot: **2026-11-10** (module table, CI, cleanup rounds 1 and 2); the live build table is still the 10-25 one
-and older sections keep their dates. Cleanup rounds 1 and 2 are in PR #146 (branch `claude/project-thread-knvhf4`),
-not merged and not deployed; the handover with next steps is at the top of the audit below. One page so a new session does not have to rescan the repo. Update the dated
-sections when they change.
+Snapshot: **2026-11-22** (live table below, handoff folder, beta work list); older sections keep their dates.
+One page so a new session does not have to rescan the repo. Update the dated sections when they change.
+Open work: the **beta work list** A-01..A-72 (Claude Doc "Aetherion: Beta-Arbeitsliste", copy in the project files
+and in Robb's handoff folder, see "Where the truth lives"). Work it in A-number order, one item at a time.
 Code health and cleanup plan: [CODE_AUDIT_2026-11-10.md](CODE_AUDIT_2026-11-10.md). Older beta list:
 [BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).
 Ops, hosting and access details are deliberately **not** in this repo; they live in
@@ -49,28 +49,41 @@ Helm agent and lacked the `aetherion-armor` datapack the other backends carry; n
 - The `IdeaProjects/` root checkout (branch `claude/polish-pets`) is **stale (09-28)** with
   ~6000 dirty files. Do not build or commit from it.
 - Agent prompts and briefs live in `docs/prompts/`; they are history, not specs.
+- **Handoff folder** (since 2026-11-21): `Desktop\Aetherion-Handoff` on Robb's PC is the shared interface between all
+  sessions (cloud and PC). Its `HANDOFF.md` is a log, newest on top: every session adds 3 to 5 lines after its work
+  (date, what was done, where it lives, what is open) and puts copies of what it produced (plans, lists, reports)
+  beside it. A cloud thread that cannot reach the PC parks its lines in the project files under `handoff/` and moves
+  them over on its next PC access.
+- Live jar hashes, deploy times and backups are logged per deploy in `aetherion-ops/docs/LIVE_STATE_*.md` on Robb's PC
+  (newest on top); the table below is the summary.
 
-## Live plugin builds (sha1 prefix, 2026-10-25 12:00)
+## Live plugin builds (sha1 prefix, 2026-11-22 19:40 CET)
 
-This table is the 10-25 snapshot. Every backend has been redeployed since (last: PR #143 and #144 on 11-02), so the
-sha1 values are out of date and need a refresh from the box. Which backend loads which plugin still holds.
-One build per plugin on every backend that loads it, all from `main` `c5eb105` (PR #119) or earlier `main`:
+Summary of the deploy log (LIVE_STATE). Since 11-16 (PRs #146 to #151) every backend ran one `main`; from 11-21 on,
+deploys went server by server, so the servers now differ on purpose. **`main` is ahead of live**: see the list below
+the table before you build from it.
 
-| Plugin | sha1 | Backends |
+| Plugin | Live build | Backends |
 |---|---|---|
-| Core | `9b556b78` | hub, mmo-r, mmo-d, mmo-c, mmo-i |
-| Items | `ebfac21b` | mmo-r, mmo-d, mmo-c, mmo-i |
-| Quests | `d2663e0b` | mmo-r, mmo-d, mmo-c, mmo-i |
-| AetherMobs | `baba6df2` | mmo-r, mmo-d, mmo-c, mmo-i |
-| BossEngine | `c47cba94` | hub, mmo-r, mmo-d, mmo-c |
-| Foraging / Mining | `a8c46420` / `f2faa59c` | mmo-r, mmo-c |
-| Farming / Fishing | `919d9515` / `c55d270e` | mmo-r, mmo-c |
-| Gnomon | `684013f0` | mmo-r (mmo-c parked 11-02) |
-| Dungeons / Beta | `07c2c939` / `ed9d1621` | mmo-r, mmo-d |
-| Guilds | `5e72839d` | mmo-i (parked on mmo-r and mmo-d) |
-| Hub | `7a3fa285` | mmo-r; **hub keeps `d1a097e7` (10-05)** |
-| SamuraiBoss / Pit | `b6f736f0` / `7e494d00` | mmo-r / hub |
-| Helm agent | `2da97e46` | all five (proxy: `AetherionHelmProxy`) |
+| Items | `efaa63c8` (main `49d6969`, #160) | mmo-r, mmo-d, mmo-c |
+| Items | `24d8e4ef` (main `0d19038`, #154) | mmo-i, mmo-m |
+| Quests | `9c0a8535` (main `48c4748`, #159, paged talk + cards on) | mmo-i |
+| Quests | `9bbe847e` (main `0d19038`, #154) | mmo-r, mmo-d, mmo-c, mmo-m |
+| Guilds | `dea73e5b` (main `48c4748`, #159) | mmo-i only |
+| Hub | `3926c729` (#154) | mmo-r; **hub keeps `d1a097e7` (10-05)** |
+| Farming / Fishing | `698327a5` / `a292600e` (#160) | mmo-r, mmo-c |
+| Core, BossEngine, AetherMobs, Mining, Foraging, Dungeons, Beta, Gnomon, SamuraiBoss, Pit | `main` of 11-16 | as below |
+
+Which backend loads which plugin: Core on all six (hub, mmo-r, mmo-d, mmo-c, mmo-i, mmo-m); Items, Quests,
+AetherMobs on every mmo backend; BossEngine on hub, mmo-r, mmo-d, mmo-c; Mining on mmo-r, mmo-c, mmo-m; Foraging,
+Farming, Fishing on mmo-r and mmo-c; Dungeons and Beta on mmo-r and mmo-d; Guilds on mmo-i only (parked on mmo-r and mmo-d);
+Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmProxy` on the proxy.
+
+Merged on `main` but **not live** yet (2026-11-22 19:40 CET):
+- #160 Items on mmo-i and mmo-m (held back while the island tests run there).
+- #159 Quests on mmo-r, mmo-d, mmo-c, mmo-m (both switches default off; turning them on network-wide waits for Robb).
+- #161 Guilds (island tour in flow order, Build Tool board) and #162 Quests (card look) on mmo-i.
+- #163 Core + Items (A-04: `/guild` and the Manager tile open from Level 20) on every backend that loads them.
 
 Deploys swap jars by plugin name only where a server already runs that plugin, back the old ones up and
 restart each backend once (graceful RCON stop). The host also runs a standalone vanilla server (own port,
@@ -428,7 +441,6 @@ Known gaps:
 - AetherMobs: the status check of 11-02 found every backend on the `main` build (the 10-04 build on mmo-c/mmo-i is gone).
 - 18 newer Quests lines lack German (`validate_de_overlay.py`: `ui.roads.*`,
   `dialogs.amethyst_mines_guide_intro`).
-- `CombatTeach` (tutorial combat beat) is still a stub.
 - Veins reset fixed 10-20 (PR #71): the schematic is pasted in place on FAWE's async queue (~1 s, no
   main-thread stall). mmo-c has `veins.daily-reset: false`. The Eldervale and Forage isle pastes moved to
   the same queue (PR #73, Mining `d55c57f6` / Foraging `8d58797b` on mmo-r and mmo-c). Exile, Hub, Pit and
