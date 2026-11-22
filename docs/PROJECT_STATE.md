@@ -375,6 +375,20 @@ its live config turns them on (first mmo-i; the rest of the network after Robb's
   toasts, first chain / Hub founded / Compressed Cobble / stage-ups get big cards, ship, factory goals, upgrades and
   first-pick part notes are toasts, the hand press and "built" lines go to the action bar.
 
+## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
+
+mmo-d lagged (MSPT spikes to 1.4 s with nobody online): `CryptHologramService` (Items) re-spawned its saved
+text display every 10 s whenever the spot's chunk was unloaded, so 293k displays sat in one chunk of `world`
+(311 MB, saved every 10 s). The crypt holo belongs on mmo-r only (Borderlands, behind the altar); the yml had been
+copied to every backend. Cleaned live on 11-22 (backup `crypt-holo-cleanup-20261122-152432` in the ops backups).
+Rule for every keep-alive loop: never spawn into a chunk whose entities are not loaded (`ZoneMarkers.ready`), and
+prefer non-persistent displays that are put up on chunk load. Fixed in the same PR:
+- Crypt holo: non-persistent, spawned only while its chunk is loaded, saved leftovers removed on `EntitiesLoadEvent`.
+- `FarmIslandAmbience` (Farming): tops up animals and pets only while players are there and the area is loaded
+  (same pattern as the ~283k mobs on mmo-d in October).
+- Ore trolls (Items) and fishing encounter mobs (Fishing): untracked ones coming back with a chunk are removed.
+Known, left as is: Dungeon Keeper / Guide villager fallback can add one villager per restart if FancyNpcs is not ready.
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,

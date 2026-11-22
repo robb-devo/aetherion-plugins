@@ -29,6 +29,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
@@ -324,6 +325,20 @@ public final class FishingEncounterListener implements Listener {
 
     private void give(Player player, ItemStack stack) {
         InventoryDrops.give(player, stack);
+    }
+
+    /**
+     * Encounter mobs are saved with their chunk; tracking lives in memory only. One that comes back with a chunk
+     * after a restart is no longer tracked and would stay forever, so it is removed.
+     */
+    @EventHandler
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        for (Entity entity : event.getEntities()) {
+            if (entity.getPersistentDataContainer().has(encounterKey, PersistentDataType.BYTE)
+                    && !liveEncounters.contains(entity.getUniqueId())) {
+                entity.remove();
+            }
+        }
     }
 
     private void tickEncounters() {

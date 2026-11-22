@@ -106,6 +106,12 @@ public final class FarmIslandAmbience implements Listener, Runnable {
             return;
         }
         world.setGameRule(org.bukkit.GameRule.DO_MOB_SPAWNING, false);
+        // Top up only while the spawn area and its entities are loaded. Counting sees loaded entities only, so a
+        // top-up with the area unloaded loaded it, added animals on top of the saved ones and saved them again:
+        // the same pattern piled ~283k mobs into one mmo-d chunk in October.
+        if (world.getPlayers().isEmpty() || !spawnAreaReady(world)) {
+            return;
+        }
         int ambient = countTagged(world, ambientKey);
         if (ambient < 9) {
             int added = spawnAmbientAnimals(world, 14 - ambient);
@@ -395,6 +401,27 @@ public final class FarmIslandAmbience implements Listener, Runnable {
             }
         }
         return count;
+    }
+
+    /** True when every chunk of the top-up area around the island exit has its entities loaded. Loads nothing. */
+    private boolean spawnAreaReady(World world) {
+        Location exit = null;
+        try {
+            if (plugin.portals() != null) {
+                exit = plugin.portals().islandExit();
+            }
+        } catch (Exception ignored) {
+        }
+        int cx = exit != null ? exit.getBlockX() : 0;
+        int cz = exit != null ? exit.getBlockZ() : 0;
+        for (int chunkX = (cx - 18) >> 4; chunkX <= (cx + 18) >> 4; chunkX++) {
+            for (int chunkZ = (cz - 18) >> 4; chunkZ <= (cz + 18) >> 4; chunkZ++) {
+                if (!world.isChunkLoaded(chunkX, chunkZ) || !world.getChunkAt(chunkX, chunkZ).isEntitiesLoaded()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private List<Location> softGroundSpots(World world, int budget) {
