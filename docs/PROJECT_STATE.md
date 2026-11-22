@@ -389,6 +389,12 @@ its live config turns them on (first mmo-i; the rest of the network after Robb's
   chat line. Display entities at the player's eye with billboard CENTER, so the camera-space translation keeps them
   in front however the head turns; only the owner sees them; probed every other tick and pulled closer (same size
   on screen) in front of walls and the talking NPC. Big cards hold paged lines back; a left-click sends one away.
+- Card look (second pass, same evening, Robb: "aktuell einfach nur ne box"): the big card is a crest with the
+  moment's item turning in it, a fan of rays behind it, a ribbon with the header across a framed plate with a point;
+  rows with an icon and "+N" become reward slots whose number counts up, other rows a list with icons. The toast is
+  a slim plate with a check (or gem) badge on its left edge and a bar that runs down while it stays. Every shape is a
+  `" "` text display (its background quad scaled and turned about the view axis). Crest item: the card's emblem
+  (`Cards.big(..., emblem)`, quest complete = nether star), else the first block among the row icons.
 - Quest moments (`feedback/QuestFeedback.java`, `QuestManager.cardRewards`): objective done and "ready" are toasts,
   quest complete is the big card with the rewards as rows instead of reward chat lines.
 - Other plugins: `de.aetherion.quests.api.Cards` (plain types; false = cards off, say it the old way). Guilds reaches

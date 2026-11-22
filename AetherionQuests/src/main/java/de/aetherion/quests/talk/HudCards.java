@@ -13,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
@@ -42,6 +43,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -51,11 +53,19 @@ import java.util.regex.Pattern;
  * Screen cards: a big card for a quest or milestone that floats in front of the player's eyes, and a small toast
  * at the top for a step done.
  *
+ * <p>Look. The big card is a crest with the moment's item turning in it, a fan of light rising behind it, a ribbon
+ * with the header across a framed plate with a point at the bottom, the title, and the rewards as slots with their
+ * item and a number that counts up (other rows as a list with an icon). The toast is a slim plate with a badge on
+ * its left edge (a check for "done", a gem for "new") and a bar along the bottom that runs down while it stays.
+ * Every shape is a {@code " "} text display: its background is a 5 x 11 text px quad, scaled to any size and turned
+ * about the view axis (diamonds, rays); text and items sit on top. Pieces spawn back to front, so the client draws
+ * the translucent ones in that order.
+ *
  * <p>How it stays on screen: every piece is a display entity standing at the player's eye with billboard CENTER.
  * A display's transformation is applied after the billboard turn, in camera space (local +Z faces the viewer), so
  * a translation of {@code (x, y, -depth)} keeps it {@code depth} blocks in front of the camera however the head
- * turns; the client does that every frame. Only the position comes from the server: each tick the pieces move to
- * the eye, a little ahead by the player's speed and ping, so walking barely drags the card. Nothing rides the
+ * turns; the client does that every frame. Only the position comes from the server: when the eye moves, the pieces
+ * move to it, a little ahead by the player's speed and ping, so walking barely drags the card. Nothing rides the
  * player (a player with passengers can't be teleported by plugins).
  *
  * <p>The card is drawn with depth like any other display, so a wall or an NPC closer than the card would cover it.
@@ -76,7 +86,7 @@ public final class HudCards implements Listener {
         BIG
     }
 
-    /** One body row: legacy text and an optional item icon at its left. */
+    /** One body row: legacy text and an optional item icon. "+250 Coins" rows with an icon become reward slots. */
     public record Row(String text, ItemStack icon) {
         public static Row of(String text) {
             return new Row(text, null);
@@ -84,23 +94,72 @@ public final class HudCards implements Listener {
     }
 
     /**
-     * {@code header}: small caps over the title (big cards). {@code title}: the big line (big) or the bold first
-     * line (toast). {@code rows}: body rows (big) or the detail line (toast). {@code footer}: a muted last line
-     * such as "Next: …" (may be null). {@code summary}: legacy chat line written once a big card has gone (null =
-     * none); its hover shows the whole card.
+     * {@code header}: on the ribbon (big) or the badge mark (toast, null = ✔). {@code title}: the big line (big) or
+     * the bold first line (toast). {@code rows}: body rows (big) or detail lines (toast). {@code footer}: a muted
+     * last line such as "Next: …" (may be null). {@code summary}: legacy chat line written once a big card has gone
+     * (null = none); its hover shows the whole card. {@code emblem}: the item turning in a big card's crest (null =
+     * the first block among the row icons, else a nether star).
      */
     public record Card(Kind kind, String header, String title, TextColor accent, List<Row> rows, String footer,
-                       String summary) {
+                       String summary, ItemStack emblem) {
+        public Card(Kind kind, String header, String title, TextColor accent, List<Row> rows, String footer,
+                    String summary) {
+            this(kind, header, title, accent, rows, footer, summary, null);
+        }
     }
 
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private static final float PX = TalkChrome.PX;
-    private static final int LINE = TalkChrome.LINE_PX;
     private static final float COLLAPSED = 0.01f;
-    private static final float RIM_DEPTH = 0.012f;
     private static final byte INVISIBLE_TEXT = 12;
-    /** "+250 Coins": the number counts up when the row comes in. */
+    /** "+250 Coins": the number counts up when its slot comes in. */
     private static final Pattern COUNT = Pattern.compile("^((?:§.)*)\\+(\\d{1,9})(.*)$");
+    private static final TextColor WHITE = TextColor.color(0xFFFFFF);
+    private static final TextColor BLACK = TextColor.color(0x000000);
+
+    /* Layout, in card px (1 card px = PX × the card's scale; y up, the card's centre at 0). */
+    private static final float RIBBON_H = 17f;
+    private static final float SLOT = 24f;
+    private static final float TILE_GAP = 4f;
+    private static final float NAME_SCALE = 0.82f;
+    private static final float FOOT_SCALE = 0.9f;
+    /** The rays, degrees clockwise from straight up; even ones are long. */
+    private static final int[] RAYS = {-64, -48, -32, -16, 0, 16, 32, 48, 64};
+
+    /* Depth toward the viewer, in blocks: the order the layers cover each other. */
+    private static final float Z_HALO = 0.0004f;
+    private static final float Z_TAIL = 0.0012f;
+    private static final float Z_FRAME = 0.0016f;
+    private static final float Z_PLATE = 0.0020f;
+    private static final float Z_INNER = 0.0024f;
+    private static final float Z_DETAIL = 0.0032f;
+    private static final float Z_STUD = 0.0036f;
+    private static final float Z_FOLD = 0.0040f;
+    private static final float Z_BAND = 0.0044f;
+    private static final float Z_TEXT = 0.0052f;
+    private static final float Z_CREST = 0.0056f;
+    /** Items have depth of their own: they stand well in front (and are pulled in, so they land on their spot). */
+    private static final float Z_ICON = 0.05f;
+    private static final float Z_EMBLEM = 0.09f;
+
+    private enum Form { RECT, TEXT, ITEM }
+
+    /* What the timeline does with a piece. */
+    private static final int FRAME = 0;
+    private static final int RAY = 1;
+    private static final int HALO = 2;
+    private static final int CREST = 3;
+    private static final int EMBLEM = 4;
+    private static final int TITLE = 5;
+    private static final int TILE = 6;
+    private static final int TILE_ICON = 7;
+    private static final int TILE_TEXT = 8;
+    private static final int ROW = 9;
+    private static final int ROW_ICON = 10;
+    private static final int FOOTER = 11;
+    private static final int BADGE = 12;
+    private static final int BAR = 13;
+    private static final int BODY = 14;
 
     private static HudCards instance;
 
@@ -129,50 +188,84 @@ public final class HudCards implements Listener {
 
     private static final class Piece {
         final Display display;
-        /** Rest translation relative to the card centre, in blocks at full size. */
-        final float x;
-        final float y;
+        final Form form;
+        final int role;
+        final int index;
+        /** Rest centre in card px; a ray: its inner end; the toast bar: its left end. */
+        final float cx;
+        final float cy;
+        /** RECT: size in card px. TEXT: w = scale (card px per text px). ITEM: w = size in card px. */
+        final float w;
+        final float h;
+        /** RECT: turn in degrees, counter-clockwise on screen. */
+        final float deg;
         final float z;
-        final float scale;
-        float factor = COLLAPSED;
-        float lift;
+        /** TEXT: text block height in text px (lines × 10). */
+        final int textH;
+        /** RECT: its background at rest. */
+        final Color color;
+        float factor = 1f;
+        float dx;
+        float dy;
+        float spin;
+        float stretch = 1f;
 
-        Piece(Display display, float x, float y, float z, float scale) {
+        Piece(Display display, Form form, int role, int index, float cx, float cy, float w, float h, float deg,
+              float z, int textH, Color color) {
             this.display = display;
-            this.x = x;
-            this.y = y;
+            this.form = form;
+            this.role = role;
+            this.index = index;
+            this.cx = cx;
+            this.cy = cy;
+            this.w = w;
+            this.h = h;
+            this.deg = deg;
             this.z = z;
-            this.scale = scale;
+            this.textH = textH;
+            this.color = color;
+        }
+    }
+
+    /** A reward slot's number. */
+    private static final class Tile {
+        final Piece amount;
+        final String prefix;
+        final long target;
+        long from = -1;
+
+        Tile(Piece amount, String prefix, long target) {
+            this.amount = amount;
+            this.prefix = prefix;
+            this.target = target;
         }
     }
 
     private static final class Shown {
         final Card card;
         final UUID owner;
-        Piece body;
-        Piece rim;
+        final List<Piece> pieces = new ArrayList<>();
+        final List<Tile> tiles = new ArrayList<>();
         Piece title;
-        final List<Piece> icons = new ArrayList<>();
-        final List<Integer> iconRow = new ArrayList<>();
+        String titleText = "";
+        TextColor titleInk = TalkChrome.TEXT;
+        Piece bar;
+        int rows;
+        boolean footer;
         float scale;
         double centerY;
-        int lines;
-        int widthPx;
-        int titleRows;
-        int titleLines;
-        int firstBodyRow;
-        float rimSx = 1f;
-        float rimSy = 1f;
-        int revealed = -1;
-        boolean footerShown;
+        /** The whole card's size factor and lift (blocks): the pop in, the drift out. */
+        float pop = COLLAPSED;
+        float lift;
         long born;
         long revealEnd;
         long endAt;
         long closeAt = -1;
-        final Map<Integer, Long> countFrom = new HashMap<>();
         /** Pulled in front of something near (1 = the configured depth); size shrinks with it, so nothing moves on screen. */
         float near = 1f;
         long lastProbe = -10;
+        Location lastAt;
+        boolean shimmer;
 
         Shown(Card card, UUID owner) {
             this.card = card;
@@ -205,8 +298,8 @@ public final class HudCards implements Listener {
         depth = clamp(cfg.getDouble("hud-cards.depth", 2.0), 0.8, 4.0);
         bigY = clamp(cfg.getDouble("hud-cards.big-y", 0.30), -1.0, 1.5);
         toastY = clamp(cfg.getDouble("hud-cards.toast-y", 0.98), -1.0, 1.8);
-        bigScale = (float) clamp(cfg.getDouble("hud-cards.big-scale", 0.25), 0.08, 0.8);
-        titleScale = (float) clamp(cfg.getDouble("hud-cards.title-scale", 0.42), 0.1, 1.2);
+        bigScale = (float) clamp(cfg.getDouble("hud-cards.big-scale", 0.22), 0.08, 0.8);
+        titleScale = (float) clamp(cfg.getDouble("hud-cards.title-scale", 0.37), 0.1, 1.2);
         toastScale = (float) clamp(cfg.getDouble("hud-cards.toast-scale", 0.24), 0.08, 0.8);
         bigHold = (int) clamp(cfg.getInt("hud-cards.big-hold-ticks", 80), 30, 400);
         toastHold = (int) clamp(cfg.getInt("hud-cards.toast-hold-ticks", 56), 20, 300);
@@ -261,28 +354,21 @@ public final class HudCards implements Listener {
     private static Card wrapped(Card c) {
         boolean big = c.kind() == Kind.BIG;
         List<Row> rows = c.rows() == null ? List.of() : c.rows();
-        if (!big) {
-            List<Row> out = new ArrayList<>();
-            for (Row row : rows) {
-                if (row == null || row.text() == null) {
-                    continue;
-                }
+        List<Row> out = new ArrayList<>();
+        for (Row row : rows) {
+            if (row == null || row.text() == null) {
+                continue;
+            }
+            if (big) {
+                out.add(row);
+            } else {
                 for (String part : TalkText.wrap(row.text(), 200).split("\n", -1)) {
                     out.add(Row.of(part));
                 }
             }
-            rows = out;
-        } else {
-            List<Row> out = new ArrayList<>();
-            for (Row row : rows) {
-                if (row != null && row.text() != null) {
-                    out.add(row);
-                }
-            }
-            rows = out;
         }
         String footer = c.footer() == null || c.footer().isBlank() ? null : TalkText.wrap(c.footer(), big ? 230 : 200);
-        return new Card(c.kind(), c.header(), c.title(), c.accent(), rows, footer, c.summary());
+        return new Card(c.kind(), c.header(), c.title(), c.accent(), out, footer, c.summary(), c.emblem());
     }
 
     private static String[] footerLines(Card c) {
@@ -380,7 +466,7 @@ public final class HudCards implements Listener {
         }
     }
 
-    /** Move every piece to the eye, ahead by speed × (ping + a tick of interpolation). */
+    /** Move every piece to the eye, ahead by speed × (ping + a tick of interpolation); nothing to send when still. */
     private void follow(Player player, Shown sh) {
         Location eye = player.getEyeLocation();
         Motion m = motion.computeIfAbsent(player.getUniqueId(), k -> new Motion());
@@ -397,7 +483,11 @@ public final class HudCards implements Listener {
         // the server already sees the player half a ping late, the card arrives half a ping later and then glides in
         double lead = Math.max(1.0, Math.min(6.0, player.getPing() / 50.0 + 1.5));
         Location at = eye.clone().add(m.vel.clone().multiply(lead));
-        for (Piece p : pieces(sh)) {
+        if (sh.lastAt != null && sh.lastAt.getWorld() == at.getWorld() && sh.lastAt.distanceSquared(at) < 1.0E-6) {
+            return;
+        }
+        sh.lastAt = at;
+        for (Piece p : sh.pieces) {
             if (p.display.isValid() && p.display.getWorld() == at.getWorld()) {
                 p.display.teleport(at);
             }
@@ -446,11 +536,7 @@ public final class HudCards implements Listener {
             return;
         }
         sh.near = k;
-        for (Piece p : pieces(sh)) {
-            if (p.display.isValid()) {
-                TalkChrome.animate(p.display, at(sh, p), 3);
-            }
-        }
+        moveAll(sh, 3);
     }
 
     private void step(Player player, Shown sh) {
@@ -469,54 +555,195 @@ public final class HudCards implements Listener {
             close(player, sh);
             return;
         }
-        Card c = sh.card;
-        if (c.kind() == Kind.BIG) {
-            if (t == 1) {
-                pose(sh, sh.body, 1.08f, 0f, 4);
-                pose(sh, sh.rim, 1.08f, 0f, 4);
-            } else if (t == 3) {
-                pose(sh, sh.title, 1.12f, 0f, 4);
-            } else if (t == 5) {
-                pose(sh, sh.body, 1f, 0f, 3);
-                pose(sh, sh.rim, 1f, 0f, 3);
-                glow(sh, true);
-            } else if (t == 7) {
-                pose(sh, sh.title, 1f, 0f, 3);
-            } else if (t == 10) {
-                glow(sh, false);
-            }
-            int rows = c.rows().size();
-            for (int i = sh.revealed + 1; i < rows; i++) {
-                long at = 10L + i * 5L;
-                if (t < at) {
-                    break;
-                }
-                sh.revealed = i;
-                if (COUNT.matcher(c.rows().get(i).text()).matches()) {
-                    sh.countFrom.put(i, tick);
-                }
-                popIcon(sh, i);
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.MASTER,
-                        0.35f, (float) Math.min(2.0, 1.05 + i * 0.12));
-            }
-            if (!sh.footerShown && c.footer() != null && t >= 12L + rows * 5L) {
-                sh.footerShown = true;
-            }
-            if (t % 5 == 0 || !sh.countFrom.isEmpty() || t == 12L + rows * 5L) {
-                render(sh, t);
-            }
-            if (!sh.countFrom.isEmpty()) {
-                sh.countFrom.entrySet().removeIf(e -> tick - e.getValue() > 8);
-            }
-            spin(sh, t);
+        if (sh.card.kind() == Kind.BIG) {
+            stepBig(player, sh, t);
         } else {
-            if (t == 1) {
-                pose(sh, sh.body, 1.05f, 0f, 4);
-                pose(sh, sh.rim, 1.05f, 0f, 4);
-            } else if (t == 5) {
-                pose(sh, sh.body, 1f, 0f, 3);
-                pose(sh, sh.rim, 1f, 0f, 3);
+            stepToast(sh, t);
+        }
+    }
+
+    /**
+     * The big card's entrance: the frame pops, the crest drops in and flashes, the rays grow from the middle out,
+     * the item comes and turns, the title fades up, the slots pop one by one with their numbers counting, list rows
+     * slide in, then the footer. Once all is in, a glint runs over the title and the rays breathe.
+     */
+    private void stepBig(Player player, Shown sh, long t) {
+        if (t == 1) {
+            sh.pop = 1.06f;
+            sh.lift = 0f;
+            moveAll(sh, 4);
+        } else if (t == 5) {
+            sh.pop = 1f;
+            moveAll(sh, 3);
+        }
+        if (t == 3) {
+            for (Piece p : sh.pieces) {
+                if (p.role == CREST) {
+                    p.factor = 1.22f;
+                    p.dy = 0f;
+                    move(sh, p, 3);
+                }
             }
+        } else if (t == 6) {
+            for (Piece p : sh.pieces) {
+                if (p.role == CREST) {
+                    p.factor = 1f;
+                    move(sh, p, 3);
+                } else if (p.role == HALO) {
+                    p.factor = 1.3f;
+                    move(sh, p, 2);
+                }
+            }
+            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.MASTER, 0.7f, 1.25f);
+        } else if (t == 9) {
+            for (Piece p : sh.pieces) {
+                if (p.role == HALO) {
+                    p.factor = 1f;
+                    move(sh, p, 10);
+                }
+            }
+        }
+        if (t >= 7 && t <= 7 + RAYS.length / 2) {
+            int order = (int) (t - 7);
+            for (Piece p : sh.pieces) {
+                if (p.role == RAY && p.index == order) {
+                    p.stretch = 1f;
+                    move(sh, p, 5);
+                    tint(p, p.color, 5);
+                }
+            }
+        }
+        if (t == 8 || t == 11) {
+            for (Piece p : sh.pieces) {
+                if (p.role == EMBLEM) {
+                    p.factor = t == 8 ? 1.2f : 1f;
+                    p.dy = 0f;
+                    move(sh, p, 3);
+                }
+            }
+        }
+        if (t >= 16 && (t - 16) % 10 == 0) {
+            for (Piece p : sh.pieces) {
+                if (p.role == EMBLEM) {
+                    p.spin = (float) ((p.spin + Math.PI / 3.0) % (Math.PI * 2.0));
+                    move(sh, p, 10);
+                }
+            }
+        }
+        if (t == 9 && sh.title != null) {
+            sh.title.dy = 0f;
+            move(sh, sh.title, 6);
+            fade(sh.title, 255, 6);
+        }
+        for (int i = 0; i < sh.tiles.size(); i++) {
+            long at = 12L + i * 5L;
+            if (t == at) {
+                for (Piece p : sh.pieces) {
+                    if (p.index != i) {
+                        continue;
+                    }
+                    if (p.role == TILE) {
+                        p.factor = 1.14f;
+                        move(sh, p, 3);
+                    } else if (p.role == TILE_ICON) {
+                        p.factor = 1.28f;
+                        move(sh, p, 3);
+                    } else if (p.role == TILE_TEXT) {
+                        move(sh, p, 3);
+                        fade(p, 255, 3);
+                    }
+                }
+                Tile tile = sh.tiles.get(i);
+                tile.from = tick;
+                setAmount(tile, 0L);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.MASTER,
+                        0.35f, (float) Math.min(2.0, 1.05 + i * 0.14));
+            } else if (t == at + 3) {
+                for (Piece p : sh.pieces) {
+                    if (p.index == i && (p.role == TILE || p.role == TILE_ICON)) {
+                        p.factor = 1f;
+                        move(sh, p, 3);
+                    }
+                }
+            }
+        }
+        for (Tile tile : sh.tiles) {
+            if (tile.from >= 0 && tick - tile.from <= 8) {
+                double k = Math.min(1.0, (tick - tile.from) / 8.0);
+                setAmount(tile, Math.round(tile.target * (1.0 - Math.pow(1.0 - k, 3))));
+            }
+        }
+        long rowsAt = 12L + sh.tiles.size() * 5L;
+        for (int i = 0; i < sh.rows; i++) {
+            if (t != rowsAt + i * 4L) {
+                continue;
+            }
+            for (Piece p : sh.pieces) {
+                if (p.index != i) {
+                    continue;
+                }
+                if (p.role == ROW) {
+                    p.dx = 0f;
+                    move(sh, p, 4);
+                    fade(p, 255, 4);
+                } else if (p.role == ROW_ICON) {
+                    p.factor = 1f;
+                    move(sh, p, 4);
+                }
+            }
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, SoundCategory.MASTER, 0.3f, 1.6f);
+        }
+        if (sh.footer && t == rowsAt + sh.rows * 4L + 2L) {
+            for (Piece p : sh.pieces) {
+                if (p.role == FOOTER) {
+                    fade(p, 255, 5);
+                }
+            }
+        }
+        long glint = sh.revealEnd;
+        if (sh.title != null && t >= glint && t <= glint + 16) {
+            ((TextDisplay) sh.title.display).text(titleText(sh, (t - glint) / 16.0));
+        }
+        if (t > glint + 16 && (t - glint) % 12 == 0) {
+            // the rays breathe: long and short take turns
+            sh.shimmer = !sh.shimmer;
+            for (Piece p : sh.pieces) {
+                if (p.role == RAY) {
+                    boolean bright = (p.index % 2 == 0) != sh.shimmer;
+                    int a = (int) Math.round(p.color.getAlpha() * (bright ? 1.0 : 0.5));
+                    tint(p, Color.fromARGB(a, p.color.getRed(), p.color.getGreen(), p.color.getBlue()), 12);
+                }
+            }
+        }
+    }
+
+    /** The toast drops in, its badge pops, the bar along its bottom runs down while it stays. */
+    private void stepToast(Shown sh, long t) {
+        if (t == 1) {
+            sh.pop = 1.04f;
+            sh.lift = 0f;
+            moveAll(sh, 4);
+            for (Piece p : sh.pieces) {
+                if (p.role == BODY) {
+                    fade(p, 255, 4);
+                }
+            }
+        } else if (t == 5) {
+            sh.pop = 1f;
+            moveAll(sh, 3);
+        }
+        if (t == 3 || t == 6) {
+            for (Piece p : sh.pieces) {
+                if (p.role == BADGE) {
+                    p.factor = t == 3 ? 1.25f : 1f;
+                    move(sh, p, 3);
+                }
+            }
+        }
+        if (sh.bar != null && t >= 6 && (t - 6) % 5 == 0) {
+            long total = Math.max(1L, sh.endAt - (sh.born + 6L));
+            sh.bar.stretch = (float) clamp((sh.endAt - tick) / (double) total, 0.0, 1.0);
+            move(sh, sh.bar, 5);
         }
     }
 
@@ -530,227 +757,379 @@ public final class HudCards implements Listener {
         boolean big = card.kind() == Kind.BIG;
         sh.scale = big ? bigScale : toastScale;
         sh.centerY = big ? bigY : toastY;
-        // Box: rows and widest row in text pixels.
-        int width = 0;
-        int lines = 0;
-        if (big) {
-            String header = header(card);
-            width = Math.max(width, TalkChrome.width(header, false) + 8);
-            lines++;
-            String title = card.title() == null ? "" : TalkText.strip(card.title());
-            String wrapped = TalkText.wrap("§f§l" + title, 210);
-            sh.titleLines = Math.max(1, wrapped.split("\n", -1).length);
-            float ratio = titleScale / sh.scale;
-            for (String l : wrapped.split("\n", -1)) {
-                width = Math.max(width, Math.round((TalkChrome.legacyWidth(l) + 8) * ratio));
-            }
-            sh.titleRows = Math.max(1, (int) Math.ceil(sh.titleLines * ratio + 0.15));
-            lines += sh.titleRows;
-            lines++; // breath under the title
-            sh.firstBodyRow = lines;
-            for (Row row : card.rows()) {
-                width = Math.max(width, rowWidth(row) + 8);
-                lines++;
-            }
-            if (card.footer() != null) {
-                lines++;
-                for (String foot : footerLines(card)) {
-                    lines++;
-                    width = Math.max(width, TalkChrome.legacyWidth(foot) + 8);
-                }
-            }
-        } else {
-            width = Math.max(width, TalkChrome.legacyWidth("§l" + toastGlyph(card) + " " + TalkText.strip(card.title())) + 10);
-            lines = 1;
-            sh.firstBodyRow = 1;
-            for (Row row : card.rows()) {
-                width = Math.max(width, TalkChrome.legacyWidth(row.text()) + 10);
-                lines++;
-            }
-            for (String foot : footerLines(card)) {
-                width = Math.max(width, TalkChrome.legacyWidth(foot) + 10);
-                lines++;
-            }
-        }
-        sh.lines = Math.max(1, lines);
-        sh.widthPx = Math.max(60, width);
-        float w = sh.widthPx + 1f;
-        float h = sh.lines * (float) LINE;
-        sh.rimSx = (w + 2f * TalkChrome.RIM_PX) / w;
-        sh.rimSy = (h + 2f * TalkChrome.RIM_PX) / h;
-
+        sh.lift = big ? -0.05f : 0.08f;
         Location eye = player.getEyeLocation();
-        float d = (float) depth;
-        TextColor accent = accent(card);
-        TextDisplay body = spawnText(eye, td -> {
-            TalkChrome.base(td);
-            td.setAlignment(TextDisplay.TextAlignment.CENTER);
-            td.setLineWidth(600);
-            td.setBackgroundColor(TalkChrome.ink(big ? 226 : TalkChrome.CARD_ALPHA));
-        });
-        TextDisplay rim = spawnText(eye, td -> {
-            TalkChrome.base(td);
-            td.setShadowed(false);
-            td.setAlignment(TextDisplay.TextAlignment.CENTER);
-            td.setLineWidth(600);
-            td.setTextOpacity(INVISIBLE_TEXT);
-            td.setBackgroundColor(TalkChrome.rim(accent));
-        });
-        if (body == null || rim == null) {
-            killQuiet(body);
-            killQuiet(rim);
+        if (big) {
+            buildBig(sh, eye);
+        } else {
+            buildToast(sh, eye);
+        }
+        if (sh.pieces.isEmpty()) {
             return null;
         }
-        sh.body = new Piece(body, 0f, 0f, -d, sh.scale);
-        sh.rim = new Piece(rim, 0f, 0f, -d - RIM_DEPTH, sh.scale);
-        if (big) {
-            TextDisplay title = spawnText(eye, td -> {
-                TalkChrome.base(td);
-                td.setAlignment(TextDisplay.TextAlignment.CENTER);
-                td.setLineWidth(600);
-                td.setBackgroundColor(TalkChrome.none());
-            });
-            if (title != null) {
-                // the title band: rows 1..titleRows from the top, the title centred in it
-                float bandBottomPx = (sh.lines - 1 - sh.titleRows) * (float) LINE;
-                float titleHeightPx = sh.titleLines * LINE * (titleScale / sh.scale);
-                float bottomPx = bandBottomPx + (sh.titleRows * LINE - titleHeightPx) / 2f;
-                float centerPx = bottomPx + titleHeightPx / 2f - sh.lines * LINE / 2f;
-                sh.title = new Piece(title, 0f, centerPx * PX * sh.scale, -d + 0.004f, titleScale);
-                title.text(titleText(card));
-            }
-            for (int i = 0; i < card.rows().size(); i++) {
-                Row row = card.rows().get(i);
-                if (row.icon() == null || row.icon().getType().isAir()) {
-                    continue;
-                }
-                int r = sh.firstBodyRow + i;
-                float rowCenterPx = (sh.lines - 1 - r) * (float) LINE + LINE / 2f - sh.lines * LINE / 2f;
-                float leftPx = -rowWidth(row) / 2f + 7f;
-                boolean block = row.icon().getType().isBlock();
-                float size = LINE * PX * sh.scale * (block ? 1.55f : 1.2f);
-                ItemStack icon = row.icon().clone();
-                icon.setAmount(1);
-                ItemDisplay item = spawn(eye, ItemDisplay.class, id -> {
-                    id.setBillboard(Display.Billboard.CENTER);
-                    id.setBrightness(new Display.Brightness(15, 15));
-                    id.setItemStack(icon);
-                    id.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
-                });
-                if (item != null) {
-                    sh.icons.add(new Piece(item, leftPx * PX * sh.scale, rowCenterPx * PX * sh.scale, -d + 0.006f, size));
-                    sh.iconRow.add(i);
-                }
-            }
-        }
-        float entry = big ? -0.06f : 0.10f;
-        sh.body.lift = entry;
-        sh.rim.lift = entry;
-        render(sh, 0);
-        for (Piece p : pieces(sh)) {
+        // back to front: the client draws them in the order it learns of them
+        for (Piece p : sh.pieces) {
             applyNow(sh, p);
             player.showEntity(plugin, p.display);
         }
-        sh.revealEnd = big ? 14L + card.rows().size() * 5L : 6L;
-        // a toast with more to read stays a little longer
-        int extra = big ? 0 : 14 * Math.max(0, card.rows().size() + footerLines(card).length - 1);
-        sh.endAt = tick + sh.revealEnd + (big ? bigHold : toastHold + extra);
         if (big) {
+            sh.revealEnd = 12L + sh.tiles.size() * 5L + sh.rows * 4L + 4L;
+            sh.endAt = tick + sh.revealEnd + bigHold;
             player.playSound(player.getLocation(), Sound.UI_TOAST_IN, SoundCategory.MASTER, 0.9f, 1.0f);
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.75f, 1.05f);
         } else {
+            // a toast with more to read stays a little longer
+            int extra = 14 * Math.max(0, card.rows().size() + footerLines(card).length - 1);
+            sh.revealEnd = 6L;
+            sh.endAt = tick + sh.revealEnd + toastHold + extra;
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.MASTER, 0.55f, 1.55f);
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.MASTER, 0.6f, 1.3f);
         }
         return sh;
     }
 
-    private void render(Shown sh, long t) {
-        if (sh.body == null || !sh.body.display.isValid()) {
-            return;
-        }
-        Component text = panelText(sh, t);
-        ((TextDisplay) sh.body.display).text(text);
-        ((TextDisplay) sh.rim.display).text(text);
-    }
-
-    private Component panelText(Shown sh, long t) {
+    /**
+     * Crest, rays, ribbon, plate, title, slots, list, footer. Measured down from the plate's top edge ({@code yd}),
+     * then centred: the crest's top and the plate's point are as far above and below the card's centre.
+     */
+    private void buildBig(Shown sh, Location eye) {
         Card c = sh.card;
         TextColor accent = accent(c);
-        TextColor ink = TalkChrome.inkText(accent);
-        List<Component> rows = new ArrayList<>();
-        if (c.kind() == Kind.BIG) {
-            boolean twinkle = t > 0 && t < 48 && (t / 5) % 2 == 1;
-            String star = twinkle ? "✧" : "✦";
-            String header = TalkChrome.smallCaps(c.header() == null ? "" : TalkText.strip(c.header()));
-            rows.add(Component.text(star + "  ", accent)
-                    .append(Component.text(header, TalkChrome.mix(accent, TalkChrome.TEXT, 0.25)))
-                    .append(Component.text("  " + star, accent)));
-            for (int i = 0; i < sh.titleRows + 1; i++) {
-                rows.add(Component.text(" "));
-            }
-            for (int i = 0; i < c.rows().size(); i++) {
-                Row row = c.rows().get(i);
-                String pad = row.icon() != null && !row.icon().getType().isAir() ? "    " : "";
-                if (i > sh.revealed) {
-                    rows.add(Component.text(pad + hidden(row.text()), ink));
-                } else {
-                    rows.add(Component.text(pad).append(counted(sh, i, row.text(), ink)));
-                }
-            }
-            if (c.footer() != null) {
-                rows.add(Component.text(" "));
-                for (String foot : footerLines(c)) {
-                    rows.add(sh.footerShown
-                            ? Component.text("", TalkChrome.MUTED).append(LEGACY.deserialize(foot))
-                            : Component.text(hidden(foot), ink));
-                }
-            }
-        } else {
-            rows.add(Component.text(toastGlyph(c) + " ", c.header() == null ? TalkChrome.READY : accent(c))
-                    .append(Component.text(TalkText.strip(c.title() == null ? "" : c.title()), TalkChrome.TEXT,
-                            TextDecoration.BOLD)));
-            for (Row row : c.rows()) {
-                rows.add(Component.text("", TalkChrome.MUTED).append(LEGACY.deserialize(row.text())));
-            }
-            for (String foot : footerLines(c)) {
-                rows.add(Component.text("", TalkChrome.FAINT).append(LEGACY.deserialize(foot)));
+        float ts = titleScale / sh.scale;
+        List<Row> tiles = new ArrayList<>();
+        List<Row> list = new ArrayList<>();
+        for (Row row : c.rows()) {
+            if (tiles.size() < 5 && hasIcon(row) && COUNT.matcher(row.text()).matches()) {
+                tiles.add(row);
+            } else {
+                list.add(row);
             }
         }
-        Component out = Component.empty();
-        for (int i = 0; i < rows.size(); i++) {
-            if (i > 0) {
-                out = out.append(Component.newline());
+        String header = TalkText.strip(c.header() == null ? "" : c.header()).toUpperCase(Locale.ROOT);
+        String[] titleLines = TalkText.strip(TalkText.wrap("§l" + TalkText.strip(c.title() == null ? "" : c.title()), 150))
+                .split("\n", -1);
+        float titleW = 0f;
+        for (String line : titleLines) {
+            titleW = Math.max(titleW, TalkChrome.width(line, true) * ts);
+        }
+        int n = tiles.size();
+        float[] tileW = new float[n];
+        String[] tileName = new String[n];
+        String[] tilePrefix = new String[n];
+        long[] tileTarget = new long[n];
+        float tilesW = 0f;
+        for (int i = 0; i < n; i++) {
+            Matcher m = COUNT.matcher(tiles.get(i).text());
+            if (!m.matches()) {
+                continue;
             }
-            out = out.append(Component.text(" ")).append(rows.get(i)).append(Component.text(" "));
+            tilePrefix[i] = m.group(1);
+            tileTarget[i] = Long.parseLong(m.group(2));
+            tileName[i] = TalkText.strip(m.group(3)).trim();
+            float amountW = TalkChrome.width("+" + m.group(2), true);
+            float nameW = TalkChrome.width(tileName[i], false) * NAME_SCALE;
+            tileW[i] = Math.max(32f, Math.max(amountW + 10f, nameW + 10f));
+            tilesW += tileW[i] + (i > 0 ? TILE_GAP : 0f);
+        }
+        float listW = 0f;
+        for (Row row : list) {
+            listW = Math.max(listW, TalkChrome.legacyWidth(row.text()) + (hasIcon(row) ? 13f : 0f));
+        }
+        String[] foot = footerLines(c);
+        float footW = 0f;
+        for (String line : foot) {
+            footW = Math.max(footW, TalkChrome.legacyWidth(line) * FOOT_SCALE);
+        }
+        float inner = Math.max(150f, Math.max(titleW + 10f, Math.max(tilesW, Math.max(listW + 4f, footW))));
+        inner = Math.max(inner, TalkChrome.width(header, true) - 6f);
+        float pw = inner + 26f;
+        float rw = pw + 22f;
+        float rh = RIBBON_H;
+
+        float y = rh / 2f + 9f;
+        float titleH = (titleLines.length * 10f - 2f) * ts;
+        float titleCy = y + titleH / 2f;
+        y += titleH + 7f;
+        float divY = y;
+        y += 8f;
+        float slotCy = 0f;
+        float amountCy = 0f;
+        float nameCy = 0f;
+        if (n > 0) {
+            slotCy = y + SLOT / 2f;
+            amountCy = y + SLOT + 7f;
+            nameCy = amountCy + 9f;
+            y = nameCy + 7f;
+        }
+        float listTop = y;
+        y += 12f * list.size() + (list.isEmpty() ? 0f : 3f);
+        float footCy = 0f;
+        if (foot.length > 0) {
+            float footH = (foot.length * 10f - 2f) * FOOT_SCALE;
+            footCy = y + 2f + footH / 2f;
+            y = footCy + footH / 2f + 7f;
+        }
+        float ph = y + 5f;
+        float crestYd = -(rh / 2f + 20f);
+        // card y (up) of a yd (down from the plate's top): mid - yd
+        float mid = ((crestYd - 23f) + (ph + 13f)) / 2f;
+        float crestY = mid - crestYd;
+
+        // rays: a fan rising behind the crest, long and short
+        for (int i = 0; i < RAYS.length; i++) {
+            int order = Math.abs(i - RAYS.length / 2);
+            if (i % 2 == 0) {
+                ray(sh, eye, order, crestY, 22f, 26f, 3.2f, RAYS[i], argb(accent, 125));
+                ray(sh, eye, order, crestY, 48f, 18f, 2.0f, RAYS[i], argb(accent, 58));
+            } else {
+                ray(sh, eye, order, crestY, 22f, 20f, 2.0f, RAYS[i], argb(accent, 72));
+            }
+        }
+        TextColor halo = TalkChrome.mix(accent, WHITE, 0.25);
+        diamond(sh, eye, HALO, 0, 0f, crestY, 74f, Z_HALO, argb(halo, 30));
+        diamond(sh, eye, HALO, 1, 0f, crestY, 58f, Z_HALO + 0.0004f, argb(halo, 58));
+        // ribbon tails, behind the plate
+        Color tail = argb(TalkChrome.mix(accent, BLACK, 0.5), 255);
+        for (int side = -1; side <= 1; side += 2) {
+            rect(sh, eye, FRAME, 0, side * (rw / 2f + 7f), mid - 6f, 24f, 12f, 0f, Z_TAIL, tail);
+        }
+        // plate: frame, body, the point below, a fine inner line
+        Color frame = argb(TalkChrome.mix(accent, TalkChrome.INK, 0.38), 255);
+        float plateY = mid - ph / 2f;
+        float pointY = mid - ph;
+        rect(sh, eye, FRAME, 0, 0f, plateY, pw + 3f, ph + 3f, 0f, Z_FRAME, frame);
+        diamond(sh, eye, FRAME, 0, 0f, pointY, 30f, Z_FRAME, frame);
+        Color ink = TalkChrome.ink(246);
+        rect(sh, eye, FRAME, 0, 0f, plateY, pw, ph, 0f, Z_PLATE, ink);
+        diamond(sh, eye, FRAME, 0, 0f, pointY, 26f, Z_PLATE, ink);
+        rect(sh, eye, FRAME, 0, 0f, plateY - 1f, pw - 8f, ph - 10f, 0f, Z_INNER,
+                argb(TalkChrome.mix(accent, TalkChrome.INK, 0.74), 255));
+        rect(sh, eye, FRAME, 0, 0f, plateY - 1f, pw - 10f, ph - 12f, 0f, Z_INNER + 0.0004f,
+                Color.fromARGB(255, 22, 21, 32));
+        Color gold = argb(accent, 255);
+        for (int side = -1; side <= 1; side += 2) {
+            diamond(sh, eye, FRAME, 0, side * pw / 2f, pointY, 8f, Z_STUD, gold);
+        }
+        diamond(sh, eye, FRAME, 0, 0f, mid - (ph + 9f), 6f, Z_STUD, gold);
+        // folds where the band turns back into its tails
+        Color fold = argb(TalkChrome.mix(accent, BLACK, 0.68), 255);
+        for (int side = -1; side <= 1; side += 2) {
+            diamond(sh, eye, FRAME, 0, side * (rw / 2f - 4f), mid - rh / 2f, 10f, Z_FOLD, fold);
+        }
+        // the band: pointed ends, a lit top edge and a shaded bottom edge, the header on it
+        Color band = argb(TalkChrome.mix(accent, BLACK, 0.1), 255);
+        rect(sh, eye, FRAME, 0, 0f, mid, rw, rh, 0f, Z_BAND, band);
+        for (int side = -1; side <= 1; side += 2) {
+            diamond(sh, eye, FRAME, 0, side * rw / 2f, mid, rh, Z_BAND, band);
+        }
+        rect(sh, eye, FRAME, 0, 0f, mid + rh / 2f - 1.5f, rw, 3f, 0f, Z_BAND + 0.0004f,
+                argb(TalkChrome.mix(accent, WHITE, 0.4), 255));
+        rect(sh, eye, FRAME, 0, 0f, mid - rh / 2f + 1.25f, rw, 2.5f, 0f, Z_BAND + 0.0004f,
+                argb(TalkChrome.mix(accent, BLACK, 0.38), 255));
+        text(sh, eye, FRAME, 0, 0f, mid - 0.3f,
+                Component.text(header, TalkChrome.mix(accent, BLACK, 0.83), TextDecoration.BOLD), 1, 1f, Z_TEXT,
+                false, TextDisplay.TextAlignment.CENTER, (byte) -1);
+        // crest and its item
+        diamond(sh, eye, CREST, 0, 0f, crestY, 47f, Z_CREST, argb(TalkChrome.mix(accent, WHITE, 0.35), 255));
+        diamond(sh, eye, CREST, 0, 0f, crestY, 43f, Z_CREST + 0.0004f, argb(TalkChrome.mix(accent, BLACK, 0.3), 255));
+        diamond(sh, eye, CREST, 0, 0f, crestY, 37f, Z_CREST + 0.0008f, Color.fromARGB(255, 26, 24, 38));
+        ItemStack emblem = emblem(c);
+        item(sh, eye, EMBLEM, 0, 0f, crestY, emblem.getType().isBlock() ? 27f : 23f, emblem, Z_EMBLEM);
+        // title
+        sh.titleText = String.join("\n", titleLines);
+        sh.titleInk = TalkChrome.mix(accent, WHITE, 0.82);
+        sh.title = text(sh, eye, TITLE, 0, 0f, mid - titleCy, titleText(sh, -1.0), titleLines.length, ts, Z_TEXT,
+                true, TextDisplay.TextAlignment.CENTER, INVISIBLE_TEXT);
+        // divider
+        Color line = argb(TalkChrome.mix(accent, TalkChrome.INK, 0.3), 255);
+        rect(sh, eye, FRAME, 0, -30f, mid - divY, 44f, 1f, 0f, Z_DETAIL, line);
+        rect(sh, eye, FRAME, 0, 30f, mid - divY, 44f, 1f, 0f, Z_DETAIL, line);
+        diamond(sh, eye, FRAME, 0, 0f, mid - divY, 6f, Z_DETAIL, gold);
+        // reward slots
+        Color rim = argb(TalkChrome.mix(accent, TalkChrome.INK, 0.55), 255);
+        Color slot = Color.fromARGB(255, 31, 29, 44);
+        float x = -tilesW / 2f;
+        for (int i = 0; i < n; i++) {
+            float tx = x + tileW[i] / 2f;
+            rect(sh, eye, TILE, i, tx, mid - slotCy, SLOT + 2f, SLOT + 2f, 0f, Z_DETAIL, rim);
+            rect(sh, eye, TILE, i, tx, mid - slotCy, SLOT, SLOT, 0f, Z_DETAIL + 0.0004f, slot);
+            ItemStack icon = tiles.get(i).icon();
+            item(sh, eye, TILE_ICON, i, tx, mid - slotCy, icon.getType().isBlock() ? 20f : 17f, icon, Z_ICON);
+            String prefix = tilePrefix[i] == null ? "" : tilePrefix[i];
+            Piece amount = text(sh, eye, TILE_TEXT, i, tx, mid - amountCy, amountText(prefix, tileTarget[i]), 1, 1f,
+                    Z_TEXT, true, TextDisplay.TextAlignment.CENTER, INVISIBLE_TEXT);
+            text(sh, eye, TILE_TEXT, i, tx, mid - nameCy,
+                    Component.text(tileName[i] == null ? "" : tileName[i], TalkChrome.MUTED), 1, NAME_SCALE, Z_TEXT,
+                    true, TextDisplay.TextAlignment.CENTER, INVISIBLE_TEXT);
+            if (amount != null) {
+                sh.tiles.add(new Tile(amount, prefix, tileTarget[i]));
+            }
+            x += tileW[i] + TILE_GAP;
+        }
+        // other rows: icon and text, the block centred
+        float left = -listW / 2f;
+        for (int i = 0; i < list.size(); i++) {
+            Row row = list.get(i);
+            float ry = mid - (listTop + 6f + i * 12f);
+            float tx = left;
+            if (hasIcon(row)) {
+                item(sh, eye, ROW_ICON, i, left + 5f, ry, 10f, row.icon(), Z_ICON);
+                tx = left + 13f;
+            }
+            float w = TalkChrome.legacyWidth(row.text());
+            text(sh, eye, ROW, i, tx + w / 2f, ry, Component.text("", TalkChrome.TEXT).append(LEGACY.deserialize(row.text())),
+                    1, 1f, Z_TEXT, true, TextDisplay.TextAlignment.LEFT, INVISIBLE_TEXT);
+        }
+        sh.rows = list.size();
+        if (foot.length > 0) {
+            Component body = Component.empty();
+            for (int i = 0; i < foot.length; i++) {
+                if (i > 0) {
+                    body = body.append(Component.newline());
+                }
+                body = body.append(Component.text("", TalkChrome.MUTED).append(LEGACY.deserialize(foot[i])));
+            }
+            text(sh, eye, FOOTER, 0, 0f, mid - footCy, body, foot.length, FOOT_SCALE, Z_TEXT, true,
+                    TextDisplay.TextAlignment.CENTER, INVISIBLE_TEXT);
+            sh.footer = true;
+        }
+        // where everything starts before its turn
+        for (Piece p : sh.pieces) {
+            switch (p.role) {
+                case RAY -> {
+                    p.stretch = 0f;
+                    if (p.display instanceof TextDisplay td) {
+                        td.setBackgroundColor(Color.fromARGB(0, p.color.getRed(), p.color.getGreen(), p.color.getBlue()));
+                    }
+                }
+                case HALO, TILE, TILE_ICON, ROW_ICON -> p.factor = 0f;
+                case CREST, EMBLEM -> {
+                    p.factor = 0f;
+                    p.dy = 16f;
+                }
+                case TITLE -> p.dy = -3f;
+                case ROW -> p.dx = -8f;
+                default -> {
+                }
+            }
+        }
+    }
+
+    /** Frame, plate, the bar along the bottom, the badge on the left edge, the lines. */
+    private void buildToast(Shown sh, Location eye) {
+        Card c = sh.card;
+        TextColor accent = c.accent() == null ? TalkChrome.READY : c.accent();
+        List<Component> lines = new ArrayList<>();
+        String title = TalkText.strip(c.title() == null ? "" : c.title());
+        lines.add(Component.text(title, TalkChrome.TEXT, TextDecoration.BOLD));
+        int w = TalkChrome.width(title, true);
+        for (Row row : c.rows()) {
+            lines.add(Component.text("", TalkChrome.MUTED).append(LEGACY.deserialize(row.text())));
+            w = Math.max(w, TalkChrome.legacyWidth(row.text()));
+        }
+        for (String foot : footerLines(c)) {
+            String plain = TalkText.strip(foot);
+            int cut = plain.indexOf(':');
+            if (cut > 0 && cut <= 14) {
+                lines.add(Component.text(plain.substring(0, cut + 1), TalkChrome.mix(accent, TalkChrome.MUTED, 0.35))
+                        .append(Component.text(plain.substring(cut + 1), TalkChrome.MUTED)));
+            } else {
+                lines.add(Component.text(plain, TalkChrome.MUTED));
+            }
+            w = Math.max(w, TalkChrome.width(plain, false));
+        }
+        int n = lines.size();
+        float ph = n * 10f + 7f;
+        float pw = w + 34f;
+        float left = -pw / 2f;
+        rect(sh, eye, FRAME, 0, 0f, 0f, pw + 2f, ph + 2f, 0f, 0f, argb(TalkChrome.mix(accent, TalkChrome.INK, 0.62), 255));
+        rect(sh, eye, FRAME, 0, 0f, 0f, pw, ph, 0f, 0.0004f, TalkChrome.ink(232));
+        sh.bar = rect(sh, eye, BAR, 0, left, -ph / 2f + 0.75f, pw, 1.5f, 0f, 0.0008f, argb(accent, 230));
+        float bx = left + 3f;
+        diamond(sh, eye, BADGE, 0, bx, 0f, 23f, 0.0012f, argb(TalkChrome.mix(accent, BLACK, 0.45), 255));
+        diamond(sh, eye, BADGE, 0, bx, 0f, 19f, 0.0016f, argb(accent, 255));
+        TextColor markInk = TalkChrome.mix(accent, BLACK, 0.82);
+        Color mark = argb(markInk, 255);
+        String glyph = toastGlyph(c);
+        if ("✔".equals(glyph)) {
+            stroke(sh, eye, bx - 3.6f, 0.2f, bx - 1.2f, -2.4f, 2.3f, mark);
+            stroke(sh, eye, bx - 1.2f, -2.4f, bx + 3.8f, 3.0f, 2.3f, mark);
+        } else if ("✦".equals(glyph)) {
+            diamond(sh, eye, BADGE, 0, bx, 0f, 10f, 0.002f, mark);
+            diamond(sh, eye, BADGE, 0, bx, 0f, 5f, 0.0024f, argb(TalkChrome.mix(accent, WHITE, 0.55), 255));
+        } else {
+            text(sh, eye, BADGE, 0, bx + 0.5f, 0.5f, Component.text(glyph, markInk, TextDecoration.BOLD), 1, 1f, 0.002f,
+                    false, TextDisplay.TextAlignment.CENTER, (byte) -1);
+        }
+        Component body = Component.empty();
+        for (int i = 0; i < n; i++) {
+            if (i > 0) {
+                body = body.append(Component.newline());
+            }
+            body = body.append(lines.get(i));
+        }
+        text(sh, eye, BODY, 0, left + 17f + w / 2f, 0f, body, n, 1f, 0.002f, true, TextDisplay.TextAlignment.LEFT,
+                INVISIBLE_TEXT);
+        for (Piece p : sh.pieces) {
+            if (p.role == BADGE) {
+                p.factor = 0f;
+            }
+        }
+    }
+
+    /** The title, with a glint over it at {@code at} (0..1 left to right; outside = none). */
+    private Component titleText(Shown sh, double at) {
+        String text = sh.titleText;
+        int letters = text.replace("\n", "").length();
+        double pos = at < 0 ? -100.0 : -2.0 + at * (letters + 4.0);
+        Component out = Component.empty();
+        int i = 0;
+        for (int k = 0; k < text.length(); k++) {
+            char ch = text.charAt(k);
+            if (ch == '\n') {
+                out = out.append(Component.newline());
+                continue;
+            }
+            double glow = Math.max(0.0, 1.0 - Math.abs(i - pos) / 2.2);
+            out = out.append(Component.text(String.valueOf(ch), TalkChrome.mix(sh.titleInk, WHITE, glow * 0.95),
+                    TextDecoration.BOLD));
+            i++;
         }
         return out;
     }
 
-    /** "+250 Coins" counting up for a few ticks after its row came in; the box never changes width. */
-    private Component counted(Shown sh, int index, String legacy, TextColor ink) {
-        Long from = sh.countFrom.get(index);
-        Matcher m = COUNT.matcher(legacy);
-        if (from == null || !m.matches()) {
-            return Component.text("", TalkChrome.TEXT).append(LEGACY.deserialize(legacy));
-        }
-        long target = Long.parseLong(m.group(2));
-        double k = Math.min(1.0, (tick - from) / 6.0);
-        double eased = 1.0 - Math.pow(1.0 - k, 3);
-        long value = Math.round(target * eased);
-        String digits = String.valueOf(value);
-        String full = m.group(2);
-        String pad = full.length() > digits.length() ? "0".repeat(full.length() - digits.length()) : "";
-        return Component.text("", TalkChrome.TEXT)
-                .append(LEGACY.deserialize(m.group(1) + "+"))
-                .append(Component.text(pad, ink))
-                .append(LEGACY.deserialize(m.group(1) + digits + m.group(3)));
+    private static Component amountText(String prefix, long value) {
+        return LEGACY.deserialize(prefix + "§l+" + value);
     }
 
-    private Component titleText(Card c) {
-        String title = c.title() == null ? "" : TalkText.strip(c.title());
-        String wrapped = TalkText.wrap(title, 210);
-        return Component.text(wrapped, TalkChrome.mix(accent(c), TextColor.color(0xFFFFFF), 0.35), TextDecoration.BOLD);
+    private static void setAmount(Tile tile, long value) {
+        if (tile.amount.display instanceof TextDisplay td && td.isValid()) {
+            td.text(amountText(tile.prefix, value));
+        }
+    }
+
+    /** The item in the crest: the card's own, else the first block among the row icons, else a nether star. */
+    private static ItemStack emblem(Card c) {
+        if (c.emblem() != null && !c.emblem().getType().isAir()) {
+            return c.emblem();
+        }
+        ItemStack first = null;
+        for (Row row : c.rows()) {
+            if (!hasIcon(row)) {
+                continue;
+            }
+            if (row.icon().getType().isBlock()) {
+                return row.icon();
+            }
+            if (first == null) {
+                first = row.icon();
+            }
+        }
+        return first != null ? first : new ItemStack(Material.NETHER_STAR);
+    }
+
+    private static boolean hasIcon(Row row) {
+        return row != null && row.icon() != null && !row.icon().getType().isAir();
     }
 
     /** A toast's mark: ✔ for something done, or the card's own (its {@code header}, e.g. ✦ for something new). */
@@ -758,107 +1137,171 @@ public final class HudCards implements Listener {
         return c.header() == null || c.header().isBlank() ? "✔" : TalkText.strip(c.header());
     }
 
-    private static String header(Card c) {
-        return "✦  " + TalkChrome.smallCaps(c.header() == null ? "" : TalkText.strip(c.header())) + "  ✦";
-    }
-
-    private static int rowWidth(Row row) {
-        boolean icon = row.icon() != null && !row.icon().getType().isAir();
-        return TalkChrome.legacyWidth(row.text()) + (icon ? 16 : 0);
-    }
-
-    /** Same glyphs (so the same box) with every colour taken out: drawn in the panel's own ink. */
-    private static String hidden(String legacy) {
-        return legacy == null ? "" : legacy.replaceAll("(?i)§[0-9a-fr]", "");
-    }
-
     private static TextColor accent(Card c) {
         return c.accent() == null ? TalkChrome.QUEST : c.accent();
+    }
+
+    private static Color argb(TextColor c, int alpha) {
+        return Color.fromARGB(Math.max(0, Math.min(255, alpha)), c.red(), c.green(), c.blue());
+    }
+
+    /* =====================================================================
+     * Pieces
+     * ===================================================================== */
+
+    /** A plain shape: a " " text display whose background is the shape. */
+    private Piece rect(Shown sh, Location eye, int role, int index, float cx, float cy, float w, float h, float deg,
+                       float z, Color color) {
+        TextDisplay td = spawnText(eye, d -> {
+            TalkChrome.base(d);
+            d.setShadowed(false);
+            d.setLineWidth(400);
+            d.setBackgroundColor(color);
+            d.text(Component.text(" "));
+        });
+        if (td == null) {
+            return null;
+        }
+        Piece p = new Piece(td, Form.RECT, role, index, cx, cy, w, h, deg, z, 10, color);
+        sh.pieces.add(p);
+        return p;
+    }
+
+    private Piece diamond(Shown sh, Location eye, int role, int index, float cx, float cy, float diag, float z,
+                          Color color) {
+        float side = diag / (float) Math.sqrt(2.0);
+        return rect(sh, eye, role, index, cx, cy, side, side, 45f, z, color);
+    }
+
+    /** A bar shining out of the crest: from radius {@code r0}, {@code deg} clockwise from straight up. */
+    private void ray(Shown sh, Location eye, int order, float crestY, float r0, float len, float thick, int deg,
+                     Color color) {
+        double a = Math.toRadians(deg);
+        rect(sh, eye, RAY, order, (float) Math.sin(a) * r0, crestY + (float) Math.cos(a) * r0, thick, len, -deg, 0f,
+                color);
+    }
+
+    /** A stroke from one point to another (the badge's check). */
+    private void stroke(Shown sh, Location eye, float x1, float y1, float x2, float y2, float thick, Color color) {
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float len = (float) Math.sqrt(dx * dx + dy * dy);
+        rect(sh, eye, BADGE, 0, (x1 + x2) / 2f, (y1 + y2) / 2f, thick, len + thick * 0.9f,
+                (float) Math.toDegrees(Math.atan2(-dx, dy)), 0.002f, color);
+    }
+
+    /** Text centred on (cx, cy) (its glyphs, not its line spacing). */
+    private Piece text(Shown sh, Location eye, int role, int index, float cx, float cy, Component text, int lines,
+                       float scale, float z, boolean shadow, TextDisplay.TextAlignment align, byte opacity) {
+        TextDisplay td = spawnText(eye, d -> {
+            TalkChrome.base(d);
+            d.setShadowed(shadow);
+            d.setAlignment(align);
+            d.setLineWidth(1000);
+            d.setBackgroundColor(TalkChrome.none());
+            d.setTextOpacity(opacity);
+            d.text(text);
+        });
+        if (td == null) {
+            return null;
+        }
+        Piece p = new Piece(td, Form.TEXT, role, index, cx, cy, scale, 0f, 0f, z, Math.max(1, lines) * 10, null);
+        sh.pieces.add(p);
+        return p;
+    }
+
+    private Piece item(Shown sh, Location eye, int role, int index, float cx, float cy, float size, ItemStack stack,
+                       float z) {
+        ItemStack icon = stack.clone();
+        icon.setAmount(1);
+        ItemDisplay id = spawn(eye, ItemDisplay.class, d -> {
+            d.setBillboard(Display.Billboard.CENTER);
+            d.setBrightness(new Display.Brightness(15, 15));
+            d.setItemStack(icon);
+            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
+        });
+        if (id == null) {
+            return null;
+        }
+        Piece p = new Piece(id, Form.ITEM, role, index, cx, cy, size, size, 0f, z, 0, null);
+        sh.pieces.add(p);
+        return p;
     }
 
     /* =====================================================================
      * Motion
      * ===================================================================== */
 
-    private List<Piece> pieces(Shown sh) {
-        List<Piece> out = new ArrayList<>(4 + sh.icons.size());
-        if (sh.rim != null) {
-            out.add(sh.rim);
-        }
-        if (sh.body != null) {
-            out.add(sh.body);
-        }
-        if (sh.title != null) {
-            out.add(sh.title);
-        }
-        out.addAll(sh.icons);
-        return out;
-    }
-
-    /** The piece's transformation at its current factor / lift, pulled in by {@code near}. */
+    /**
+     * The piece's transformation now. A shape's background spans X -2..3, Y 0..11 text px about the display's
+     * origin: scale it, turn it about the view axis, and shift it so its centre lands on the spot. Text is placed by
+     * its glyph box (X centre 0.5 px, Y centre lines × 5 + 1 px). Items sit on their centre, a little nearer.
+     */
     private Transformation at(Shown sh, Piece p) {
-        Transformation raw = rawAt(sh, p);
+        float unit = PX * sh.scale;
+        float g = sh.pop;
+        float f = g * p.factor;
+        float ay = (float) sh.centerY + sh.lift;
+        float az = (float) -depth + p.z;
+        Vector3f t;
+        Quaternionf left;
+        Vector3f s;
+        if (p.form == Form.RECT) {
+            float w = p.w;
+            float h = p.h;
+            float cx = p.cx + p.dx;
+            float cy = p.cy + p.dy;
+            double a = Math.toRadians(p.deg);
+            float cos = (float) Math.cos(a);
+            float sin = (float) Math.sin(a);
+            if (p.role == RAY) {
+                // grows out from its inner end
+                h = p.h * p.stretch;
+                cx += -sin * h / 2f;
+                cy += cos * h / 2f;
+            } else if (p.role == BAR) {
+                // runs down toward its left end
+                w = p.w * p.stretch;
+                cx += w / 2f;
+            }
+            float sx = Math.max(1.0E-4f, w * unit * f / (5f * PX));
+            float sy = Math.max(1.0E-4f, h * unit * f / (11f * PX));
+            float lx = 0.5f * PX * sx;
+            float ly = 5.5f * PX * sy;
+            t = new Vector3f(cx * unit * g - (cos * lx - sin * ly), ay + cy * unit * g - (sin * lx + cos * ly), az);
+            left = new Quaternionf().rotationZ((float) a);
+            s = new Vector3f(sx, sy, 1f);
+        } else if (p.form == Form.TEXT) {
+            float sc = Math.max(1.0E-4f, p.w * unit * f / PX);
+            t = new Vector3f((p.cx + p.dx) * unit * g - 0.5f * PX * sc,
+                    ay + (p.cy + p.dy) * unit * g - (p.textH / 2f + 1f) * PX * sc, az);
+            left = new Quaternionf();
+            s = new Vector3f(sc, sc, sc);
+        } else {
+            // nearer than the card: place and size shrink by the same ratio, so it lands on its spot on screen
+            float q = (float) ((depth - p.z) / depth);
+            float sc = Math.max(1.0E-4f, p.w * unit * f * q);
+            t = new Vector3f((p.cx + p.dx) * unit * g * q, (ay + (p.cy + p.dy) * unit * g) * q, az);
+            left = new Quaternionf().rotationY(p.spin);
+            s = new Vector3f(sc, sc, sc);
+        }
         float k = sh.near;
-        if (k >= 0.999f) {
-            return raw;
+        if (k < 0.999f) {
+            t.mul(k);
+            s.mul(k);
         }
-        return new Transformation(new Vector3f(raw.getTranslation()).mul(k), new Quaternionf(raw.getLeftRotation()),
-                new Vector3f(raw.getScale()).mul(k), new Quaternionf(raw.getRightRotation()));
+        return new Transformation(t, left, s, new Quaternionf());
     }
 
-    private Transformation rawAt(Shown sh, Piece p) {
-        float f = p.factor;
-        float y0 = (float) sh.centerY + p.lift;
-        if (p == sh.body || p == sh.rim) {
-            float s = sh.scale * f;
-            float bottom = y0 - sh.lines * LINE * PX * s / 2f;
-            if (p == sh.rim) {
-                return new Transformation(
-                        new Vector3f(0f, bottom - TalkChrome.RIM_PX * PX * s, p.z),
-                        new AxisAngle4f(),
-                        new Vector3f(s * sh.rimSx, s * sh.rimSy, s),
-                        new AxisAngle4f());
-            }
-            return new Transformation(new Vector3f(0f, bottom, p.z), new AxisAngle4f(),
-                    new Vector3f(s, s, s), new AxisAngle4f());
+    private void move(Shown sh, Piece p, int ticks) {
+        if (p != null && p.display.isValid()) {
+            TalkChrome.animate(p.display, at(sh, p), ticks);
         }
-        // Title and icons sit at a spot of the panel: that spot scales with the panel's own factor.
-        float panel = sh.body == null ? 1f : sh.body.factor;
-        float cx = p.x * panel;
-        float cy = y0 + p.y * panel;
-        if (p == sh.title) {
-            float s = p.scale * f;
-            float bottom = cy - sh.titleLines * LINE * PX * s / 2f;
-            return new Transformation(new Vector3f(cx, bottom, p.z), new AxisAngle4f(),
-                    new Vector3f(s, s, s), new AxisAngle4f());
-        }
-        float s = p.scale * f;
-        return new Transformation(new Vector3f(cx, cy, p.z), new AxisAngle4f(spinOf(p), 0f, 1f, 0f),
-                new Vector3f(s, s, s), new AxisAngle4f());
     }
 
-    private final Map<Piece, Float> spins = new HashMap<>();
-
-    private float spinOf(Piece p) {
-        Float a = spins.get(p);
-        return a == null ? 0f : a;
-    }
-
-    private void pose(Shown sh, Piece p, float factor, float lift, int ticks) {
-        if (sh == null || p == null) {
-            return;
-        }
-        p.factor = factor;
-        p.lift = lift;
-        TalkChrome.animate(p.display, at(sh, p), ticks);
-        if (p == sh.body) {
-            // title and icons hang on the panel: keep them in step
-            if (sh.title != null) {
-                TalkChrome.animate(sh.title.display, at(sh, sh.title), ticks);
-            }
-            for (Piece icon : sh.icons) {
-                TalkChrome.animate(icon.display, at(sh, icon), ticks);
-            }
+    private void moveAll(Shown sh, int ticks) {
+        for (Piece p : sh.pieces) {
+            move(sh, p, ticks);
         }
     }
 
@@ -868,76 +1311,29 @@ public final class HudCards implements Listener {
         p.display.setTransformation(at(sh, p));
     }
 
-    private void popIcon(Shown sh, int row) {
-        for (int i = 0; i < sh.icons.size(); i++) {
-            if (sh.iconRow.get(i) != row) {
-                continue;
-            }
-            Piece icon = sh.icons.get(i);
-            icon.factor = 1.22f;
-            TalkChrome.animate(icon.display, at(sh, icon), 3);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (icon.display.isValid() && sh.closeAt < 0) {
-                    icon.factor = 1f;
-                    TalkChrome.animate(icon.display, at(sh, icon), 4);
-                }
-            }, 3L);
+    /** Text opacity, eased over {@code ticks} (the client blends it like the transformation). */
+    private static void fade(Piece p, int opacity, int ticks) {
+        if (p != null && p.display instanceof TextDisplay td && td.isValid()) {
+            td.setInterpolationDelay(0);
+            td.setInterpolationDuration(Math.max(0, ticks));
+            td.setTextOpacity((byte) Math.max(0, Math.min(255, opacity)));
         }
     }
 
-    /** Block icons turn slowly once they are in. */
-    private void spin(Shown sh, long t) {
-        if (t % 10 != 0) {
-            return;
+    /** A shape's background colour, eased over {@code ticks}. */
+    private static void tint(Piece p, Color color, int ticks) {
+        if (p != null && color != null && p.display instanceof TextDisplay td && td.isValid()) {
+            td.setInterpolationDelay(0);
+            td.setInterpolationDuration(Math.max(0, ticks));
+            td.setBackgroundColor(color);
         }
-        for (int i = 0; i < sh.icons.size(); i++) {
-            Piece icon = sh.icons.get(i);
-            if (sh.iconRow.get(i) > sh.revealed || !icon.display.isValid()
-                    || !(icon.display instanceof ItemDisplay item) || item.getItemStack() == null
-                    || !item.getItemStack().getType().isBlock()) {
-                continue;
-            }
-            float a = spinOf(icon) + (float) (Math.PI / 3.0);
-            if (a > Math.PI * 2) {
-                a -= (float) (Math.PI * 2);
-            }
-            spins.put(icon, a);
-            TalkChrome.animate(icon.display, at(sh, icon), 10);
-        }
-    }
-
-    /** The rim flares up as the card lands, then settles. */
-    private void glow(Shown sh, boolean on) {
-        if (sh.rim == null || !sh.rim.display.isValid()) {
-            return;
-        }
-        TextColor a = accent(sh.card);
-        TextColor lit = TalkChrome.mix(a, TextColor.color(0xFFFFFF), 0.3);
-        TextDisplay rim = (TextDisplay) sh.rim.display;
-        rim.setInterpolationDelay(0);
-        rim.setInterpolationDuration(on ? 2 : 12);
-        rim.setBackgroundColor(on ? Color.fromARGB(235, lit.red(), lit.green(), lit.blue()) : TalkChrome.rim(a));
     }
 
     private void close(Player player, Shown sh) {
         sh.closeAt = tick;
-        float lift = sh.card.kind() == Kind.BIG ? 0.07f : 0.09f;
-        if (sh.body != null) {
-            pose(sh, sh.body, COLLAPSED, lift, 4);
-        }
-        if (sh.rim != null) {
-            pose(sh, sh.rim, COLLAPSED, lift, 4);
-        }
-        if (sh.title != null) {
-            sh.title.factor = COLLAPSED;
-            sh.title.lift = lift;
-            TalkChrome.animate(sh.title.display, at(sh, sh.title), 4);
-        }
-        for (Piece icon : sh.icons) {
-            icon.factor = COLLAPSED;
-            icon.lift = lift;
-            TalkChrome.animate(icon.display, at(sh, icon), 3);
-        }
+        sh.pop = COLLAPSED;
+        sh.lift = sh.card.kind() == Kind.BIG ? 0.07f : 0.09f;
+        moveAll(sh, 4);
         if (sh.card.kind() == Kind.BIG) {
             player.playSound(player.getLocation(), Sound.UI_TOAST_OUT, SoundCategory.MASTER, 0.6f, 1.1f);
         }
@@ -1010,9 +1406,8 @@ public final class HudCards implements Listener {
      * ===================================================================== */
 
     private void kill(Shown sh) {
-        for (Piece p : pieces(sh)) {
+        for (Piece p : sh.pieces) {
             killQuiet(p.display);
-            spins.remove(p);
         }
     }
 

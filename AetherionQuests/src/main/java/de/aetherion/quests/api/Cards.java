@@ -86,6 +86,15 @@ public final class Cards {
      */
     public static boolean big(Player player, String header, String title, List<String> lines, List<ItemStack> icons,
                               String next, String accent, String summary) {
+        return big(player, header, title, lines, icons, next, accent, summary, null);
+    }
+
+    /**
+     * Same, with the item that turns in the card's crest ({@code emblem}; null = the first block among the icons,
+     * else a nether star).
+     */
+    public static boolean big(Player player, String header, String title, List<String> lines, List<ItemStack> icons,
+                              String next, String accent, String summary, ItemStack emblem) {
         HudCards cards = HudCards.get();
         if (cards == null || title == null) {
             return false;
@@ -103,6 +112,6 @@ public final class Cards {
         }
         TextColor frame = accent == null ? TalkChrome.QUEST : TalkChrome.accent(TalkChrome.legacyColor(accent));
         return cards.show(player, new HudCards.Card(HudCards.Kind.BIG, header, title, frame, rows,
-                next == null || next.isBlank() ? null : next, summary));
+                next == null || next.isBlank() ? null : next, summary, emblem == null ? null : emblem.clone()));
     }
 }
