@@ -55,6 +55,9 @@ permissions:
   hush.bypass:
     description: Exempt from The Hush movement rules (pearls, flight, block edits)
     default: op
+  helios.enter:
+    description: May open Helios with /helios enter (players enter with a vial at the Star Ring)
+    default: op
   helios.admin:
     description: Helios Requiem admin tools (start, debug, skip, hp, attack, abort, restore)
     default: op

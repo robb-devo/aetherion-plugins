@@ -24,7 +24,8 @@ world:
   max-instances: 3
 
 entry:
-  # Permission needed for /helios enter (empty = everyone).
+  # Extra permission checked on every entry, vial door included (empty = none). The /helios enter command
+  # itself always needs helios.enter (op); players come in through the Star Ring with a Helios vial.
   permission: ""
   # Party members (AetherionItems party) within this radius of the leader come along.
   radius: 16

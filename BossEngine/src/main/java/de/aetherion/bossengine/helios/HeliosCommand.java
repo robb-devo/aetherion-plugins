@@ -21,7 +21,8 @@ import java.util.UUID;
 
 /**
  * <pre>
- * /helios enter                 start an instance for you (and your party, if you lead one)
+ * /helios enter                 start an instance for you and your party (staff: helios.enter; players
+ *                               enter with a Helios vial at the Star Ring on the Exile, A-17)
  * /helios leave                 leave your instance (counts as giving up)
  *
  * admin (helios.admin):
@@ -40,6 +41,8 @@ import java.util.UUID;
 public final class HeliosCommand implements TabExecutor {
 
     private static final String ADMIN = "helios.admin";
+    /** The raw door. Players come in through the Star Ring with a vial (ExileDoors → BossSpawnAccess). */
+    private static final String ENTER = "helios.enter";
 
     private final HeliosModule module;
     private final Map<UUID, BukkitTask> watchers = new HashMap<>();
@@ -73,7 +76,7 @@ public final class HeliosCommand implements TabExecutor {
     }
 
     private void help(CommandSender s) {
-        msg(s, "&6✦ Helios Requiem &8— &7/helios enter | leave");
+        msg(s, mayEnter(s) ? "&6✦ Helios Requiem &8— &7/helios enter | leave" : "&6✦ Helios Requiem &8— &7/helios leave");
         if (s.hasPermission(ADMIN)) {
             msg(s, "&8admin: &7start, list, debug [watch], skip, hp <pct>, attack <id>, abort [slot|all], restore <slot>, tp <slot>, reload");
         }
@@ -94,6 +97,11 @@ public final class HeliosCommand implements TabExecutor {
             msg(s, "Players only.");
             return;
         }
+        if (!mayEnter(p)) {
+            // A-17: no free door to a 52,000 HP boss. The vial at the Star Ring is the way in.
+            msg(p, "&7The dying star opens at the &eStar Ring&7 on the Exile, for a &eHelios vial&7.");
+            return;
+        }
         String result = module.enter(p);
         String text = switch (result.split(":")[0]) {
             case "ok" -> null;
@@ -109,6 +117,10 @@ public final class HeliosCommand implements TabExecutor {
         if (text != null) {
             msg(p, text);
         }
+    }
+
+    private static boolean mayEnter(CommandSender s) {
+        return s.hasPermission(ENTER) || s.hasPermission(ADMIN);
     }
 
     private void leave(CommandSender s) {
@@ -322,7 +334,7 @@ public final class HeliosCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            List<String> subs = new ArrayList<>(List.of("enter", "leave"));
+            List<String> subs = new ArrayList<>(mayEnter(sender) ? List.of("enter", "leave") : List.of("leave"));
             if (sender.hasPermission(ADMIN)) {
                 subs.addAll(List.of("start", "list", "debug", "skip", "hp", "attack", "abort", "restore", "tp", "reload"));
             }
