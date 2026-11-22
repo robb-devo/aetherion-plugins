@@ -210,6 +210,7 @@ public final class HudCards implements Listener {
         toastScale = (float) clamp(cfg.getDouble("hud-cards.toast-scale", 0.24), 0.08, 0.8);
         bigHold = (int) clamp(cfg.getInt("hud-cards.big-hold-ticks", 80), 30, 400);
         toastHold = (int) clamp(cfg.getInt("hud-cards.toast-hold-ticks", 56), 20, 300);
+        plugin.getLogger().info("Screen cards " + (enabled ? "on" : "off") + ".");
     }
 
     public void shutdown() {

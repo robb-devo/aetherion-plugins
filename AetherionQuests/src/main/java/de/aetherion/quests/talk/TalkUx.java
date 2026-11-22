@@ -286,6 +286,7 @@ public final class TalkUx implements Listener {
         paged = cfg.getBoolean("paged-talk.enabled", false);
         lastLineTicks = Math.max(60, cfg.getInt("paged-talk.last-line-seconds", 8) * 20);
         logMinLines = Math.max(1, cfg.getInt("paged-talk.log-min-lines", 2));
+        plugin.getLogger().info("Talk UX: paged talk " + (paged ? "on" : "off") + ".");
         de.aetherion.quests.dialog.DialogPace.configure(
                 cfg.getDouble("talk-ux.chars-per-tick", 2.2),
                 cfg.getLong("talk-ux.read-gap-ticks", 28L));
