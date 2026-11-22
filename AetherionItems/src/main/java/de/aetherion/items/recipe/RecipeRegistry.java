@@ -35,6 +35,9 @@ import java.util.Map;
 
 public class RecipeRegistry {
 
+    /** Off until the pinnacle key has a live boss to call (work list A-18, A-55). */
+    private static final boolean PINNACLE_KEY_CRAFTABLE = false;
+
 
     private final RecipeManager recipeManager;
 
@@ -1098,14 +1101,19 @@ public class RecipeRegistry {
         summons.put('P', de.aetherion.items.economy.Signatures.display("prize_crop"));
         summons.put('A', CompressedResource.DIAMOND.compacted());
         summons.put('E', CompressedResource.EMERALD.compacted());
-        registerSimple(
-                "aetherion_summons",
-                RecipeCategory.COMBAT,
-                customItem.createAetherionSummons(),
-                Rarity.MYTHIC,
-                List.of("HSC", "TDP", "AEA"),
-                summons
-        );
+        // A-18: the key still calls the retired open-world Aetherion raid ("Nothing answers") and would eat
+        // eight expensive parts, so the recipe stays out of the book until A-55 gives the key its real job
+        // (repeat key for the finale at the Great Gates). Item, value and dev give stay.
+        if (PINNACLE_KEY_CRAFTABLE) {
+            registerSimple(
+                    "aetherion_summons",
+                    RecipeCategory.COMBAT,
+                    customItem.createAetherionSummons(),
+                    Rarity.MYTHIC,
+                    List.of("HSC", "TDP", "AEA"),
+                    summons
+            );
+        }
 
         /*
          * DIVING SET (P2, fixes an orphan: factory + value, no recipe).
