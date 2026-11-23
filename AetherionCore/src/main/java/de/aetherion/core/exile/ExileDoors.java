@@ -61,7 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   gate. A player whose open story step sends them there needs no vial ({@code StoryAccess#wakesWithoutVial}). Caedmon's sword (a prop, {@link HollowSword}) climbs into the sky and comes down as the Hollow Sun; the
  *   music box on Elin's stage raises Seraphine's stage above the theatre; the star ring opens the Helios instance;
  *   the Maw takes you down to the Last Seed (World Eater site); the Great Doors open on Aetherion's Ashen Void.
- *   Without the vial a site says, in one line, what it wants.</li>
+ *   Without the vial a site says, in one line, what it wants and who brews it.</li>
  *   <li><b>District tells</b>: the first time you walk into a district, it says its name.</li>
  * </ul>
  */
@@ -593,8 +593,8 @@ public final class ExileDoors implements Listener {
         }
         hintCool.put(p.getUniqueId(), now + 2500L);
         String name = Say.t(p, vial.nameEn(), vial.nameDe());
-        bar(p, Say.t(p, "§7The vial of " + vial.color() + name + " §7is handed in here. §8Hold it and right-click.",
-                "§7Hier gibst du die Phiole für " + vial.color() + name + " §7ab. §8In die Hand nehmen, Rechtsklick."));
+        bar(p, Say.t(p, "§7The vial of " + vial.color() + name + " §7goes here. §8Hold it, right-click · the Keeper of The Last Bell brews it",
+                "§7Hier kommt die Phiole für " + vial.color() + name + " §7hin. §8In die Hand, Rechtsklick · der Wirt der Letzten Glocke braut sie"));
         p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.AMBIENT, 0.6f, 0.7f);
     }
 

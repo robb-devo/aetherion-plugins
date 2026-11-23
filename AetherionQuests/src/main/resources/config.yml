@@ -126,3 +126,13 @@ npc-life:
 # Players whose name starts with one of these always get the classic chest flow
 # (the Mineflayer QA / stress bots click the chest Quest Offer).
 # talk-ux.classic-name-prefixes: [QaQuest, QaCombat, QaMine, QaForage, QaCatch, QaRoam, QaFish, QaTrade, QaPad, StressM]
+
+# ============================================================
+# Exile loop (A-53): the Keeper of The Last Bell brews the boss vials
+# ============================================================
+# One vial = this many hand-earned finds from the matching isle (Hollow Sun: Crystal Finds, Seraphine: Prize Crops,
+# Helios: Heartwood, Nihil: Trophy Fish) plus these coins. Aetherion's vial = one Echo of each of the four bosses.
+# Missing keys in a live config fall back to these numbers.
+exile-loop:
+  vial-finds: 2
+  vial-coins: 5000
