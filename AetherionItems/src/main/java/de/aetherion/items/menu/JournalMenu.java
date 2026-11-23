@@ -677,16 +677,23 @@ public final class JournalMenu {
                             List.of("§7Talk to the people around you.", "§7Some of them have work."), false),
                     null, false, false));
         }
+        // The talk log answers /aetalk from a chat listener (no command-map entry), so it goes out as chat.
+        boolean talkLog = Bukkit.getPluginManager().isPluginEnabled("AetherionQuests");
+        if (talkLog) {
+            out.add(new Entry(1, true, "Talk log", Ink.INK,
+                    icon(Material.BOOK, "§fTalk log", withClick(wrap("Your recent conversations, as a book.", "§7"),
+                            "§eClick §8· /aetalk log"), false),
+                    () -> chat(player, "/aetalk log"), false, false));
+        }
         commands(read, out, true, List.of(
-                new Cmd("Talk log", "aetalk log", Material.BOOK, "Your recent conversations, as a book."),
-                new Cmd("Guide", "guide", Material.SPYGLASS, "Next steps, and where to find a recipe.")), 1);
+                new Cmd("Guide", "guide", Material.SPYGLASS, "Next steps, and where to find a recipe.")), talkLog ? 2 : 1);
     }
 
     private void codex(Read read, List<Entry> out) {
         Player player = read.player;
         ProgressionService progress = read.progress;
         tile(read, out, 1, false, Tile.CODEX);
-        book(out, 2, "Collection", Material.WHEAT, progress == null || progress.collection(player),
+        book(out, 2, "Collection", Material.IRON_PICKAXE, progress == null || progress.collection(player),
                 progress == null ? null : progress.collectionHint(), "Every block you have broken, in tiers.",
                 () -> CodexMenus.openCollection(player, null), player);
         book(out, 3, "Bestiary", Material.BONE, progress == null || progress.bestiary(player),
@@ -707,12 +714,12 @@ public final class JournalMenu {
                 new Cmd("Aetherlex", "aetherlex", Material.TURTLE_EGG, "The pet encyclopedia.")), 2);
     }
 
-    /** One Codex book: open, or faded with its unlock hint. */
+    /** One Codex book: open, or faded with its unlock hint (Manager icons where the material has one). */
     private void book(List<Entry> out, int row, String label, Material material, boolean open, String hint,
                       String about, Runnable action, Player player) {
         if (open) {
             out.add(new Entry(row, false, label, Ink.INK,
-                    icon(material, "§d" + label, withClick(wrap(about, "§7"), "§eClick to open"), false),
+                    icon(material, "§d" + label, withClick(wrap(about, "§7"), "§eClick to open"), true),
                     action, false, false));
             return;
         }
@@ -720,7 +727,8 @@ public final class JournalMenu {
         lore.add("§7Not written yet");
         lore.add("");
         lore.addAll(wrap(hint == null ? "§7Not open yet." : hint, "§7"));
-        out.add(new Entry(row, false, label, Ink.FADED, icon(Material.GRAY_DYE, "§8" + label, lore, false),
+        out.add(new Entry(row, false, label, Ink.FADED,
+                ManagerIcons.locked(icon(Material.GRAY_DYE, "§8" + label, lore, true), material),
                 () -> locked(player, hint), false, false));
     }
 
@@ -732,7 +740,13 @@ public final class JournalMenu {
             return;
         }
         boolean guided = read.guide != null && read.guide.tile() == tile;
-        Runnable click = () -> AetherionManagerListener.runTile(player, tile.slot);
+        // Shut tiles knock (the Manager's hint follows in chat); open ones do what their Manager tile did.
+        Runnable click = state == State.OPEN
+                ? () -> AetherionManagerListener.runTile(player, tile.slot)
+                : () -> {
+                    locked(player, null);
+                    AetherionManagerListener.runTile(player, tile.slot);
+                };
         switch (state) {
             case OPEN -> {
                 List<String> lore = new ArrayList<>();
@@ -839,6 +853,20 @@ public final class JournalMenu {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (player.isOnline()) {
                 player.performCommand(line);
+            }
+        });
+    }
+
+    /** Like {@link #command}, for commands only a chat listener answers. */
+    private static void chat(Player player, String line) {
+        player.closeInventory();
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.chat(line);
             }
         });
     }
