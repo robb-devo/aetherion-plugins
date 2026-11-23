@@ -246,12 +246,12 @@ public final class SkillFlavor {
                     "The canopy empties its pockets for you."
             };
             case STEADY_HANDS -> new String[] {
-                    "The fell marker waits for you now.",
-                    "Green looks wider from where you stand.",
-                    "Misses happen to other people.",
-                    "The axe slows down to hear what you think.",
+                    "Trees lean the way you look now.",
+                    "The gold ring looks wider from where you stand.",
+                    "Hang-ups happen to other people.",
+                    "The trunk waits to hear where you want it.",
                     "Titans respect a patient cut.",
-                    "The bar is a formality."
+                    "You point. The forest lies down."
             };
             case DEADFALL_DANCER -> new String[] {
                     "Widowmakers keep missing. Rude of them.",

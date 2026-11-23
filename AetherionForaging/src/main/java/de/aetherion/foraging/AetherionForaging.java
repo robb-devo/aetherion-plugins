@@ -68,8 +68,8 @@ public class AetherionForaging extends JavaPlugin {
         if (!getConfig().isSet("fell.zone-size")) {
             getConfig().set("fell.zone-size", 4);
         }
-        if (getConfig().getInt("fell.strike-ticks", 64) < 40) {
-            getConfig().set("fell.strike-ticks", 64);
+        if (!getConfig().isSet("fell.aim-ticks")) {
+            getConfig().set("fell.aim-ticks", 160);
         }
         mergeExtraWoodTypes();
         ensureWeatherAndRitualDefaults();
@@ -177,8 +177,9 @@ public class AetherionForaging extends JavaPlugin {
         return getConfig().getBoolean("fell.enabled", true);
     }
 
-    int fellStrikeTicks() {
-        return Math.max(40, getConfig().getInt("fell.strike-ticks", 64));
+    /** Time to choose where a tree falls (A-51), before Keen Edge and Titan cuts. */
+    int fellAimTicks() {
+        return Math.max(60, getConfig().getInt("fell.aim-ticks", 160));
     }
 
     int fellZoneSize() {

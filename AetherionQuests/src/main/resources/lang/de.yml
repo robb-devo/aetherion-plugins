@@ -128,7 +128,7 @@ ui:
     tutorial_temper_boost: "Akt II · Temper · Südstraße · Booster"
     tutorial_ledger_loadout: "Akt II · Miss Ledger · Capital · Nether Star → Teleports"
     tutorial_egon_oak: "Akt I · zehn Eiche zu Egon · am Pier"
-    tutorial_forager: "Akt I · der Forager · Eiche fällen auf Grün"
+    tutorial_forager: "Akt I · der Forager · Eiche fällen, wohin du schaust"
     tutorial_egon_pier: "Akt I · Egon · am Pier"
     story_next:
       deed: "Weiter · Deed, der Isle Clerk · ab Aetherion Level 20"
@@ -184,7 +184,7 @@ ui:
     kit_to_quartermaster: "Kit an? Rüstung in die Rüstungsslots · → Quartermaster hinterm Markt"
     to_lark: "→ Lark · Felder-Zaun · ein Pet fangen"
     to_farmer: "→ Farmer · Felder · 48 Weizen, Vögel verscheuchen"
-    chop_now: "→ Leuchtender Stamm · nochmal bei grünem CHOP · 10 Eiche für Egon"
+    chop_now: "→ Leuchtender Stamm · hinschauen, wohin er fällt · nochmal schlagen · 10 Eiche für Egon"
     mine_foreman: "→ Shaft Foreman · /mines"
     farm_farmer: "→ Farmer · die Felder"
   # Soft-hint bossbar labels (QuestHint)
@@ -206,7 +206,7 @@ ui:
     vex_gate: "Als Nächstes: §cSergeant Vex §7am Tor zu den Borderlands — ein kurzer Kampf-Drill an seinem Golem."
     temper_south: "Als Nächstes: §eTemper §7an der Südstraße Richtung Minen — verschmilz einen Booster."
     ledger_capital: "Als Nächstes: §dMiss Ledger §7in der Capital — Nether Star → Teleports → Capital, oder §f/capital§7."
-    forager_fell: "§aDer Forager §7oben am Hügel zeigt dir das Fällen — schlag zu, wenn der Balken grün ist."
+    forager_fell: "§aDer Forager §7oben am Hügel zeigt dir das Fällen — du bestimmst, wohin der Baum fällt."
     act3: "Akt III · Die Straßen — Sergeant Vex, dann der Stempel"
     act2: "Akt II · Die Capital — Loadout & Codex, Booster, dann ein Pet"
     act1: "Akt I · Anker Harbour — Egon, das Fällen, dein Kit"
@@ -322,7 +322,7 @@ quests:
     description: "Sprich mit dem Forager oben am Hügel über Anker Harbour."
   gather_wood:
     title: "Egons Holzlauf"
-    description: "Fäll Eiche mit der Axt des Foragers — schlag auf Grün — und bring Egon 10 Stämme."
+    description: "Fäll Eiche mit der Axt des Foragers — hinschauen, wohin sie fallen soll, nochmal schlagen — und bring Egon 10 Stämme."
   forge_coal:
     title: "Kohle für die Schmiede"
     description: "Bring dem Quartermaster 20 Kohle vom Ore Ridge."
@@ -556,7 +556,7 @@ dialogs:
     - "Der Farmer nebenan hält sich für den echten Farmer. Süß."
   forage_pad_guide_intro:
     - "Schleim-Pad → Forage Isle. Springen. Nicht nachdenken."
-    - "Dieselbe Fäll-Leiste wie hier — nur zählen Inselbäume mit."
+    - "Dasselbe Fällen wie hier — nur zählen Inselbäume mit."
     - "§aMiss Canopy§f bringt dir die Insel bei. Folg dem Pfeil, {player}."
   amethyst_mines_guide_intro:
     - "Kristall-Guide. Die Amethyst-Mine geht nur über mich — Geoden, Resonanz, Heartstones."
@@ -1268,15 +1268,15 @@ talk:
     first_equipment: "Deine erste Ausrüstung ist fertig."
     to_work: "An die Arbeit."
   lumberjack:
-    replay: "Immer noch am Zuschauen, {player}? Nochmal — warte auf grünes §aCHOP§f."
+    replay: "Immer noch am Zuschauen, {player}? Nochmal — schau, wohin ich ihn fallen lasse."
     egon_first: "Erst Egon, {player}. Der hat den Papierkram. Dann hacken wir."
     lesson: "Egon schickt dich? Klar tut er das. Dann Axt-Lektion."
     take_axe: "Nimm die Axt. Schau mir einmal zu — langsam — dann hackst du."
-    click_trunk: "Linksklick auf einen leuchtenden Stamm — wenn CHOP grün wird, nochmal klicken."
+    click_trunk: "Linksklick auf einen leuchtenden Stamm, hinschauen, wohin er fallen soll, nochmal klicken."
     ten_oak: "Zehn Eichenstämme zu §eEgon §fam Pier."
-    demo_chop: "Linksklick auf einen leuchtenden Stamm — grünes CHOP, dann zuschlagen."
+    demo_chop: "Linksklick auf einen leuchtenden Stamm, hinschauen, wohin er fallen soll, nochmal Linksklick."
     demo_egon: "Zehn Eichenstämme zu Egon am Pier."
-    axe_now: "Die Axt gehört dir. Schlag einen §eleuchtenden Stamm§f, dann nochmal bei grünem §aCHOP§f."
+    axe_now: "Die Axt gehört dir. Schlag einen §eleuchtenden Stamm§f, schau, wohin er fallen soll, und schlag nochmal."
   quartermaster:
     coal_logged: "Kohle verbucht. Danke, {player}. Ehrlich."
     mines_tp: "Der Mines-Teleport ist offen — Manager → Teleports, oder tipp §e/mines§f."
@@ -1367,7 +1367,7 @@ talk:
         line: "Gut. Die Karte gehört dir — Sergeant Vex am Borderlands-Tor, wenn du Streit suchst."
       forage:
         label: "Forage Isle"
-        line: "§aForage Isle§f — wieder die Fäll-Leiste, aber die Bäume zählen mit. Pad im Nordosten; §aMiss Canopy§f empfängt dich."
+        line: "§aForage Isle§f — du bestimmst, wohin die Bäume fallen, und sie zählen mit. Pad im Nordosten; §aMiss Canopy§f empfängt dich."
         line_done: "Wieder Holz? Pells Brett hat neue Aufträge. Der Pfeil zeigt aufs Pad."
       farm:
         label: "Farm Isle"
@@ -1539,7 +1539,7 @@ talk:
           - "Bäume, die droppen, was sie sind — Fichte ist Fichte, Birke ist Birke."
           - "§aMiss Canopy§f macht die Führung. Heartwoods, der Zaubertisch, alles."
         lesson:
-          - "Sieben Wälder, dieselbe Fäll-Leiste — nur zählen Inselbäume mit."
+          - "Sieben Wälder, dasselbe Fällen — nur zählen Inselbäume mit."
           - "Drei saubere am Stück, und aus einer Krone fällt was. Fang es."
       who:
         label: "Zu wem soll ich?"
@@ -1633,7 +1633,7 @@ talk:
     temper_south: "§eTemper§f, Südstraße Richtung Minen. Booster."
     ledger_capital: "§dMiss Ledger§f, Capital. Nether Star → Teleports, oder §e/capital§f."
     egon_oak: "§aEgon§f wartet auf seine Eiche. Pier."
-    forager: "§aDer Forager§f, oben am Hügel hinter dem Pier. Eiche, auf Grün."
+    forager: "§aDer Forager§f, oben am Hügel hinter dem Pier. Eiche, fällen, wohin du willst."
     egon_pier: "§aEgon §fam Pier. Er rüstet dich aus — da fängt alles an."
     lead: "Wo du eigentlich hingehörst:"
     ledger_fields: "§eMiss Ledger §fschließt die Orientierung nach den Feldern."
@@ -2066,7 +2066,7 @@ cast:
     on_accept: ["Schau zu."]
     on_decline: ["Die Bäume warten. Können sie gut."]
     returning:
-      - "Leuchtender Stamm, grünes §aCHOP§f. Zehn Eiche für §eEgon§f, {player}."
+      - "Leuchtender Stamm, hinschauen, wohin er fällt, nochmal schlagen. Zehn Eiche für §eEgon§f, {player}."
     greet_new: ["Axt-neugierig, {player}? Egon hat dich geschickt, oder?"]
     greet: ["{player}! In letzter Zeit Bäume fallen hören?", "Schon Muskelkater, {player}? Gut."]
     greet_grad: ["Da ist ja der Holzfäller-Profi. Die Bäume tuscheln immer noch über dich, {player}."]

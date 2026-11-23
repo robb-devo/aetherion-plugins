@@ -109,8 +109,8 @@ public final class IsleGuideNpc implements Listener {
                         : "Back again, {player}? Ask away — or go fell something.",
                 List.of(
                         TalkDesk.Topic.of("The chop?", NamedTextColor.DARK_GREEN, "How do I fell trees here?",
-                                "Hit a trunk and watch the timing bar — green is a clean cut. Stack clean cuts for a streak.",
-                                "Big trunks (Titans) need two clean cuts. Miss and the streak cools. Same axe feel, deeper payoff."),
+                                "Hit a trunk, look where it should fall, hit again. A green line means a clean fell, the gold ring a Perfect one.",
+                                "Big trunks (Titans) need two cuts. If a tree hangs up on something, the streak cools."),
                         TalkDesk.Topic.of("Crown Finds?", NamedTextColor.GOLD, "What's a Crown Find?",
                                 "Sometimes the crown lets go of a glowing find as the tree falls. Catch it mid-air for bonus weight.",
                                 "§ePell§f at the Landing buys board orders — wood and Titans. That's the daily money loop."),
@@ -274,8 +274,8 @@ public final class IsleGuideNpc implements Listener {
         // Classic chat: one useful line instead of a chest of tooltips.
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
         player.sendMessage("§a" + DISPLAY + " §8» §f" + (de.aetherion.core.api.AetherServices.german(player)
-                ? "Grün ist sauber, Serien zahlen, Kronenfunde fangen. §ePell§f kauft Holz auf Bestellung, §f/grove§f ist dein Journal."
-                : "Green is clean, streaks pay, catch the Crown Finds. §ePell§f buys wood by order, §f/grove§f is your journal."));
+                ? "Du bestimmst, wohin der Baum fällt: grüne Linie, goldener Ring, Serien zahlen. §ePell§f kauft Holz auf Bestellung, §f/grove§f ist dein Journal."
+                : "You choose where the tree falls: green line, gold ring, streaks pay. §ePell§f buys wood by order, §f/grove§f is your journal."));
     }
 
     @EventHandler(priority = EventPriority.HIGH)

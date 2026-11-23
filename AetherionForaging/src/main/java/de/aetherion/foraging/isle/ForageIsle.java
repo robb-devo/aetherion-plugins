@@ -25,13 +25,13 @@ import java.util.UUID;
  * Foraging Eldervale: the forage destination. It owns every isle loop and routes each fell through all
  * of them, the way the Mining isle routes a strike:
  * <pre>
- *   fell ─ Fell Pulse (timing bar · streak · look-preview) — ForagingListener, unchanged at heart
+ *   fell ─ Fell aim (look where it falls · gold ring · streak) — ForagingListener + FellAim + TreeFall
  *        ─ Titan fells (two-stage chop on giants)          ─ district (baked grid + landmark boxes)
  *        ─ Grove Mastery (per wood, I–VII, permanent)      ─ Crown Finds (catch it as it falls)
  *        ─ District extras (weather-tilted)                ─ Widowmaker → Deadfall
  *        ─ Lumber Board orders · Warden Standing           ─ records (largest fell per forest)
  *        ─ Isle events (Golden Sap · Windfall · Blossom Storm · Bark Blight) · critters
- *   payout ─ ForagingListener asks back: CHOP window · marker speed · miss cooldown · wood cap ·
+ *   payout ─ ForagingListener asks back: gold ring · aim time · miss cooldown · wood cap ·
  *            heartwood chance · Codex filing
  *   around ─ updrafts · fall-catch · compass · the Grove cast · bench · ledger · journal
  * </pre>
@@ -386,7 +386,7 @@ public final class ForageIsle implements Listener {
 
     // ------------------------------------------------------------------ hooks the chop listener calls
 
-    /** Extra CHOP window cells for this player on this wood (isle only). */
+    /** Extra Perfect-ring steps for this player on this wood (isle only). */
     public int zoneBonus(Player player, Material wood, Location at) {
         if (!onIsle(at)) {
             return 0;
@@ -405,7 +405,7 @@ public final class ForageIsle implements Listener {
         return Math.min(3, bonus);
     }
 
-    /** Fell marker slow-down (Keen Edge). 1.0 off the isle. */
+    /** Extra aim time (Keen Edge). 1.0 off the isle. */
     public double strikeFactor(Player player, Location at) {
         return onIsle(at) ? Woodwright.strikeFactor(profiles.get(player)) : 1.0d;
     }
@@ -509,7 +509,7 @@ public final class ForageIsle implements Listener {
         lesson.onFell(player, ctx);
     }
 
-    /** A missed fell bar (the chop listener calls this for every miss; isle trees only count). */
+    /** A rough fell (hung up or too slow; the chop listener calls this for each; isle trees only count). */
     public void onMiss(Player player, Location at) {
         if (player != null && onIsle(at)) {
             lesson.onMiss(player);

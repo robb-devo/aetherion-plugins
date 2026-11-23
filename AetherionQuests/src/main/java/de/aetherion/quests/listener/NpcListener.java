@@ -412,7 +412,7 @@ public class NpcListener implements Listener {
                     && questManager.getQuestState(player, timber) == QuestState.ACTIVE
                     && locked) {
                 org.bukkit.Location at = resolveNpcLocation(npc);
-                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.replay", "Still watching, {player}? One more time — wait for green §aCHOP§f."));
+                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.replay", "Still watching, {player}? One more time — watch where I make it fall."));
                 if (at != null) {
                     playForagerDemo(player, at);
                 } else {
@@ -667,9 +667,9 @@ public class NpcListener implements Listener {
         // One line, the axe, and the trees are open at once: people go straight for a trunk, so the demo beside
         // him is there to watch, never a wait.
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.axe_now",
-                "Axe's yours. Hit a §eglowing trunk§f, then hit again on green §aCHOP§f."));
+                "Axe's yours. Hit a §eglowing trunk§f, look where it should fall, then hit again."));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.quests.lang.LangPack.ui(player, "tip.chop_now", "→ Glowing trunk · again on green CHOP · 10 oak for Egon"),
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.chop_now", "→ Glowing trunk · look where it falls · hit again · 10 oak for Egon"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
         Quest timber = questManager.getQuest("gather_wood");
@@ -713,7 +713,7 @@ public class NpcListener implements Listener {
             return;
         }
         LivingNpcProfile.say(player, "lumberjack", "Forager",
-                de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_chop", "Left-click a glowing trunk — green CHOP, then swing."));
+                de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_chop", "Left-click a glowing trunk, look where it should fall, left-click again."));
         LivingNpcProfile.say(player, "lumberjack", "Forager",
                 de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_egon", "Ten oak logs to Egon on the pier."));
     }
@@ -2704,7 +2704,7 @@ public class NpcListener implements Listener {
                         net.kyori.adventure.text.format.NamedTextColor.GREEN,
                         de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.isle.echo", "What's on the isle?"),
                         de.aetherion.quests.lang.LangPack.sayLines(player, "forage_pad_guide.desk.isle.lesson", new String[] {
-                                "Seven forests, same Fell bar — except isle trees keep score.",
+                                "Seven forests, same felling — except isle trees keep score.",
                                 "Three clean in a row and something falls out of a crown. Catch it."
                         }))
                 .topic(de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.who.label", "Who do I find?"),

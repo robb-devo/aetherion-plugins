@@ -26,7 +26,7 @@ import java.util.List;
  * The Woodwright's bench at the Bell Lodge. Tamsin turns forage into <b>Grove Marks</b>: permanent
  * upgrades that live on the forager, not on an axe, so they survive every tool swap. Five lines:
  * <ul>
- *   <li><b>Keen Edge</b> — the fell marker moves slower (+5% time per tier); III and V widen the CHOP window.</li>
+ *   <li><b>Keen Edge</b> — more time to aim a fell (+5% per tier); III and V widen the gold ring.</li>
  *   <li><b>Deep Roots</b> — +1 wood cap per tier on every isle tree.</li>
  *   <li><b>Canopy Eye</b> — Crown Finds +1.2% per tier and better grades.</li>
  *   <li><b>Sure Grip</b> — the miss cooldown shrinks 12% per tier; V keeps your streak through one miss
@@ -79,8 +79,8 @@ public final class Woodwright implements Listener {
     public static final List<Line> LINES = List.of(
             new Line(KEEN_EDGE, "Keen Edge", Material.IRON_AXE, "§e",
                     new Wood[] {Wood.OAK, Wood.BIRCH, Wood.SPRUCE, Wood.CHERRY, Wood.JUNGLE},
-                    new String[] {"Marker +5% slower", "Marker +10% slower", "CHOP window +1", "Marker +20% slower",
-                            "CHOP window +2"}),
+                    new String[] {"Aim time +5%", "Aim time +10%", "Gold ring +1", "Aim time +20%",
+                            "Gold ring +2"}),
             new Line(DEEP_ROOTS, "Deep Roots", Material.ROOTED_DIRT, "§6",
                     new Wood[] {Wood.DARK_OAK, Wood.MANGROVE, Wood.JUNGLE, Wood.DARK_OAK, Wood.MANGROVE},
                     new String[] {"+1 wood cap", "+2 wood cap", "+3 wood cap", "+4 wood cap", "+5 wood cap"}),

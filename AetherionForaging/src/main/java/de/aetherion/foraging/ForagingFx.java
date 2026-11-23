@@ -12,8 +12,8 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 /**
- * Fell loop feedback. Beats mirror fishing on purpose:
- * telegraph (glow + knock) → ready (creak) → hit (Clean / Perfect) → tally after the fall.
+ * Fell loop feedback: telegraph (glow + knock) → aim (line + gold ring, see {@link FellAim}) →
+ * hit (Clean / Perfect / Rough) → the tree falls ({@link TreeFall}) → tally after the thud.
  * Everything is small and local; the tree coming down is the spectacle.
  */
 final class ForagingFx {
@@ -39,7 +39,7 @@ final class ForagingFx {
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.35f, 1.5f);
     }
 
-    /** Telegraph: knock + a small glow on the marked trunk so the eye goes there, not the bar. */
+    /** Telegraph: knock + a small glow on the marked trunk so the eye goes there. */
     static void start(Player player, Location fellAt) {
         start(player);
         if (fellAt != null && fellAt.getWorld() != null) {
@@ -49,12 +49,12 @@ final class ForagingFx {
         }
     }
 
-    /** Ready tell — the trunk creaks just before the window. One per pass. */
+    /** A soft creak (tutorial beats). */
     static void creak(Player player) {
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_HIT, 0.45f, 0.65f);
     }
 
-    /** Fail telegraph — the swing window is running out. One soft, low knock per chop. */
+    /** Fail telegraph — the aim time is running out. One soft, low knock per fell. */
     static void slip(Player player) {
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.45f, 0.7f);
     }
@@ -88,12 +88,17 @@ final class ForagingFx {
         }
     }
 
-    /** Off-window fell: the tree comes down anyway; the line says how a clean one works. */
-    static void rough(Player player, Location at) {
+    /** Rough fell: the tree comes down anyway; the line says why and how a clean one works. */
+    static void rough(Player player, Location at, String reason) {
         impact(player, at);
-        player.sendActionBar(LEGACY.deserialize(de.aetherion.core.exile.Say.t(player,
-                "§eRough fell §8· §7hit again on green §aCHOP§7 for a clean one",
-                "§eGrober Schnitt §8· §7nochmal bei grünem §aCHOP§7 schlagen für einen sauberen")));
+        boolean slow = "too slow".equals(reason);
+        player.sendActionBar(LEGACY.deserialize(slow
+                ? de.aetherion.core.exile.Say.t(player,
+                        "§eRough fell §8· §7too slow, it twisted its own way §8· §7hit again while the line is §agreen",
+                        "§eGrober Fall §8· §7zu langsam, er hat sich selbst gedreht §8· §7schlag zu, solange die Linie §agrün§7 ist")
+                : de.aetherion.core.exile.Say.t(player,
+                        "§eRough fell §8· §7it hung up on something §8· §7aim where the line stays §agreen",
+                        "§eGrober Fall §8· §7er ist hängen geblieben §8· §7ziel dorthin, wo die Linie §agrün§7 bleibt")));
     }
 
     static String word(boolean perfect) {

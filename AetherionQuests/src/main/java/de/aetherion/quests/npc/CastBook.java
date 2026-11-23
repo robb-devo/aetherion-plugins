@@ -105,7 +105,7 @@ public final class CastBook {
         v.decline = "Maybe later.";
         v.onAccept = new String[] {"Watch."};
         v.onDecline = new String[] {"Trees'll wait. They're good at that."};
-        v.returning = new String[] {"Glowing trunk, green §aCHOP§f. Ten oak for §eEgon§f, {player}."};
+        v.returning = new String[] {"Glowing trunk, look where it falls, hit again. Ten oak for §eEgon§f, {player}."};
         v.greetNew = new String[] {"Axe-curious, {player}? Egon sent you, didn't he."};
         v.greet = new String[] {"{player}! Heard any trees fall lately?", "Arms sore yet, {player}? Good."};
         v.greetGrad = new String[] {"There's the chopper. Trees still whisper about you, {player}."};

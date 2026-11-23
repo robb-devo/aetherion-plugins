@@ -12,9 +12,12 @@ foraging:
   # Harbour: force oak. Forage Isle (footprint) yields typed wood instead.
   force-drop: OAK_LOG
 
+# A-51: no timing bar any more. Hit a trunk, look where it should fall, hit again.
+# aim-ticks = time to choose (Keen Edge adds some on the isle). zone-size = Perfect-ring
+# steps (3..6; each step is 3.5 degrees of cone, plus skill / streak / isle bonuses).
 fell:
   enabled: true
-  strike-ticks: 64
+  aim-ticks: 160
   zone-size: 4
 
 forage-isle:

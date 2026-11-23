@@ -92,12 +92,12 @@ Miss Canopy (the existing isle guide) stays as she is; talking to her is now ste
 ## 3. The loop
 
 ```
-fell ─ Fell Pulse (timing bar · streak · look-preview) ─ unchanged at heart
+fell ─ Fell aim (A-51: look where it falls · lane line · gold ring · animated fall · streak)
      ─ Titan fells (≥40 logs: two clean cuts)   ─ district from the grid / place
      ─ Grove Mastery (per wood, I–VII)          ─ Crown Finds (catch it as it falls)
      ─ District extras (weather-tilted)         ─ Widowmaker → Deadfall
      ─ Lumber Board progress · Warden Standing  ─ isle records (largest fell per forest)
-payout ─ the chop listener asks back: CHOP window · marker speed · miss cooldown ·
+payout ─ the chop listener asks back: gold ring · aim time · miss cooldown ·
          wood cap · heartwood chance · Codex filing
 around ─ updrafts · fall-catch · compass & tour · cast · bench · ledger · journal · events · critters
 ```
@@ -116,7 +116,7 @@ Off the isle footprint nothing changes: harbour trees, personal/guild islands an
 Isle fells per wood (oak, birch, spruce, cherry, acacia, dark oak, mangrove, jungle, bamboo). The tiers sit at 10 / 40 / 120 / 300 / 700 / 1500 / 3000 fells × wood scale (jungle 0.7, cherry and mangrove 0.8, acacia and dark oak 0.85). Each tier is paid when you cross it: 150 → 12,000 coins and tier×40 XP. Permanent, for that wood only:
 - +1 wood cap per tier
 - +0.25% heartwood per tier
-- IV: CHOP window +1
+- IV: gold ring +1
 - VII: Crown Finds ×1.5 and the "Warden of …" card
 
 Standing: +1 at IV, +3 at VII.
@@ -164,7 +164,7 @@ Pay is well above wood value: coins + coins/8 XP + 1–3 Standing, +8% per Stand
 
 | Line | Effect |
 |---|---|
-| Keen Edge | marker +5 / 10 / 10 / 20 / 20% slower; III and V widen the CHOP window by 1 each |
+| Keen Edge | aim time +5 / 10 / 10 / 20 / 20%; III and V widen the gold ring by 1 step each |
 | Deep Roots | +1 wood cap per tier on every isle tree |
 | Canopy Eye | Crown Finds +1.2% per tier, better grades |
 | Sure Grip | miss cooldown −12% per tier; V = **Second Wind** (one miss every 3 min keeps the streak) |
@@ -208,7 +208,7 @@ Every 7–11 minutes (`events.interval-*`), and only while someone is on the isl
 ### 3.11 Critters — `GroveCritters` (display entities + Interaction hitbox, capped)
 
 - **Canopy Squirrel** (Vale / Crown, daytime): 9% chance after a fell. It bolts from the crown with a find in its cheeks; one hit and it drops it.
-- **Frost Moth** (Ridge, at night or in snow): catch it for **Frostlit** (CHOP window +1 for 1:00).
+- **Frost Moth** (Ridge, at night or in snow): catch it for **Frostlit** (gold ring +1 for 1:00).
 - **Glowcap Wisp** (Hollow, in fog or at night): drifts off through the trunks. Follow it; where it fades it leaves a Gloamcap.
 - **Bark Beetle** (Bark Blight only).
 
@@ -233,7 +233,7 @@ Cap: 14 global (`critters.global-cap`) and 2 per player. Nothing is a mob, so no
 - `AetherSkill`: six **FORAGING** skills plus flags. They are flag-driven, with no stat bonuses, so `SkillService` isn't touched. Foraging reads the flags by name, so an older Items jar just means "no Eldervale skills".
   - `GROVE_BORN` — isle wood cap +2–4, and sometimes counts a fell twice for mastery.
   - `SAP_SENSE` — Crown Finds ×(1+0.5·scale), better grades.
-  - `STEADY_HANDS` — CHOP window +1 on the isle, miss cooldown −25% per scale (max −50%).
+  - `STEADY_HANDS` — gold ring +1 on the isle, miss cooldown −25% per scale (max −50%).
   - `DEADFALL_DANCER` — longer limb tell, half the hurt, double deadfall.
   - `BOARD_RATES` — Board coins +15% per scale (max +60%).
   - `HEART_HUNTER` — heartwood ×(1+0.5·scale) on the isle.
@@ -297,3 +297,18 @@ AetherionQuests entirely: LivingNpc\*, TalkUx / TalkText, CastBook, NpcMemory, L
 - `updrafts` lists clear shafts between tiers.
 
 Re-bake with `--paste` / `--rotate` only if the isle is pasted with a different rotation.
+
+## Felling since A-51 (2026-11-23)
+
+The timing bar is gone. Hit a living trunk with an axe, then look where it should fall:
+- A line on the ground shows the lane: green is clear, red where the trunk would hang up (another
+  trunk, a wall, a hill). Leaves, grass and flowers never block.
+- A gold ring marks the best spot. Aim inside the Perfect cone (4° + 3.5° per step; config
+  `fell.zone-size` 4 = ±18°, +1 step at Foraging 50, on a hot streak, and from isle marks/skills) for a
+  Perfect fell.
+- Hit again to fell (not within the first 0.3 s). `fell.aim-ticks` (160) is the time to choose; Keen Edge
+  adds some. Time out = the tree twists its own way (rough).
+- Clean = streak +1; Perfect = bonus XP; rough (hung up / too slow) = streak reset, the tree still comes
+  down and pays. Titans still take two cuts.
+- The fall itself is block displays tipping over the stump's edge (`TreeFall`), wood is paid on the thud,
+  Crown Finds let go above the landed crown, and the tree regrows as before.
