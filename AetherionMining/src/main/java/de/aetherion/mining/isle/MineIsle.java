@@ -255,10 +255,8 @@ public final class MineIsle implements Listener, StatProvider {
         if (spread) {
             return;
         }
+        // Crystals on Eldervale form when the Strike Rhythm series ends (StrikeRhythm -> CrystalFinds.seriesEnd).
         rhythm.onStrike(player, ore, at);
-        if (ore != IsleOre.STONE) {
-            crystals.roll(player, ore, at, false);
-        }
         lesson.onStrike(player, ore, at);
         critters.onMined(player, ore, at, band);
         hazards.onMined(player, ore, at, band);

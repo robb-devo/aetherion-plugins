@@ -329,7 +329,10 @@ strike-rhythm:
 
 crystal-finds:
   # Base chance per hand strike (before ore, depth, skills, rations, marks, events).
+  # On Eldervale it is rolled once when a Strike Rhythm series ends, as if every ore strike of the
+  # series had rolled it (Steady x1, In the Seam x1.5, Anvil Chorus x2), capped at series-max-odds.
   chance: 0.00182
+  series-max-odds: 0.9
   veins-multiplier: 1.25
   heartstone-chance: 0.04
 

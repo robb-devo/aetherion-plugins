@@ -594,10 +594,14 @@ public final class MineMenus implements Listener {
                 "",
                 "§7Same ore back to back builds a §aSeam Chain§7.",
                 "§7Fill it and the seam bursts (extra ore).",
-                "§8Deep bursts can wake a Stonejaw."), null);
+                "§8Deep bursts can wake a Stonejaw.",
+                "§dWhen the series ends, a crystal can form."), null);
         set(holder, 20, Material.AMETHYST_CLUSTER, "§d✦ Crystal Finds", lines(
-                "§7Any ore strike can push a geode out of",
-                "§7the rock. Hit it with a pickaxe to crack it.",
+                "§7On Eldervale a geode forms when your",
+                "§7Strike Rhythm ends. Higher and longer runs",
+                "§7find more often and find better.",
+                "§7In the Amethyst Mine any ore strike can.",
+                "§7Hit it with a pickaxe to crack it.",
                 "§7Rough · Flawless · Perfect · §6Heartstone",
                 "",
                 "§7Depth, Geode Nose, the Lamp Core, Ember Hour",

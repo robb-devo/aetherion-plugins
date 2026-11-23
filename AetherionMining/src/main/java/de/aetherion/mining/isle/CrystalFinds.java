@@ -49,8 +49,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Crystal Finds — the rare find of Mining. Now and then a strike cracks into a hollow and a
- * glowing geode shoulders out of the rock. It isn't free: <b>you have to mine it open</b>, a few
+ * Crystal Finds — the rare find of Mining. On Eldervale a crystal forms when your Strike Rhythm
+ * series ends: the higher the meter peaked and the more ore the series held, the likelier the find
+ * and the better its grade and weight. A very long series crests every {@link StrikeRhythm#CREST_STRIKES}
+ * ore strikes. In the Amethyst Mine and the Swallowed Isles any ore strike can still crack into a hollow.
+ * Either way a glowing geode shoulders out of the rock. It isn't free: <b>you have to mine it open</b>, a few
  * pickaxe strikes while it spins and splinters. The finder gets first dibs; after a few seconds
  * anyone may take a swing — whoever lands the last crack keeps the specimen.
  *
@@ -152,11 +155,7 @@ public final class CrystalFinds implements Listener {
             return 0.0d;
         }
         double chance = baseChance();
-        chance *= switch (ore) {
-            case DIAMOND, EMERALD, DEBRIS -> 3.0d;
-            case AMETHYST, GOLD -> 2.0d;
-            default -> 1.0d;
-        };
+        chance *= oreFactor(ore);
         chance *= 1.0d + 0.5d * MineSkills.scale(player, MineSkills.GEODE_NOSE);
         chance *= isle.hearth().crystalMultiplier(player);
         chance *= 1.0d + 0.05d * isle.mastery().tier(player, ore);
@@ -172,6 +171,91 @@ public final class CrystalFinds implements Listener {
         return Math.min(0.25d, chance);
     }
 
+    /** How much rarer ore helps a crystal along (also picks a series' crystal family). */
+    static double oreFactor(IsleOre ore) {
+        if (ore == null) {
+            return 0.0d;
+        }
+        return switch (ore) {
+            case DIAMOND, EMERALD, DEBRIS -> 3.0d;
+            case AMETHYST, GOLD -> 2.0d;
+            default -> 1.0d;
+        };
+    }
+
+    /** A higher peak counts the series' strikes more: Steady ×1, In the Seam ×1.5, Anvil Chorus ×2. */
+    private static double peakFactor(StrikeRhythm.Tier tier) {
+        return switch (tier) {
+            case CHORUS -> 2.0d;
+            case SEAM -> 1.5d;
+            default -> 1.0d;
+        };
+    }
+
+    /**
+     * The odds that a finished Eldervale series leaves a crystal: as if each of its ore strikes had rolled
+     * the old per-strike chance, weighted by the peak, capped at {@code crystal-finds.series-max-odds}.
+     */
+    public double seriesOdds(Player player, StrikeRhythm.Series series) {
+        if (series == null || series.bestOre() == null || series.oreStrikes() <= 0
+                || series.tier().ordinal() < StrikeRhythm.Tier.STEADY.ordinal()) {
+            return 0.0d;
+        }
+        double perStrike = chance(player, series.bestOre(), series.at(), false);
+        double strikes = series.oreStrikes() * peakFactor(series.tier());
+        double odds = 1.0d - Math.pow(1.0d - perStrike, strikes);
+        return Math.min(isle.plugin().getConfig().getDouble("crystal-finds.series-max-odds", 0.9d), odds);
+    }
+
+    /**
+     * Strike Rhythm ran out (or crested): the lesson's promised crystal, else a roll on the series.
+     * Grade and carats get one extra pick for In the Seam, one for Anvil Chorus, and one per 150 ore strikes (max 2).
+     */
+    void seriesEnd(Player player, StrikeRhythm.Series series, boolean crest) {
+        if (player == null || !player.isOnline() || series == null || series.at() == null
+                || byFinder.containsKey(player.getUniqueId())) {
+            return;
+        }
+        if (isle.lesson().wantsCrystal(player)) {
+            lessonPop(player, series.bestOre() != null ? series.bestOre() : IsleOre.COAL, series.at());
+            return;
+        }
+        if (series.tier().ordinal() < StrikeRhythm.Tier.STEADY.ordinal() || series.bestOre() == null) {
+            return;
+        }
+        if (player.getWorld() != series.at().getWorld() || player.getLocation().distanceSquared(series.at()) > 32 * 32) {
+            return;
+        }
+        Long last = lastFind.get(player.getUniqueId());
+        if (last != null && System.currentTimeMillis() - last < COOLDOWN_MS) {
+            return;
+        }
+        if (ThreadLocalRandom.current().nextDouble() >= seriesOdds(player, series)) {
+            MineText.bar(player, (crest ? "§7Your rhythm crests" : "§7Series over")
+                    + " §8· §7no crystal this time. §8Longer and higher runs find more.");
+            return;
+        }
+        lastFind.put(player.getUniqueId(), System.currentTimeMillis());
+        int extra = (series.tier().ordinal() >= StrikeRhythm.Tier.SEAM.ordinal() ? 1 : 0)
+                + (series.tier() == StrikeRhythm.Tier.CHORUS ? 1 : 0)
+                + Math.min(2, series.oreStrikes() / 150);
+        Grade grade = rollGrade(player, false);
+        for (int i = 0; i < extra; i++) {
+            Grade again = rollGrade(player, false);
+            if (again.ordinal() > grade.ordinal()) {
+                grade = again;
+            }
+        }
+        double carats = rollCarats(player, series.bestOre(), grade);
+        for (int i = 0; i < extra; i++) {
+            carats = Math.max(carats, rollCarats(player, series.bestOre(), grade));
+        }
+        MineText.bar(player, "§d✦ " + (crest ? "Your rhythm crests" : "Your series ends")
+                + " §8· §fa crystal forms in the rock!");
+        spawn(player, series.bestOre(), grade, carats, series.at(), false);
+    }
+
+    /** Amethyst Mine and Swallowed Isles: any ore strike can still crack into a hollow. */
     void roll(Player player, IsleOre ore, Location block, boolean veins) {
         if (ore == null || !ore.hasCrystal() || byFinder.containsKey(player.getUniqueId())) {
             return;
