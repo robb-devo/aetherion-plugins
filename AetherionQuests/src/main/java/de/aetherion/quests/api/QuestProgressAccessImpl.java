@@ -221,6 +221,39 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
     }
 
     @Override
+    public List<JournalQuest> journalQuests(Player player) {
+        de.aetherion.quests.manager.QuestManager manager = plugin == null ? null : plugin.getQuestManager();
+        if (manager == null || player == null) {
+            return List.of();
+        }
+        String trackedId = manager.getTrackedQuestId(player);
+        List<JournalQuest> out = new ArrayList<>();
+        for (de.aetherion.quests.model.Quest quest : manager.getQuests()) {
+            if (quest == null || quest.getId() == null) {
+                continue;
+            }
+            de.aetherion.quests.model.QuestState state = manager.getQuestState(player, quest);
+            if (state != de.aetherion.quests.model.QuestState.ACTIVE
+                    && state != de.aetherion.quests.model.QuestState.READY) {
+                continue;
+            }
+            boolean tracked = quest.getId().equals(trackedId);
+            JournalQuest line = new JournalQuest(
+                    quest.getId(),
+                    de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle()),
+                    de.aetherion.quests.lang.LangPack.questDescription(player, quest.getId(), quest.getDescription()),
+                    state == de.aetherion.quests.model.QuestState.READY,
+                    tracked);
+            if (tracked) {
+                out.add(0, line);
+            } else {
+                out.add(line);
+            }
+        }
+        return out;
+    }
+
+    @Override
     public org.bukkit.Location questTarget(Player player) {
         de.aetherion.quests.ui.QuestCompass compass = plugin.getQuestCompass();
         return compass == null || player == null ? null : compass.targetLocation(player);

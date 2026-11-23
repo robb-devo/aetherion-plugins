@@ -120,6 +120,8 @@ public class AetherionItems extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        // Before Quests, Hub and the rest enable: their tutorial texts read the switch through JournalText.
+        de.aetherion.core.api.JournalText.setEnabled(getConfig().getBoolean("journal.enabled", false));
 
         itemManager = new ItemManager(this);
         de.aetherion.items.manager.EquippedGear.register(this);

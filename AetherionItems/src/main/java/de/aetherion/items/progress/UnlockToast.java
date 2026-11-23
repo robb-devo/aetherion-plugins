@@ -19,6 +19,7 @@ public final class UnlockToast {
         String sub = subtitle == null || subtitle.isBlank()
                 ? "§7Aetherion Manager"
                 : (subtitle.startsWith("§") ? subtitle : "§7" + subtitle);
+        sub = de.aetherion.core.api.JournalText.t(sub);
 
         player.sendTitle("§a§lUNLOCKED", clean, 8, 55, 16);
         player.sendActionBar(net.kyori.adventure.text.Component.text(

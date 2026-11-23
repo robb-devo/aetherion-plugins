@@ -16,11 +16,12 @@ public final class TalkText {
     private TalkText() {
     }
 
-    /** Replace speech tokens. Unknown tokens stay as written. */
+    /** Replace speech tokens (Manager paths read as journal paths while the journal is on). Unknown tokens stay. */
     public static String fill(Player player, String line) {
         if (line == null) {
             return null;
         }
+        line = de.aetherion.core.api.JournalText.t(line);
         if (line.indexOf('{') < 0) {
             return line;
         }

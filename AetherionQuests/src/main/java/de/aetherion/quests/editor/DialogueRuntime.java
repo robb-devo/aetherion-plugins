@@ -423,11 +423,12 @@ public final class DialogueRuntime implements Listener, EditorQuestHook {
         return command;
     }
 
-    /** Dialogue placeholders: {player}. */
+    /** Dialogue placeholders: {player}. Manager paths read as journal paths while the journal is on. */
     public static String fill(String line, Player player) {
         if (line == null) {
             return "";
         }
+        line = de.aetherion.core.api.JournalText.t(line);
         return player == null ? line : line.replace("{player}", player.getName());
     }
 

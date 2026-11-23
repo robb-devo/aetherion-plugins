@@ -72,7 +72,7 @@ public final class HomesteadMarker {
                             "§f" + name + "§7 as a spawn.",
                             id.equals("mines") ? "§7Mine approach — deep tunnels beyond." : "§7Travel there via /spawns.",
                             "",
-                            "§eThen open the Aetherion Manager",
+                            de.aetherion.core.api.JournalText.t("§eThen open the Aetherion Manager"),
                             "§eto set it as your spawn."
                     ));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
@@ -122,7 +122,7 @@ public final class HomesteadMarker {
             }
             player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.7f, 1.35f);
             player.sendMessage("§aSaved teleport for §f" + spawn.displayName() + "§a.");
-            player.sendMessage("§7Boss quests unlock this camp in Manager → Spawns.");
+            player.sendMessage(de.aetherion.core.api.JournalText.t("§7Boss quests unlock this camp in Manager → Spawns."));
             return !player.isSneaking();
         }
 
@@ -145,7 +145,7 @@ public final class HomesteadMarker {
         hub.unlock(player.getUniqueId(), spawn.id());
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.2f);
         player.sendMessage("§aYou unlocked §f" + spawn.displayName() + "§a!");
-        player.sendMessage("§7Open the Aetherion Manager → Spawns to make it your /spawn.");
+        player.sendMessage(de.aetherion.core.api.JournalText.t("§7Open the Aetherion Manager → Spawns to make it your /spawn."));
         return true;
     }
 

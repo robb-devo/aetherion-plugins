@@ -2,6 +2,13 @@
 manager:
   hotbar-enabled: true
 
+# Aether Journal: the Manager as a book with chapters that grow with the player (slot 9 becomes a book,
+# /journal opens it, tutorial texts read "Journal › Character › Skills"). false = the old Nether Star Manager.
+# Needs the served pack with the journal art (aetherion:kit 0xE400.., fonts aetherion:jrn_line_1..4).
+# Read on start: restart after changing it.
+journal:
+  enabled: false
+
 # Player HUD: HP / DEF / cooldown bars drawn from pack font aetherion:hud over the hidden hearts.
 # false = old text line (use while the served pack is older than the plugin, or glyphs show as boxes).
 hud:

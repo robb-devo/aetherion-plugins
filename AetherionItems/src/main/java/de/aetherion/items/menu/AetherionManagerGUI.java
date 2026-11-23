@@ -51,9 +51,9 @@ public class AetherionManagerGUI {
 
     /** Ops only, between the bottom captions. */
 
-    private static final String SKILLS_QUEST_ID = "lesson_manager";
+    static final String SKILLS_QUEST_ID = "lesson_manager";
     private static final String PETS_QUEST_ID = "pocket_zoo";
-    private static final String CRAFT_QUEST_ID = "a_simple_craft";
+    static final String CRAFT_QUEST_ID = "a_simple_craft";
     private static final Map<UUID, BukkitTask> skillsBlinkTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, BukkitTask> spawnsBlinkTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, BukkitTask> petsBlinkTasks = new ConcurrentHashMap<>();
@@ -302,11 +302,11 @@ public class AetherionManagerGUI {
     }
 
     /** The Codex tile opens with any of its books: Collection, Bestiary or the Journal. */
-    private static boolean codexOpen(Player player, ProgressionService progress) {
+    static boolean codexOpen(Player player, ProgressionService progress) {
         return progress == null || progress.collection(player) || progress.bestiary(player) || journalOpen(player, progress);
     }
 
-    private String[] profileLines(Player player) {
+    static String[] profileLines(Player player) {
         java.util.List<String> lines = new java.util.ArrayList<>();
         AetherionItems plugin = AetherionItems.getInstance();
         if (plugin != null && plugin.getSkills() != null) {
@@ -391,7 +391,7 @@ public class AetherionManagerGUI {
         }
     }
 
-    private static boolean hasHomesteadMarker(Player player) {
+    static boolean hasHomesteadMarker(Player player) {
         de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
         return hub != null && hub.hasUnlockItem(player);
     }
@@ -726,14 +726,14 @@ public class AetherionManagerGUI {
     }
 
     /** One lockable tab: its slot, whether it's open, the unlock it belongs to, and how to open it. */
-    private record Gate(int slot, boolean open, String group, String name, String hint) {
+    record Gate(int slot, boolean open, String group, String name, String hint) {
     }
 
     /**
      * Lockable tabs in the order a new player actually opens them (the harbour spine first,
      * mid–late game last). Tabs whose plugin is missing are left out, not counted as locked.
      */
-    private List<Gate> gates(Player player, ProgressionService progress) {
+    List<Gate> gates(Player player, ProgressionService progress) {
         List<Gate> gates = new java.util.ArrayList<>();
         if (progress == null || player == null) {
             return gates;

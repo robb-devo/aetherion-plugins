@@ -433,6 +433,26 @@ its live config turns them on (first mmo-i; the rest of the network after Robb's
   toasts, first chain / Hub founded / Compressed Cobble / stage-ups get big cards, ship, factory goals, upgrades and
   first-pick part notes are toasts, the hand press and "built" lines go to the action bar.
 
+## Aether Journal, phase 1 (2026-11-23, cloud session, PR #192, switch off by default)
+
+Robb's ask: the Manager is too overloaded; make it one clean book that grows with the player. Backup of the old
+Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Concept: the Claude Doc linked in the PR.
+- Switch `journal.enabled` in the Items config (default false, read on start). Off = the Nether Star Manager, every
+  text unchanged. On = slot 9 is a book (Worn / Bound / Aether Journal, same `ItemKeys.manager()` key),
+  `AetherionManager.open` opens `menu/JournalMenu.java`, `/journal` is an alias of `/aetherion`.
+- The page is one inventory title: `core/api/JournalPage.java` (frame, spread, ribbons, gold line, plate, line texts
+  in the fonts `aetherion:jrn_line_1..4`). Art: `tools/gen_journal_art.py` via `gen_gui_kit.py`, kit glyphs
+  0xE400..0xE443; codepoints and the Chapter order are mirrored there.
+- Chapters: Today, Character (Stats, Skills, Pets, Storage, Loadouts), Journey, Atlas, Workshop, Market, Codex,
+  Company, Settings. Visibility follows the Manager gates (`AetherionManagerGUI.gates`); tile clicks reuse
+  `AetherionManagerListener.handleManagerClick` via `runTile`. PDC `journal_seen` marks chapters already opened.
+- Texts: `core/api/JournalText.t` rewrites "Nether Star → Skills" into "Journal › Character › Skills" while the
+  switch is on. Sinks: `LangPack`, `TalkText.fill`, `DialogueRuntime.fill`, `UnlockToast`, `ProgressionService.hint`;
+  other Manager strings are wrapped where they are sent. New Manager-pointing texts: write them as today, the
+  rewrite follows, and keep JournalText.TILES in step with the chapters in JournalMenu.
+- Deploy: Core on every backend that gets Items, Quests, Hub, Farming or Guilds (they call JournalText), served pack
+  with the journal art, then patch `journal: enabled: true` into the live Items config, mmo-i first.
+
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 
 mmo-d lagged (MSPT spikes to 1.4 s with nobody online): `CryptHologramService` (Items) re-spawned its saved

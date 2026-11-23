@@ -27,7 +27,7 @@ public final class ManagerNav {
         return GuiIcons.icon(GuiItems.named(
                 Material.ARROW,
                 "§eBack",
-                "§7Return to the Aetherion Manager."
+                de.aetherion.core.api.JournalText.t("§7Return to the Aetherion Manager.")
         ), GuiIcons.BACK);
     }
 

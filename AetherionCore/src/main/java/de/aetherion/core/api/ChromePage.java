@@ -336,6 +336,11 @@ public final class ChromePage {
         return out.toString();
     }
 
+    /** The frame glyph of {@code theme} for a menu of {@code rows} (drawn from title x -40, advance 257). */
+    static char frameGlyph(Theme theme, int rows) {
+        return (char) (FRAME + 8 * theme.ordinal() + Math.max(1, Math.min(6, rows)));
+    }
+
     private static boolean pocket(Map<Integer, Mark> marks, int slot) {
         return slot >= 0 && marks.get(slot) == Mark.POCKET;
     }
@@ -354,7 +359,7 @@ public final class ChromePage {
         return text;
     }
 
-    private static void plate(StringBuilder out, int[] cursor, Theme theme, String text) {
+    static void plate(StringBuilder out, int[] cursor, Theme theme, String text) {
         text = fit(text);
         int tw = Math.max(1, width(text));
         int x0 = 88 - (tw + PLATE_EXTRA) / 2;
@@ -395,7 +400,7 @@ public final class ChromePage {
         }
     }
 
-    private static void moveTo(StringBuilder out, int[] cursor, int x) {
+    static void moveTo(StringBuilder out, int[] cursor, int x) {
         out.append(BookPage.space(x - cursor[0]));
         cursor[0] = x;
     }

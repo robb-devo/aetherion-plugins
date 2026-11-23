@@ -197,7 +197,7 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
                 "§b✦ §f" + name + " §7· teleport unlocked"
         ));
         player.sendMessage("§b✦ §eNew area: §f" + name + "§e.");
-        player.sendMessage("§7Teleport unlocked — Manager → Teleports.");
+        player.sendMessage(de.aetherion.core.api.JournalText.t("§7Teleport unlocked — Manager → Teleports."));
         de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
         if (progress != null) {
             progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");

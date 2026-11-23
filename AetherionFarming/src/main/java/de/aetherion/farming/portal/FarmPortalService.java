@@ -401,7 +401,7 @@ public final class FarmPortalService {
         }
         hub.unlockNew(player.getUniqueId(), "farm_isle");
         player.sendMessage("§b✦ §eNew area: §fFarm Isle§e.");
-        player.sendMessage("§7Teleport unlocked — Manager → Teleports.");
+        player.sendMessage(de.aetherion.core.api.JournalText.t("§7Teleport unlocked — Manager → Teleports."));
     }
 
     private static BlockFace yawToCardinal(float yaw) {

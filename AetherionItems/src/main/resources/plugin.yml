@@ -57,10 +57,11 @@ commands:
     permission: aetherion.dev
 
   aetherion:
-    description: Opens the Aetherion Manager
+    description: Opens the Aetherion Manager (the Aether Journal while journal.enabled is on)
     aliases:
       - amanager
       - aethermanager
+      - journal
 
   devmenu:
     description: Open the Aetherion DEV chest

@@ -101,7 +101,7 @@ public final class SpawnMenu {
         // The round back hook on its seal, like every other Manager page (pack icon, gen_gui_icons.py).
         inventory.setItem(BACK_SLOT, de.aetherion.core.api.ChromePage.icon(item(Material.ARROW,
                 german ? "§eZurück" : "§eBack",
-                List.of(german ? "§7Zum Aetherion Manager." : "§7Return to the Aetherion Manager.")),
+                List.of(de.aetherion.core.api.JournalText.t(german ? "§7Zum Aetherion Manager." : "§7Return to the Aetherion Manager."))),
                 de.aetherion.core.api.ChromePage.BACK));
         Inventory page = Bukkit.createInventory(new Holder(), MENU_SIZE,
                 de.aetherion.core.api.BookPage.title('', captions));

@@ -54,7 +54,7 @@ public class Objective {
         }
 
         if (target.equalsIgnoreCase("AETHERION_MANAGER")) {
-            return "§eAetherion Manager";
+            return de.aetherion.core.api.JournalText.t("§eAetherion Manager");
         }
 
         if (target.equalsIgnoreCase("AETHER_SKILL")) {

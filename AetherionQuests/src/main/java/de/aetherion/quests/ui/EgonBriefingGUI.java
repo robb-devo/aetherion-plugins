@@ -63,7 +63,7 @@ public final class EgonBriefingGUI implements Listener {
                 "§8" + who + " is not paid enough for this."
         ));
         inventory.setItem(SLOT_MANAGER, button(
-                Material.NETHER_STAR,
+                de.aetherion.core.api.JournalText.enabled() ? Material.BOOK : Material.NETHER_STAR,
                 "§eAetherion Manager",
                 "§7The Nether Star in your inventory.",
                 "§7Your growing hub of systems."
@@ -137,7 +137,7 @@ public final class EgonBriefingGUI implements Listener {
             return;
         }
         String who = speaker == null || speaker.isBlank() ? "Egon" : speaker;
-        String title = topicTitle(topicSlot);
+        String title = de.aetherion.core.api.JournalText.t(topicTitle(topicSlot));
         Inventory inventory = Bukkit.createInventory(
                 new Holder(Holder.Mode.DETAIL, topicSlot, who),
                 27,
@@ -149,7 +149,7 @@ public final class EgonBriefingGUI implements Listener {
         lore.add("§8" + who);
         lore.add("");
         for (String line : lines) {
-            for (String wrapped : wrap(line, 40)) {
+            for (String wrapped : wrap(de.aetherion.core.api.JournalText.t(line), 40)) {
                 lore.add("§f" + wrapped);
             }
             lore.add("");
@@ -324,8 +324,12 @@ public final class EgonBriefingGUI implements Listener {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(name);
-            meta.setLore(List.of(lore));
+            meta.setDisplayName(de.aetherion.core.api.JournalText.t(name));
+            List<String> text = new ArrayList<>(lore.length);
+            for (String line : lore) {
+                text.add(de.aetherion.core.api.JournalText.t(line));
+            }
+            meta.setLore(text);
             item.setItemMeta(meta);
         }
         return item;

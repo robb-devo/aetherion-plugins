@@ -94,7 +94,7 @@ public final class ColosseumGateService implements Listener, Runnable {
         if (hub.unlockNew(player.getUniqueId(), "colosseum")) {
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
             player.sendMessage("§b✦ §eNew teleport: §fColosseum§e.");
-            player.sendMessage("§7Open Aetherion Manager → Teleports to return to the ring.");
+            player.sendMessage(de.aetherion.core.api.JournalText.t("§7Open Aetherion Manager → Teleports to return to the ring."));
         }
     }
 

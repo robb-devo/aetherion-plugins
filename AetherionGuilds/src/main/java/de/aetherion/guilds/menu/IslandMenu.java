@@ -212,7 +212,7 @@ public final class IslandMenu implements MenuKit.Menu {
         inventory.setItem(BORDER, MenuKit.named(Material.SPYGLASS, "§eShow build border",
                 "§7Gold particles trace where", "§7you may build, for a few seconds."));
 
-        inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§7Aetherion Manager"));
+        inventory.setItem(BACK, MenuKit.named(Material.ARROW, de.aetherion.core.api.JournalText.t("§7Aetherion Manager")));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
     }
