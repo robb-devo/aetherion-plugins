@@ -45,6 +45,8 @@ public final class StoryState implements StoryAccess {
     public static final String CROSSED = "exile_crossed";
     /** Aetherion beaten in the Ashen Void behind the Great Doors: the finale no longer opens without a vial. */
     public static final String FINALE_WON = "exile_finale_won";
+    /** The Pathwarden fell to this player once, any time, any way (A-52: with Level 75 that is the whole ferry ticket). */
+    public static final String PATHWARDEN_DOWN = "pathwarden_down";
     /** Aetherion's arena behind the Great Doors (Core ExileDoors); the dungeon copy of the boss elsewhere never counts. */
     private static final String FINALE_WORLD = "ashen_void";
 
@@ -241,11 +243,52 @@ public final class StoryState implements StoryAccess {
         return quest == null ? null : qm.getQuestState(player, quest);
     }
 
-    /** BossEngine kill credit (BossKillCredit): Aetherion falling in the Ashen Void closes the free finale. */
+    /**
+     * BossEngine kill credit (BossKillCredit): the Pathwarden once is half the ferry ticket; Aetherion falling in the
+     * Ashen Void closes the free finale.
+     */
     public static void onBossKill(Player player, String bossId) {
-        if (player != null && "dungeon_aetherion".equalsIgnoreCase(bossId)
+        if (player == null || bossId == null) {
+            return;
+        }
+        if ("pathwarden".equalsIgnoreCase(bossId)) {
+            if (!hasPlayerFlag(player, PATHWARDEN_DOWN)) {
+                setPlayerFlag(player, PATHWARDEN_DOWN);
+                player.sendMessage(de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.warden_down",
+                        "§8Ferry §8» §7The §cPathwarden§7 is down. The Ferryman at the Veil Quay takes you across at Aetherion Level §e75§7."));
+            }
+            return;
+        }
+        if ("dungeon_aetherion".equalsIgnoreCase(bossId)
                 && player.getWorld().getName().equalsIgnoreCase(FINALE_WORLD)) {
             setPlayerFlag(player, FINALE_WON);
+        }
+    }
+
+    /**
+     * Beaten the Pathwarden once: the flag, the story road (Silent Road done, crossed), or a kill the Dungeon Journal
+     * logged before the flag existed.
+     */
+    public static boolean pathwardenDown(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (hasPlayerFlag(player, PATHWARDEN_DOWN) || hasPlayerFlag(player, VEIL_QUAY) || hasPlayerFlag(player, CROSSED)) {
+            return true;
+        }
+        if (journalKnowsPathwarden(player)) {
+            setPlayerFlag(player, PATHWARDEN_DOWN);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean journalKnowsPathwarden(Player player) {
+        try {
+            de.aetherion.items.codex.CodexService codex = de.aetherion.items.codex.CodexRewards.service();
+            return codex != null && codex.bossKills(player, "pathwarden") > 0L;
+        } catch (LinkageError | RuntimeException ignored) {
+            return false;
         }
     }
 
@@ -269,11 +312,18 @@ public final class StoryState implements StoryAccess {
             return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.harbour",
                     "No passengers who haven't finished their harbour business. Then the fog.");
         }
-        if (!hasPlayerFlag(player, VEIL_QUAY)) {
-            return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.road",
-                    "The Council's road is still sealed for you. Ysolde at the Archive knows about that.");
+        // A-52: Level 75 and the Pathwarden beaten once. The story still runs, it just isn't the lock.
+        boolean warden = pathwardenDown(player);
+        boolean level = StoryFlow.meetsLevel(player, 75);
+        if (!warden && !level) {
+            return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.both",
+                    "Two things first: Aetherion Level §e75§7, and the §cPathwarden§7 beaten once.");
         }
-        if (!StoryFlow.meetsLevel(player, 75)) {
+        if (!warden) {
+            return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.warden",
+                    "Beat the §cPathwarden§7 once first. A Crypt vial, then the Proctor at the Colosseum.");
+        }
+        if (!level) {
             return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.level",
                     "The fog isn't ready for you. Come back at Aetherion Level §e75§7.");
         }

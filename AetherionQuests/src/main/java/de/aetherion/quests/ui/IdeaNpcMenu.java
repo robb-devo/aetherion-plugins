@@ -41,7 +41,7 @@ public final class IdeaNpcMenu implements Listener {
             Map.entry("berit", new String[] {"§7Oldest woman in town. The song.", "§8Spot: cottage, edge of the Capital"}),
             Map.entry("nell", new String[] {"§7A child who hums the bells.", "§8Spot: harbour lane"}),
             Map.entry("hesper", new String[] {"§7Speaks for the Anchor camp.", "§8Spot: under the Fallen Anchor"}),
-            Map.entry("ferryman", new String[] {"§7Waits at the end of the road.", "§8Spot: Veil Quay"})
+            Map.entry("ferryman", new String[] {"§7Takes you across the Veil.", "§8Spot: Veil Quay"})
     );
 
     /** Top row: idea NPCs. Bottom row: the main-story cast. */

@@ -281,7 +281,7 @@ public final class StoryFlow {
                 tip(player, "story_next.ysolde_road", "Tell Ysolde · Archive · Aetherion Level 60", NamedTextColor.GOLD);
             }
             case LullabyQuests.SILENT_ROAD -> {
-                tip(player, "story_next.veil", "The Veil Quay is open · the ferry waits for Level 75", NamedTextColor.AQUA);
+                tip(player, "story_next.veil", "The Veil Quay · the ferry takes you at Aetherion Level 75", NamedTextColor.AQUA);
                 if (de.aetherion.core.api.ExilePlaces.quayBoard() != null) {
                     QuestHint.showSpot(player, "veil_quay", LangPack.say(player, "exile.door.veil_quay", "The Veil Quay"));
                 }
@@ -321,7 +321,7 @@ public final class StoryFlow {
             case "nell" -> stage >= 6 ? "story_nell.after" : "story_nell.default";
             case "hesper" -> stage >= 5 ? "story_hesper.after" : "story_hesper.default";
             case "ferryman" -> onExile(player) ? "story_ferryman.exile_default"
-                    : !StoryState.hasPlayerFlag(player, StoryState.VEIL_QUAY) ? "story_ferryman.default"
+                    : !StoryState.pathwardenDown(player) ? "story_ferryman.default"
                     : meetsLevel(player, 75) ? "story_ferryman.soon" : "story_ferryman.waiting";
             default -> "story_" + id + ".default";
         };
