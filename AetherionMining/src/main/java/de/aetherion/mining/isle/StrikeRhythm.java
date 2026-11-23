@@ -99,7 +99,38 @@ public final class StrikeRhythm {
         IsleOre seamOre;
         int seam;
         int bursts;
+        // The running series (since the meter last stood at zero): what a crystal at its end is made of.
+        double peak;
+        int oreStrikes;
+        IsleOre bestOre;
+        Location lastOreAt;
+        Location lastAt;
+
+        void newSeries() {
+            peak = 0.0d;
+            oreStrikes = 0;
+            bestOre = null;
+            lastOreAt = null;
+            lastAt = null;
+        }
+
+        Series snapshot() {
+            return new Series(peak, oreStrikes, bestOre, lastOreAt == null ? lastAt : lastOreAt);
+        }
     }
+
+    /**
+     * One finished (or crested) series: its peak on the meter, how many crystal-bearing ore strikes it held,
+     * the rarest such ore, and where the last of them was struck.
+     */
+    public record Series(double peak, int oreStrikes, IsleOre bestOre, Location at) {
+        public Tier tier() {
+            return Tier.of(peak);
+        }
+    }
+
+    /** A series that keeps going this long crests: a crystal can form mid-run, then the count starts over. */
+    static final int CREST_STRIKES = 300;
 
     private final MineIsle isle;
     private final Map<UUID, State> states = new ConcurrentHashMap<>();
@@ -134,6 +165,9 @@ public final class StrikeRhythm {
         }
         State state = states.computeIfAbsent(player.getUniqueId(), ignored -> new State());
         int now = Bukkit.getCurrentTick();
+        if (state.stacks <= 0.0d) {
+            state.newSeries();
+        }
         double weight = ore == IsleOre.STONE ? 0.5d : ore.rare() ? 2.0d : 1.0d;
         double gain = weight * (1.0d + 0.5d * MineSkills.scale(player, MineSkills.WORK_SONG))
                 + isle.hearth().rhythmGain(player);
@@ -147,6 +181,21 @@ public final class StrikeRhythm {
             seam(player, state, ore, at);
         }
         state.best = Math.max(state.best, state.stacks);
+        state.peak = Math.max(state.peak, state.stacks);
+        state.lastAt = at;
+        if (ore != null && ore.hasCrystal()) {
+            state.oreStrikes++;
+            state.lastOreAt = at;
+            if (state.bestOre == null || CrystalFinds.oreFactor(ore) > CrystalFinds.oreFactor(state.bestOre)) {
+                state.bestOre = ore;
+            }
+            if (state.oreStrikes >= CREST_STRIKES) {
+                isle.crystals().seriesEnd(player, state.snapshot(), true);
+                double keep = state.stacks;
+                state.newSeries();
+                state.peak = keep;
+            }
+        }
         if (state.tier.ordinal() > before.ordinal()) {
             tierUp(player, state.tier);
         }
@@ -287,6 +336,10 @@ public final class StrikeRhythm {
                 if (before != Tier.NONE) {
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 0.35f, 0.5f);
                 }
+                // The series is over: this is when a crystal can form (A-50).
+                Series ended = state.snapshot();
+                state.newSeries();
+                isle.crystals().seriesEnd(player, ended, false);
             }
             paint(player, state);
         }

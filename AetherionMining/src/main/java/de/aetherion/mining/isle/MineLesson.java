@@ -35,7 +35,7 @@ import java.util.UUID;
  *   land   ─ card + lesson bar (arrow, metres) to Old Wick by the landing lamp
  *   hook   ─ his bubble reads YOUR pick: ⛏ Mining Power vs coal 8 / copper 14 / iron 24 (a spare ⛏14 if you're short)
  *   do     ─ Strike Rhythm to Steady Pick — the lesson bar mirrors the meter, so idling visibly drains it
- *   find   ─ the next strike grows a geode out of the rock; crack it (another grows if it sinks)
+ *   find   ─ stop striking: when the series ends a geode grows out of the rock (the real Crystal Find rule); crack it
  *   close  ─ back to Wick: the skill in one sentence, coins + XP, Otto's contracts / way home → his plain desk
  * </pre>
  * The stage lives on the mine profile ({@code lesson}). Miners who already worked the isle skip it. Done sends
@@ -170,8 +170,8 @@ public final class MineLesson {
                 pointQuarry(player);
             }
             case FIND -> remind(player, t(player,
-                    "One more strike. The rock's about to give you something that glitters.",
-                    "Noch ein Schlag. Der Fels hat gleich was Glitzerndes für dich."));
+                    "Now stop swinging. When your rhythm runs out, the rock gives you something that glitters.",
+                    "Jetzt hör auf zu schlagen. Wenn dein Rhythmus ausläuft, gibt dir der Fels was Glitzerndes."));
             case RETURN -> close(player);
             default -> {
             }
@@ -335,17 +335,19 @@ public final class MineLesson {
     /** One hand strike on the isle, after the rhythm took it. */
     void onStrike(Player player, IsleOre ore, Location at) {
         MineProfiles.Profile profile = isle.profiles().of(player);
+        if (profile.lesson == STRIKE && isle.rhythm().tier(player).ordinal() >= StrikeRhythm.Tier.STEADY.ordinal()) {
+            steady(player, profile);
+        }
+    }
+
+    /** The lesson's crystal is due: the next series end grows it (CrystalFinds.seriesEnd). */
+    boolean wantsCrystal(Player player) {
         UUID id = player.getUniqueId();
-        if (profile.lesson == STRIKE) {
-            if (isle.rhythm().tier(player).ordinal() >= StrikeRhythm.Tier.STEADY.ordinal()) {
-                steady(player, profile);
-            }
-            return;
+        if (isle.profiles().of(player).lesson != FIND || !armed.contains(id)) {
+            return false;
         }
-        if (profile.lesson == FIND && armed.contains(id)
-                && isle.crystals().lessonPop(player, ore != null && ore.hasCrystal() ? ore : IsleOre.COAL, at)) {
-            armed.remove(id);
-        }
+        armed.remove(id);
+        return true;
     }
 
     private void steady(Player player, MineProfiles.Profile profile) {
@@ -354,8 +356,8 @@ public final class MineLesson {
         MineSkills.bonus(player, STEADY_XP);
         armed.add(player.getUniqueId());
         player.showTitle(Title.title(MineText.legacy("§a§l" + t(player, "STEADY PICK", "STEADY PICK")),
-                MineText.legacy(t(player, "§e+10 ore Fortune §7while you keep the beat §8· §fone more strike",
-                        "§e+10 Erz-Glück §7solange du im Takt bleibst §8· §fnoch ein Schlag")),
+                MineText.legacy(t(player, "§e+10 ore Fortune §7while you keep the beat §8· §fnow stop: a crystal forms",
+                        "§e+10 Erz-Glück §7solange du im Takt bleibst §8· §fjetzt aufhören: ein Kristall entsteht")),
                 Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(2200), Duration.ofMillis(600))));
         paint(player, profile);
     }
@@ -383,8 +385,8 @@ public final class MineLesson {
             return;
         }
         armed.add(finder);
-        player.sendMessage(t(player, "§7Gone. §fThe next strike grows another — crack it this time.",
-                "§7Weg. §fDer nächste Schlag lässt noch einen wachsen — diesmal knacken."));
+        player.sendMessage(t(player, "§7Gone. §fStrike a new series and stop — another one grows. Crack it this time.",
+                "§7Weg. §fSchlag eine neue Serie und hör auf — dann wächst noch einer. Diesmal knacken."));
     }
 
     /** The rest of the cast send lesson players back to Wick first. */
@@ -428,7 +430,8 @@ public final class MineLesson {
             case FIND -> {
                 boolean up = isle.crystals().hasGeode(player.getUniqueId());
                 text = head + (up ? t(player, "§dA geode! §fStrike it open", "§dEine Geode! §fSchlag sie auf")
-                        : t(player, "§fOne more strike §8· §dsomething glitters in there", "§fNoch ein Schlag §8· §dda glitzert was"));
+                        : t(player, "§fStop striking §8· §dwhen the series ends, a crystal forms",
+                        "§fHör auf zu schlagen §8· §dwenn die Serie endet, entsteht ein Kristall"));
                 progress = up ? 0.9f : 0.7f;
                 color = BossBar.Color.PURPLE;
             }
