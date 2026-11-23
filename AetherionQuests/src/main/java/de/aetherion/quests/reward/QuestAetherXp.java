@@ -5,7 +5,7 @@ import de.aetherion.quests.model.Quest;
 import java.util.Map;
 
 /**
- * Aetherion account XP on quest rewards (100 XP ≈ 1 account level).
+ * Aetherion account XP on quest rewards (100-170 XP per account level, see AetherionLevel).
  * {@link #legacyGranted(String)} is the amount players already received
  * before this pass — used only for catch-up deltas on completed quests.
  */

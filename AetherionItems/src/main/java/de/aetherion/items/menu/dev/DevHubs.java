@@ -351,7 +351,7 @@ final class DevHubs {
 
     private static void drawProgress(Inventory inventory) {
         inventory.setItem(10, tile(Material.EXPERIENCE_BOTTLE, "§aMax All Skills", "skills:max",
-                "§7Every skill → Lv. 100 + every slot.", "§8You only."));
+                "§7Every skill → Lv. " + de.aetherion.items.skill.SkillProgression.MAX_LEVEL + " + every slot.", "§8You only."));
         inventory.setItem(11, tile(Material.BOOK, "§aTutorial Done", "quests:tutorial-done",
                 "§7Complete orientation quests.", "§7Unlocks Workbench · Skills · Anvil · Pets."));
         inventory.setItem(12, tile(Material.KNOWLEDGE_BOOK, "§aUnlock All Recipes", "unlock:recipes-all",

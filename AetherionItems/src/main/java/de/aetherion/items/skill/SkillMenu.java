@@ -403,17 +403,18 @@ public final class SkillMenu implements Listener {
                 "§7New rarity every §f" + SkillProgression.RARITY_EVERY + " §7levels:",
                 "§f Common §aUncommon §bRare §5Epic §6Legendary §dMythic",
                 "",
-                "§7The curve:",
+                "§7The road (every level adds the same step):",
                 " " + SkillProgression.Stage.APPRENTICE.colored() + " §8"
-                        + SkillProgression.stageRange(SkillProgression.Stage.APPRENTICE) + " §7gentle",
+                        + SkillProgression.stageRange(SkillProgression.Stage.APPRENTICE),
                 " " + SkillProgression.Stage.JOURNEYMAN.colored() + " §8"
-                        + SkillProgression.stageRange(SkillProgression.Stage.JOURNEYMAN) + " §7climbs faster",
+                        + SkillProgression.stageRange(SkillProgression.Stage.JOURNEYMAN),
                 " " + SkillProgression.Stage.MASTER.colored() + " §8"
-                        + SkillProgression.stageRange(SkillProgression.Stage.MASTER) + " §7steepest",
+                        + SkillProgression.stageRange(SkillProgression.Stage.MASTER),
                 " " + SkillProgression.Stage.MASTERED.colored() + " §8"
                         + SkillProgression.stageRange(SkillProgression.Stage.MASTERED),
                 "",
-                "§7Aetherion Level: §f100 XP §7= §f1 level§7.",
+                "§7Aetherion Level: §f" + AetherionLevel.BASE_XP + " XP §7a level, §f+1 §7every "
+                        + AetherionLevel.RAMP_EVERY + " levels §8(max " + AetherionLevel.TOP_XP + ")§7.",
                 "§7Every §f" + AetherionLevel.STAT_EVERY + " §7levels: §a+1 Damage §7& §c+1 Health§7.",
                 "§7Auto pickup at Aetherion §f"
                         + de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL + "§7."

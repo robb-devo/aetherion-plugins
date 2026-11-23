@@ -4,21 +4,18 @@ import de.aetherion.items.model.Rarity;
 
 public final class SkillProgression {
 
-    public static final int MAX_LEVEL = 100;
-    /** Six rarities Common→Mythic spaced evenly across 1–100 (Mythic at 100). */
-    public static final int RARITY_EVERY = 20;
+    /** A-61 (E-4): skills run to 150 on one even curve (was 100, with walls at 50 and 75). */
+    public static final int MAX_LEVEL = 150;
+    /** Six rarities Common→Mythic spaced evenly across 1–150 (Mythic at 150). */
+    public static final int RARITY_EVERY = 30;
     /**
      * Effect curve (base bonuses stay flat; this scales them).
-     * 10-27 (Pit: skills felt like nothing until 75): front-loaded, same ~6.5× end. Every level counts,
-     * every 10th level is a step ({@link #PER_TEN_LEVELS}), every 20th adds the rarity step on top.
-     * With steps and rarity: ~1.24× @10 · ~1.68× @25 · ~2.44× @50 · ~3.39× @75 · ~6.48× @100
-     * (was ~1.09 · 1.33 · 1.66 · 2.84 · 6.50).
-     * Midgame pass kept these numbers (Wave-2 intent holds) and made them readable
-     * instead: see {@link Stage} — Apprentice / Journeyman / Master in the menu.
+     * A-61: one even slope, no bend at 50 or 75. Every level counts the same, every 10th level is a step
+     * ({@link #PER_TEN_LEVELS}), every 30th adds the rarity step on top. The end stays where it was
+     * (~6.47× at 150, was ~6.48× at 100), so max power doesn't move; the road to it is longer and even:
+     * ~1.31× @10 · ~1.79× @25 · ~2.75× @50 · ~3.65× @75 · ~4.61× @100 · ~5.51× @125 · ~6.47× @150.
      */
-    public static final double PER_LEVEL = 0.02d;
-    public static final double PER_LEVEL_AFTER_50 = 0.03d;
-    public static final double PER_LEVEL_AFTER_75 = 0.11d;
+    public static final double PER_LEVEL = 0.028d;
     public static final double PER_TEN_LEVELS = 0.06d;
     public static final double PER_RARITY = 0.08d;
 
@@ -70,14 +67,14 @@ public final class SkillProgression {
 
     /**
      * Flat stat bonuses (Damage, Defense, Health, Fortune, Mining Power, Spread …) — the weight of a skill.
-     * 10-27 (Pit: skills had no weight at any level): steep and linear with a step every 10 levels and per rarity,
-     * ~2.4× @10 · ~5× @25 · ~9.4× @50 · ~13.5× @75 · ~18.4× @100. A maxed fortune skill (+22 base) is ~+400 Fortune,
-     * a quarter of a T5 set; Heavy Hands at 100 is a T5 sword's damage. Percent stats and special effects stay on
-     * {@link #effectMultiplier(int)} so crit, lifesteal and loot rolls don't run away.
+     * Linear with a step every 10 levels and per rarity. A-61 stretched it over 150 levels with the same end:
+     * ~1.9× @10 · ~3.3× @25 · ~6.4× @50 · ~9.3× @75 · ~12.4× @100 · ~15.3× @125 · ~18.4× @150. A maxed fortune
+     * skill (+22 base) is ~+400 Fortune, a quarter of a T5 set; Heavy Hands at max is a T5 sword's damage. Percent
+     * stats and special effects stay on {@link #effectMultiplier(int)} so crit, lifesteal and loot rolls don't run away.
      */
     public static double weightMultiplier(int level) {
         int clamped = clampLevel(level);
-        return 1.0d + 0.12d * (clamped - 1) + 0.30d * (clamped / 10) + 0.50d * rarityTier(clamped);
+        return 1.0d + 0.08d * (clamped - 1) + 0.20d * (clamped / 10) + 0.50d * rarityTier(clamped);
     }
 
     /** The scale a skill's bonus of this kind gets at {@code level}. */
@@ -94,19 +91,14 @@ public final class SkillProgression {
 
     public static double effectMultiplier(int level) {
         int clamped = clampLevel(level);
-        int early = Math.min(clamped, 50);
-        int mid = Math.min(Math.max(0, clamped - 50), 25);
-        int late = Math.max(0, clamped - 75);
         return 1.0d
-                + ((early - 1) * PER_LEVEL)
-                + (mid * PER_LEVEL_AFTER_50)
-                + (late * PER_LEVEL_AFTER_75)
+                + ((clamped - 1) * PER_LEVEL)
                 + ((clamped / 10) * PER_TEN_LEVELS)
                 + (rarityTier(clamped) * PER_RARITY);
     }
 
     /**
-     * Skill compact chance: ~0.6% at level 1, ~2.8% at level 100.
+     * Skill compact chance: ~0.6% at level 1, ~2.8% at {@link #MAX_LEVEL}.
      * Kept flatter than {@link #effectMultiplier(int)} so compact stays a gentle helper.
      */
     public static double compactChance(int level) {
@@ -127,22 +119,16 @@ public final class SkillProgression {
     }
 
     /**
-     * XP to reach {@code level + 1}. Early is still snack-sized; 50–100 is the wall
-     * so late levels feel earned and the 6.5× multiplier is not a free gift.
+     * XP to reach {@code level + 1}. A-61 (E-4): one smooth curve, each level a little dearer than the one before,
+     * no wall at 50 or 75. 40 XP at 1→2, ~1,530 at 50, ~5,030 at 100, ~10,400 at 149→150.
+     * Totals: ~30k to 50, ~184k to 100, ~562k to 150 (was ~35k to 50 and ~347k to the old cap 100).
      */
     public static int xpToNext(int level) {
         if (level >= MAX_LEVEL) {
             return 0;
         }
         int current = clampLevel(level);
-        int xp = 32 + (11 * current) + ((current * current) / 2);
-        if (current >= 50) {
-            xp += (current - 49) * 70;
-        }
-        if (current >= 75) {
-            xp += (current - 74) * 110;
-        }
-        return xp;
+        return 30 + (10 * current) + ((2 * current * current) / 5);
     }
 
     public static long spentXp(int level) {
@@ -158,19 +144,19 @@ public final class SkillProgression {
         return clampLevel(level) >= MAX_LEVEL;
     }
 
-    /** Where the curve starts to bend — MID uses {@link #PER_LEVEL_AFTER_50}. */
+    /** Second third of the road (A-61: the curve is even, the stages are just milestones). */
     public static final int MID_FROM = 50;
-    /** Steepest stretch — LATE uses {@link #PER_LEVEL_AFTER_75}. */
-    public static final int LATE_FROM = 75;
+    /** Last third of the road. */
+    public static final int LATE_FROM = 100;
 
     /**
-     * Player-facing read of the effect curve so nobody has to know the constants.
-     * Apprentice climbs gently, Journeyman bends upward, Master is the steep wall.
+     * Player-facing milestones on the road to {@link #MAX_LEVEL}. Since A-61 every level adds the same step,
+     * so the stages name the distance, not a change in slope.
      */
     public enum Stage {
-        APPRENTICE("§f", "Apprentice", "gentle climb — gear is your power spike"),
-        JOURNEYMAN("§e", "Journeyman", "bonuses climb faster from here"),
-        MASTER("§6", "Master", "steepest stretch — every level shows"),
+        APPRENTICE("§f", "Apprentice", "every level adds a step, gear is your power spike"),
+        JOURNEYMAN("§e", "Journeyman", "a third of the way, the steps add up now"),
+        MASTER("§6", "Master", "the last fifty levels, the road to Mythic"),
         MASTERED("§d", "Mastered", "nothing left to prove");
 
         private final String color;
