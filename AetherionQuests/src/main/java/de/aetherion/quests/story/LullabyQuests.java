@@ -149,8 +149,8 @@ public final class LullabyQuests {
                 500, 600);
 
         quest(questManager, SILENT_ROAD, "The Silent Road",
-                "Kill the Pathwarden on the sealed King's Road and bring the writ he carries "
-                        + "to Ysolde at the Archive.",
+                "Beat the Pathwarden (a Crypt vial, then the Proctor at the Colosseum) and bring the writ he "
+                        + "carries to Ysolde at the Archive.",
                 List.of(new Objective(ObjectiveType.KILL, "pathwarden", 1),
                         new Objective(ObjectiveType.DELIVER, "lore_sealed_writ_silent_year", 1)),
                 1500, 2000);

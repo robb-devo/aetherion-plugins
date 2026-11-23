@@ -178,7 +178,8 @@ Quests, Guilds on mmo-i; one restart of all five). The tutorial on mmo-r and mmo
 - Islands: mmo-r's data won. mmo-i's old island data is in `<mmo-i>/_retired/pre-island-move-<time>` (6 islands that
   only existed there, incl. david679964, can be restored one by one). Guilds jars on mmo-r and mmo-d are parked in
   `plugins/_disabled-network`; the old island worlds there bounce players to spawn (`network.islands.old-worlds`).
-- `/exile go` crosses from the main world when the story gate passes (at the quay it boards the ferry); the hub routes
+- `/exile go` crosses from the main world when the ferry gate passes (since A-52: Aetherion Level 75 and the Pathwarden
+  beaten once, flag `pathwarden_down`; the story is no longer the lock; at the quay it boards the ferry); the hub routes
   it through mmo-r. The arrival barge hangs on a per-rider cable; the white screen holds until the line chunks are loaded.
 - Exile void: the plugin trim cut the map's core (229 built chunks). At 03:24 a one-off script restored the 21 region
   files from `aetherion_exile.void-backup-20261023-030928`, then deleted only the 2998 terrain chunks outside the box

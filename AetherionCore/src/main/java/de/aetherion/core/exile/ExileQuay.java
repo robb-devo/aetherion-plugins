@@ -630,8 +630,8 @@ public final class ExileQuay implements Listener {
             return false;
         }
         if (!near(p, 48)) {
-            p.sendMessage(Say.t(p, "§8Ferry §8» §7The ferry leaves from the Veil Quay, at the end of the King's Road.",
-                    "§8Fähre §8» §7Die Fähre legt am Schleierkai ab, am Ende der Königsstraße."));
+            p.sendMessage(Say.t(p, "§8Ferry §8» §7The ferry leaves from the Veil Quay, behind the Borderlands.",
+                    "§8Fähre §8» §7Die Fähre legt am Schleierkai ab, hinter den Borderlands."));
             return false;
         }
         String no = refusal(p);

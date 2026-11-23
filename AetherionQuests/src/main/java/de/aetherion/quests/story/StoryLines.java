@@ -139,19 +139,19 @@ public final class StoryLines {
                 "People in the harbour lanes are forgetting things. Keep your ears open.");
         en("story_ysolde.offer_silent_road",
                 "Berit doesn't know you? Then it's back. The old sickness: the Fading.",
-                "The Council sealed the King's Road. The §cPathwarden§f still guards it.",
-                "Kill the warden. Bring me the writ he carries. Compass finds him.");
+                "The Council's old warden, the §cPathwarden§f, carries their writ. He sleeps in Crypt vials.",
+                "Take one to the §6Proctor§f at the Colosseum. Beat him. Bring me the writ.");
         en("story_ysolde.musing_fading",
                 "People forgetting their own doors. The old books had a word for it.");
         en("story_ysolde.road_gate",
                 "Get stronger, {player}. Aetherion Level §e60§f. Then we open the road.");
         en("story_ysolde.remind_silent_road",
-                "The §cPathwarden§f, {player}. The King's Road. Compass finds him.",
+                "The §cPathwarden§f, {player}. A Crypt vial, then the §6Proctor§f at the Colosseum.",
                 "Bring the writ. Don't break the wax. I want to.");
         en("story_ysolde.silent_road_done",
                 "'Let no one walk to him. Let no one walk from him.' Signed, the Council.",
                 "One name is Thorne. My great-grandmother signed him out of the books.",
-                "The road ends at an old quay into the fog. §fThe Veil Quay§f. It's open now.");
+                "It names an old quay in the fog, behind the Borderlands. §fThe Veil Quay§f.");
         en("story_ysolde.after_road",
                 "I'm keeping the writ. The Registry can ask me for it. Politely.",
                 "The Veil Quay is yours to walk. The ferry is another matter. Level §e75§f.");
@@ -213,16 +213,15 @@ public final class StoryLines {
                 "No passengers today. Finish your business in the harbour first.");
         en("story_ferryman.default",
                 "Ferry! Ferry to the — hm. Where does it go again?",
-                "Road's been shut a long while. You walked it anyway?",
-                "No passengers today. The fog says no. The fog always says no.");
+                "No passengers today. The fog says no. Not while the §cPathwarden§f still stands for you.",
+                "Beat him once, come back at Aetherion Level §e75§f. The fog likes round numbers.");
         en("story_ferryman.waiting",
                 "A passenger? First in… a while. A long while.",
                 "The fog isn't ready for you. Neither is the boat, frankly.",
                 "Come back at Aetherion Level §e75§f. The fog likes round numbers.");
         en("story_ferryman.soon",
-                "Fog's thinner today. Not thin enough.",
-                "Soon. The oar keeps wanting to be used.",
-                "Come back soon. I'll have remembered the way by then.");
+                "Fog's thin enough today. For you, anyway.",
+                "Ask me, or ring the bell by the gangway. Once. It counts.");
         en("story_ferryman.offer_ferry",
                 "A passenger. With a writ, even. The fog's thin enough today.",
                 "Ring the bell by the gangway. Once. It counts. Or step aboard and crouch.",

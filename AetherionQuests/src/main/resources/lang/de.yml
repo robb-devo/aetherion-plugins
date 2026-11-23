@@ -134,13 +134,17 @@ ui:
       deed: "Weiter · Deed, der Isle Clerk · ab Aetherion Level 20"
       nell: "Weiter · Nell · Hafengassen · Aetherion Level 50"
       ysolde_road: "Erzähl's Ysolde · Archiv · Aetherion Level 60"
-      veil: "Der Schleierkai ist offen · die Fähre wartet auf Level 75"
+      veil: "Der Schleierkai · die Fähre nimmt dich ab Aetherion Level 75 mit"
       orrin: "Weiter · Orrin · das Observatorium, weit im Westen der Hofstadt"
       gardener: "Weiter · der Gärtnerjunge · am Tor zum Wurzelgrund"
       doors: "Die Großen Tore des Schlosses · vielleicht hören sie jetzt zu"
     ferry:
       harbour: "Keine Fahrgäste, die mit dem Hafen noch nicht fertig sind. Erst das, dann der Nebel."
+      both: "Erst zwei Dinge: Aetherion Level §e75§7, und den §cPathwarden§7 einmal besiegt."
+      warden: "Besieg erst einmal den §cPathwarden§7. Eine Crypt-Phiole, dann der Proctor im Kolosseum."
+      # unused since A-52; kept, the overlay is additive
       road: "Die Straße des Rats ist für dich noch versiegelt. Ysolde im Archiv weiß davon."
+      warden_down: "§8Fähre §8» §7Der §cPathwarden§7 liegt. Der Fährmann am Schleierkai bringt dich ab Aetherion Level §e75§7 rüber."
       level: "Der Nebel ist nicht bereit für dich. Komm mit Aetherion Level §e75§7 wieder."
     exile:
       ferryman: "Runter von der Fähre · sprich mit dem Fährmann"
@@ -301,7 +305,7 @@ quests:
     description: "Nell sagt, Mütterchen Berit hat vergessen, ihre Lampe anzumachen. Sieh bei Berit in ihrem Häuschen nach."
   lullaby_silent_road:
     title: "Die stille Straße"
-    description: "Töte den Pathwarden auf der versiegelten Königsstraße und bring das Schreiben, das er trägt, zu Ysolde ins Archiv."
+    description: "Besiege den Pathwarden (eine Crypt-Phiole, dann der Proctor im Kolosseum) und bring das Schreiben, das er trägt, zu Ysolde ins Archiv."
   lullaby_ferry:
     title: "Hinter den Schleier"
     description: "Geh am Schleierkai an Bord der Königsfähre. Fahr hinüber. Dann sprich drüben mit dem Fährmann."
@@ -887,19 +891,19 @@ dialogs:
       - "In den Hafengassen vergessen Leute Dinge. Halt die Ohren offen."
     offer_silent_road:
       - "Berit kennt dich nicht mehr? Dann ist es zurück. Die alte Krankheit: das Verblassen."
-      - "Der Rat hat die Königsstraße versiegelt. Der §cPathwarden§f bewacht sie noch."
-      - "Töte den Wächter. Bring mir das Schreiben, das er trägt. Der Kompass findet ihn."
+      - "Der alte Wächter des Rats, der §cPathwarden§f, trägt ihr Schreiben. Er schläft in Crypt-Phiolen."
+      - "Bring eine zum §6Proctor§f ins Kolosseum. Besieg ihn. Bring mir das Schreiben."
     musing_fading:
       - "Leute, die ihre eigene Haustür vergessen. Die alten Bücher hatten ein Wort dafür."
     road_gate:
       - "Werd stärker, {player}. Aetherion Level §e60§f. Dann öffnen wir die Straße."
     remind_silent_road:
-      - "Der §cPathwarden§f, {player}. Die Königsstraße. Der Kompass findet ihn."
+      - "Der §cPathwarden§f, {player}. Eine Crypt-Phiole, dann der §6Proctor§f im Kolosseum."
       - "Bring das Schreiben. Brich das Wachs nicht. Das will ich selbst."
     silent_road_done:
       - "'Niemand gehe zu ihm. Niemand gehe von ihm.' Gezeichnet: der Rat."
       - "Ein Name ist Thorne. Meine Urgroßmutter hat ihn aus den Büchern gestrichen."
-      - "Die Straße endet an einem alten Kai im Nebel. §fDer Veil Quay§f. Er ist jetzt offen."
+      - "Es nennt einen alten Kai im Nebel, hinter den Borderlands. §fDer Veil Quay§f."
     after_road:
       - "Ich behalte das Schreiben. Die Registry kann mich drum bitten. Höflich."
       - "Der Veil Quay gehört dir. Die Fähre ist was anderes. Level §e75§f."
@@ -956,16 +960,15 @@ dialogs:
       - "Heute keine Fahrgäste. Erledig erst deine Sachen im Hafen."
     default:
       - "Fähre! Fähre zum — hm. Wohin ging die noch gleich?"
-      - "Die Straße ist lange zu. Du bist sie trotzdem gelaufen?"
-      - "Heute keine Fahrgäste. Der Nebel sagt nein. Der Nebel sagt immer nein."
+      - "Heute keine Fahrgäste. Der Nebel sagt nein. Nicht, solange der §cPathwarden§f für dich noch steht."
+      - "Besieg ihn einmal, komm mit Aetherion Level §e75§f wieder. Der Nebel mag runde Zahlen."
     waiting:
       - "Ein Fahrgast? Der erste seit… einer Weile. Einer langen Weile."
       - "Der Nebel ist nicht bereit für dich. Das Boot, ehrlich gesagt, auch nicht."
       - "Komm mit Aetherion Level §e75§f wieder. Der Nebel mag runde Zahlen."
     soon:
-      - "Der Nebel ist heute dünner. Nicht dünn genug."
-      - "Bald. Das Ruder will dauernd benutzt werden."
-      - "Komm bald wieder. Bis dahin weiß ich den Weg wieder."
+      - "Der Nebel ist heute dünn genug. Für dich jedenfalls."
+      - "Frag mich, oder läute die Glocke am Steg. Einmal. Das zählt."
     offer_ferry:
       - "Ein Fahrgast. Sogar mit Schreiben. Der Nebel ist heute dünn genug."
       - "Läute die Glocke am Steg. Einmal. Das zählt. Oder steig an Bord und schleich."
@@ -1692,15 +1695,19 @@ talk:
         label: "Zurück rüber"
         echo: "Bring mich zurück."
         line: "Halt dich fest. Pass auf den Nebel auf."
+      open_ready: "Level 75, und der Pathwarden liegt. Der Nebel lässt dich durch."
+      # unused since A-52 (the writ is no longer the only way aboard); kept, the overlay is additive
       open_writ: "Der Nebel ist dünn genug für dich. Ysoldes Schreiben, und ich bring dich rüber."
       how:
         label: "Wie komm ich rüber?"
         echo: "Wie komme ich hinüber?"
-        intro: "Drei Dinge, dann lässt dich der Nebel durch."
+        intro: "Zwei Dinge, dann lässt dich der Nebel durch."
+        level: "Aetherion Level §e75§7."
+        warden: "Besieg den §cPathwarden§7 einmal. Eine Crypt-Phiole, dann der Proctor im Kolosseum."
+        then: "Dann frag mich, oder läute die Glocke am Steg."
+        # unused since A-52; kept, the overlay is additive
         harbour: "Erst deine Sachen im Hafen. Das Tutorial."
         road: "Die Straße des Rats. Ysoldes Kapitel im Archiv, bis zur stillen Straße und dem Schreiben des Pathwarden."
-        level: "Aetherion Level §e75§7."
-        then: "Dann hol dir bei mir das Schreiben und läute die Glocke am Steg."
       staff:
         label: "Über den Schleier (Team)"
   orrin:

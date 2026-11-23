@@ -14,7 +14,7 @@ public interface StoryAccess {
 
     /**
      * Coarse story stage for this player. 0 = nothing heard yet (or tutorial not done),
-     * 1 = legend heard … 7 = the King's Road is open. Quests documents the exact mapping.
+     * 1 = legend heard … 7 = the Silent Road is done (Veil Quay open). Quests documents the exact mapping.
      */
     int stage(Player player);
 

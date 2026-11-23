@@ -14,7 +14,6 @@ import de.aetherion.quests.service.QuestNPCSpawnService;
 import de.aetherion.quests.talk.NpcDesk;
 import de.aetherion.quests.ui.QuestHint;
 import de.aetherion.quests.util.QuestSkillGate;
-import de.aetherion.quests.util.QuestStoryGate;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -279,17 +278,20 @@ public final class ExileStory implements Listener {
                 if (!exile) {
                     Quest ferry = qm.getQuest(LullabyQuests.FERRY);
                     boolean ticket = ferry != null && qm.getQuestState(p, ferry) == QuestState.ACTIVE;
-                    if (!ticket && !StoryState.hasPlayerFlag(p, StoryState.CROSSED)
-                            && !StoryState.completed(qm, p, LullabyQuests.FERRY)) {
+                    // A-52: Level 75 and the Pathwarden once. The writ is the story's way aboard, not the only one.
+                    String block = ticket ? null : StoryState.crossingBlock(p);
+                    if (block != null) {
                         notYet(p, npc, d);
-                        String block = StoryState.crossingBlock(p);
-                        open = block != null ? block
-                                : l(p, "ferryman.desk.open_writ", "The fog's thin enough for you. Ysolde's writ, and I'll take you.");
+                        open = block;
                         break;
                     }
+                    boolean crossedBefore = StoryState.hasPlayerFlag(p, StoryState.CROSSED)
+                            || StoryState.completed(qm, p, LullabyQuests.FERRY);
                     open = ticket
                             ? l(p, "ferryman.desk.open_ticket", "You've the writ. Say the word, or ring the bell by the gangway.")
-                            : l(p, "ferryman.desk.open", "Ferry's waiting. It always is.");
+                            : crossedBefore
+                            ? l(p, "ferryman.desk.open", "Ferry's waiting. It always is.")
+                            : l(p, "ferryman.desk.open_ready", "Level 75, and the Pathwarden's down. The fog lets you through.");
                     d.topic(l(p, "ferryman.desk.where.label", "Where does it go?"), NamedTextColor.AQUA,
                                     l(p, "ferryman.desk.where.echo", "Where does the ferry go?"),
                                     ls(p, "ferryman.desk.where.lines",
@@ -484,19 +486,15 @@ public final class ExileStory implements Listener {
     private static void notYet(Player p, QuestNPC npc, NpcDesk d) {
         d.topic(l(p, "ferryman.desk.how.label", "How do I cross?"), NamedTextColor.GOLD,
                         l(p, "ferryman.desk.how.echo", "How do I get across?"), () -> {
-                            AetherionQuests plugin = AetherionQuests.getInstance();
-                            QuestManager qm = plugin == null ? null : plugin.getQuestManager();
-                            boolean harbour = qm != null && QuestStoryGate.tutorialDone(p, qm);
-                            boolean road = StoryState.hasPlayerFlag(p, StoryState.VEIL_QUAY);
                             boolean level = StoryFlow.meetsLevel(p, 75);
+                            boolean warden = StoryState.pathwardenDown(p);
                             return new String[] {
-                                    l(p, "ferryman.desk.how.intro", "Three things, and the fog lets you through."),
-                                    tick(harbour) + l(p, "ferryman.desk.how.harbour", "Your harbour business first. The tutorial."),
-                                    tick(road) + l(p, "ferryman.desk.how.road",
-                                            "The Council's road. Ysolde's chapter at the Archive, up to the Silent Road and the Pathwarden's writ."),
+                                    l(p, "ferryman.desk.how.intro", "Two things, and the fog lets you through."),
                                     tick(level) + l(p, "ferryman.desk.how.level", "Aetherion Level §e75§7.")
                                             + (level ? "" : " §8(" + QuestSkillGate.accountLevel(p) + ")"),
-                                    l(p, "ferryman.desk.how.then", "Then talk to me for the writ and ring the bell by the gangway.")
+                                    tick(warden) + l(p, "ferryman.desk.how.warden",
+                                            "Beat the §cPathwarden§7 once. A Crypt vial, then the Proctor at the Colosseum."),
+                                    l(p, "ferryman.desk.how.then", "Then ask me, or ring the bell by the gangway.")
                             };
                         })
                 .topic(l(p, "ferryman.desk.where.label", "Where does it go?"), NamedTextColor.AQUA,
