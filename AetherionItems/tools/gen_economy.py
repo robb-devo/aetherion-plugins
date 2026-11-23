@@ -170,6 +170,11 @@ def D(key: str) -> int:
     return res_compd[key]
 
 
+def E(key: str) -> int:
+    """A-60 (E2 + T-09): a T4/T5 ladder slot takes 16 Compressed instead of one Compacted."""
+    return 16 * res_comp[key]
+
+
 def R(key: str) -> int:
     return res_ref[key]
 
@@ -209,7 +214,8 @@ combat_t1 = {
 for k, n in combat_t1.items():
     items[k] = craft(n * V("COBBLESTONE"), MARGIN[1])
 
-# Wave 2 / Peter: T2 mix 2+2 · T3 mix 2+2 compressed · T4 cross 2+2 compacted · T5 peak 1+3
+# Wave 2 / Peter: T2 mix 2+2 · T3 mix 2+2 compressed · T4 cross 2+2 · T5 peak 1+3
+# A-60: T4/T5 slots take 16 Compressed each (E), not one Compacted (D)
 for piece in combat_t1:
     items[f"{piece}_2"] = craft(items[piece] + 2 * V("IRON_INGOT") + 2 * V("BONE"), MARGIN[2])
 
@@ -220,12 +226,12 @@ for piece in combat_t1:
 
 for piece in combat_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("raw_gold") + 2 * D("bone") + SIG_HEARTWOOD, MARGIN[4]
+        items[f"{piece}_3"] + 2 * E("raw_gold") + 2 * E("bone") + SIG_HEARTWOOD, MARGIN[4]
     )
 
 for piece in combat_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("emerald") + SIG_TROPHY, MARGIN[5]
+        items[f"{piece}_4"] + E("diamond") + 3 * E("emerald") + SIG_TROPHY, MARGIN[5]
     )
 
 # Combat sword T1: 2 cobble + stick
@@ -235,10 +241,10 @@ items["combat_sword_3"] = craft(
     items["combat_sword_2"] + 2 * C("bone") + 2 * C("rotten_flesh"), MARGIN[3]
 )
 items["combat_sword_4"] = craft(
-    items["combat_sword_3"] + 2 * D("raw_gold") + 2 * D("bone") + SIG_HEARTWOOD, MARGIN[4]
+    items["combat_sword_3"] + 2 * E("raw_gold") + 2 * E("bone") + SIG_HEARTWOOD, MARGIN[4]
 )
 items["combat_sword_5"] = craft(
-    items["combat_sword_4"] + 1 * D("diamond") + 3 * D("emerald") + SIG_TROPHY + WARPED_BLADE, MARGIN[5]
+    items["combat_sword_4"] + E("diamond") + 3 * E("emerald") + SIG_TROPHY + WARPED_BLADE, MARGIN[5]
 )
 
 # Mining armor T1 copper shapes (same counts as combat)
@@ -260,12 +266,12 @@ for piece in mining_t1:
 # T4: 2+2 copper D + coal D
 for piece in mining_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("raw_copper") + 2 * D("coal") + SIG_HEARTWOOD, MARGIN[4]
+        items[f"{piece}_3"] + 2 * E("raw_copper") + 2 * E("coal") + SIG_HEARTWOOD, MARGIN[4]
     )
 # T5: 1 diamond D + 3 redstone D (+ Prize Crop)
 for piece in mining_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("redstone") + SIG_PRIZE, MARGIN[5]
+        items[f"{piece}_4"] + E("diamond") + 3 * E("redstone") + SIG_PRIZE, MARGIN[5]
     )
 
 # simple pick + mining pick ladder
@@ -279,10 +285,10 @@ items["mining_pickaxe_3"] = craft(
     items["mining_pickaxe_2"] + 2 * C("raw_copper") + 2 * C("raw_iron"), MARGIN[3]
 )
 items["mining_pickaxe_4"] = craft(
-    items["mining_pickaxe_3"] + 2 * D("raw_copper") + 2 * D("coal") + SIG_HEARTWOOD, MARGIN[4]
+    items["mining_pickaxe_3"] + 2 * E("raw_copper") + 2 * E("coal") + SIG_HEARTWOOD, MARGIN[4]
 )
 items["mining_pickaxe_5"] = craft(
-    items["mining_pickaxe_4"] + D("diamond") + 3 * D("redstone") + SIG_PRIZE + CORE_I, MARGIN[5]
+    items["mining_pickaxe_4"] + E("diamond") + 3 * E("redstone") + SIG_PRIZE + CORE_I, MARGIN[5]
 )
 # Burrower shortcut: the boss core stands in for the T4 pick (result is the same pickaxe).
 items["vein_siphon"] = craft(
@@ -310,17 +316,17 @@ items["farming_hoe_3"] = craft(
 )
 for piece in farm_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("sugar_cane") + 2 * D("carrot") + SIG_TROPHY, MARGIN[4]
+        items[f"{piece}_3"] + 2 * E("sugar_cane") + 2 * E("carrot") + SIG_TROPHY, MARGIN[4]
     )
 items["farming_hoe_4"] = craft(
-    items["farming_hoe_3"] + 2 * D("sugar_cane") + 2 * D("wheat") + SIG_TROPHY, MARGIN[4]
+    items["farming_hoe_3"] + 2 * E("sugar_cane") + 2 * E("wheat") + SIG_TROPHY, MARGIN[4]
 )
 for piece in farm_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("nether_wart") + 3 * D("potato") + SIG_CRYSTAL, MARGIN[5]
+        items[f"{piece}_4"] + E("nether_wart") + 3 * E("potato") + SIG_CRYSTAL, MARGIN[5]
     )
 items["farming_hoe_5"] = craft(
-    items["farming_hoe_4"] + 1 * D("nether_wart") + 3 * D("wheat") + SIG_CRYSTAL + CORE_I, MARGIN[5]
+    items["farming_hoe_4"] + E("nether_wart") + 3 * E("wheat") + SIG_CRYSTAL + CORE_I, MARGIN[5]
 )
 
 # Foraging
@@ -341,17 +347,17 @@ for piece in list(forage_t1) + ["foraging_axe"]:
     )
 for piece in forage_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log") + SIG_CRYSTAL, MARGIN[4]
+        items[f"{piece}_3"] + 2 * E("dark_oak_log") + 2 * E("mangrove_log") + SIG_CRYSTAL, MARGIN[4]
     )
 items["foraging_axe_4"] = craft(
-    items["foraging_axe_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log") + SIG_CRYSTAL, MARGIN[4]
+    items["foraging_axe_3"] + 2 * E("dark_oak_log") + 2 * E("mangrove_log") + SIG_CRYSTAL, MARGIN[4]
 )
 for piece in forage_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block") + SIG_TROPHY, MARGIN[5]
+        items[f"{piece}_4"] + E("cherry_log") + 3 * E("bamboo_block") + SIG_TROPHY, MARGIN[5]
     )
 items["foraging_axe_5"] = craft(
-    items["foraging_axe_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block") + SIG_TROPHY + CORE_I, MARGIN[5]
+    items["foraging_axe_4"] + E("cherry_log") + 3 * E("bamboo_block") + SIG_TROPHY + CORE_I, MARGIN[5]
 )
 
 # Fishing
@@ -372,17 +378,17 @@ for piece in list(fish_t1) + ["fishing_rod"]:
     )
 for piece in fish_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("prismarine_shard") + 2 * D("salmon") + SIG_PRIZE, MARGIN[4]
+        items[f"{piece}_3"] + 2 * E("prismarine_shard") + 2 * E("salmon") + SIG_PRIZE, MARGIN[4]
     )
 items["fishing_rod_4"] = craft(
-    items["fishing_rod_3"] + 2 * D("prismarine_shard") + 2 * D("salmon") + SIG_PRIZE, MARGIN[4]
+    items["fishing_rod_3"] + 2 * E("prismarine_shard") + 2 * E("salmon") + SIG_PRIZE, MARGIN[4]
 )
 for piece in fish_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish") + SIG_HEARTWOOD, MARGIN[5]
+        items[f"{piece}_4"] + E("prismarine_shard") + 3 * E("pufferfish") + SIG_HEARTWOOD, MARGIN[5]
     )
 items["fishing_rod_5"] = craft(
-    items["fishing_rod_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish") + SIG_HEARTWOOD + CORE_I, MARGIN[5]
+    items["fishing_rod_4"] + E("prismarine_shard") + 3 * E("pufferfish") + SIG_HEARTWOOD + CORE_I, MARGIN[5]
 )
 
 # Charms T1: 2x2 vanilla domain
@@ -689,7 +695,7 @@ yml = f"""# Aetherion listed coin values (Skyblock-feel).
 # Channels: Trader 100% resources, Gear buyback 32%, Silas ×8, Bazaar 50–300%.
 
 # Bump together with ItemValueService.ECONOMY_VERSION to roll a new file out to live servers.
-economy-version: 3
+economy-version: 4
 
 vanilla:
 {vanilla_lines}

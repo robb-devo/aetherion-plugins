@@ -176,9 +176,11 @@ public enum QuarryType {
             case 1 -> new UpgradeCost(8, 0, 0);
             case 2 -> new UpgradeCost(32, 0, 0);
             case 3 -> new UpgradeCost(64, 0, 0);
-            case 4 -> new UpgradeCost(0, 16, 0);
-            case 5 -> new UpgradeCost(0, 48, 1);
-            case 6 -> new UpgradeCost(0, 64, 3);
+            // A-60 (E2 + T-09): the top steps pay 16 Compressed where they used to pay one Compacted (128),
+            // the same easing as the T4/T5 gear ladders.
+            case 4 -> new UpgradeCost(256, 0, 0);
+            case 5 -> new UpgradeCost(768, 0, 1);
+            case 6 -> new UpgradeCost(1024, 0, 3);
             default -> UpgradeCost.NONE;
         };
     }
