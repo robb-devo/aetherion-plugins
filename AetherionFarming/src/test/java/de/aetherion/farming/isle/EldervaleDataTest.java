@@ -164,7 +164,7 @@ class EldervaleDataTest {
 
     @Test
     void newLoopDefaultsArePresent() {
-        assertTrue(config.getBoolean("harvest-rhythm.enabled"));
+        assertTrue(config.getBoolean("ripe-glint.enabled"));
         assertTrue(config.getDouble("prize-crops.chance") > 0 && config.getDouble("prize-crops.chance") < 0.01);
         assertEquals(2, config.getInt("crop-mastery.isle-weight"));
         assertTrue(config.getLong("isle-events.interval-ticks") >= 20L * 120L);

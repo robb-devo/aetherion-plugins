@@ -310,12 +310,12 @@ public final class SkillFlavor {
                     "The island is your home field. It agrees."
             };
             case ROW_RHYTHM -> new String[] {
-                    "You harvest in four-four. The wheat keeps time.",
-                    "The carrots started clapping on two and four.",
-                    "Every row is a bar. You never miss a beat.",
-                    "The field hums along. Off-key, loyally.",
-                    "Scarecrows tap their feet now.",
-                    "The harvest is a song, and you wrote it."
+                    "You spot a ripe carrot before it knows it's ripe.",
+                    "Gold catches your eye from three rows away.",
+                    "The wheat shines a little longer when you look.",
+                    "Crops try to hide their shine. They fail.",
+                    "Scarecrows point you to the shiny ones now.",
+                    "The whole field glitters on your side."
             };
             case BLUE_RIBBON -> new String[] {
                     "You can smell a prize carrot through a wall.",

@@ -112,8 +112,10 @@ farm-island:
 # Eldervale expansion — every loop below only runs inside farm-isle-footprint.
 # ---------------------------------------------------------------------------
 
-# Combo meter for harvesting without pauses. Tiers pay crop-only Fortune + Harvest.
-harvest-rhythm:
+# Ripe Glint (A-51): while you harvest, a ripe crop near you shines gold for a moment.
+# Harvest it in the shine for an extra crop + XP; the glint streak's tiers pay crop-only
+# Fortune + Harvest. Older configs still carrying harvest-rhythm.enabled keep working.
+ripe-glint:
   enabled: true
 
 # Rare giant crop that pops out of a harvest. Base chance per mature harvest (1/450),

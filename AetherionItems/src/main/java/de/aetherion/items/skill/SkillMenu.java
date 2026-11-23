@@ -821,8 +821,8 @@ public final class SkillMenu implements Listener {
             case SEED_LEDGER -> compactLines(lines, "Crop Compact", "Compacted Crops", level, tier, "crops");
             case SOIL_SENSE -> lines.add(Effect.hint("Stats apply on the Farm Isle only."));
             case ROW_RHYTHM -> {
-                lines.add(Effect.stat("Rhythm per harvest", 1.0 + 0.5 * scale, "+", ""));
-                lines.add(Effect.stat("Rhythm hold", 40.0 * scale, "+", "%"));
+                lines.add(Effect.stat("Glint streak per catch", 1.0 + 0.5 * scale, "+", ""));
+                lines.add(Effect.stat("Shine time", 40.0 * scale, "+", "%"));
             }
             case BLUE_RIBBON -> lines.add(Effect.stat("Prize Crop chance", 50.0 * scale, "+", "%"));
             case BIRD_LAW -> {
@@ -930,7 +930,7 @@ public final class SkillMenu implements Listener {
         return switch (category) {
             case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.\nOn Mining Eldervale: Rhythm, Crystal Finds, Contracts.";
             case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.\nOn Foraging Eldervale: Mastery, Crown Finds, the Board.";
-            case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Rhythm, Prize Crops, Orders.";
+            case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Ripe Glint, Prize Crops, Orders.";
             case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
             default -> null;
         };

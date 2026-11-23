@@ -83,24 +83,24 @@ public final class IsleCast implements Listener {
 
     /**
      * Elsie at the Harvest Hall: the isle's front desk in the talk bubble — what the isle is, the
-     * harvest rhythm, where to sell and eat, how to get home; her full board stays one chip away.
+     * shining crops, where to sell and eat, how to get home; her full board stays one chip away.
      */
     private TalkDesk wardenDesk() {
         IsleRole warden = IsleRole.WARDEN;
         return new TalkDesk(isle.plugin(), "farm_isle_warden", warden.display(), warden.color(), "isle_hand",
                 () -> liveLocation(warden), () -> liveHologram(warden),
-                player -> FieldLesson.t(player, "Back on the rows, {player}? Ask away — or keep the rhythm going.",
-                        "Wieder auf den Feldern, {player}? Frag ruhig — oder halt den Rhythmus am Laufen."),
+                player -> FieldLesson.t(player, "Back on the rows, {player}? Ask away — or go catch the shine.",
+                        "Wieder auf den Feldern, {player}? Frag ruhig — oder schnapp dir den Glanz."),
                 List.of(
                         TalkDesk.Topic.of("What is this place?", net.kyori.adventure.text.format.NamedTextColor.GREEN,
                                 "What's on Eldervale?",
                                 "Fifteen named plots, one big harvest. Find them all — 2,500 coins and a title.",
                                 "Walk into one and it names itself. Arrow's on the nearest you haven't seen.")
                                 .then(this::pointAtUnknownPlot),
-                        TalkDesk.Topic.of("Harvest rhythm?", net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE,
-                                "How does the rhythm work?",
-                                "Harvest without stopping and the field sings. Stand around and it drains.",
-                                "Twenty, fifty, a hundred in a row — every step adds crop Fortune."),
+                        TalkDesk.Topic.of("Shining crops?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
+                                "Why do some crops shine?",
+                                "While you harvest, a ripe crop near you shines gold. Harvest it before it fades: extra crop, extra XP.",
+                                "Catch three, ten, twenty without missing one — every step adds crop Fortune."),
                         TalkDesk.Topic.of("Shops & pantry?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
                                 "Where do I sell and eat?",
                                 "§6Hattie§f's orders pay better than the trader. §eBram§f bakes crops into farming food.",

@@ -29,8 +29,8 @@ import java.util.UUID;
  * Act V · the Farm Isle lesson. A first visit is a short spine, not a desk:
  * <pre>
  *   land   ─ card + lesson bar (arrow, metres) to Elsie at the Harvest Hall
- *   hook   ─ her bubble: the field keeps time · chips "Show me." / "What's it worth?"
- *   do     ─ Harvest Rhythm to Steady — the lesson bar mirrors the meter, so idling visibly drains it
+ *   hook   ─ her bubble: ripe crops shine gold · chips "Show me." / "What's it worth?"
+ *   do     ─ catch three shining crops (Ripe Glint → Keen Eye) — the lesson bar counts them
  *   find   ─ the next ripe harvest pops a Prize Crop for them; grab it (another pops if it wilts)
  *   close  ─ back to Elsie: the skill in one sentence, coins + XP + the Farm Isle teleport, next / way home
  * </pre>
@@ -41,7 +41,8 @@ public final class FieldLesson {
 
     static final int NEW = 0;
     static final int MEET = 1;
-    static final int RHYTHM = 2;
+    /** Stored as 2 in old profiles (it was the rhythm step); same slot, now the glint step. */
+    static final int GLINT = 2;
     static final int FIND = 3;
     static final int RETURN = 4;
     static final int DONE = 5;
@@ -125,8 +126,8 @@ public final class FieldLesson {
             }
             player.showTitle(net.kyori.adventure.title.Title.title(
                     IsleText.legacy("§e§lFARM ISLE · ELDERVALE"),
-                    IsleText.legacy(t(player, "§7Fields that pay more if you never stop.",
-                            "§7Felder, die mehr zahlen, wenn du nie stehen bleibst.")),
+                    IsleText.legacy(t(player, "§7Ripe crops shine gold. Harvest them in the shine.",
+                            "§7Reife Pflanzen glänzen golden. Ernte sie im Glanz.")),
                     net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(400),
                             java.time.Duration.ofMillis(3000), java.time.Duration.ofMillis(800))));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.PLAYERS, 0.8f, 1.2f);
@@ -160,10 +161,10 @@ public final class FieldLesson {
         }
         switch (profile.lesson) {
             case MEET -> hook(player);
-            case RHYTHM -> {
+            case GLINT -> {
                 remind(player, t(player,
-                        "Ripe rows, {player}, one after another. Don't stop till the bar says Steady.",
-                        "Reife Reihen, {player}, eine nach der anderen. Nicht anhalten, bis die Leiste Steady sagt."));
+                        "Harvest in the rows, {player}. When a crop shines gold, harvest that one, quick. Three of them.",
+                        "Ernte in den Reihen, {player}. Wenn eine Pflanze golden glänzt, ernte genau die, schnell. Drei Stück."));
                 pointField(player);
             }
             case FIND -> remind(player, t(player,
@@ -178,15 +179,15 @@ public final class FieldLesson {
 
     private void hook(Player player) {
         List<String> lines = List.of(
-                t(player, "Out here the field keeps time, {player}. Stop and it forgets you.",
-                        "Hier draußen hält das Feld den Takt, {player}. Bleib stehen, und es vergisst dich."),
-                t(player, "Harvest ripe crops without a pause till the bar says Steady. The field replants itself.",
-                        "Ernte reife Pflanzen ohne Pause, bis die Leiste Steady sagt. Das Feld pflanzt selbst nach."));
+                t(player, "Watch the field while you harvest, {player}. Now and then a ripe crop shines gold.",
+                        "Schau aufs Feld, während du erntest, {player}. Ab und zu glänzt eine reife Pflanze golden."),
+                t(player, "Harvest it before the shine fades. Catch three and the field pays more. It replants itself.",
+                        "Ernte sie, bevor der Glanz verblasst. Schnapp dir drei, und das Feld zahlt mehr. Es pflanzt selbst nach."));
         List<TalkAccess.Reply> chips = List.of(
                 new TalkAccess.Reply(t(player, "Show me.", "Zeig her."), NamedTextColor.GREEN,
-                        () -> startRhythm(player), t(player, "Show me.", "Zeig her.")),
+                        () -> startGlint(player), t(player, "Show me.", "Zeig her.")),
                 new TalkAccess.Reply(t(player, "What's it worth?", "Was bringt's?"), NamedTextColor.GRAY,
-                        () -> stakes(player), t(player, "What's the rhythm worth?", "Was bringt der Rhythmus?")));
+                        () -> stakes(player), t(player, "What's the shine worth?", "Was bringt der Glanz?")));
         if (!speak(player, lines, chips)) {
             hookInChat(player);
         }
@@ -194,31 +195,31 @@ public final class FieldLesson {
 
     private void stakes(Player player) {
         List<String> lines = List.of(
-                t(player, "Rhythm is crop Fortune. Steady pays +10, In the Groove +25, Harvest Song +50.",
-                        "Rhythmus ist Ernte-Glück. Steady zahlt +10, In the Groove +25, Harvest Song +50."),
-                t(player, "Stand around and it drains. A farmer who never stops eats best.",
-                        "Rumstehen lässt ihn abfließen. Wer nie anhält, isst am besten."));
+                t(player, "Every shining crop gives an extra crop and XP. Catch more in a row: +10, +25, then +50 crop Fortune.",
+                        "Jede glänzende Pflanze gibt eine Extra-Ernte und XP. Schnapp dir mehr am Stück: +10, +25, dann +50 Ernte-Glück."),
+                t(player, "Let a shine fade and you lose a step. Keep your eyes open, not just your hands.",
+                        "Lässt du einen Glanz verblassen, verlierst du eine Stufe. Augen auf, nicht nur die Hände."));
         List<TalkAccess.Reply> chips = List.of(new TalkAccess.Reply(t(player, "Show me.", "Zeig her."),
-                NamedTextColor.GREEN, () -> startRhythm(player), t(player, "Show me.", "Zeig her.")));
+                NamedTextColor.GREEN, () -> startGlint(player), t(player, "Show me.", "Zeig her.")));
         if (!speak(player, lines, chips)) {
-            startRhythm(player);
+            startGlint(player);
         }
     }
 
     private void hookInChat(Player player) {
-        chat(player, t(player, "Out here the field keeps time, {player}. Stop and it forgets you.",
-                "Hier draußen hält das Feld den Takt, {player}. Bleib stehen, und es vergisst dich."));
-        chat(player, t(player, "Harvest ripe crops without a pause till the bar says Steady. The field replants itself.",
-                "Ernte reife Pflanzen ohne Pause, bis die Leiste Steady sagt. Das Feld pflanzt selbst nach."));
-        startRhythm(player);
+        chat(player, t(player, "Watch the field while you harvest, {player}. Now and then a ripe crop shines gold.",
+                "Schau aufs Feld, während du erntest, {player}. Ab und zu glänzt eine reife Pflanze golden."));
+        chat(player, t(player, "Harvest it before the shine fades. Catch three and the field pays more. It replants itself.",
+                "Ernte sie, bevor der Glanz verblasst. Schnapp dir drei, und das Feld zahlt mehr. Es pflanzt selbst nach."));
+        startGlint(player);
     }
 
-    private void startRhythm(Player player) {
+    private void startGlint(Player player) {
         IsleProfiles.Profile profile = isle.profiles().of(player);
         if (profile.lesson != MEET) {
             return;
         }
-        profile.lesson = RHYTHM;
+        profile.lesson = GLINT;
         isle.profiles().markDirty();
         player.playSound(player.getLocation(), Sound.BLOCK_CROP_BREAK, SoundCategory.PLAYERS, 0.9f, 1.2f);
         pointField(player);
@@ -275,8 +276,8 @@ public final class FieldLesson {
             quests.noteUsed(player, DONE_NOTE);
         }
         List<String> lines = List.of(
-                t(player, "That's farming here, {player}: a rhythm, not a chore. Keep moving and the field pays more.",
-                        "So geht Landwirtschaft hier, {player}: ein Rhythmus, keine Plackerei. Bleib in Bewegung, und das Feld zahlt mehr."),
+                t(player, "That's farming here, {player}: eyes open, not just hands. Catch the shine and the field pays more.",
+                        "So geht Landwirtschaft hier, {player}: Augen auf, nicht nur die Hände. Schnapp dir den Glanz, und das Feld zahlt mehr."),
                 t(player, "Hattie buys crops by order — twice the trader. Bram bakes farming buffs. The pad home's at the landing.",
                         "Hattie kauft Ernte auf Bestellung — doppelt so viel wie der Händler. Bram backt Farm-Buffs. Das Pad nach Hause ist am Anleger."));
         List<TalkAccess.Reply> chips = new ArrayList<>();
@@ -323,11 +324,11 @@ public final class FieldLesson {
 
     // ------------------------------------------------------------------ the loop (hooks)
 
-    /** One hand harvest on the isle, after the rhythm took it. */
+    /** One hand harvest on the isle, after Ripe Glint took it. */
     void onHarvest(Player player, IsleCrop crop, Location at) {
         IsleProfiles.Profile profile = isle.profiles().of(player);
-        if (profile.lesson == RHYTHM) {
-            if (isle.rhythm().tier(player).ordinal() >= HarvestRhythm.Tier.STEADY.ordinal()) {
+        if (profile.lesson == GLINT) {
+            if (isle.glint().tier(player).ordinal() >= RipeGlint.Tier.KEEN.ordinal()) {
                 steady(player, profile);
             }
             return;
@@ -344,9 +345,9 @@ public final class FieldLesson {
         FarmingSkills.bonus(player, STEADY_XP);
         isle.compass().stopGuide(player);
         player.showTitle(net.kyori.adventure.title.Title.title(
-                IsleText.legacy("§a§l" + t(player, "THE FIELD SINGS", "DAS FELD SINGT")),
-                IsleText.legacy(t(player, "§7Steady §8· §e+10 crop Fortune §7while you keep going",
-                        "§7Steady §8· §e+10 Ernte-Glück §7solange du dranbleibst")),
+                IsleText.legacy("§a§l" + t(player, "SHARP EYES", "SCHARFE AUGEN")),
+                IsleText.legacy(t(player, "§7Keen Eye §8· §e+10 crop Fortune §7while you keep catching the shine",
+                        "§7Keen Eye §8· §e+10 Ernte-Glück §7solange du den Glanz erwischst")),
                 net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(300),
                         java.time.Duration.ofMillis(2200), java.time.Duration.ofMillis(600))));
         // The very next ripe harvest pops a Prize Crop for them.
@@ -413,11 +414,12 @@ public final class FieldLesson {
                     progress = (float) Math.max(0.05d, Math.min(1.0d, 1.0d - d / 120.0d));
                 }
             }
-            case RHYTHM -> {
-                double stacks = Math.min(HarvestRhythm.Tier.STEADY.from, isle.rhythm().stacks(player));
-                text = head + t(player, "§fHarvest without stopping §8· §aSteady §7", "§fErnte ohne Pause §8· §aSteady §7")
-                        + (int) stacks + "§8/§7" + HarvestRhythm.Tier.STEADY.from;
-                progress = (float) Math.max(0.02d, stacks / HarvestRhythm.Tier.STEADY.from);
+            case GLINT -> {
+                int goal = RipeGlint.Tier.KEEN.from();
+                double streak = Math.min(goal, isle.glint().streak(player));
+                text = head + t(player, "§fHarvest the crops that §6shine gold §8· §7", "§fErnte die Pflanzen, die §6golden glänzen §8· §7")
+                        + (int) streak + "§8/§7" + goal;
+                progress = (float) Math.max(0.02d, streak / goal);
                 color = BossBar.Color.GREEN;
             }
             case FIND -> {

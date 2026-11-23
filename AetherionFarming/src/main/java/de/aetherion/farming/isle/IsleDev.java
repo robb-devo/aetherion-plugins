@@ -52,9 +52,9 @@ public final class IsleDev {
             case "open" -> open(player, verb);
             case "event" -> event(player, verb);
             case "prize" -> prize(player, verb);
-            case "rhythm" -> {
-                isle.rhythm().max(player);
-                yield "§dRhythm maxed §7— harvest within the hold window to keep it.";
+            case "rhythm", "glint" -> {
+                isle.glint().max(player);
+                yield "§6Glint streak maxed §7— glints start near you; miss them and it drops.";
             }
             case "mastery" -> mastery(player, verb);
             case "plots" -> plots(player, verb);
@@ -70,7 +70,7 @@ public final class IsleDev {
                 yield "§eFood buff cleared.";
             }
             case "profile" -> {
-                isle.rhythm().clear(player.getUniqueId());
+                isle.glint().clear(player.getUniqueId());
                 isle.profiles().reset(player.getUniqueId());
                 yield "§eYour Eldervale profile was wiped §7(plots, mastery, prizes, orders, food).";
             }

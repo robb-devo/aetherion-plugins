@@ -204,8 +204,8 @@ final class FarmIsleDevPages {
         inventory.setItem(15, button(Material.WHEAT, "§eReroll Featured Crop", PREFIX + "event:featured"));
         inventory.setItem(16, button(Material.GOLDEN_CARROT, "§6Pop a Prize Crop", PREFIX + "prize:spawn",
                 "§7Out of the block you look at", "§7(its crop, else a carrot)."));
-        inventory.setItem(19, button(Material.NOTE_BLOCK, "§dMax Harvest Rhythm", PREFIX + "rhythm:max",
-                "§7Straight to Harvest Song. Keep harvesting", "§7inside the hold window to keep it."));
+        inventory.setItem(19, button(Material.NOTE_BLOCK, "§6Max Ripe Glint", PREFIX + "rhythm:max",
+                "§7Straight to Harvest Gleam. Catch the", "§7shining crops to keep it."));
     }
 
     private void drawProgress(Inventory inventory, Player player) {
@@ -343,7 +343,7 @@ final class FarmIsleDevPages {
                 }
             }
             return missed.isEmpty()
-                    ? "§dEldervale loadout equipped §7(Soil Sense, Row Rhythm, Blue Ribbon, Bird Law, Market Day)."
+                    ? "§dEldervale loadout equipped §7(Soil Sense, Glint Eye, Blue Ribbon, Bird Law, Market Day)."
                     : "§eSlots full — could not equip: §f" + String.join(", ", missed) + " §7(/skills to swap).";
         }
         return "§cUnknown skill action.";

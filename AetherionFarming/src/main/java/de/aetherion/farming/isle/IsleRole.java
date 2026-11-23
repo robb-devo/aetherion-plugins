@@ -18,7 +18,7 @@ public enum IsleRole {
             "Your isle board, tours and tips",
             List.of(
                     "Welcome to Eldervale! Ask me anything — or just start pulling carrots.",
-                    "Keep your rhythm up in the rows. The field sings if you do it right.",
+                    "Watch the rows. When a crop shines gold, harvest that one first.",
                     "Every corner of this island has a name. Go find them all.",
                     "If a crop jumps out of the ground at you, grab it. Trust me."
             )),
@@ -66,7 +66,7 @@ public enum IsleRole {
             "Tips from the rows",
             List.of(
                     "Southfield's quiet. That's how I like it.",
-                    "Don't stop between rows. The rhythm drains if you dawdle.",
+                    "A shining crop won't wait. Grab it before the gold fades.",
                     "The Harvest Hall has the Warden. She knows everything.",
                     "Hattie pays more than the trader. Always check the board first."
             )),

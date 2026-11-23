@@ -25,7 +25,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
  * through all of them:
  * <pre>
  *   mature crop broken ─┬─ Crop Mastery    (everywhere; isle counts ×2)
- *                       └─ on the isle ───┬─ Harvest Rhythm   (by hand only)
+ *                       └─ on the isle ───┬─ Ripe Glint       (hand harvest lights glints; any harvest can catch one)
  *                                         ├─ Prize Crops      (by hand only, rare giant find)
  *                                         ├─ Isle events      (Bee Bloom XP / tally)
  *                                         └─ Bakehouse XP food
@@ -40,7 +40,7 @@ public final class FarmIsle implements Listener, StatProvider {
     private final AetherionFarming plugin;
     private final IslePlots plots;
     private final IsleProfiles profiles;
-    private final HarvestRhythm rhythm;
+    private final RipeGlint glint;
     private final PrizeCrops prizes;
     private final CropMastery mastery;
     private final IsleEvents events;
@@ -57,7 +57,7 @@ public final class FarmIsle implements Listener, StatProvider {
         this.plugin = plugin;
         this.plots = new IslePlots(plugin);
         this.profiles = new IsleProfiles(plugin);
-        this.rhythm = new HarvestRhythm(this);
+        this.glint = new RipeGlint(this);
         this.prizes = new PrizeCrops(this);
         this.mastery = new CropMastery(this);
         this.events = new IsleEvents(this);
@@ -77,7 +77,7 @@ public final class FarmIsle implements Listener, StatProvider {
         pm.registerEvents(bakehouse, plugin);
         pm.registerEvents(cast, plugin);
         pm.registerEvents(menus, plugin);
-        rhythm.start();
+        glint.start();
         events.start();
         compass.start();
         cast.start();
@@ -99,7 +99,7 @@ public final class FarmIsle implements Listener, StatProvider {
         }
         lesson.shutdown();
         events.shutdown();
-        rhythm.shutdown();
+        glint.shutdown();
         prizes.shutdown();
         compass.shutdown();
         cast.shutdown();
@@ -136,8 +136,8 @@ public final class FarmIsle implements Listener, StatProvider {
             return;
         }
         boolean spread = block.hasMetadata(SPREAD_METADATA);
+        glint.onHarvest(player, block, spread);
         if (!spread) {
-            rhythm.onHarvest(player, at);
             prizes.roll(player, crop, at);
             lesson.onHarvest(player, crop, at);
         }
@@ -152,7 +152,7 @@ public final class FarmIsle implements Listener, StatProvider {
     public void onQuit(PlayerQuitEvent event) {
         var id = event.getPlayer().getUniqueId();
         lesson.forget(id);
-        rhythm.clear(id);
+        glint.clear(id);
         compass.forget(id);
         events.onQuit(id);
         profiles.unload(id);
@@ -160,7 +160,7 @@ public final class FarmIsle implements Listener, StatProvider {
 
     // ------------------------------------------------------------------ Items-facing reads
 
-    /** Crop-only Fortune: mastery of this crop + rhythm tier + bakehouse food (the latter two isle-bound). */
+    /** Crop-only Fortune: mastery of this crop + glint streak tier + bakehouse food (the latter two isle-bound). */
     public double cropFortune(Player player, Material cropBlock) {
         if (player == null) {
             return 0.0d;
@@ -168,14 +168,14 @@ public final class FarmIsle implements Listener, StatProvider {
         IsleCrop crop = IsleCrop.from(cropBlock);
         double total = mastery.cropFortune(player, crop) + bakehouse.cropFortune(player);
         if (IsleWorld.onIsle(plugin, player)) {
-            total += rhythm.cropFortune(player);
+            total += glint.cropFortune(player);
         }
         return total;
     }
 
-    /** Featured crop + Bee Bloom extras for one harvest. */
+    /** Featured crop, Bee Bloom and Ripe Glint extras for one harvest. */
     public int harvestBonus(Player player, Material yield, Location at) {
-        int bonus = 0;
+        int bonus = glint.extraAt(player, at);
         FeaturedCropService featured = plugin.featuredCrop();
         if (featured != null && featured.isFeatured(yield) && at != null && IsleWorld.onIsle(plugin, at)) {
             bonus += featured.bonusAmount();
@@ -187,6 +187,9 @@ public final class FarmIsle implements Listener, StatProvider {
     }
 
     public String harvestBonusLabel(Player player, Location at) {
+        if (glint.pickedAt(player, at)) {
+            return "✦ Ripe Glint";
+        }
         IslePlots.Plot bloom = events.bloomPlot();
         if (bloom != null && at != null && bloom.contains(at)) {
             return "Bee Bloom";
@@ -195,7 +198,7 @@ public final class FarmIsle implements Listener, StatProvider {
         return featured == null ? null : "Featured " + featured.prettyName();
     }
 
-    /** Harvest spread from rhythm and food — farming-only capability, safe as a global provider. */
+    /** Harvest spread from the glint streak and food — farming-only capability, safe as a global provider. */
     @Override
     public double getStat(Player player, ItemCapability capability) {
         if (player == null || capability != ItemCapability.HARVEST_SPREAD) {
@@ -203,7 +206,7 @@ public final class FarmIsle implements Listener, StatProvider {
         }
         double total = bakehouse.harvestSpread(player);
         if (IsleWorld.onIsle(plugin, player)) {
-            total += rhythm.harvestSpread(player);
+            total += glint.harvestSpread(player);
         }
         return total;
     }
@@ -222,8 +225,8 @@ public final class FarmIsle implements Listener, StatProvider {
         return profiles;
     }
 
-    public HarvestRhythm rhythm() {
-        return rhythm;
+    public RipeGlint glint() {
+        return glint;
     }
 
     public PrizeCrops prizes() {

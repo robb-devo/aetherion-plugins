@@ -373,11 +373,11 @@ public enum AetherSkill {
     ),
     ROW_RHYTHM(
             "row_rhythm",
-            "Row Rhythm",
+            "Glint Eye",
             Category.FARMING,
-            Material.NOTE_BLOCK,
-            "You harvest in four-four. The wheat keeps time.",
-            "Harvest Rhythm builds faster and holds longer. +6 Fortune.",
+            Material.GLOWSTONE_DUST,
+            "You spot a ripe carrot before it knows it's ripe.",
+            "Ripe crops shine longer and each catch builds your glint streak faster. +6 Fortune.",
             Flag.ROW_RHYTHM,
             bonus(ItemCapability.FORTUNE, 6)
     ),
