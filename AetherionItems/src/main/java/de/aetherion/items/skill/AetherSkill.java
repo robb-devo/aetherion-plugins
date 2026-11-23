@@ -76,7 +76,7 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.WITHER_SKELETON_SKULL,
             "Named enemies go on the list.",
-            "+10% damage to bosses, up to +30% at level 100. They know why.",
+            "+10% damage to bosses, up to +30% at level 150. They know why.",
             Flag.BOSS_GRUDGE
     ),
     BLOOD_TAX(
@@ -591,7 +591,7 @@ public enum AetherSkill {
             Category.DUNGEON,
             Material.WITHER_SKELETON_SKULL,
             "Floor bosses make the list twice.",
-            "+12% damage to bosses in a dungeon, up to +36% at level 100.",
+            "+12% damage to bosses in a dungeon, up to +36% at level 150.",
             Flag.FLOOR_GRUDGE
     );
 

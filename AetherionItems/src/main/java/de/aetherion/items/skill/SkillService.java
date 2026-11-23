@@ -234,7 +234,7 @@ public final class SkillService implements StatProvider, Listener {
             skillRaw += SkillProgression.spentXp(data.level(skill));
             skillRaw += data.xp(skill);
         }
-        // Skill grind XP is compressed; bonus XP (pets, …) is 1:1 toward the flat 100/level pool.
+        // Skill grind XP is compressed; bonus XP (pets, …) is 1:1 toward the account pool (AetherionLevel curve).
         return data.bonusXp + AetherionLevel.fromSkillXp(skillRaw);
     }
 

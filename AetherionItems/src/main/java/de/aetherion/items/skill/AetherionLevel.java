@@ -1,7 +1,10 @@
 package de.aetherion.items.skill;
 
 /**
- * Account level — Skyblock-simple: {@link #XP_PER_LEVEL} Aetherion XP = 1 level.
+ * Account level. A-61 (E-4): each level costs a little more than the one before, {@link #BASE_XP} at first and
+ * +1 every {@link #RAMP_EVERY} levels up to {@link #TOP_XP} (from level {@link #RAMP_UNTIL} on), so levels no longer
+ * get faster as income grows (was a flat 100 per level). Every skill at 150 is ~842k Aetherion XP, about the
+ * ~837k that {@link #MAX_LEVEL} costs, so the top stays a full-completion goal.
  * Skill grind is a main leveling path (with pets): skill XP feeds the pool at
  * {@link #SKILL_XP_DIVISOR}. Direct bonus XP (pets, quests, …) is 1:1.
  *
@@ -12,8 +15,13 @@ public final class AetherionLevel {
 
     /** Soft ceiling — room for long-term grind; raise again when content needs it. */
     public static final int MAX_LEVEL = 5000;
-    /** Flat: 100 Aetherion XP → 1 account level. */
-    public static final long XP_PER_LEVEL = 100L;
+    /** Cost of level 1 → 2. */
+    public static final long BASE_XP = 100L;
+    /** The cost grows by 1 every this many levels ... */
+    public static final int RAMP_EVERY = 5;
+    /** ... until this level; from here on every level costs {@link #TOP_XP}. */
+    public static final int RAMP_UNTIL = 351;
+    public static final long TOP_XP = BASE_XP + (RAMP_UNTIL - 1) / RAMP_EVERY;
     /**
      * Compress skill grind XP into Aetherion XP.
      * ~40 skill XP → 1 Aetherion XP, so a few focused maxed skills carry you
@@ -52,7 +60,7 @@ public final class AetherionLevel {
         if (level < 1 || level >= MAX_LEVEL) {
             return 0L;
         }
-        return XP_PER_LEVEL;
+        return BASE_XP + (Math.min(level, RAMP_UNTIL) - 1) / RAMP_EVERY;
     }
 
     public static long fromSkillXp(long skillXp) {
@@ -71,11 +79,21 @@ public final class AetherionLevel {
         if (xp <= 0L) {
             return 1;
         }
-        long uncapped = 1L + (xp / XP_PER_LEVEL);
-        if (uncapped >= MAX_LEVEL) {
+        if (xp >= CUMULATIVE[MAX_LEVEL]) {
             return MAX_LEVEL;
         }
-        return (int) uncapped;
+        // Highest level whose start is at or below xp.
+        int low = 1;
+        int high = MAX_LEVEL;
+        while (low < high) {
+            int mid = (low + high + 1) >>> 1;
+            if (CUMULATIVE[mid] <= xp) {
+                low = mid;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return low;
     }
 
     public static long intoLevel(long xp) {
