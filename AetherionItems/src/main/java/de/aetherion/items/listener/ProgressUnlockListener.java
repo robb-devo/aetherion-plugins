@@ -44,7 +44,7 @@ public final class ProgressUnlockListener implements Listener {
             if (!progress.craftingTable(player)) {
                 player.sendMessage(progress.hint(ProgressionService.Flag.WORKBENCH));
             } else {
-                player.sendMessage("§eCrafting runs through the §fAetherion Manager §e→ Crafting Table.");
+                player.sendMessage(de.aetherion.core.api.JournalText.t("§eCrafting runs through the §fAetherion Manager §e→ Crafting Table."));
             }
             return;
         }
@@ -54,7 +54,7 @@ public final class ProgressUnlockListener implements Listener {
             if (!progress.anvil(player)) {
                 player.sendMessage(progress.hint(ProgressionService.Flag.ANVIL));
             } else {
-                player.sendMessage("§eAnvils run through the §fAetherion Manager §e→ Anvil.");
+                player.sendMessage(de.aetherion.core.api.JournalText.t("§eAnvils run through the §fAetherion Manager §e→ Anvil."));
             }
             return;
         }

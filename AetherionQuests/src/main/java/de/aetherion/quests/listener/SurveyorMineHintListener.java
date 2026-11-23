@@ -91,10 +91,12 @@ public final class SurveyorMineHintListener implements Listener, Runnable {
         if (!unlocked) {
             return;
         }
-        player.sendMessage("§6✦ §eCrafting unlocked. §7You skipped the Craftsman — Recipe Book is in the Manager.");
-        player.sendMessage("§7Nether Star (slot 9) → §agreen book§7. Craft a Mining Pickaxe when you're ready.");
+        player.sendMessage(de.aetherion.core.api.JournalText.t(
+                "§6✦ §eCrafting unlocked. §7You skipped the Craftsman — Recipe Book is in the Manager."));
+        player.sendMessage(de.aetherion.core.api.JournalText.t(
+                "§7Nether Star (slot 9) → §agreen book§7. Craft a Mining Pickaxe when you're ready."));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "Crafting unlocked · Manager → Recipe Book",
+                de.aetherion.core.api.JournalText.t("Crafting unlocked · Manager → Recipe Book"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
     }

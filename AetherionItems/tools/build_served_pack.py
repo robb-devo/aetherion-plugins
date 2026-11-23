@@ -53,6 +53,12 @@ COPY = (
     # in any chest menu's title; minecraft:default references it, see add_font_references.
     'assets/aetherion/font/kit.json',
     'assets/aetherion/textures/font/kit',
+    # The Aether Journal's line texts (gen_journal_art.write_line_fonts): vanilla letters moved onto rows 1..4,
+    # named by JournalPage. Its spread, ribbons and strong line are kit glyphs (0xE400..0xE443) above.
+    'assets/aetherion/font/jrn_line_1.json',
+    'assets/aetherion/font/jrn_line_2.json',
+    'assets/aetherion/font/jrn_line_3.json',
+    'assets/aetherion/font/jrn_line_4.json',
     # Hub lobby glyphs (gen_hub_glyphs.py): emblem, station icons, drawn by AetherionPit on the hub.
     'assets/aetherion/font/hub.json',
     'assets/aetherion/textures/font/hub',

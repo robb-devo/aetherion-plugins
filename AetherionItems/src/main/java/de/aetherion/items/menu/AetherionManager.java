@@ -15,6 +15,8 @@ import java.util.function.Consumer;
 public class AetherionManager {
 
     private final AetherionManagerGUI gui;
+    /** The same Manager as a book, while {@code journal.enabled} is on. */
+    private final JournalMenu journal;
     private final StatsOverviewGUI statsGUI;
     private final RecipeBookGUI recipeBookGUI;
     private final StorageInventory storageInventory;
@@ -38,6 +40,7 @@ public class AetherionManager {
         this.collectionGUI = collectionGUI;
         this.journalGUI = journalGUI;
         this.gui = new AetherionManagerGUI(this, storageInventory);
+        this.journal = new JournalMenu(this);
         this.statsGUI = new StatsOverviewGUI(itemManager);
     }
 
@@ -45,7 +48,11 @@ public class AetherionManager {
         if (player != null && tryOpenDungeonMap(player)) {
             return;
         }
-        gui.open(player);
+        if (de.aetherion.core.api.JournalText.enabled()) {
+            journal.open(player);
+        } else {
+            gui.open(player);
+        }
         noteManagerOpened(player);
     }
 
@@ -71,6 +78,10 @@ public class AetherionManager {
 
     public AetherionManagerGUI getGui() {
         return gui;
+    }
+
+    public JournalMenu getJournal() {
+        return journal;
     }
 
     public StatsOverviewGUI getStatsGUI() {

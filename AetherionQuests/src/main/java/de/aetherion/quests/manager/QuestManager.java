@@ -1373,10 +1373,10 @@ public class QuestManager {
                 if (announce) {
                     String pretty = spawnId.replace('_', ' ');
                     if (cardRow(player, "§d" + pretty + " §7teleport unlocked", new ItemStack(Material.ENDER_PEARL))) {
-                        player.sendMessage("§7Open Aetherion Manager → Teleports to travel there.");
+                        player.sendMessage(de.aetherion.core.api.JournalText.t("§7Open Aetherion Manager → Teleports to travel there."));
                     } else {
                         sendReward(player, pretty + " §7teleport unlocked");
-                        player.sendMessage("§7Open Aetherion Manager → Teleports to travel there.");
+                        player.sendMessage(de.aetherion.core.api.JournalText.t("§7Open Aetherion Manager → Teleports to travel there."));
                         player.sendMessage("");
                     }
                 }

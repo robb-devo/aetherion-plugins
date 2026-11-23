@@ -59,7 +59,7 @@ public final class GuideAdvice {
                 ? null : AetherionItems.getInstance().progress();
         if (progress != null) {
             if (!progress.skills(player)) {
-                tips.add("Talk to Miss Ledger — unlocks Skills in the Manager.");
+                tips.add(de.aetherion.core.api.JournalText.t("Talk to Miss Ledger — unlocks Skills in the Manager."));
             }
             if (!progress.recipeBook(player)) {
                 tips.add("Visit the Market stall / Craftsman — unlocks crafting & /atrecipes.");
@@ -85,7 +85,7 @@ public final class GuideAdvice {
         }
         if (tips.isEmpty()) {
             tips.add("Explore dungeons, upgrade gear, and keep leveling skills.");
-            tips.add("Use /atrecipes for crafting and /aetherion for the Manager.");
+            tips.add(de.aetherion.core.api.JournalText.t("Use /atrecipes for crafting and /aetherion for the Manager."));
         }
         return new Result(header, tips, false);
     }

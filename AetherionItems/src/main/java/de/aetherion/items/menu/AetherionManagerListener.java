@@ -48,11 +48,21 @@ public class AetherionManagerListener implements Listener {
         }
     }
 
+    /** Runs one Manager tile's click (its gate hint included) for the Aether Journal's lines. */
+    static void runTile(Player player, int slot) {
+        if (instance != null && player != null) {
+            instance.handleManagerClick(player, slot);
+        }
+    }
+
     public ItemStack createManagerItem() {
         return createManagerItem(null);
     }
 
     public ItemStack createManagerItem(Player player) {
+        if (de.aetherion.core.api.JournalText.enabled()) {
+            return createJournalItem(player);
+        }
         ItemStack item = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = item.getItemMeta();
 
@@ -147,6 +157,32 @@ public class AetherionManagerListener implements Listener {
         return item;
     }
 
+    /** The Aether Journal in slot 9: same key as the Nether Star, so every Manager item check still holds. */
+    private ItemStack createJournalItem(Player player) {
+        ItemStack item = new ItemStack(Material.BOOK);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            String tip = JournalMenu.itemTip(player);
+            meta.setDisplayName(player == null ? "§6§lWorn Journal" : JournalMenu.coverName(player));
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            lore.add("§7New chapters appear as you find them.");
+            lore.add("§7It writes itself. Mostly.");
+            if (tip != null) {
+                lore.add("");
+                lore.add(tip);
+                meta.setEnchantmentGlintOverride(true);
+            }
+            lore.add("");
+            lore.add("§eRight-click to open §8· /journal");
+            meta.setLore(lore);
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            meta.setMaxStackSize(1);
+            meta.getPersistentDataContainer().set(ItemKeys.manager(), PersistentDataType.BYTE, (byte) 1);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
     private static boolean hasHomesteadMarkerTip(Player player) {
         de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
         return hub != null && hub.hasUnlockItem(player);
@@ -230,6 +266,9 @@ public class AetherionManagerListener implements Listener {
         if (event.getInventory().getHolder() instanceof AetherionManagerGUI.Holder) {
             AetherionManagerGUI.stopSkillsBlink(player);
         }
+        if (event.getInventory().getHolder() instanceof JournalMenu.Holder) {
+            manager.getJournal().stopPulse(player);
+        }
         // Always kill ghost manager on the cursor when any inventory closes.
         if (isManagerItem(player.getItemOnCursor())) {
             player.setItemOnCursor(null);
@@ -242,6 +281,11 @@ public class AetherionManagerListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         giveManagerLater(event.getPlayer(), 5L);
         giveManagerLater(event.getPlayer(), 20L);
+    }
+
+    @EventHandler
+    public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+        manager.getJournal().forget(event.getPlayer());
     }
 
     @EventHandler
@@ -310,6 +354,12 @@ public class AetherionManagerListener implements Listener {
             return;
         }
 
+        if (event.getView().getTopInventory().getHolder() instanceof JournalMenu.Holder holder) {
+            event.setCancelled(true);
+            manager.getJournal().click(player, holder, event.getRawSlot());
+            return;
+        }
+
         if (event.getView().getTopInventory().getHolder() instanceof StatsOverviewGUI.Holder) {
             event.setCancelled(true);
 
@@ -362,6 +412,7 @@ public class AetherionManagerListener implements Listener {
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
         if (event.getView().getTopInventory().getHolder() instanceof AetherionManagerGUI.Holder
+                || event.getView().getTopInventory().getHolder() instanceof JournalMenu.Holder
                 || event.getView().getTopInventory().getHolder() instanceof StatsOverviewGUI.Holder
                 || event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.CodexView) {
             event.setCancelled(true);

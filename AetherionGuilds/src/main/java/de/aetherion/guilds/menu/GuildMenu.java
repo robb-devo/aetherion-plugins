@@ -99,7 +99,7 @@ public final class GuildMenu {
                     "§7them once you have a guild.",
                     "§eClick"
             ));
-            inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack", "§7Return to the Aetherion Manager."));
+            inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack", de.aetherion.core.api.JournalText.t("§7Return to the Aetherion Manager.")));
             ChromePage.open(player, inventory, ChromePage.Theme.GUILD);
             return;
         }
@@ -215,7 +215,7 @@ public final class GuildMenu {
                     "§eClick"
             ));
         }
-        inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack", "§7Return to the Aetherion Manager."));
+        inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack", de.aetherion.core.api.JournalText.t("§7Return to the Aetherion Manager.")));
         ChromePage.open(player, inventory, ChromePage.Theme.GUILD);
     }
 

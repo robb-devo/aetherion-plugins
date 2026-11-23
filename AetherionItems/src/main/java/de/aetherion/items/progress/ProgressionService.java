@@ -155,14 +155,14 @@ public final class ProgressionService {
     }
 
     public String hint(Flag flag) {
-        return switch (flag) {
+        return de.aetherion.core.api.JournalText.t(switch (flag) {
             case TRADER -> "§7Visit the trader once. He has a face for a reason.";
             case WORKBENCH -> "§7Market stall · Craftsman unlocks Manager → Crafting / Recipes (Mining Pickaxe next).";
             case ANVIL -> "§7Talk to Temper (Booster Tutor). Anvil opens in the Manager after his lesson.";
             case SPAWN_UNLOCKER -> "§7Get your first spawn unlocker. The map then has opinions.";
             case SKILLS -> "§7Miss Ledger teaches Skills — Manager unlocks when you accept.";
             case PETS -> "§7Lark hands you spheres. Pets unlock when that lesson starts.";
-        };
+        });
     }
 
     public String collectionHint() {

@@ -1,5 +1,6 @@
 package de.aetherion.quests.lang;
 
+import de.aetherion.core.api.JournalText;
 import de.aetherion.quests.AetherionQuests;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -18,7 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tiny quest/hint language pack. English stays in code as source of truth;
- * {@code lang/de.yml} overrides when the player chose German.
+ * {@code lang/de.yml} overrides when the player chose German. Every line comes back through
+ * {@link JournalText#t}, so Manager paths read as Aether Journal paths while the journal is on.
  */
 public final class LangPack {
 
@@ -86,7 +88,7 @@ public final class LangPack {
             return null;
         }
         List<String> list = de.getStringList("cast." + key(npcId) + "." + field);
-        return list == null || list.isEmpty() ? null : list.toArray(new String[0]);
+        return list == null || list.isEmpty() ? null : journal(list.toArray(new String[0]));
     }
 
     /** Single cast string ({@code cast.<npc>.<field>}), or {@code null}. */
@@ -96,7 +98,7 @@ public final class LangPack {
             return null;
         }
         String value = de.getString("cast." + key(npcId) + "." + field);
-        return value == null || value.isBlank() ? null : value;
+        return value == null || value.isBlank() ? null : JournalText.t(value);
     }
 
     /** German small-talk topics for an NPC: label + lines per entry (empty = none). */
@@ -124,7 +126,7 @@ public final class LangPack {
             if (beat == null) {
                 return null;
             }
-            out.add(String.valueOf(beat));
+            out.add(JournalText.t(String.valueOf(beat)));
         }
         return out;
     }
@@ -146,17 +148,29 @@ public final class LangPack {
             return new String[0];
         }
         if (!PlayerLang.of(player).german()) {
-            return english;
+            return journal(english);
         }
         FileConfiguration de = load(LangCode.DE);
         if (de == null) {
-            return english;
+            return journal(english);
         }
         List<String> list = de.getStringList(path);
         if (list == null || list.isEmpty()) {
-            return english;
+            return journal(english);
         }
-        return list.toArray(new String[0]);
+        return journal(list.toArray(new String[0]));
+    }
+
+    /** {@code lines} as the journal reads them; the caller's array is never changed. */
+    private static String[] journal(String[] lines) {
+        if (!JournalText.enabled()) {
+            return lines;
+        }
+        String[] out = lines.clone();
+        for (int i = 0; i < out.length; i++) {
+            out[i] = JournalText.t(out[i]);
+        }
+        return out;
     }
 
     private static String text(Player player, String path, String english) {
@@ -164,17 +178,17 @@ public final class LangPack {
             return "";
         }
         if (!PlayerLang.of(player).german()) {
-            return english;
+            return JournalText.t(english);
         }
         FileConfiguration de = load(LangCode.DE);
         if (de == null) {
-            return english;
+            return JournalText.t(english);
         }
         String value = de.getString(path);
         if (value == null || value.isBlank()) {
-            return english;
+            return JournalText.t(english);
         }
-        return value;
+        return JournalText.t(value);
     }
 
     private static FileConfiguration load(LangCode code) {

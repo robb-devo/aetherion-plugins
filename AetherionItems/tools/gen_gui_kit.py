@@ -7,6 +7,7 @@ gen_gui_chrome.py draws one finished 256 px page per Manager menu. This draws th
 the font ``aetherion:kit`` (referenced from every ``minecraft:default``, so legacy titles reach them), and
 de.aetherion.core.api.ChromePage lays them out in the inventory title:
 
+    journal  the Aether Journal's spread, chapter ribbons and strong line (gen_journal_art.py, 0xE400..0xE443)
     frame    the menu frame in a theme's accent, rows 1..6 (panel, player-inventory wells, divider)
     page     the parchment over the container rows, rows 1..6
     marks    what sits under one slot, per container row: a ledger pocket (16 looks, one per set of
@@ -26,6 +27,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gen_gui_chrome as gc  # noqa: E402
+import gen_journal_art  # noqa: E402
 from gen_gui_chrome import (BEV_LO, INK, INK_SOFT, OUT, PAGE, PAGE_DARK, Canvas, geometry, hx, mix)  # noqa: E402
 
 # key, accent, sigil. Order = ChromePage.Theme.
@@ -401,11 +403,13 @@ def main(root, preview=None):
     for r in range(6):
         add('marks_%d' % r, row, -3 - 18 * r, 20, [''.join(chr(MARK + 32 * r + k) for k in range(18))])
     add('letters', letters_sheet(), 15, 16, [''.join(chr(LETTER + i) for i in range(len(LETTERS)))])
+    gen_journal_art.add_glyphs(add)   # the Aether Journal: spread, chapter ribbons, the strong line (0xE400..)
     font_dir = os.path.join(root, 'assets/aetherion/font')
     os.makedirs(font_dir, exist_ok=True)
     with open(os.path.join(font_dir, 'kit.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump({'providers': providers}, f, ensure_ascii=True, indent=1)
         f.write('\n')
+    gen_journal_art.write_line_fonts(root)
     letter_w = ''.join(str(len(GLYPHS[ch][0])) for ch in LETTERS)
     print('kit: %d themes, %d providers' % (len(THEMES), len(providers)))
     print('ChromePage.LETTERS = "%s"' % LETTERS.encode('unicode_escape').decode())

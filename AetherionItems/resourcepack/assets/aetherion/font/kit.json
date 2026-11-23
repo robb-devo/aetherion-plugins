@@ -1124,6 +1124,132 @@
    "chars": [
     "\ue500\ue501\ue502\ue503\ue504\ue505\ue506\ue507\ue508\ue509\ue50a\ue50b\ue50c\ue50d\ue50e\ue50f\ue510\ue511\ue512\ue513\ue514\ue515\ue516\ue517\ue518\ue519\ue51a\ue51b\ue51c\ue51d\ue51e\ue51f\ue520\ue521\ue522\ue523\ue524\ue525\ue526\ue527\ue528\ue529\ue52a\ue52b\ue52c\ue52d\ue52e\ue52f\ue530\ue531\ue532\ue533"
    ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_spread.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue400"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_today.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue410\ue411\ue412\ue413"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_character.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue414\ue415\ue416\ue417"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_journey.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue418\ue419\ue41a\ue41b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_atlas.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue41c\ue41d\ue41e\ue41f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_workshop.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue420\ue421\ue422\ue423"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_market.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue424\ue425\ue426\ue427"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_codex.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue428\ue429\ue42a\ue42b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_company.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue42c\ue42d\ue42e\ue42f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_ribbon_settings.png",
+   "ascent": 1,
+   "height": 28,
+   "chars": [
+    "\ue430\ue431\ue432\ue433"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_highlight_1.png",
+   "ascent": -22,
+   "height": 20,
+   "chars": [
+    "\ue440"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_highlight_2.png",
+   "ascent": -40,
+   "height": 20,
+   "chars": [
+    "\ue441"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_highlight_3.png",
+   "ascent": -58,
+   "height": 20,
+   "chars": [
+    "\ue442"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_highlight_4.png",
+   "ascent": -76,
+   "height": 20,
+   "chars": [
+    "\ue443"
+   ]
   }
  ]
 }

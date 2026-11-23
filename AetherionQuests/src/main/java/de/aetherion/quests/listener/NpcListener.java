@@ -2904,7 +2904,7 @@ public class NpcListener implements Listener {
                     },
                     false,
                     de.aetherion.quests.lang.LangPack.say(player, "ledger.desk." + slug + ".echo",
-                            "Tell me about " + key.toLowerCase(java.util.Locale.ROOT) + ".")
+                            "Tell me about " + de.aetherion.core.api.JournalText.t(key).toLowerCase(java.util.Locale.ROOT) + ".")
             ));
         }
         String[] travel = de.aetherion.quests.lang.LangPack.sayLines(player, "ledger.desk.travel.lines", new String[] {

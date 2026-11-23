@@ -268,8 +268,9 @@ public final class FieldLesson {
                         java.time.Duration.ofMillis(3000), java.time.Duration.ofMillis(800))));
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.2f);
         if (teleport) {
-            player.sendMessage(t(player, "§e✦ Farm Isle §7added to your §fTeleports §8(Nether Star)§7.",
-                    "§e✦ Farm-Insel §7zu deinen §fTeleports §7hinzugefügt §8(Netherstern)§7."));
+            player.sendMessage(de.aetherion.core.api.JournalText.t(t(player,
+                    "§e✦ Farm Isle §7added to your §fTeleports §8(Nether Star)§7.",
+                    "§e✦ Farm-Insel §7zu deinen §fTeleports §7hinzugefügt §8(Netherstern)§7.")));
         }
         QuestProgressAccess quests = AetherServices.quests();
         if (quests != null) {

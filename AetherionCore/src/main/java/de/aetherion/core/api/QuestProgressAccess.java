@@ -69,6 +69,15 @@ public interface QuestProgressAccess {
 
     String despawnNpc(Entity entity);
 
+    /** One quest on the Aether Journal's Journey page. */
+    record JournalQuest(String id, String title, String detail, boolean ready, boolean tracked) {
+    }
+
+    /** Active and ready-to-turn-in quests for the Aether Journal, tracked quest first (empty without Quests). */
+    default List<JournalQuest> journalQuests(Player player) {
+        return List.of();
+    }
+
     /** Where the active quest points this player (HUD radar), or null. */
     default Location questTarget(Player player) {
         return null;

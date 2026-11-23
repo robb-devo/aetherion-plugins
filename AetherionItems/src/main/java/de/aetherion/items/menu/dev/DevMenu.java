@@ -408,7 +408,7 @@ public class DevMenu {
                     info.cat().accent + "§l" + DevTheme.pageName(page), "noop", lore.toArray(String[]::new)));
         }
         if (kitRoot) {
-            inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, "§a← Aetherion Manager", "close",
+            inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, de.aetherion.core.api.JournalText.t("§a← Aetherion Manager"), "close",
                     "§7Leave the Content Kit."));
             inventory.setItem(DevTheme.CLOSE, DevItems.button(Material.BARRIER, "§cClose", "close"));
             if (page == Page.CONTENT_KIT) {
@@ -417,7 +417,7 @@ public class DevMenu {
             return;
         }
         if (page == Page.ROOT) {
-            inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, "§a← Aetherion Manager", "close",
+            inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, de.aetherion.core.api.JournalText.t("§a← Aetherion Manager"), "close",
                     "§7Back to the player menu."));
         } else if (contentOnly(player)) {
             inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, "§a← Go Back", "back",
@@ -426,7 +426,7 @@ public class DevMenu {
             inventory.setItem(DevTheme.BACK, backButton(backTarget(spec)));
         }
         inventory.setItem(DevTheme.CLOSE, DevItems.button(Material.BARRIER, "§cClose", "close",
-                "§7Back to the Aetherion Manager."));
+                de.aetherion.core.api.JournalText.t("§7Back to the Aetherion Manager.")));
         if (!contentOnly(player)) {
             inventory.setItem(DevTheme.SEARCH, DevItems.button(Material.OAK_SIGN, "§d§lSearch",
                     "search",
@@ -983,7 +983,7 @@ public class DevMenu {
                     prog.unlock(player, de.aetherion.items.progress.ProgressionService.Flag.PETS);
                 }
                 int n = count instanceof Integer i ? i : 0;
-                player.sendMessage("§aTutorial marked done §7(§f" + n + "§7 quests completed). Manager flags unlocked.");
+                player.sendMessage("§aTutorial marked done §7(§f" + n + de.aetherion.core.api.JournalText.t("§7 quests completed). Manager flags unlocked."));
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.9f, 1.1f);
             } catch (ReflectiveOperationException exception) {
                 player.sendMessage("§cTutorial skip failed — update AetherionQuests jar.");
