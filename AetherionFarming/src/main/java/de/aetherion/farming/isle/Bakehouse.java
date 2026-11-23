@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * The Oven House — Bram bakes Eldervale crops into food that makes you a better farmer for a while.
  * One food buff at a time; eating another replaces it. Everything it grants is farming-only
- * (crop Fortune, Harvest, Rhythm, Prize chance), so a loaf never leaks into mining.
+ * (crop Fortune, Harvest, Ripe Glint, Prize chance), so a loaf never leaks into mining.
  */
 public final class Bakehouse implements Listener {
 
@@ -43,7 +43,7 @@ public final class Bakehouse implements Listener {
                 "Potatoes and beets fried in someone's good pan.",
                 recipe(IsleCrop.POTATO, 64, IsleCrop.BEETROOT, 32), 10, 10, 0, 1.0, 1.0, 1),
         SWEETCANE_CORDIAL("Sweetcane Cordial", Material.HONEY_BOTTLE, 10,
-                "Tastes like a metronome. Keeps you in time.",
+                "Sharp and sweet. Ripe things look brighter after a sip.",
                 recipe(IsleCrop.SUGAR_CANE, 64, IsleCrop.BEETROOT, 32), 5, 0, 1.0, 1.6, 1.0, 0),
         GOLDEN_HARVEST_PIE("Golden Harvest Pie", Material.PUMPKIN_PIE, 15,
                 "Baked around a Prize Crop. The crust has a ribbon.",
@@ -56,13 +56,15 @@ public final class Bakehouse implements Listener {
         final Map<IsleCrop, Integer> costs;
         final double fortune;
         final double harvest;
-        final double rhythmGain;
-        final double rhythmHold;
+        /** Extra glint streak per glint pick. */
+        final double glintGain;
+        /** Multiplier on how long a glint shines. */
+        final double glintHold;
         final double prizeMult;
         final int xpPerHarvest;
 
         Food(String display, Material material, int minutes, String flavor, Map<IsleCrop, Integer> costs,
-             double fortune, double harvest, double rhythmGain, double rhythmHold, double prizeMult, int xpPerHarvest) {
+             double fortune, double harvest, double glintGain, double glintHold, double prizeMult, int xpPerHarvest) {
             this.display = display;
             this.material = material;
             this.minutes = minutes;
@@ -70,8 +72,8 @@ public final class Bakehouse implements Listener {
             this.costs = costs;
             this.fortune = fortune;
             this.harvest = harvest;
-            this.rhythmGain = rhythmGain;
-            this.rhythmHold = rhythmHold;
+            this.glintGain = glintGain;
+            this.glintHold = glintHold;
             this.prizeMult = prizeMult;
             this.xpPerHarvest = xpPerHarvest;
         }
@@ -104,11 +106,11 @@ public final class Bakehouse implements Listener {
             if (harvest > 0) {
                 lines.add("§a+" + (int) harvest + " Harvest");
             }
-            if (rhythmGain > 0) {
-                lines.add("§d+" + trim(rhythmGain) + " Rhythm per harvest");
+            if (glintGain > 0) {
+                lines.add("§6+" + trim(glintGain) + " glint streak per shining crop");
             }
-            if (rhythmHold > 1.0) {
-                lines.add("§dRhythm holds " + Math.round((rhythmHold - 1.0) * 100) + "% longer");
+            if (glintHold > 1.0) {
+                lines.add("§6Ripe crops shine " + Math.round((glintHold - 1.0) * 100) + "% longer");
             }
             if (prizeMult > 1.0) {
                 lines.add("§6Prize Crops ×" + trim(prizeMult));
@@ -171,14 +173,14 @@ public final class Bakehouse implements Listener {
         return food == null ? 0.0d : food.harvest;
     }
 
-    double rhythmGain(Player player) {
+    double glintGain(Player player) {
         Food food = active(player);
-        return food == null ? 0.0d : food.rhythmGain;
+        return food == null ? 0.0d : food.glintGain;
     }
 
-    double rhythmHold(Player player) {
+    double glintHold(Player player) {
         Food food = active(player);
-        return food == null ? 1.0d : food.rhythmHold;
+        return food == null ? 1.0d : food.glintHold;
     }
 
     double prizeMultiplier(Player player) {

@@ -86,17 +86,20 @@ public final class IsleMenus implements Listener {
             viewer.performCommand("skills farming");
         });
 
-        HarvestRhythm.Tier tier = isle.rhythm().tier(player);
-        set(holder, 10, Material.NOTE_BLOCK, "§d♪ Harvest Rhythm", lines(
-                "§7Harvest mature crops without pausing.",
-                "§7Every swing adds rhythm, idling drains it.",
+        RipeGlint.Tier tier = isle.glint().tier(player);
+        set(holder, 10, Material.GLOWSTONE_DUST, "§6✦ Ripe Glint", lines(
+                "§7While you harvest, a ripe crop near you",
+                "§7shines gold for a moment.",
+                "§7Harvest it in the shine: §e+1 crop§7, XP,",
+                "§7and your glint streak grows.",
+                "§7A shine that fades costs one step.",
                 "",
-                "§a20 §7Steady §8· §f+10 crop Fortune",
-                "§e50 §7In the Groove §8· §f+25 · +10 Harvest",
-                "§d100 §7Harvest Song §8· §f+50 · +25 Harvest · bonus XP",
+                "§a3 §7Keen Eye §8· §f+10 crop Fortune",
+                "§e10 §7Golden Hands §8· §f+25 · +10 Harvest",
+                "§d20 §7Harvest Gleam §8· §f+50 · +25 Harvest · 2 crops",
                 "",
-                "§7Right now: " + (tier == HarvestRhythm.Tier.NONE ? "§8quiet" : tier.chat + tier.label()),
-                "§8Row Rhythm skill + Sweetcane Cordial help."
+                "§7Right now: " + (tier == RipeGlint.Tier.NONE ? "§8no streak" : tier.chat + tier.label()),
+                "§8Glint Eye skill + Sweetcane Cordial: longer shine."
         ), null);
 
         double chance = isle.prizes().chance(player, IsleCrop.CARROT);

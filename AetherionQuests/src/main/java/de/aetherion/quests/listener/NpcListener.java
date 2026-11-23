@@ -2639,7 +2639,7 @@ public class NpcListener implements Listener {
                         de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.isle.echo", "What's on the isle?"),
                         de.aetherion.quests.lang.LangPack.sayLines(player, "farm_isle_guide.desk.isle.lesson", new String[] {
                                 "Eldervale fields. Rows that replant themselves, an Oven House that never cools.",
-                                "§aElsie§f at the Harvest Hall teaches the rhythm. Keep swinging and the field pays more."
+                                "§aElsie§f at the Harvest Hall shows you the shining crops. Catch them and the field pays more."
                         }))
                 .topic(de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.back.label", "Coming back?"),
                         net.kyori.adventure.text.format.NamedTextColor.AQUA,

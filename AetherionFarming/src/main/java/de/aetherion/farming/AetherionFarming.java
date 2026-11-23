@@ -189,7 +189,7 @@ public class AetherionFarming extends JavaPlugin {
         return seeder;
     }
 
-    /** Eldervale loops (rhythm, prizes, mastery, orders, cast…). Null without AetherionItems. */
+    /** Eldervale loops (ripe glint, prizes, mastery, orders, cast…). Null without AetherionItems. */
     public FarmIsle farmIsle() {
         return farmIsle;
     }

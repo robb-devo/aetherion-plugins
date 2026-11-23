@@ -341,7 +341,7 @@ public final class SkillRoads {
             case FORAGE -> LangPack.say(player, "ledger.isles.forage.line",
                     "§aForage Isle§f — the Fell bar again, but the trees keep score. Pad's north-east; §aMiss Canopy§f meets you.");
             case FARM -> LangPack.say(player, "ledger.isles.farm.line",
-                    "§eFarm Isle§f — harvest in rhythm and the field pays more. Pad's south-west; §eElsie§f meets you.");
+                    "§eFarm Isle§f — catch the crops that shine gold and the field pays more. Pad's south-west; §eElsie§f meets you.");
             case FISH -> LangPack.say(player, "ledger.isles.fish.line",
                     "§bFishing Eldervale§f — twelve waters, one honest pull. Pad's north-west; §bMaren§f meets you.");
             case MINE -> LangPack.say(player, "ledger.isles.mine.line",

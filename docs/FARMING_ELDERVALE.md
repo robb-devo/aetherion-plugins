@@ -18,7 +18,7 @@ Building Core + Items + Farming from here keeps every live feature of all three.
 
 | System | What it does | Config |
 |---|---|---|
-| Harvest Rhythm | Combo meter, tiers 20/50/100 pay +10/+25/+50 crop-only Fortune (+10/+25 Harvest), pentatonic note per swing, notched boss bar | `harvest-rhythm.enabled` |
+| Ripe Glint (A-51, replaced Harvest Rhythm) | While you harvest, a ripe crop within 6 blocks (ahead of you first) shines gold for 2.5 s: golden outline only you see, chime from its direction, sparkles. Harvest it in the shine: +1 crop (+2 at Gleam) via `harvestBonus`, Farming XP, streak +1. A faded shine costs 1, idling drains. Streak tiers 3/10/20 (Keen Eye, Golden Hands, Harvest Gleam) pay +10/+25/+50 crop-only Fortune (+10/+25 Harvest). | `ripe-glint.enabled` (falls back to `harvest-rhythm.enabled`) |
 | Prize Crops | 1/450 per hand harvest (20 s cooldown); giant glowing crop, finder's dibs 4 s, anyone 4–8 s, then wilts. Weighted item, 192–512 coins | `prize-crops.chance` |
 | Crop Mastery | Lifetime per-crop ledger, tiers I–VI at 250/1k/4k/12k/35k/100k, +6 crop Fortune per tier, coins + XP; isle ×2 | `crop-mastery.isle-weight` |
 | Plots & compass | 15 named areas, discovery title + 25 XP, Cartographer 2,500 coins, action-bar wayfinder | `farm-isle-plots` |
@@ -29,7 +29,7 @@ Building Core + Items + Farming from here keeps every live feature of all three.
 
 Player data: `plugins/AetherionFarming/isle-players.yml` (plots, mastery, prizes, orders, food, records).
 
-Items: 5 Farming skills (Soil Sense isle-only stats, Row Rhythm, Blue Ribbon, Bird Law, Market Day),
+Items: 5 Farming skills (Soil Sense isle-only stats, Glint Eye (id `row_rhythm`: longer shine, faster streak), Blue Ribbon, Bird Law, Market Day),
 `FarmIsleHook` (guarded FarmAccess calls), crop listener adds crop Fortune + harvest extras,
 DEV `FarmIsleDevPages`. Core: `FarmAccess` default methods.
 
@@ -40,7 +40,7 @@ DEV `FarmIsleDevPages`. Core: `FarmAccess` default methods.
 - **Teleports** — landing, every NPC spot, every plot.
 - **NPC Cast** — left anchor · right preset · shift-left go · shift-right remove; *Place Whole Cast at Presets*.
 - **Props & Tools** — scarecrow, hay wagon, cane tool, 4 district signs, millstones, FAWE prop list.
-- **Events** — Bee Bloom, Harvest Moon, stop, bird scare here, scarecrow wave, featured reroll, prize pop, max rhythm.
+- **Events** — Bee Bloom, Harvest Moon, stop, bird scare here, scarecrow wave, featured reroll, prize pop, max glint streak.
 - **Progression & Skills** — Farming skills Lv 1–100, Eldervale loadout, hoes T1–T5, all prizes, mastery 0/III/VI,
   plots all/reset, order reset, profile wipe (shift), foods, clear food.
 - Hub row 3 opens every NPC board without walking.
@@ -49,7 +49,7 @@ DEV `FarmIsleDevPages`. Core: `FarmAccess` default methods.
 
 1. DEV → Farming Island → NPC Cast → *Place Whole Cast at Presets*. Walk the Teleports list; nudge any NPC with its anchor.
 2. Teleport *Landing* in survival → "Harvest Hall" discovery title, welcome line, arrow to the Warden.
-3. Harvest a row fast → Rhythm bar, notes climb; at 20/50/100 tier-up chord. Stop → drains, bass note.
+3. Harvest a row → crops near you start to shine gold; harvest the shining one → "✦ Ripe Glint +1", note climbs, streak bar fills; at 3/10/20 tier-up chord. Let one fade → streak −1. Stop → drains, bass note.
 4. Events → *Pop a Prize Crop* while looking at a crop → click it; second player can snatch after 4 s.
 5. Talk to Hattie → deliver an order (Progression → give crops via creative), sell a prize.
 6. Talk to Bram → bake a Loaf, eat it → Warden board shows the buff.

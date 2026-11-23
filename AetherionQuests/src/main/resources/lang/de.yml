@@ -1371,7 +1371,7 @@ talk:
         line_done: "Wieder Holz? Pells Brett hat neue Aufträge. Der Pfeil zeigt aufs Pad."
       farm:
         label: "Farm Isle"
-        line: "§eFarm Isle§f — ernte im Rhythmus, und das Feld zahlt mehr. Pad im Südwesten; §eElsie§f empfängt dich."
+        line: "§eFarm Isle§f — schnapp dir die Pflanzen, die golden glänzen, und das Feld zahlt mehr. Pad im Südwesten; §eElsie§f empfängt dich."
         line_done: "Zurück auf die Felder? Hatties Aufträge zahlen doppelt. Der Pfeil zeigt aufs Pad."
         farmer: "§eFarming§f fängt auf den Feldern an: zuerst der §eFarmer§f, dann §eElsie§f auf der Insel."
       fish:
@@ -1482,7 +1482,7 @@ talk:
           - "§aElsie§f, die Field Warden, wartet am Landeplatz. Die kennt jede Ecke."
         lesson:
           - "Eldervale-Felder. Reihen, die sich selbst nachpflanzen, ein Ofenhaus, das nie kalt wird."
-          - "§aElsie§f in der Erntehalle bringt dir den Rhythmus bei. Bleib dran, und das Feld zahlt mehr."
+          - "§aElsie§f in der Erntehalle zeigt dir die glänzenden Pflanzen. Schnapp sie dir, und das Feld zahlt mehr."
       level:
         label: "Farming 10?"
         echo: "Warum Farming 10?"

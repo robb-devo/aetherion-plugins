@@ -37,7 +37,7 @@ public final class FarmIsleHook {
         }
     }
 
-    /** Crop-only Fortune: mastery, Harvest Rhythm, bakehouse food. */
+    /** Crop-only Fortune: mastery, Ripe Glint streak, bakehouse food. */
     public static double cropFortune(Player player, Material crop) {
         FarmAccess farm = farm();
         if (farm == null || player == null || crop == null) {
@@ -51,7 +51,7 @@ public final class FarmIsleHook {
         }
     }
 
-    /** Extra whole crops for one harvest (featured crop, Bee Bloom). Falls back to the featured-only call. */
+    /** Extra whole crops for one harvest (featured crop, Bee Bloom, Ripe Glint). Falls back to the featured-only call. */
     public static int harvestBonus(Player player, Material yield, Location at) {
         FarmAccess farm = AetherServices.farming();
         if (farm == null || yield == null) {
