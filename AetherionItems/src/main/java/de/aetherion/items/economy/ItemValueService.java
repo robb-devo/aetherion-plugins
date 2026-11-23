@@ -45,8 +45,15 @@ public final class ItemValueService {
         load(file);
     }
 
-    /** Bundled economy.yml version. 3 = P2 progression (Signature recipes, diving craft, Trophies). */
-    public static final int ECONOMY_VERSION = 3;
+    /**
+     * Bundled economy.yml version. 3 = P2 progression (Signature recipes, diving craft, Trophies).
+     * 4 = A-60: T4/T5 ladder slots take 16 Compressed instead of one Compacted, so those 50 pieces list lower.
+     */
+    public static final int ECONOMY_VERSION = 4;
+
+    /** The pieces economy v4 re-prices (A-60). A v3 live file gets only these patched in. */
+    private static final java.util.regex.Pattern V4_LADDER = java.util.regex.Pattern.compile(
+            "(combat|mining|farming|foraging|fishing)_(helmet|chestplate|leggings|boots|sword|pickaxe|hoe|axe|rod)_[45]");
 
     private static void ensureEconomyFile(JavaPlugin plugin, File file) {
         final int expectedVersion = ECONOMY_VERSION;
@@ -56,6 +63,10 @@ public final class ItemValueService {
         }
         YamlConfiguration existing = YamlConfiguration.loadConfiguration(file);
         int version = existing.getInt("economy-version", 1);
+        if (version == 3 && expectedVersion == 4) {
+            patchV4(plugin, file, existing);
+            return;
+        }
         if (version < expectedVersion) {
             // Keep the old file next to the new one so any hand edits can be merged back.
             File backup = new File(file.getParentFile(), "economy.yml.v" + version + ".bak");
@@ -68,6 +79,49 @@ public final class ItemValueService {
             plugin.getLogger().info("Updating economy.yml to version " + expectedVersion + " (was " + version
                     + "; old file kept as " + backup.getName() + ").");
             plugin.saveResource("economy.yml", true);
+        }
+    }
+
+    /**
+     * v3 → v4 without touching anything else in the live file: only the T4/T5 ladder values come from the bundled
+     * file (the old file is kept as economy.yml.v3.bak).
+     */
+    private static void patchV4(JavaPlugin plugin, File file, YamlConfiguration existing) {
+        java.io.InputStream bundledStream = plugin.getResource("economy.yml");
+        if (bundledStream == null) {
+            return;
+        }
+        YamlConfiguration bundled;
+        try (java.io.Reader reader = new java.io.InputStreamReader(bundledStream, java.nio.charset.StandardCharsets.UTF_8)) {
+            bundled = YamlConfiguration.loadConfiguration(reader);
+        } catch (java.io.IOException exception) {
+            plugin.getLogger().warning("Could not read the bundled economy.yml: " + exception.getMessage());
+            return;
+        }
+        ConfigurationSection crafted = bundled.getConfigurationSection("crafted");
+        if (crafted == null) {
+            return;
+        }
+        File backup = new File(file.getParentFile(), "economy.yml.v3.bak");
+        try {
+            java.nio.file.Files.copy(file.toPath(), backup.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (java.io.IOException exception) {
+            plugin.getLogger().warning("Could not back up economy.yml before the v4 patch: " + exception.getMessage());
+        }
+        int patched = 0;
+        for (String key : crafted.getKeys(false)) {
+            if (V4_LADDER.matcher(key).matches()) {
+                existing.set("crafted." + key, crafted.getLong(key));
+                patched++;
+            }
+        }
+        existing.set("economy-version", 4);
+        try {
+            existing.save(file);
+            plugin.getLogger().info("economy.yml patched to version 4: " + patched + " T4/T5 ladder values (A-60); old file kept as "
+                    + backup.getName() + ".");
+        } catch (java.io.IOException exception) {
+            plugin.getLogger().warning("Could not save the economy.yml v4 patch: " + exception.getMessage());
         }
     }
 

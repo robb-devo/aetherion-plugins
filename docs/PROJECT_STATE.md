@@ -97,6 +97,12 @@ Merged on `main` but **not live** yet (2026-11-22 20:45 CET):
   Ore Trolls from the Shaft Foreman's First Shift on, 0.7 % / 65 % blueprint, no duplicate kind until all six),
   #178 Mining (A-49 Strike Rhythm bar hides while Old Wick's lesson bar is up), #179 BossEngine (A-57 Pathwarden
   death: helm shatters, he sinks to his knees, bursts into light, "THE PATHWARDEN FALLS" title).
+- Beta work list steps 7-8, merged 2026-11-23: #181 Mining (A-50 crystals form when a Strike Rhythm series ends),
+  #182 Farming + Items + Quests (A-51 Ripe Glint replaces the shared rhythm bar), #183 Foraging + Items + Quests (A-51
+  you aim where the tree falls), #184 Core + Quests (A-52 Exile = Level 75 + Pathwarden once), #185 Core + Quests +
+  BossEngine (A-53 exile loop: Keeper brews vials, Echoes, set pieces without duplicates), A-60 Items + Guilds (T4/T5
+  and quarry L4+ take 16 Compressed per slot instead of Compacted; Items patches the live `economy.yml` from version 3
+  to 4 on start, only the 50 T4/T5 ladder prices, backup `economy.yml.v3.bak`).
 
 Deploys swap jars by plugin name only where a server already runs that plugin, back the old ones up and
 restart each backend once (graceful RCON stop). The host also runs a standalone vanilla server (own port,

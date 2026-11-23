@@ -679,8 +679,8 @@ public class RecipeRegistry {
          * MINING PICKAXE II–V  (Peter one-predecessor ladder)
          * T2 mix 2 iron + 2 coal
          * T3 mix 2 compressed copper + 2 compressed iron
-         * T4 diagonal cross 2 compacted copper + 2 compacted coal
-         * T5 peak 1 compacted diamond + 3 compacted redstone
+         * T4 diagonal cross 2 + 2 slots of 16 compressed copper / coal (A-60, was compacted)
+         * T5 peak 1 + 3 slots of 16 compressed diamond / redstone (A-60, was compacted)
          * Center is always exactly one previous pickaxe.
          * =====================================================
          */
@@ -854,7 +854,7 @@ public class RecipeRegistry {
                 de.aetherion.items.economy.Signatures.display("crystal_find"), customItem.createDungeonCore());
 
         ForagingItems foraging = customItem.foraging();
-        // T1 Oak · T2 Birch+Spruce · T3 Jungle+Acacia compressed · T4 Dark Oak+Mangrove compacted · T5 Cherry+Bamboo compacted
+        // T1 Oak · T2 Birch+Spruce · T3 Jungle+Acacia compressed · T4 Dark Oak+Mangrove · T5 Cherry+Bamboo (16 compressed per slot, A-60)
         registerSimple(
                 "foraging_helmet",
                 RecipeCategory.FORAGING,
@@ -2487,6 +2487,8 @@ public class RecipeRegistry {
      */
     /** Plain vanilla mats on a ladder step count 16 per slot, or a T2 step (2 iron + 2 coal) costs less than T1 (8 coal). */
     private static final int LADDER_RAW_PER_SLOT = 16;
+    /** A-60 (E2 + T-09): a T4/T5 slot that used to take one Compacted takes this many Compressed (×16 from T3, not ×128). */
+    private static final int LADDER_COMPRESSED_PER_SLOT = 16;
 
     private static ItemStack bulk(ItemStack mat) {
         if (mat == null || mat.getAmount() != 1) {
@@ -2500,6 +2502,29 @@ public class RecipeRegistry {
         ItemStack copy = mat.clone();
         copy.setAmount(Math.min(LADDER_RAW_PER_SLOT, copy.getMaxStackSize()));
         return copy;
+    }
+
+    /**
+     * A-60: one Compacted in a T4/T5 ladder slot becomes {@link #LADDER_COMPRESSED_PER_SLOT} Compressed of the same
+     * resource. Anything else passes through.
+     */
+    private static ItemStack eased(ItemStack mat) {
+        if (mat == null || !mat.hasItemMeta()) {
+            return mat;
+        }
+        String id = mat.getItemMeta().getPersistentDataContainer().get(
+                de.aetherion.items.core.ItemKeys.item(), org.bukkit.persistence.PersistentDataType.STRING);
+        if (id == null) {
+            return mat;
+        }
+        for (CompressedResource resource : CompressedResource.values()) {
+            if (id.equalsIgnoreCase(resource.compactedId())) {
+                ItemStack compressed = resource.compressed();
+                compressed.setAmount(Math.min(LADDER_COMPRESSED_PER_SLOT, compressed.getMaxStackSize()));
+                return compressed;
+            }
+        }
+        return mat;
     }
 
     private void registerLadderPlus(
@@ -2544,7 +2569,7 @@ public class RecipeRegistry {
     }
 
     /**
-     * Wave 2 T4: exactly 1 previous + 2+2 new compacted mats, diagonal cross.
+     * Wave 2 T4: exactly 1 previous + 2+2 new mats, diagonal cross. A Compacted slot is eased to 16 Compressed (A-60).
      * Harder to read than T3 plus — same count, rarer mats, more interesting shape.
      * Shape: {@code A B /  C  / B A}
      */
@@ -2563,12 +2588,12 @@ public class RecipeRegistry {
                 result,
                 rarity,
                 List.of("A B", " C ", "B A"),
-                createMixedIngredients('A', bulk(first), 'B', bulk(second), 'C', center)
+                createMixedIngredients('A', bulk(eased(first)), 'B', bulk(eased(second)), 'C', center)
         );
     }
 
     /**
-     * Wave 2 T5: exactly 1 previous + 1 premium compacted + 3 support compacted.
+     * Wave 2 T5: exactly 1 previous + 1 premium + 3 support slots. A Compacted slot is eased to 16 Compressed (A-60).
      * Same pattern as the Wave 1 mining pick T5 fix. Never 2–3× the predecessor.
      * Shape: {@code  S  / SCS /  P }
      */
@@ -2587,7 +2612,7 @@ public class RecipeRegistry {
                 result,
                 rarity,
                 List.of(" S ", "SCS", " P "),
-                createMixedIngredients('S', bulk(support), 'C', center, 'P', bulk(premium))
+                createMixedIngredients('S', bulk(eased(support)), 'C', center, 'P', bulk(eased(premium)))
         );
     }
 
@@ -2636,7 +2661,7 @@ public class RecipeRegistry {
             ItemStack second,
             ItemStack signature
     ) {
-        Map<Character, ItemStack> ingredients = createMixedIngredients('A', bulk(first), 'B', bulk(second), 'C', center);
+        Map<Character, ItemStack> ingredients = createMixedIngredients('A', bulk(eased(first)), 'B', bulk(eased(second)), 'C', center);
         ingredients.put('S', signature.clone());
         registerSimple(
                 id,
@@ -2662,7 +2687,7 @@ public class RecipeRegistry {
             ItemStack support,
             ItemStack signature
     ) {
-        Map<Character, ItemStack> ingredients = createMixedIngredients('S', bulk(support), 'C', center, 'P', bulk(premium));
+        Map<Character, ItemStack> ingredients = createMixedIngredients('S', bulk(eased(support)), 'C', center, 'P', bulk(eased(premium)));
         ingredients.put('X', signature.clone());
         registerSimple(
                 id,
@@ -2705,7 +2730,7 @@ public class RecipeRegistry {
             ItemStack extra,
             UnlockRequirement unlock
     ) {
-        Map<Character, ItemStack> ingredients = createMixedIngredients('S', bulk(support), 'C', center, 'P', bulk(premium));
+        Map<Character, ItemStack> ingredients = createMixedIngredients('S', bulk(eased(support)), 'C', center, 'P', bulk(eased(premium)));
         ingredients.put('X', signature.clone());
         ingredients.put('E', extra.clone());
         registerSimple(
