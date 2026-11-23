@@ -57,32 +57,45 @@ Helm agent and lacked the `aetherion-armor` datapack the other backends carry; n
 - Live jar hashes, deploy times and backups are logged per deploy in `aetherion-ops/docs/LIVE_STATE_*.md` on Robb's PC
   (newest on top); the table below is the summary.
 
-## Live plugin builds (sha256 prefix, 2026-11-23 19:11 CET)
+## Live plugin builds (sha256 prefix, 2026-11-23 22:55 CET)
 
-Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET): every backend runs
-`main` `f069314` (PRs #159 to #187), 36 jars swapped, only plugins each server already loads. **`main` equals live**
-again; the one exception is the hub server's own Hub jar.
+Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET) put `main` `f069314`
+(PRs #159 to #187) on every backend. The round of 21:21-21:22 CET added `6f592a1` (#189: A-58, A-54/A-55, A-59,
+A-13: Core, Items, Quests, BossEngine, SamuraiBoss), and Quests followed with `6b2c6f9` (#190) at 22:55 CET. **`main` equals live**;
+the one exception is the hub server's own Hub jar.
 
 | Plugin | Live build | Backends |
 |---|---|---|
-| Core | `21d86327` | all six |
-| Items | `fe779a56` | mmo-r, mmo-d, mmo-c, mmo-i, mmo-m (economy.yml patched to v4 on start, `economy.yml.v3.bak` kept) |
-| Quests | `1e01fcb6` | every mmo backend (live configs untouched; mmo-i had paged talk + cards switched on before) |
-| BossEngine | `2e6162ed` | hub, mmo-r, mmo-d, mmo-c (no LuckPerms player group grants `*` or `helios.*`) |
+| Core | `8709799c` | all six |
+| Items | `2299eb85` | mmo-r, mmo-d, mmo-c, mmo-i, mmo-m (economy.yml patched to v4 on start, `economy.yml.v3.bak` kept) |
+| Quests | `d03b742d` | every mmo backend (live configs untouched; mmo-i had paged talk + cards switched on before) |
+| BossEngine | `50cbbc16` | hub, mmo-r, mmo-d, mmo-c (no LuckPerms player group grants `*` or `helios.*`) |
 | AetherMobs | `68472a44` | every mmo backend |
 | Mining | `7646c17a` | mmo-r, mmo-c, mmo-m |
 | Farming / Fishing / Foraging | `065a45f1` / `4761955f` / `d3949dac` | mmo-r, mmo-c |
 | Guilds | `25b1b93c` | mmo-i only (parked on mmo-r and mmo-d) |
 | Hub | `0fb9f70c` | mmo-r; **hub keeps `d1a097e7` (10-05)** |
-| Dungeons, Beta, Gnomon, SamuraiBoss, Pit | `main` of 11-16 (unchanged since) | as below |
+| SamuraiBoss | `16210290` | mmo-r (`arena.bell-challenge: true` patched live; no dojo is built there right now, see below) |
+| Dungeons, Beta, Gnomon, Pit | `main` of 11-16 (unchanged since) | as below |
 
 Which backend loads which plugin: Core on all six (hub, mmo-r, mmo-d, mmo-c, mmo-i, mmo-m); Items, Quests,
 AetherMobs on every mmo backend; BossEngine on hub, mmo-r, mmo-d, mmo-c; Mining on mmo-r, mmo-c, mmo-m; Foraging,
 Farming, Fishing on mmo-r and mmo-c; Dungeons and Beta on mmo-r and mmo-d; Guilds on mmo-i only (parked on mmo-r and mmo-d);
 Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmProxy` on the proxy.
 
-Backup of the replaced jars and configs: `backups/beta-a04-a61-20261123-190456` (rollback script in the matching
-staging folder). Nothing merged is waiting for a deploy.
+Backups of the replaced jars and configs: `backups/beta-a04-a61-20261123-190456` and
+`backups/beta-a54-a59-20261123-211821` (with `quests-190` for the #190 swap; rollback scripts inside and in the matching staging folder). Nothing merged is
+waiting for a deploy.
+
+Live look of 2026-11-23 (things the repo does not show):
+- mmo-r has **no Samurai dojo** (both were removed with `/samurai remove` on 10-31; boot says "0 Dojo(s)"). The temple
+  bell starts fights only after staff run `/samurai build` + confirm somewhere.
+- The live `plugins/BossEngine/bosses/dungeon_aetherion.yml` on mmo-c has real rank loot (rank 1: an Aetherion armor
+  piece for sure, chances on Void Stick, Terminus, Portal Gun, Void Vacuum Charm, Ashen Katana; ranks 2 and 3 lower;
+  95,000 XP). The repo copy's loot section is empty (it is only written when missing). Quests' `FinaleSpoils` adds
+  coins only, so nothing is paid twice.
+- On the hub, `/hub` comes from AetherionPit (aliases lobby, spawn), `/spawn` from AetherionHub (alias hub), `/lobby`
+  from DeluxeHub (for A-63).
 
 Deploys swap jars by plugin name only where a server already runs that plugin, back the old ones up and
 restart each backend once (graceful RCON stop). The host also runs a standalone vanilla server (own port,
