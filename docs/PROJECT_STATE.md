@@ -57,54 +57,32 @@ Helm agent and lacked the `aetherion-armor` datapack the other backends carry; n
 - Live jar hashes, deploy times and backups are logged per deploy in `aetherion-ops/docs/LIVE_STATE_*.md` on Robb's PC
   (newest on top); the table below is the summary.
 
-## Live plugin builds (sha1 prefix, 2026-11-22 19:40 CET)
+## Live plugin builds (sha256 prefix, 2026-11-23 19:11 CET)
 
-Summary of the deploy log (LIVE_STATE). Since 11-16 (PRs #146 to #151) every backend ran one `main`; from 11-21 on,
-deploys went server by server, so the servers now differ on purpose. **`main` is ahead of live**: see the list below
-the table before you build from it.
+Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET): every backend runs
+`main` `f069314` (PRs #159 to #187), 36 jars swapped, only plugins each server already loads. **`main` equals live**
+again; the one exception is the hub server's own Hub jar.
 
 | Plugin | Live build | Backends |
 |---|---|---|
-| Items | `efaa63c8` (main `49d6969`, #160) | mmo-r, mmo-d, mmo-c |
-| Items | `24d8e4ef` (main `0d19038`, #154) | mmo-i, mmo-m |
-| Quests | `9c0a8535` (main `48c4748`, #159, paged talk + cards on) | mmo-i |
-| Quests | `9bbe847e` (main `0d19038`, #154) | mmo-r, mmo-d, mmo-c, mmo-m |
-| Guilds | `dea73e5b` (main `48c4748`, #159) | mmo-i only |
-| Hub | `3926c729` (#154) | mmo-r; **hub keeps `d1a097e7` (10-05)** |
-| Farming / Fishing | `698327a5` / `a292600e` (#160) | mmo-r, mmo-c |
-| Core, BossEngine, AetherMobs, Mining, Foraging, Dungeons, Beta, Gnomon, SamuraiBoss, Pit | `main` of 11-16 | as below |
+| Core | `21d86327` | all six |
+| Items | `fe779a56` | mmo-r, mmo-d, mmo-c, mmo-i, mmo-m (economy.yml patched to v4 on start, `economy.yml.v3.bak` kept) |
+| Quests | `1e01fcb6` | every mmo backend (live configs untouched; mmo-i had paged talk + cards switched on before) |
+| BossEngine | `2e6162ed` | hub, mmo-r, mmo-d, mmo-c (no LuckPerms player group grants `*` or `helios.*`) |
+| AetherMobs | `68472a44` | every mmo backend |
+| Mining | `7646c17a` | mmo-r, mmo-c, mmo-m |
+| Farming / Fishing / Foraging | `065a45f1` / `4761955f` / `d3949dac` | mmo-r, mmo-c |
+| Guilds | `25b1b93c` | mmo-i only (parked on mmo-r and mmo-d) |
+| Hub | `0fb9f70c` | mmo-r; **hub keeps `d1a097e7` (10-05)** |
+| Dungeons, Beta, Gnomon, SamuraiBoss, Pit | `main` of 11-16 (unchanged since) | as below |
 
 Which backend loads which plugin: Core on all six (hub, mmo-r, mmo-d, mmo-c, mmo-i, mmo-m); Items, Quests,
 AetherMobs on every mmo backend; BossEngine on hub, mmo-r, mmo-d, mmo-c; Mining on mmo-r, mmo-c, mmo-m; Foraging,
 Farming, Fishing on mmo-r and mmo-c; Dungeons and Beta on mmo-r and mmo-d; Guilds on mmo-i only (parked on mmo-r and mmo-d);
 Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmProxy` on the proxy.
 
-Merged on `main` but **not live** yet (2026-11-22 20:45 CET):
-- #160 Items on mmo-i and mmo-m (held back while the island tests run there).
-- #159 Quests on mmo-r, mmo-d, mmo-c, mmo-m (both switches default off; turning them on network-wide waits for Robb).
-- #161 Guilds (island tour in flow order, Build Tool board) and #162 Quests (card look) on mmo-i.
-- #163 Core + Items (A-04: `/guild` and the Manager tile open from Level 20) on every backend that loads them.
-- Beta work list step 3, merged 2026-11-22: #165 Items (A-14 Ore Trolls take pickaxe damage only), #166 Quests
-  (A-15 accepting a quest never drops a finished one, warns before dropping progress), #167 Items (A-16 Tempo line
-  sits under Damage, armour says Speed/"Geschwindigkeit"), #168 BossEngine (A-17 `/helios enter` needs the new
-  `helios.enter` permission, default op), #169 Items (A-18 Aetherion Summons recipe off), #170 Items (A-19 The Hush
-  hidden in the Codex), #171 Hub (A-20 Farm Isle `/spawn` text, mmo-r only), #172 Items (A-21 Quarry Core Shard
-  rolls for every boss fighter over the loot threshold). Before shipping BossEngine, check that no LuckPerms player
-  group grants `*` or `helios.*`.
-- Beta work list steps 6-8, merged 2026-11-22: #174 AetherMobs (A-41 camels only in real deserts, fewer wild pets),
-  #175 Items (A-43 Borderlands mobs live in a 15-75 block band around Vex, never on the capital side), #176 Mining,
-  Farming, Fishing (A-45 big place titles only for 3-4 main spots per isle, the rest a short line), #177 Items (A-48
-  Ore Trolls from the Shaft Foreman's First Shift on, 0.7 % / 65 % blueprint, no duplicate kind until all six),
-  #178 Mining (A-49 Strike Rhythm bar hides while Old Wick's lesson bar is up), #179 BossEngine (A-57 Pathwarden
-  death: helm shatters, he sinks to his knees, bursts into light, "THE PATHWARDEN FALLS" title).
-- Beta work list steps 7-8, merged 2026-11-23: #181 Mining (A-50 crystals form when a Strike Rhythm series ends),
-  #182 Farming + Items + Quests (A-51 Ripe Glint replaces the shared rhythm bar), #183 Foraging + Items + Quests (A-51
-  you aim where the tree falls), #184 Core + Quests (A-52 Exile = Level 75 + Pathwarden once), #185 Core + Quests +
-  BossEngine (A-53 exile loop: Keeper brews vials, Echoes, set pieces without duplicates), #186 Items + Guilds (A-60
-  T4/T5 and quarry L4+ take 16 Compressed per slot instead of Compacted; Items patches the live `economy.yml` from
-  version 3 to 4 on start, only the 50 T4/T5 ladder prices, backup `economy.yml.v3.bak`), A-61 Items (skills to 150 on
-  one even curve, same max power as the old 100; Aetherion level costs 100 XP +1 every 5 levels, 170 from level 351;
-  existing account levels are recomputed and drop a little until the open-beta wipe).
+Backup of the replaced jars and configs: `backups/beta-a04-a61-20261123-190456` (rollback script in the matching
+staging folder). Nothing merged is waiting for a deploy.
 
 Deploys swap jars by plugin name only where a server already runs that plugin, back the old ones up and
 restart each backend once (graceful RCON stop). The host also runs a standalone vanilla server (own port,
