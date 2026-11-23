@@ -160,8 +160,28 @@ public final class FightListener implements Listener {
             p.sendMessage(plugin.msg("no-permission", "<red>Keine Berechtigung.</red>"));
             return;
         }
+        // A-58: players ring the bell now, so they get a line in their language; the technical reason goes to the log.
+        if (plugin.fights().get(a) != null) {
+            bellSays(p, "bell-fight-running", "<gray>The Kensei is already fighting. Wait at the gate.</gray>",
+                    "<gray>Der Kensei kämpft schon. Warte am Tor.</gray>");
+            return;
+        }
+        if (a.state != Arena.State.IDLE || plugin.arenas().isBusy(a)) {
+            bellSays(p, "bell-rebuilding", "<gray>The dojo is putting itself back together. Ring again in a moment.</gray>",
+                    "<gray>Das Dojo baut sich gerade wieder auf. Läute gleich noch einmal.</gray>");
+            return;
+        }
         String err = plugin.fights().start(a);
-        if (err != null) p.sendMessage(plugin.prefixed("<gray>" + err + "</gray>"));
+        if (err != null) {
+            plugin.getLogger().warning("Tempelglocke " + a.id + ": " + err);
+            bellSays(p, "bell-silent", "<gray>The bell stays silent right now. Try again later.</gray>",
+                    "<gray>Die Glocke schweigt gerade. Versuch es später noch einmal.</gray>");
+        }
+    }
+
+    private void bellSays(Player p, String key, String en, String de) {
+        var s = plugin.settings();
+        p.sendMessage(net.aetherion.samuraiboss.boss.Fight.mm(s.msg(p, "prefix", s.msg("prefix", "")) + s.msg(p, key, en, de)));
     }
 
     // ------------------------------------------------------------------ Welt

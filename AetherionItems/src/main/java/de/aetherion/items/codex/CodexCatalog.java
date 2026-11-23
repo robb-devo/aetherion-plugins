@@ -599,6 +599,8 @@ public final class CodexCatalog {
             new Boss("helios_requiem", "Helios Requiem", Material.GOLD_BLOCK, false),
             new Boss("world_eater", "World Eater", Material.DRAGON_EGG, false),
             new Boss("world_eater_unbroken", "World Eater Unbroken", Material.DRAGON_HEAD, false),
+            // A-58: SamuraiBoss is its own plugin, not a BossEngine template; its wins land here.
+            new Boss("samurai", "Sakuragi Jinsai", Material.CHERRY_SAPLING, false),
             new Boss("dungeon_sentinel", "Prototype Sentinel", Material.TOTEM_OF_UNDYING, true),
             new Boss("dungeon_frostbound", "The Frostbound", Material.PACKED_ICE, true),
             new Boss("dungeon_aetherion", "Aetherion (Floor)", Material.NETHER_STAR, true)

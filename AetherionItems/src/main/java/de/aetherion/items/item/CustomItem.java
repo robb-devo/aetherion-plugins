@@ -6939,8 +6939,9 @@ public class CustomItem {
 
     /**
      * Pinnacle key (P6, design §5): crafted from one of each Signature, a Spectacle Star, a Core III and
-     * the bank. Right-click at Aetherion's anchor (the Veil) to call the open-world raid; BossEngine
-     * reads the Items id {@code aetherion_summons}. Consumed on a successful summon.
+     * the bank. A-55: right-click the Great Doors in the Exile with it (AetherionCore ExileDoors reads the
+     * Items id {@code aetherion_summons}) and they open on Aetherion's Ashen Void, like his vial. Used up
+     * when the doors open; given back if Aetherion cannot wake.
      */
     public ItemStack createAetherionSummons() {
         ItemStack item = new ItemStack(Material.END_CRYSTAL);
@@ -6953,9 +6954,10 @@ public class CustomItem {
                     "§7Every isle, a spectacle, the third floor",
                     "§7and the bank, pressed into one crystal.",
                     "",
-                    "§eRight-click §7at §5the Veil §7(Aetherion's anchor)",
-                    "§7to tear it open. Aetherion answers.",
-                    "§8Consumed on a successful summon.",
+                    "§eHold it and right-click §5the Great Doors",
+                    "§7in the Exile. They open on the Ashen Void,",
+                    "§7and Aetherion answers.",
+                    "§8Used up when the doors open.",
                     "",
                     "§8Pinnacle · bring a party of four"
             ));

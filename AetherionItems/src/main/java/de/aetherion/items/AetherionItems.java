@@ -81,6 +81,8 @@ public class AetherionItems extends JavaPlugin {
     private de.aetherion.items.menu.dev.DevMenu devMenu;
     private de.aetherion.items.world.TestArenaService testArena;
     private CodexService codex;
+    /** Registered in two parts: its Echo Blade trigger goes in after the combat kit (A-13). */
+    private de.aetherion.items.listener.TestGearListener testGear;
     private de.aetherion.items.economy.ItemValueService itemValues;
     private de.aetherion.items.economy.CoinService coins;
     private de.aetherion.items.economy.ShardService shards;
@@ -254,6 +256,10 @@ public class AetherionItems extends JavaPlugin {
         registerIntegrations();
 
         try { de.aetherion.items.combat.system.CombatSystem.enable(this); } catch (Throwable t) { getLogger().log(java.util.logging.Level.WARNING, "Combat kit failed to start; AetherionItems keeps running without it", t); }
+        // A-13: after the combat kit, so the Echo Blade reads the hit with the light-swing cut already applied.
+        if (testGear != null) {
+            getServer().getPluginManager().registerEvents(testGear.echoAfterCombatKit(), this);
+        }
 
         getLogger().info("AetherionItems enabled!");
         getLogger().info("Registered Aetherion recipes: " + recipeManager.getRecipeCount());
@@ -303,7 +309,8 @@ public class AetherionItems extends JavaPlugin {
         T2UniqueListener t2Uniques = new T2UniqueListener(itemManager);
         getServer().getPluginManager().registerEvents(t2Uniques, this);
         getServer().getScheduler().runTaskTimer(this, t2Uniques, 10L, 10L);
-        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.TestGearListener(this, itemManager), this);
+        testGear = new de.aetherion.items.listener.TestGearListener(this, itemManager);
+        getServer().getPluginManager().registerEvents(testGear, this);
         new SquidsBootListener(this, itemManager);
         getServer().getPluginManager().registerEvents(new AetherionSetListener(this, itemManager), this);
         new VoidStickListener(this, itemManager);
@@ -507,6 +514,8 @@ public class AetherionItems extends JavaPlugin {
             }
         }
         de.aetherion.items.listener.CoreShardDropListener.register(this);
+        // A-58: Sakuragi Jinsai pays (coins, journal, Blossom Blade chance) where SamuraiBoss runs.
+        de.aetherion.items.listener.SamuraiVictoryRewards.register(this);
         getServer().getPluginManager().registerEvents(new AetherionManagerListener(manager), this);
         getServer().getScheduler().runTask(this, this::hookPetMenu);
         getServer().getScheduler().runTaskLater(this, this::hookPetMenu, 20L);

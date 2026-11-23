@@ -162,6 +162,8 @@ public final class ExileDoors implements Listener {
     private final Map<UUID, Long> hintCool = new ConcurrentHashMap<>();
     private final Map<UUID, Set<String>> seenDistricts = new ConcurrentHashMap<>();
     private final Set<String> busyRituals = ConcurrentHashMap.newKeySet();
+    /** A-55: players whose Aetherion Summons is in the Great Doors right now (given back if Aetherion can't wake). */
+    private final Set<UUID> summonsIn = ConcurrentHashMap.newKeySet();
     private final Map<UUID, String> interactionRitual = new HashMap<>();
     private World world;
     private HollowSword sword;
@@ -554,9 +556,15 @@ public final class ExileDoors implements Listener {
         }
         // The open story step wakes its boss on its own; a vial in hand is only used when the story doesn't cover it.
         boolean story = storyWakes(p, vial);
+        boolean summons = false;
         if (!story && !ExileVials.takeFromHand(p, vial.boss())) {
-            hint(p, vial);
-            return;
+            // A-55: the Great Doors also take an Aetherion Summons, the crafted repeat key for the finale.
+            summons = "great_doors".equals(id) && takeSummons(p);
+            if (!summons) {
+                hint(p, vial);
+                return;
+            }
+            summonsIn.add(p.getUniqueId());
         }
         if (story) {
             String name = Say.t(p, vial.nameEn(), vial.nameDe());
@@ -569,7 +577,8 @@ public final class ExileDoors implements Listener {
         world.spawnParticle(Particle.ENTITY_EFFECT, at.clone().add(0, Math.min(r.h(), 2.0), 0), 24, 0.4, 0.4, 0.4, 0,
                 vial.tint());
         // Story wakes pass no vial on: nothing was handed in, so a refused spawn has nothing to give back.
-        begin(p, r, story ? null : vial);
+        // A Summons is given back through summonsIn instead.
+        begin(p, r, story || summons ? null : vial);
     }
 
     private static boolean storyWakes(Player p, ExileVials.Vial vial) {
@@ -584,6 +593,20 @@ public final class ExileDoors implements Listener {
         }
     }
 
+    private static final String SUMMONS_ID = "aetherion_summons";
+
+    /** Takes one Aetherion Summons from the main hand (Items id on the stack). */
+    private static boolean takeSummons(Player p) {
+        ItemStack hand = p.getInventory().getItemInMainHand();
+        if (hand == null || !hand.hasItemMeta() || !SUMMONS_ID.equals(hand.getItemMeta().getPersistentDataContainer()
+                .get(de.aetherion.core.AetherKeys.ITEM_ID, PersistentDataType.STRING))) {
+            return false;
+        }
+        hand.setAmount(hand.getAmount() - 1);
+        p.getInventory().setItemInMainHand(hand.getAmount() <= 0 ? null : hand);
+        return true;
+    }
+
     /** No vial in hand: one line in the action bar, at most every few seconds, and the site hums. */
     private void hint(Player p, ExileVials.Vial vial) {
         long now = System.currentTimeMillis();
@@ -593,8 +616,13 @@ public final class ExileDoors implements Listener {
         }
         hintCool.put(p.getUniqueId(), now + 2500L);
         String name = Say.t(p, vial.nameEn(), vial.nameDe());
-        bar(p, Say.t(p, "§7The vial of " + vial.color() + name + " §7goes here. §8Hold it, right-click · the Keeper of The Last Bell brews it",
-                "§7Hier kommt die Phiole für " + vial.color() + name + " §7hin. §8In die Hand, Rechtsklick · der Wirt der Letzten Glocke braut sie"));
+        if ("aetherion".equals(vial.boss())) {
+            bar(p, Say.t(p, "§7The vial of " + vial.color() + name + " §7or an §dAetherion Summons §7opens these. §8Hold it, right-click",
+                    "§7Die Phiole für " + vial.color() + name + " §7oder ein §dAetherion Summons §7öffnet sie. §8In die Hand, Rechtsklick"));
+        } else {
+            bar(p, Say.t(p, "§7The vial of " + vial.color() + name + " §7goes here. §8Hold it, right-click · the Keeper of The Last Bell brews it",
+                    "§7Hier kommt die Phiole für " + vial.color() + name + " §7hin. §8In die Hand, Rechtsklick · der Wirt der Letzten Glocke braut sie"));
+        }
         p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.AMBIENT, 0.6f, 0.7f);
     }
 
@@ -688,9 +716,23 @@ public final class ExileDoors implements Listener {
         }
     }
 
-    /** Gives a handed-in vial back; {@code null} (a story wake) gives nothing. */
+    /** Gives a handed-in vial back; {@code null} gives back a Summons the doors took, a story wake gives nothing. */
     private void refund(Player p, ExileVials.Vial vial) {
-        if (vial == null || !p.isOnline()) {
+        if (vial == null) {
+            if (summonsIn.remove(p.getUniqueId()) && p.isOnline()) {
+                de.aetherion.core.api.ItemFactoryAccess items = AetherServices.items();
+                ItemStack key = items == null ? null : items.create(SUMMONS_ID);
+                if (key != null) {
+                    for (ItemStack rest : p.getInventory().addItem(key).values()) {
+                        p.getWorld().dropItemNaturally(p.getLocation(), rest);
+                    }
+                } else {
+                    plugin.getLogger().warning("Great Doors: could not give " + p.getName() + " their Aetherion Summons back");
+                }
+            }
+            return;
+        }
+        if (!p.isOnline()) {
             return;
         }
         for (ItemStack rest : p.getInventory().addItem(ExileVials.create(vial, 1, Say.german(p))).values()) {
@@ -769,6 +811,7 @@ public final class ExileDoors implements Listener {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!p.isOnline()) {
                 busyRituals.remove("doors:" + p.getUniqueId());
+                summonsIn.remove(p.getUniqueId());
                 return;
             }
             p.playSound(at, Sound.BLOCK_IRON_DOOR_OPEN, SoundCategory.AMBIENT, 1.0f, 0.4f);
@@ -780,6 +823,7 @@ public final class ExileDoors implements Listener {
             busyRituals.remove("doors:" + p.getUniqueId());
             World finale = Bukkit.getWorld(FINALE_WORLD);
             if (!p.isOnline()) {
+                summonsIn.remove(p.getUniqueId());
                 return;
             }
             if (finale == null) {
@@ -790,6 +834,8 @@ public final class ExileDoors implements Listener {
             bar(p, Say.t(p, "§8/exile takes you back to the island.", "§8/exile bringt dich zurück auf die Insel."));
             BossSpawnAccess bosses = AetherServices.bosses();
             if (bosses == null || bosses.alive("dungeon_aetherion")) {
+                // He is already up (someone else opened the doors): the key is spent like a vial, you join that fight.
+                summonsIn.remove(p.getUniqueId());
                 return;
             }
             de.aetherion.core.network.ExileHost.unpeaceful(plugin, finale);
@@ -805,6 +851,8 @@ public final class ExileDoors implements Listener {
                 if (!ok) {
                     plugin.getLogger().warning("Great Doors: BossEngine refused dungeon_aetherion in " + FINALE_WORLD);
                     refund(p, vial);
+                } else {
+                    summonsIn.remove(p.getUniqueId());
                 }
             }, 60L);
         }, fifth + 40L);

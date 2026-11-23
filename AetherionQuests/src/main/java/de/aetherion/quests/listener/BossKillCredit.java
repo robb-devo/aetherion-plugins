@@ -38,6 +38,10 @@ public final class BossKillCredit implements Listener {
         if (bossId == null) {
             return;
         }
+        // A-54: the finale's spoils read "first win" before the loop below sets the story flag.
+        Location spawn = event.getInstance().getSpawnLocation();
+        de.aetherion.quests.story.FinaleSpoils.onBossDeath(bossId, spawn == null ? null : spawn.getWorld(),
+                event.getKiller(), event.getDamageMap().keySet());
         Set<Player> credited = new LinkedHashSet<>();
         if (event.getKiller() != null) {
             credited.add(event.getKiller());

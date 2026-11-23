@@ -7,6 +7,8 @@ package de.aetherion.core.combat;
 public final class IncomingHits {
 
     private static final ThreadLocal<Integer> RAW = ThreadLocal.withInitial(() -> 0);
+    /** A-13: hits a dodge roll must not slip through (Samurai's ultimate: you bow under it, you don't roll). */
+    private static final ThreadLocal<Integer> UNROLLABLE = ThreadLocal.withInitial(() -> 0);
 
     private IncomingHits() {
     }
@@ -26,5 +28,23 @@ public final class IncomingHits {
 
     public static boolean isRaw() {
         return RAW.get() > 0;
+    }
+
+    public static void beginUnrollable() {
+        UNROLLABLE.set(UNROLLABLE.get() + 1);
+    }
+
+    public static void endUnrollable() {
+        int depth = UNROLLABLE.get() - 1;
+        if (depth <= 0) {
+            UNROLLABLE.remove();
+        } else {
+            UNROLLABLE.set(depth);
+        }
+    }
+
+    /** True while a hit that roll i-frames must not cancel is being dealt. */
+    public static boolean isUnrollable() {
+        return UNROLLABLE.get() > 0;
     }
 }

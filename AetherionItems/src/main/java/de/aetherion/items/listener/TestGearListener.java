@@ -103,12 +103,40 @@ public final class TestGearListener implements Listener {
             return;
         }
 
-        if ("echo_blade".equalsIgnoreCase(id)) {
-            scheduleEcho(player, victim, event.getFinalDamage());
-            return;
-        }
         if ("parity_gauntlets".equalsIgnoreCase(id)) {
             applyParity(player, victim, event);
+        }
+    }
+
+    /**
+     * A-13: the Echo reads the hit after the combat kit's light-swing (spam-click) cut and combo bonus, which also run
+     * at HIGH. Within one priority Bukkit calls listeners in the order they were registered, and the combat kit
+     * registers last, so this part is its own listener that {@code AetherionItems} registers after the kit (before,
+     * the Echo took 40 % of the uncut number). The Echo's own delayed strike is a scripted hit and never echoes again.
+     */
+    public org.bukkit.event.Listener echoAfterCombatKit() {
+        return new EchoTrigger();
+    }
+
+    /** See {@link #echoAfterCombatKit()}. */
+    public final class EchoTrigger implements org.bukkit.event.Listener {
+
+        @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+        public void onEchoHit(EntityDamageByEntityEvent event) {
+            if (!(event.getDamager() instanceof Player player)) {
+                return;
+            }
+            if (!(event.getEntity() instanceof LivingEntity victim)) {
+                return;
+            }
+            if (de.aetherion.items.combat.ScriptedHits.isActive()
+                    || !"echo_blade".equalsIgnoreCase(resolveId(player.getInventory().getItemInMainHand()))) {
+                return;
+            }
+            double damage = event.getFinalDamage();
+            if (damage > 0.0) {
+                scheduleEcho(player, victim, damage);
+            }
         }
     }
 

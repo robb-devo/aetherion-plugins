@@ -73,7 +73,8 @@ arena:
   build-per-tick: 14
   empty-reset-seconds: 30
   clear-drops-on-reset: true
-  bell-challenge: false
+  # A-58: players start the fight by ringing the temple bell (permission samuraiboss.challenge, default true).
+  bell-challenge: true
   restore-per-tick: 4000
   keep-inventory: true
 
@@ -137,6 +138,9 @@ messages:
   victory-broadcast: "<gradient:#ffd1dc:#ff6f91><b>Flawless</b></gradient> <gray>— {players} defeated</gray> <white>Sakuragi Jinsai</white><gray>!</gray>"
   defeat: "<gray>The Kensei returns to sleep beneath the cherry tree…</gray>"
   bow-saved: "<gradient:#ffd1dc:#ff6f91>Accepted</gradient> <gray>— your bow was seen.</gray>"
+  bell-fight-running: "<gray>The Kensei is already fighting. Wait at the gate.</gray>"
+  bell-rebuilding: "<gray>The dojo is putting itself back together. Ring again in a moment.</gray>"
+  bell-silent: "<gray>The bell stays silent right now. Try again later.</gray>"
 
 # ── German (only if player chose /language de) ────────────────────────────────
 messages-de:
@@ -154,3 +158,6 @@ messages-de:
   victory-broadcast: "<gradient:#ffd1dc:#ff6f91><b>見事</b></gradient> <gray>— {players} haben</gray> <white>Sakuragi Jinsai</white> <gray>besiegt!</gray>"
   defeat: "<gray>Der Kensei kehrt in seinen Schlaf unter der Kirsche zurück…</gray>"
   bow-saved: "<gradient:#ffd1dc:#ff6f91>見事</gradient> <gray>— deine Verneigung wurde angenommen.</gray>"
+  bell-fight-running: "<gray>Der Kensei kämpft schon. Warte am Tor.</gray>"
+  bell-rebuilding: "<gray>Das Dojo baut sich gerade wieder auf. Läute gleich noch einmal.</gray>"
+  bell-silent: "<gray>Die Glocke schweigt gerade. Versuch es später noch einmal.</gray>"
