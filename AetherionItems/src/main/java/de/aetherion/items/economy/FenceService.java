@@ -42,7 +42,8 @@ public final class FenceService implements Listener {
 
     private static final int[] BUY_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
-            19, 20, 21, 22, 23, 24, 25
+            19, 20, 21, 22, 23, 24, 25,
+            28, 29, 30, 31, 32, 33, 34
     };
 
     private final AetherionItems plugin;
@@ -269,30 +270,42 @@ public final class FenceService implements Listener {
         }
     }
 
+    /**
+     * A-59: every receipt names a boss that is alive today. Eight offers used to ask for kills of bosses retired on
+     * 10-28 (Squidward, Sparky, open-world Aetherion, ...) and never opened; they now hang on the boss that drops the
+     * item today, or, for the two with no drop left, on a boss of the same mood. The third row is the way out of bad
+     * luck on the exile bosses: one unique of each, at the same extortion rate.
+     */
     private Offer[] offers() {
         return new Offer[]{
                 offer("warped_blade", "Warped Blade", "hollow_lurker", "Hollow Lurker", items::createWarpedBlade),
                 offer("hollow_longbow", "Hollow Longbow", "hollow_lurker", "Hollow Lurker", items::createHollowLongbow),
+                offer("squids_boot", "Squid's Boot", "hollow_lurker", "Hollow Lurker", items::createSquidsBoot),
                 offer("gravwell_cleaver", "Gravwell Cleaver", "pathwarden", "Pathwarden", items::createGravwellCleaver),
-                offer("aetherblade", "Aetherblade", "aetherion", "Aetherion", items::createAetherblade),
                 offer("bridged_axe", "Bridged Axe", "bridge_troll", "Bridge Troll", items::createBridgedAxe),
-                offer("squids_boot", "Squid's Boot", "squidward", "Squidward", items::createSquidsBoot),
+                offer("insolvent_ledger", "Insolvent Ledger", "bridge_troll", "Bridge Troll", items::createInsolventLedger),
                 offer("skuldugery_shortbow", "Skuldugery Shortbow", "skuldugery", "Skuldugery", items::createSkuldugeryShortbow),
-                offer("aetherion_void_stick", "Void Stick", "aetherion", "Aetherion", items::createAetherionVoidStick),
                 offer("staff_of_technical_difficulties", "Staff of Technical Difficulties",
-                        "sir_balthazar", "Sir Balthazar", items::createStaffOfTechnicalDifficulties),
-                offer("void_vacuum_charm", "Void Vacuum Charm", "lobby_cleaner", "The Lobby Cleaner", items::createVoidVacuumCharm),
-                offer("thermal_core", "Thermal Core", "sparky", "Sparky", items::createThermalCore),
+                        "mcnugget", "McNugget", items::createStaffOfTechnicalDifficulties),
+                offer("void_vacuum_charm", "Void Vacuum Charm", "dungeon_sentinel", "the Prototype Sentinel",
+                        items::createVoidVacuumCharm),
+                offer("aetherblade", "Aetherblade", "dungeon_aetherion", "Aetherion", items::createAetherblade),
+                offer("aetherion_void_stick", "Void Stick", "dungeon_aetherion", "Aetherion", items::createAetherionVoidStick),
+                offer("thermal_core", "Thermal Core", "hollow_sun", "the Hollow Sun", items::createThermalCore),
                 offer("pickaxe_core_of_the_burrower", "Pickaxe Core of the Burrower",
-                        "baron_von_wurm", "Baron von Wurm", items::createPickaxeCoreOfTheBurrower),
-                offer("insolvent_ledger", "Insolvent Ledger", "insolvent_wither", "The Insolvent Wither",
-                        items::createInsolventLedger)
+                        "world_eater_unbroken", "the Unbroken", items::createPickaxeCoreOfTheBurrower),
+                // exile uniques (A-59): no listed value of their own, so the price follows their rarity
+                offer("meteor_mace", "Meteor Mace", "hollow_sun", "the Hollow Sun", items::createMeteorMace),
+                offer("seraphine_needle", "Severance, the Saint's Needle", "hanging_saint", "Seraphine", items::createSeraphineNeedle),
+                offer("helios_solstice", "Solstice", "helios_requiem", "Helios", items::createHeliosSolstice),
+                offer("worldbite", "Worldbite", "world_eater", "Nihil", items::createWorldbite)
         };
     }
 
     private Offer offer(String id, String label, String bossId, String bossName, Supplier<ItemStack> create) {
-        long listed = Math.max(1L, values.unitValue(id));
-        return new Offer(id, label, listed * MARKUP, listed, bossId, bossName, create);
+        // Listed value of the id, or of the stack's rarity when the id has none (exile uniques).
+        long value = Math.max(1L, values.unitValue(create.get()));
+        return new Offer(id, label, value * MARKUP, value, bossId, bossName, create);
     }
 
     private Offer offerAt(int slot) {

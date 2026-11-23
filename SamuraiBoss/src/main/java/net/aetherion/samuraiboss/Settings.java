@@ -220,6 +220,15 @@ public final class Settings {
         return msg(key, def);
     }
 
+    /** Per-player with both defaults in code, for keys a live config does not have yet (it is patched, never replaced). */
+    public String msg(Player player, String key, String defEn, String defDe) {
+        if (player != null && Lang.isGerman(player)) {
+            String de = messagesDe.get(key);
+            return de != null && !de.isEmpty() ? de : defDe;
+        }
+        return msg(key, defEn);
+    }
+
     private static EntityType parseEntity(String s, Logger log) {
         try {
             EntityType t = EntityType.valueOf(s.toUpperCase(Locale.ROOT));

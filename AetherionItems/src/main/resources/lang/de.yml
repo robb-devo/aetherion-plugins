@@ -986,6 +986,8 @@ text:
   - {en: "§7Every isle, a spectacle, the third floor §7and the bank, pressed into one crystal.", de: "§7Jede Insel, ein Spektakel, die dritte Etage §7und die Bank, gepresst in einen Kristall."}
   - {en: "§eRight-click §7at §5the Veil §7(Aetherion's anchor) §7to tear it open. Aetherion answers.", de: "§eRechtsklick §7auf §5den Schleier §7(Aetherions Anker), §7um ihn aufzureißen. Aetherion antwortet."}
   - {en: "§8Consumed on a successful summon.", de: "§8Wird bei erfolgreicher Beschwörung verbraucht."}
+  - {en: "§eHold it and right-click §5the Great Doors §7in the Exile. They open on the Ashen Void, §7and Aetherion answers.", de: "§eIn die Hand nehmen, Rechtsklick auf §5die Großen Tore §7im Exil. Sie öffnen sich zur Ashen Void, §7und Aetherion antwortet."}
+  - {en: "§8Used up when the doors open.", de: "§8Wird verbraucht, wenn sich die Tore öffnen."}
   - {en: "§8Pinnacle · bring a party of four", de: "§8Gipfel · bring eine Vierergruppe mit"}
   - {en: "§e☀ Solar Sight", de: "§e☀ Sonnenblick"}
   - {en: "§7Crits §eSunmark §7the target for §f4s§7.", de: "§7Krits verpassen dem Ziel ein §eSonnenmal §7für §f4s§7."}

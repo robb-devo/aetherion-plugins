@@ -35,8 +35,8 @@ import java.util.Map;
 
 public class RecipeRegistry {
 
-    /** Off until the pinnacle key has a live boss to call (work list A-18, A-55). */
-    private static final boolean PINNACLE_KEY_CRAFTABLE = false;
+    /** A-55: back on. The pinnacle key opens the Great Doors in the Exile (repeat key for the story finale). */
+    private static final boolean PINNACLE_KEY_CRAFTABLE = true;
 
 
     private final RecipeManager recipeManager;
@@ -1101,9 +1101,8 @@ public class RecipeRegistry {
         summons.put('P', de.aetherion.items.economy.Signatures.display("prize_crop"));
         summons.put('A', CompressedResource.DIAMOND.compacted());
         summons.put('E', CompressedResource.EMERALD.compacted());
-        // A-18: the key still calls the retired open-world Aetherion raid ("Nothing answers") and would eat
-        // eight expensive parts, so the recipe stays out of the book until A-55 gives the key its real job
-        // (repeat key for the finale at the Great Gates). Item, value and dev give stay.
+        // A-18 hid the recipe while the key still called the retired open-world raid. A-55: it is the repeat key for
+        // the story finale now: hold it and right-click the Great Doors in the Exile (AetherionCore ExileDoors).
         if (PINNACLE_KEY_CRAFTABLE) {
             registerSimple(
                     "aetherion_summons",

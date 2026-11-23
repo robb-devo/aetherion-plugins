@@ -392,13 +392,32 @@ final class Cinematics {
                     sfx().playFor(p, Sfx.Id.CHIME, 1f, 1.2f);
                 }
             } else {
-                f.hurt(e, f.settings().damage("ultimate"), c, 1.3, 0.7, f.settings().ultimateLethal);
+                hurtUnrollable(e, c);
             }
         }
         Vector3f slide = new Vector3f(b.forward()).normalize();
         f.destruction().ultimate(f.rel(c), new Vector3f(-slide.z, 0, slide.x));
         f.atmo().shake(ps(), 1f, 24);
         f.setBarOverride(0f);
+    }
+
+    /**
+     * A-13: the cut is dodged by bowing (sneaking under the plane), not by a combat-kit roll: the hit is marked so
+     * the roll's i-frames let it through. An older Core without the marker just deals the hit as before.
+     */
+    private void hurtUnrollable(LivingEntity e, Location c) {
+        boolean marked = false;
+        try {
+            de.aetherion.core.combat.IncomingHits.beginUnrollable();
+            marked = true;
+        } catch (LinkageError ignored) {
+            // Core without the marker
+        }
+        try {
+            f.hurt(e, f.settings().damage("ultimate"), c, 1.3, 0.7, f.settings().ultimateLethal);
+        } finally {
+            if (marked) de.aetherion.core.combat.IncomingHits.endUnrollable();
+        }
     }
 
     Sequence getUp() {

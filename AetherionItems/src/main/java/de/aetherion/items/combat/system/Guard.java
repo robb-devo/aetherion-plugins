@@ -155,7 +155,8 @@ final class Guard {
             return;
         }
 
-        if (iframes && (system.config().rollBosses || !(system.bossTier(source) || system.bossTier(damager)))) {
+        // A-13: some boss moves are dodged another way (Samurai's ultimate: bow under the cut), never by a roll.
+        if (iframes && !unrollable() && (system.config().rollBosses || !(system.bossTier(source) || system.bossTier(damager)))) {
             event.setCancelled(true);
             if (!state.rollDodged) {
                 state.rollDodged = true;
@@ -170,6 +171,14 @@ final class Guard {
             return;
         }
         catchHit(event, player, state, damager, source, raw, tick);
+    }
+
+    private static boolean unrollable() {
+        try {
+            return de.aetherion.core.combat.IncomingHits.isUnrollable();
+        } catch (LinkageError older) {
+            return false;
+        }
     }
 
     /** HIGH, ignoreCancelled: the guard-window cut for the hit marked at LOW. */
