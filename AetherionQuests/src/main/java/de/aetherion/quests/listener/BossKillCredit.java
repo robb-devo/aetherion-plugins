@@ -61,5 +61,7 @@ public final class BossKillCredit implements Listener {
             objectives.creditBossKill(player, bossId);
             de.aetherion.quests.story.StoryState.onBossKill(player, bossId);
         }
+        // A-53: the four exile bosses leave an Echo with everyone who fought (not with bystanders).
+        de.aetherion.quests.story.ExileBrewer.onBossDeath(bossId, event.getKiller(), event.getDamageMap().keySet());
     }
 }

@@ -8,10 +8,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionType;
@@ -21,14 +23,18 @@ import java.util.Locale;
 
 /**
  * The Exile's boss vials: one per boss site. Handed in at the site's altar (sword, music box, star ring, Maw,
- * Great Doors) it is used up and the boss wakes. How players come by them is not decided yet; staff hand them out
- * with {@code /exile vial}. Not the Borderlands spirit vials: own key, own look, never accepted by that rite.
+ * Great Doors) it is used up and the boss wakes. Since A-53 the Keeper of The Last Bell brews them (Quests
+ * {@code ExileBrewer}): isle finds plus coins for the four bosses, one Echo of each for Aetherion. Each of the four
+ * leaves an Echo when it falls. Staff still hand vials out with {@code /exile vial}. Not the Borderlands spirit
+ * vials: own key, own look, never accepted by that rite.
  * <p>
- * The key is {@code aetherion:exile_vial} (boss id as string) so other plugins can make or read one without Core.
+ * The keys are {@code aetherion:exile_vial} and {@code aetherion:exile_echo} (boss id as string) so other plugins can
+ * make or read one without Core.
  */
 public final class ExileVials implements Listener {
 
     public static final NamespacedKey KEY = new NamespacedKey("aetherion", "exile_vial");
+    public static final NamespacedKey ECHO_KEY = new NamespacedKey("aetherion", "exile_echo");
 
     /** {@code site} is the ExileDoors ritual id the vial is handed in at. */
     public record Vial(String boss, String site, String nameEn, String nameDe, String color, Color tint,
@@ -102,6 +108,41 @@ public final class ExileVials implements Listener {
         return item;
     }
 
+    /** The four bosses that leave an Echo; Aetherion's vial is brewed from one Echo of each. */
+    public static List<Vial> echoBosses() {
+        return ALL.subList(0, 4);
+    }
+
+    /** What is left of a fallen exile boss. Four different ones make the vial for the Great Doors. */
+    public static ItemStack createEcho(Vial vial, int amount, boolean german) {
+        ItemStack item = new ItemStack(Material.ECHO_SHARD, Math.max(1, Math.min(64, amount)));
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return item;
+        }
+        String name = german ? vial.nameDe() : vial.nameEn();
+        meta.setDisplayName(vial.color() + "§lEcho §8· §f" + name);
+        meta.setLore(List.of(
+                german ? "§7Was von " + vial.color() + name + " §7übrig blieb." : "§7What was left of " + vial.color() + name + "§7.",
+                "",
+                german ? "§eVier verschiedene Echos: §7der Wirt der" : "§eFour different Echoes: §7the Keeper",
+                german ? "§7Letzten Glocke braut daraus die Phiole" : "§7of The Last Bell brews the vial",
+                german ? "§7für die Großen Tore." : "§7for the Great Doors from them."));
+        meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP, ItemFlag.HIDE_ATTRIBUTES);
+        meta.setEnchantmentGlintOverride(true);
+        meta.getPersistentDataContainer().set(ECHO_KEY, PersistentDataType.STRING, vial.boss());
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /** The boss an Echo came from, or null for anything else. */
+    public static String echoOf(ItemStack item) {
+        if (item == null || item.getType() != Material.ECHO_SHARD || !item.hasItemMeta()) {
+            return null;
+        }
+        return item.getItemMeta().getPersistentDataContainer().get(ECHO_KEY, PersistentDataType.STRING);
+    }
+
     /** The boss id a vial wakes, or null for anything else. */
     public static String bossOf(ItemStack item) {
         if (item == null || item.getType() != Material.POTION || !item.hasItemMeta()) {
@@ -121,7 +162,18 @@ public final class ExileVials implements Listener {
         return true;
     }
 
-    // ------------------------------------------------------------------ not a drink
+    // ------------------------------------------------------------------ not a drink, not a compass
+
+    /** Echoes are echo shards underneath: never let them vanish into a recovery compass. */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onCraft(PrepareItemCraftEvent event) {
+        for (ItemStack stack : event.getInventory().getMatrix()) {
+            if (echoOf(stack) != null) {
+                event.getInventory().setResult(null);
+                return;
+            }
+        }
+    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDrink(PlayerItemConsumeEvent event) {

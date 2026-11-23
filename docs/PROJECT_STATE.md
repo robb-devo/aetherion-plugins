@@ -220,10 +220,15 @@ Deployed with `deploy-harbour-ferry.ps1` (Core, Quests, Items, BossEngine, Hub; 
 ## Exile boss altars, harbour gaps (2026-11-02)
 
 - Exile boss sites take a **vial** instead of a story talk (`exile/ExileVials`, key `aetherion:exile_vial`, staff:
-  `/exile vial <boss|all> [player] [amount]`; how players earn them is not built yet). Sites: Caedmon's sword
+  `/exile vial <boss|all> [player] [amount]`; players get them from the Keeper of The Last Bell since A-53, see below). Sites: Caedmon's sword
   (Hollow Sun), the music box (Seraphine), the star ring (Helios), the Maw (Nihil & the Unbroken), the Great Doors
   (Aetherion; the four lullaby seals and Orrin no longer gate anything). No vial: one action-bar line. A refused
   spawn or portal gives the vial back.
+- Exile loop (A-53): the Keeper of The Last Bell (Quests `story/ExileBrewer`) brews a boss vial from isle finds plus
+  coins (`exile-loop.vial-finds` 2, `exile-loop.vial-coins` 5000 in the Quests config): Hollow Sun = Crystal Finds,
+  Seraphine = Prize Crops, Helios = Heartwood, Nihil = Trophy Fish. Each of the four bosses leaves an Echo
+  (`aetherion:exile_echo`) with everyone who hit it; one Echo of each brews the Aetherion vial. Set pieces drop without
+  doubles per player (BossEngine `loot/SetPieceLedger`, round mask `aetherion:set_round_<set>` on the player).
 - Caedmon's sword is a display prop (`exile/HollowSword`): the vial makes it climb into the sky and flare into the
   Hollow Sun's falling star; it comes back down a few seconds after the fight. The old block sword stood on the
   boss's spawn column (its pommel became the arena floor); `/exile tidy apply` removes it and the water curtain

@@ -43,6 +43,15 @@ public class LootFactory {
         }
 
         if (entry.getSource() == LootSource.AETHERION) {
+            // A-53: exile set pieces come without doubles for the player who gets them.
+            SetPieceLedger.Pick piece = SetPieceLedger.pick(player, entry.getItemId());
+            if (piece != null) {
+                Optional<ItemStack> made = itemBridge.create(piece.pieceId(), amount);
+                if (made.isPresent()) {
+                    SetPieceLedger.mark(player, piece);
+                    return made;
+                }
+            }
             return itemBridge.create(entry.getItemId(), amount);
         }
 

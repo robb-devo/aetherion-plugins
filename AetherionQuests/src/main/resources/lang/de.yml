@@ -17,6 +17,10 @@
 # Rite Warden / Proctor (Borderlands rites) keep their existing lines — owned by the Hub pass.
 
 ui:
+  # A-53: Echos der Exil-Bosse
+  exile_loop:
+    echo: "§8Exil §8» §7Ein Echo von"
+    echo_tail: "bleibt bei dir. Vier verschiedene: der Wirt der Letzten Glocke braut daraus die Phiole für die Großen Tore."
   stamp_recipes: "§a✦ Rezeptbuch offen §8· §7Nether Star → grünes Buch. Dort leben die Ausrüstungs-Upgrades."
   act3_subtitle: "der Drill · der Stempel · die Straßen"
   act3_title: "AKT III · DIE STRASSEN"
@@ -1840,8 +1844,28 @@ talk:
           - "Fünf Schläge, dann gehen die Tore zu. Wer nicht gepackt hat, bleibt."
           - "Gestern Abend waren es vier. Ich hab gezählt. Keiner glaubt mir."
   exile_keeper:
+    # A-53: der Wirt braut die Boss-Phiolen (ExileBrewer)
+    brew:
+      closed: "Der Kessel ist heute kalt. Komm später wieder."
+      missing: "Noch nicht. Dir fehlt noch:"
+      done: "Bitte. Nicht trinken. Am Ort in die Hand nehmen und Rechtsklick."
+      echoes_missing: "Vier verschiedene Echos. Dir fehlt:"
+      finale: "Vier Echos, eine Phiole. Die hören die Großen Tore. Ganz oben an der Treppe."
     desk:
       open: "Die Letzte Glocke hat offen. Immer offen. Keiner trinkt."
+      open_brew: "Die Letzte Glocke hat offen. Keiner trinkt. Ich braue trotzdem. Phiolen."
+      vials:
+        label: "Phiolen?"
+        echo: "Du braust die Phiolen?"
+        how: "Funde von der passenden Insel und etwas Geld. Dann braue ich die Phiole."
+        list: "Hollow Sun: Kristallfunde. Seraphine: Preis-Ernten. Helios: Kernholz. Nihil: Trophäenfische."
+        echoes: "Jeder hinterlässt ein Echo. Vier verschiedene, und ich braue die Phiole für die Großen Tore."
+      brew:
+        label: "Phiole brauen"
+        echo: "Brau mir eine Phiole."
+        one: "Die da."
+        doors: "Die Großen Tore."
+        which: "Welche? Billig ist das nicht."
       theatre:
         label: "Was gehört?"
         echo: "Hast du was gehört?"

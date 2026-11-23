@@ -453,19 +453,13 @@ public final class ExileStory implements Listener {
                                         "Last night it was four. I counted. Nobody believes me."));
             }
             case "exile_keeper" -> {
-                open = l(p, "exile_keeper.desk.open", "The Last Bell's open. Always open. Nobody drinks.");
+                // A-53: the Keeper brews the boss vials (ExileBrewer); the rumours keep two chips.
+                open = l(p, "exile_keeper.desk.open_brew", "The Last Bell's open. Nobody drinks. I brew, though. Vials.");
+                ExileBrewer.desk(p, npc, d);
                 d.topic(l(p, "exile_keeper.desk.theatre.label", "Heard anything?"), NamedTextColor.LIGHT_PURPLE,
                                 l(p, "exile_keeper.desk.theatre.echo", "Heard any rumours?"),
                                 ls(p, "exile_keeper.desk.theatre.lines",
                                         "Music from the theatre at night. The first four notes. Then nothing."))
-                        .topic(l(p, "exile_keeper.desk.star.label", "The observatory?"), NamedTextColor.YELLOW,
-                                l(p, "exile_keeper.desk.star.echo", "What about the observatory?"),
-                                ls(p, "exile_keeper.desk.star.lines",
-                                        "The old engineer talks to a star. The star talks back. Ticking."))
-                        .topic(l(p, "exile_keeper.desk.garden.label", "The garden?"), NamedTextColor.GREEN,
-                                l(p, "exile_keeper.desk.garden.echo", "Anyone in the garden?"),
-                                ls(p, "exile_keeper.desk.garden.lines",
-                                        "Someone waters the stones out there. Every evening. Big footprints."))
                         .topic(l(p, "exile_keeper.desk.castle.label", "The castle?"), NamedTextColor.WHITE,
                                 l(p, "exile_keeper.desk.castle.echo", "And the castle?"),
                                 ls(p, "exile_keeper.desk.castle.lines",
