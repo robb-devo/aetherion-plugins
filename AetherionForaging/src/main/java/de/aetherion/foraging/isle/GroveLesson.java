@@ -32,7 +32,7 @@ import java.util.UUID;
  * <pre>
  *   land   ─ card + lesson bar (arrow, metres) to Miss Canopy
  *   hook   ─ her bubble: isle trees keep score · chips "Show me." / "What's in it?"
- *   do     ─ three isle fells in a row on the green — a miss resets the count, never the lesson
+ *   do     ─ three clean isle fells in a row (lane clear) — a hang-up resets the count, never the lesson
  *   find   ─ a Crown Shaker is armed: the next fell drops a Crown Find, catch it (re-armed if it wilts)
  *   close  ─ back to her: the skill in one sentence, coins + XP, "next" / "way home" chips → her plain desk
  * </pre>
@@ -110,8 +110,8 @@ public final class GroveLesson {
                 return;
             }
             ForageText.card(player, "§2§lFORAGING ELDERVALE",
-                    t(player, "§7Seven forests. Every fell is a timing call.",
-                            "§7Sieben Wälder. Jeder Fall ist eine Frage des Timings."), 60);
+                    t(player, "§7Seven forests. You choose where every tree falls.",
+                            "§7Sieben Wälder. Du bestimmst, wohin jeder Baum fällt."), 60);
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.8f, 1.1f);
             player.playSound(player.getLocation(), Sound.UI_TOAST_IN, SoundCategory.PLAYERS, 0.8f, 1.0f);
             player.sendMessage(t(player,
@@ -149,8 +149,8 @@ public final class GroveLesson {
         switch (profile.lesson) {
             case MEET -> hook(player);
             case FELL -> remind(player, t(player,
-                    "Three in a row, {player}. Green is clean. Miss and we count again.",
-                    "Drei hintereinander, {player}. Grün ist sauber. Daneben, und wir zählen neu."));
+                    "Three in a row, {player}. Keep the line on the ground green. If one hangs up, we count again.",
+                    "Drei hintereinander, {player}. Halt die Linie am Boden grün. Bleibt einer hängen, zählen wir neu."));
             case FIND -> remind(player, t(player,
                     "One more tree. Look up when it goes — the crown drops something.",
                     "Noch ein Baum. Schau hoch, wenn er fällt — die Krone lässt was los."));
@@ -165,15 +165,15 @@ public final class GroveLesson {
         QuestProgressAccess quests = AetherServices.quests();
         if (quests != null && !quests.canChopTrees(player)) {
             speak(player, List.of(t(player,
-                    "Harbour first, {player}. The Forager there teaches the bar — then come back to me.",
-                    "Erst der Hafen, {player}. Der Holzfäller dort zeigt dir die Leiste — dann komm wieder.")), List.of());
+                    "Harbour first, {player}. The Forager there shows you how to fell — then come back to me.",
+                    "Erst der Hafen, {player}. Der Holzfäller dort zeigt dir das Fällen — dann komm wieder.")), List.of());
             return;
         }
         List<String> lines = List.of(
                 t(player, "Harbour trees forgive you, {player}. Isle trees keep score.",
                         "Hafenbäume verzeihen dir, {player}. Inselbäume zählen mit."),
-                t(player, "Fell three in a row on the green. Miss once and the count starts over.",
-                        "Fäll drei hintereinander im Grünen. Einmal daneben, und die Zählung beginnt von vorn."));
+                t(player, "Fell three in a row with nothing in their way. If one hangs up, the count starts over.",
+                        "Fäll drei hintereinander, ohne dass etwas im Weg ist. Bleibt einer hängen, beginnt die Zählung von vorn."));
         List<TalkAccess.Reply> chips = List.of(
                 new TalkAccess.Reply(t(player, "Show me.", "Zeig her."), NamedTextColor.GREEN,
                         () -> startFell(player), t(player, "Show me.", "Zeig her.")),
@@ -186,10 +186,10 @@ public final class GroveLesson {
 
     private void stakes(Player player) {
         List<String> lines = List.of(
-                t(player, "Every clean fell in a row pays bonus XP. At five, the green gets wider.",
-                        "Jeder saubere Fall in Folge bringt Bonus-XP. Ab fünf wird das Grün breiter."),
-                t(player, "A miss costs the streak — and that trunk, for a few breaths. Other trees stay free.",
-                        "Ein Fehlschlag kostet die Serie — und den Stamm für ein paar Atemzüge. Andere Bäume bleiben frei."));
+                t(player, "Every clean fell in a row pays bonus XP. Land one on the gold ring for a Perfect. At five, the ring gets wider.",
+                        "Jeder saubere Fall in Folge bringt Bonus-XP. Lande einen im goldenen Ring für einen perfekten Fall. Ab fünf wird der Ring breiter."),
+                t(player, "A tree that hangs up costs the streak. It still comes down, and other trees stay free.",
+                        "Ein Baum, der hängen bleibt, kostet die Serie. Er fällt trotzdem, und andere Bäume bleiben frei."));
         List<TalkAccess.Reply> chips = List.of(new TalkAccess.Reply(t(player, "Show me.", "Zeig her."),
                 NamedTextColor.GREEN, () -> startFell(player), t(player, "Show me.", "Zeig her.")));
         if (!speak(player, lines, chips)) {
@@ -201,8 +201,8 @@ public final class GroveLesson {
     private void hookInChat(Player player) {
         chat(player, t(player, "Harbour trees forgive you, {player}. Isle trees keep score.",
                 "Hafenbäume verzeihen dir, {player}. Inselbäume zählen mit."));
-        chat(player, t(player, "Fell three in a row on the green. Miss once and the count starts over.",
-                "Fäll drei hintereinander im Grünen. Einmal daneben, und die Zählung beginnt von vorn."));
+        chat(player, t(player, "Fell three in a row with nothing in their way. If one hangs up, the count starts over.",
+                "Fäll drei hintereinander, ohne dass etwas im Weg ist. Bleibt einer hängen, beginnt die Zählung von vorn."));
         startFell(player);
     }
 
@@ -250,8 +250,8 @@ public final class GroveLesson {
             quests.noteUsed(player, DONE_NOTE);
         }
         List<String> lines = List.of(
-                t(player, "That's foraging here, {player}: a drumbeat. Green, green, green — and the forest pays the streak.",
-                        "So geht Holzsammeln hier, {player}: ein Trommelschlag. Grün, grün, grün — und der Wald zahlt die Serie."),
+                t(player, "That's foraging here, {player}: you choose where it falls. Clear lane, gold ring, and the forest pays the streak.",
+                        "So geht Holzsammeln hier, {player}: du bestimmst, wohin er fällt. Freie Bahn, goldener Ring, und der Wald zahlt die Serie."),
                 t(player, "Pell at the Landing buys wood by order — that's the daily money. The pad you landed on takes you home.",
                         "Pell am Anleger kauft Holz auf Bestellung — das ist das tägliche Geld. Das Sprungpad, auf dem du gelandet bist, bringt dich heim."));
         List<TalkAccess.Reply> chips = new ArrayList<>();
@@ -291,10 +291,10 @@ public final class GroveLesson {
 
     // ------------------------------------------------------------------ the loop (hooks)
 
-    /** One clean isle fell (ForageIsle routes it here). */
+    /** One isle fell (ForageIsle routes it here). Rough fells carry streak 0 and never count. */
     void onFell(Player player, FellContext ctx) {
         ForageProfile profile = isle.profiles().get(player);
-        if (profile.lesson != FELL || ctx.cleaver()) {
+        if (profile.lesson != FELL || ctx.cleaver() || ctx.streak() <= 0) {
             return;
         }
         int count = streak.merge(player.getUniqueId(), 1, Integer::sum);
@@ -321,7 +321,7 @@ public final class GroveLesson {
         }, 30L);
     }
 
-    /** A missed fell bar on the isle. */
+    /** A rough fell (hung up or too slow) on the isle. */
     public void onMiss(Player player) {
         ForageProfile profile = isle.profiles().get(player);
         if (profile.lesson != FELL) {

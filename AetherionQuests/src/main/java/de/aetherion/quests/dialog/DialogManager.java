@@ -2105,7 +2105,7 @@ public class DialogManager implements Listener {
         if (dialogId.equalsIgnoreCase("forage_pad_guide_intro")) {
             return new String[] {
                     "Slime pad → Forage Isle. Jump. Don't overthink it.",
-                    "Same Fell bar as here — except isle trees keep score.",
+                    "Same felling as here — except isle trees keep score.",
                     "§aMiss Canopy§f teaches the isle. Follow the arrow, {player}."
             };
         }

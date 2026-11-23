@@ -1,5 +1,6 @@
 package de.aetherion.foraging;
 
+import de.aetherion.core.api.AetherServices;
 import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.BarSync;
 import de.aetherion.core.api.QuestBars;
@@ -15,8 +16,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The fell bar owns the top of the screen while a chop is live. Holds a named QuestBars
- * lease so a fishing bar or farm event can't hand the screen back mid-swing.
+ * The fell bar owns the top of the screen while a fell is being aimed. Holds a named QuestBars
+ * lease so a fishing bar or farm event can't hand the screen back mid-aim.
  */
 final class ForagingHud {
 
@@ -24,40 +25,40 @@ final class ForagingHud {
 
     private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
 
-    /** Tutorial / legacy shape — no streak, no ready tell. */
-    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot) {
-        striking(player, marker, zoneStart, zoneSize, hot, false, 0);
-    }
-
-    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, int streak) {
-        striking(player, marker, zoneStart, zoneSize, hot, ready, false, streak);
-    }
-
-    /** Green on the window, yellow while hunting it, red once the swing is about to be "too slow". */
-    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot, boolean ready,
-                  boolean slipping, int streak) {
+    /** Live aim: green when the lane is clear and on the gold ring, yellow when clear, red when it would hit. */
+    void aiming(Player player, FellAim aim, int streak) {
+        boolean german = AetherServices.german(player);
+        boolean clear = aim.laneClear();
+        boolean ring = clear && aim.onMark();
         paint(
                 player,
-                ForagingStrike.title(marker, zoneStart, zoneSize, hot, ready, slipping, streak),
-                ForagingStrike.progress(marker),
-                hot ? BarColor.GREEN : slipping && !ready ? BarColor.RED : BarColor.YELLOW
+                ForagingStrike.aimTitle(german, clear, ring, aim.slipping(), streak),
+                aim.timeLeft(),
+                !clear ? BarColor.RED : ring ? BarColor.GREEN : BarColor.YELLOW
         );
     }
 
+    /** Tutorial: the Forager is aiming — same bar, driven by the demo. */
+    void demo(Player player, boolean onRing) {
+        boolean german = AetherServices.german(player);
+        paint(player, ForagingStrike.aimTitle(german, true, onRing, false, 0), 1.0d,
+                onRing ? BarColor.GREEN : BarColor.YELLOW);
+    }
+
     /** One reused BossBar per player — look preview, never a second bar. */
-    void preview(Player player, int zoneStart, int zoneSize) {
+    void preview(Player player, int streak) {
         paint(
                 player,
-                ForagingStrike.previewTitle(zoneStart, zoneSize),
+                ForagingStrike.previewTitle(AetherServices.german(player), streak),
                 0.0d,
                 BarColor.WHITE
         );
     }
 
-    void previewCooling(Player player, int zoneStart, int zoneSize, long secondsLeft) {
+    void previewCooling(Player player, long secondsLeft) {
         paint(
                 player,
-                ForagingStrike.coolingTitle(zoneStart, zoneSize, secondsLeft),
+                ForagingStrike.coolingTitle(AetherServices.german(player), secondsLeft),
                 0.0d,
                 BarColor.RED
         );

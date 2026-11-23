@@ -339,7 +339,7 @@ public final class SkillRoads {
     private static String line(Player player, Road road) {
         return switch (road) {
             case FORAGE -> LangPack.say(player, "ledger.isles.forage.line",
-                    "§aForage Isle§f — the Fell bar again, but the trees keep score. Pad's north-east; §aMiss Canopy§f meets you.");
+                    "§aForage Isle§f — you choose where trees fall, and the trees keep score. Pad's north-east; §aMiss Canopy§f meets you.");
             case FARM -> LangPack.say(player, "ledger.isles.farm.line",
                     "§eFarm Isle§f — catch the crops that shine gold and the field pays more. Pad's south-west; §eElsie§f meets you.");
             case FISH -> LangPack.say(player, "ledger.isles.fish.line",

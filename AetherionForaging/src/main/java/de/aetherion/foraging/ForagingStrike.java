@@ -1,22 +1,21 @@
 package de.aetherion.foraging;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 /**
- * Fell bar vocabulary — same shape as the fishing strike bar:
- * {@code Fell  [──██▓██──]  WORD}. Green is the window, the gold middle cell is Perfect,
- * {@code ✦N} is the running streak.
+ * Fell vocabulary (A-51: the timing bar is gone). A fell is aimed: the cutter looks where the tree should
+ * fall. The bar up top reads {@code Fall  ➜ lane clear · on the gold ring · hit again  ✦N}; {@code ✦N} is
+ * the running streak of clean fells. The Perfect ring's size is counted in steps (the old window cells),
+ * so every skill, mark and streak bonus that widened the window now widens the ring.
  */
 final class ForagingStrike {
 
-    static final int SIZE = 21;
-    /** Streak that widens the window by one cell — same number as fishing's hot water. */
+    /** Streak that widens the Perfect ring by one step — same number as fishing's hot water. */
     static final int HOT_STREAK = 5;
-    /** Best Foraging skill level that permanently widens the window by one cell. */
+    /** Best Foraging skill level that permanently widens the Perfect ring by one step. */
     static final int WIDE_WINDOW_LEVEL = 50;
-    /** Share of the time budget after which the bar reads "slipping" (same as fishing's StrikeBar). */
-    static final double SLIP_SHARE = 0.72d;
     private static final int MAX_ZONE = 8;
+    /** Degrees of Perfect cone per step, plus a fixed base. Step 4 (default) = ±18°. */
+    private static final double DEGREES_PER_STEP = 3.5d;
+    private static final double BASE_DEGREES = 4.0d;
 
     private ForagingStrike() {
     }
@@ -25,114 +24,39 @@ final class ForagingStrike {
         return Math.max(3, Math.min(MAX_ZONE, configured));
     }
 
-    /**
-     * Green CHOP window never starts before ~25% of the bar (~1s prep at default speed).
-     */
-    static int randomZoneStart(int zoneSize) {
-        int minStart = Math.max(1, (int) Math.ceil(0.25d * (SIZE - 1)));
-        int maxStart = SIZE - zoneSize - 1;
-        if (maxStart < minStart) {
-            return Math.max(1, maxStart);
-        }
-        if (maxStart == minStart) {
-            return minStart;
-        }
-        return minStart + ThreadLocalRandom.current().nextInt(maxStart - minStart + 1);
+    /** Half-width of the Perfect cone around the gold ring's direction, in degrees. */
+    static double tolerance(int zone) {
+        return BASE_DEGREES + DEGREES_PER_STEP * zoneSize(zone);
     }
 
-    /**
-     * Stable green window for a tree — preview and live chop must match.
-     * Hash of treeId; no ThreadLocalRandom so looking does not reshuffle.
-     */
-    static int zoneStartForTree(String treeId, int zoneSize) {
-        int z = zoneSize(zoneSize);
-        int minStart = Math.max(1, (int) Math.ceil(0.25d * (SIZE - 1)));
-        int maxStart = SIZE - z - 1;
-        if (maxStart < minStart) {
-            return Math.max(1, maxStart);
-        }
-        if (maxStart == minStart) {
-            return minStart;
-        }
-        int span = maxStart - minStart + 1;
-        int h = treeId == null ? 0 : treeId.hashCode();
-        // Mix bits so nearby tree keys do not clump into the same slot.
-        h ^= (h >>> 16);
-        h *= 0x45d9f3b;
-        h ^= (h >>> 16);
-        return minStart + Math.floorMod(h, span);
-    }
-
-    static boolean inZone(int marker, int zoneStart, int zoneSize) {
-        return marker >= zoneStart && marker < zoneStart + zoneSize;
-    }
-
-    static int perfectCell(int zoneStart, int zoneSize) {
-        return zoneStart + Math.max(0, zoneSize) / 2;
-    }
-
-    /** Tutorial / legacy shape — no streak, no ready tell. */
-    static String title(int marker, int zoneStart, int zoneSize, boolean hot) {
-        return title(marker, zoneStart, zoneSize, hot, false, 0);
-    }
-
-    static String title(int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, int streak) {
-        return title(marker, zoneStart, zoneSize, hot, ready, false, streak);
-    }
-
-    /** {@code slipping}: last stretch of the budget — idle word becomes a warning (ready still wins). */
-    static String title(int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, boolean slipping,
-                        int streak) {
-        StringBuilder out = new StringBuilder("§2Fell  §8[");
-        paintBar(out, marker, zoneStart, zoneSize, hot);
-        out.append("§8]  ");
-        if (marker == perfectCell(zoneStart, zoneSize)) {
-            out.append("§6NOW");
-        } else if (hot) {
-            out.append("§aCHOP");
-        } else if (ready) {
-            out.append("§eready");
-        } else if (slipping) {
-            out.append("§cslipping");
+    /** Live aim: lane state, whether it's on the ring, and the time left as a warning. */
+    static String aimTitle(boolean de, boolean clear, boolean onRing, boolean slipping, int streak) {
+        StringBuilder out = new StringBuilder("§2").append(de ? "Fällen" : "Fell").append("  ");
+        if (!clear) {
+            out.append(de ? "§c✖ trifft etwas §8· §7schau woanders hin" : "§c✖ it would hit something §8· §7look elsewhere");
+        } else if (onRing) {
+            out.append(de ? "§a➜ frei §8· §6✦ im goldenen Ring §8· §fschlag zu!" : "§a➜ clear §8· §6✦ on the gold ring §8· §fhit now!");
         } else {
-            out.append("§7hit green");
+            out.append(de ? "§a➜ frei §8· §7zielt neben den §6goldenen Ring" : "§a➜ clear §8· §7off the §6gold ring");
+        }
+        if (slipping) {
+            out.append(de ? " §8· §cschnell!" : " §8· §churry!");
         }
         out.append(streakTag(streak));
         return out.toString();
     }
 
-    /** Look-ahead bar: stationary marker, same green window as the live chop. */
-    static String previewTitle(int zoneStart, int zoneSize) {
-        StringBuilder out = new StringBuilder("§2Fell  §8[");
-        paintBar(out, 0, zoneStart, zoneSize, false);
-        out.append("§8]  §aREADY §8· §7LMB");
-        return out.toString();
+    /** Look-ahead: an axe on a living trunk, before the first hit. */
+    static String previewTitle(boolean de, int streak) {
+        return "§2" + (de ? "Fällen" : "Fell") + "  §aREADY §8· §7"
+                + (de ? "Stamm schlagen, dann hinschauen, wohin er fällt" : "hit the trunk, then look where it should fall")
+                + streakTag(streak);
     }
 
-    /** Same window, but this tree is on miss cooldown for this player. */
-    static String coolingTitle(int zoneStart, int zoneSize, long secondsLeft) {
-        StringBuilder out = new StringBuilder("§2Fell  §8[");
-        paintBar(out, 0, zoneStart, zoneSize, false);
+    /** Same tree, but it is still resting for this player. */
+    static String coolingTitle(boolean de, long secondsLeft) {
         long sec = Math.max(1L, secondsLeft);
-        out.append("§8]  §c").append(sec).append("s §8· §7other trees free");
-        return out.toString();
-    }
-
-    private static void paintBar(StringBuilder out, int marker, int zoneStart, int zoneSize, boolean hot) {
-        int zoneEnd = zoneStart + zoneSize;
-        int perfect = perfectCell(zoneStart, zoneSize);
-        boolean onPerfect = marker == perfect;
-        for (int i = 0; i < SIZE; i++) {
-            if (i == marker) {
-                out.append(onPerfect ? "§6◆" : hot ? "§f◆" : "§e◇");
-            } else if (i == perfect) {
-                out.append(hot ? "§6█" : "§e█");
-            } else if (i >= zoneStart && i < zoneEnd) {
-                out.append(hot ? "§a█" : "§2█");
-            } else {
-                out.append("§8─");
-            }
-        }
+        return "§2" + (de ? "Fällen" : "Fell") + "  §c" + sec + "s §8· §7" + (de ? "andere Bäume sind frei" : "other trees free");
     }
 
     static String streakTag(int streak) {
@@ -140,12 +64,5 @@ final class ForagingStrike {
             return "";
         }
         return (streak >= HOT_STREAK ? "  §6✦" : "  §e✦") + streak;
-    }
-
-    static double progress(int marker) {
-        if (SIZE <= 1) {
-            return 0.0d;
-        }
-        return Math.max(0.0d, Math.min(1.0d, marker / (double) (SIZE - 1)));
     }
 }

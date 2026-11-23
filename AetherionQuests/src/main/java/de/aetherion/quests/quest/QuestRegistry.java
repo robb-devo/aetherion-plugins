@@ -263,7 +263,7 @@ firstHunt.addReward(
                 new Quest(
                         "gather_wood",
                         "Egon's Timber Run",
-                        "Fell oak with the Forager's axe — swing on the green — then bring Egon 10 logs."
+                        "Fell oak with the Forager's axe — look where it should fall, hit again — then bring Egon 10 logs."
                 );
 
 

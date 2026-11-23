@@ -13,8 +13,8 @@ import org.bukkit.util.Vector;
 import java.util.UUID;
 
 /**
- * Slow, readable chop tutorial next to the Forager.
- * Beats are spaced so speech, bar, and fall never hit at once.
+ * Slow, readable chop tutorial next to the Forager (A-51: aim the fall, no timing bar).
+ * Beats are spaced so speech, the lane and the fall never hit at once.
  * <p>
  * Watching is optional: chopping is open from the first tick (people go straight for a tree and only got
  * "watch first" errors), and a chop of the player's own ends the demo.
@@ -74,42 +74,40 @@ public final class ForagerChopDemo {
         final World world = fellAt.getWorld();
         final Location foragerAt = nearForager.clone();
 
-        // --- Beat timeline (ticks) — CHOP text + swing land ON green ---
-        //  0    soft glow only (no speech, no bar)
-        // 55    "watch the glow"
-        //100    first swing (no bar)
-        //145    "this bar is the timing"
-        //185    bar appears idle
-        //215    bar crawls slowly
-        //     … when green CHOP hits: swing + "CHOP!" + fall immediately
-        //     bar stays green briefly, then hide
-        // +70 after fall → "your turn" (+ unlock)
+        // --- Beat timeline (ticks) — A-51: no bar, the Forager aims the fall ---
+        //  0    soft glow only (no speech)
+        // 55    "hit it, then look where it should fall"
+        //100    first swing
+        //130    the lane (green line) and the gold ring show, the Fell bar reads "on the gold ring"
+        //195    second swing: the tree tips over onto the ring
+        // +40   "your turn" (+ unlock)
 
         glowTrunk(world, fellAt);
 
         later(plugin, viewer, 55L, () ->
                 foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
-                        "Watch: glowing trunk, then hit again on green §aCHOP§f.",
-                        "Schau: leuchtender Stamm, dann nochmal schlagen bei grünem §aCHOP§f.")));
+                        "Watch: hit the trunk once. Then look where it should fall, and hit again.",
+                        "Schau: einmal gegen den Stamm. Dann hinschauen, wohin er fallen soll, und nochmal schlagen.")));
 
         later(plugin, viewer, 100L, () -> swingFx(world, foragerAt, fellAt));
 
-
-        later(plugin, viewer, 185L, () -> {
-            if (plugin.hud() == null) {
+        later(plugin, viewer, 130L, () -> {
+            if (listener.chopping(viewer)) {
                 finishDemo(plugin, viewer);
                 return;
             }
-            // Late window (~70%). Start marker at 0; crawl slowly.
-            int zoneSize = 4;
-            int zoneStart = Math.max(1, ForagingStrike.SIZE - zoneSize - 3);
-            DemoPulse pulse = new DemoPulse(zoneStart, zoneSize);
-            plugin.hud().striking(viewer, pulse.marker, pulse.zoneStart, pulse.zoneSize, false);
-
+            final org.bukkit.util.Vector dir = listener.demoDirection(job, foragerAt);
+            final Location base = job.baseLocation();
+            if (base == null || plugin.hud() == null) {
+                finishDemo(plugin, viewer);
+                return;
+            }
+            final int reach = job.reach();
+            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
+                    "See the line on the ground? §aGreen§f means nothing's in the way. Land it on the §6gold ring§f.",
+                    "Siehst du die Linie am Boden? §aGrün§f heißt, nichts im Weg. Lande ihn im §6goldenen Ring§f."));
             new org.bukkit.scheduler.BukkitRunnable() {
-                int steps;
-                int hotFrames;
-                boolean chopped;
+                int ticks;
 
                 @Override
                 public void run() {
@@ -118,63 +116,54 @@ public final class ForagerChopDemo {
                         cancel();
                         return;
                     }
-                    if (!chopped && listener.chopping(viewer)) {
-                        // they went for a tree themselves: their own bar owns the screen
+                    if (listener.chopping(viewer)) {
+                        // they went for a tree themselves: their own aim owns the screen
                         finishDemo(plugin, viewer);
                         cancel();
                         return;
                     }
-                    steps++;
-                    // Advance every 3rd run → slow crawl (~6 ticks per step).
-                    if (steps % 3 == 0 && !chopped && hotFrames == 0) {
-                        pulse.advance();
-                    }
-                    boolean hot = pulse.hot();
-                    plugin.hud().striking(viewer, pulse.marker, pulse.zoneStart, pulse.zoneSize, hot);
-
-                    if (hot && !chopped) {
-                        hotFrames++;
-                        // Let the bar clearly read CHOP (~0.4s), then swing+fall on that same green.
-                        if (hotFrames < 4) {
-                            return;
-                        }
-                        chopped = true;
-                        swingFx(world, foragerAt, fellAt);
-                        if (world != null) {
-                            world.playSound(fellAt, Sound.BLOCK_WOOD_BREAK, 0.75f, 0.85f);
-                            de.aetherion.core.api.Vfx.puff(fellAt, Particle.CRIT, 10, Math.max(0.3, 0.3), null);
-                        }
-                        ForagingFx.success(viewer, fellAt);
-                        foragerSay(viewer, "§aCHOP!");
-                        viewer.sendActionBar(net.kyori.adventure.text.Component.text(
-                                "CHOP",
-                                net.kyori.adventure.text.format.NamedTextColor.GREEN
-                        ));
-                        listener.markDemo(job, viewer);
-                        listener.collapsePublic(job);
-                        later(plugin, viewer, 40L, () ->
-                                foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
-                                        "Your turn. Ten oak for §eEgon§f on the pier.",
-                                        "Du bist dran. Zehn Eiche für §eEgon§f am Pier.")));
-                        later(plugin, viewer, 50L, () -> finishDemo(plugin, viewer));
-                    }
-
-                    if (chopped) {
-                        hotFrames++;
-                        if (hotFrames >= 14) {
-                            plugin.hud().hide(viewer);
-                            cancel();
-                        }
+                    ticks += 3;
+                    drawLane(viewer, base, dir, reach, ticks);
+                    plugin.hud().demo(viewer, true);
+                    if (ticks < 63) {
                         return;
                     }
-
-                    if (steps > 200) {
-                        finishDemo(plugin, viewer);
-                        cancel();
+                    cancel();
+                    swingFx(world, foragerAt, fellAt);
+                    if (world != null) {
+                        world.playSound(fellAt, Sound.BLOCK_WOOD_BREAK, 0.75f, 0.85f);
+                        de.aetherion.core.api.Vfx.puff(fellAt, Particle.CRIT, 10, Math.max(0.3, 0.3), null);
                     }
+                    ForagingFx.success(viewer, fellAt);
+                    foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer, "§aTimber!", "§aBaum fällt!"));
+                    plugin.hud().hide(viewer);
+                    listener.markDemo(job, viewer);
+                    listener.fallPublic(job, dir);
+                    later(plugin, viewer, 40L, () ->
+                            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
+                                    "Your turn. Ten oak for §eEgon§f on the pier.",
+                                    "Du bist dran. Zehn Eiche für §eEgon§f am Pier.")));
+                    later(plugin, viewer, 50L, () -> finishDemo(plugin, viewer));
                 }
-            }.runTaskTimer(plugin, 30L, 2L);
+            }.runTaskTimer(plugin, 0L, 3L);
         });
+    }
+
+    /** The lane and the gold ring, for the watching player only. */
+    private static void drawLane(Player viewer, Location base, org.bukkit.util.Vector dir, int reach, int ticks) {
+        Particle.DustOptions green = new Particle.DustOptions(org.bukkit.Color.fromRGB(110, 230, 90), 1.1f);
+        Particle.DustOptions gold = new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 240, 120), 1.6f);
+        for (double d = 1.0d; d <= reach; d += 0.75d) {
+            Location at = base.clone().add(dir.getX() * d, 0.15d, dir.getZ() * d);
+            viewer.spawnParticle(Particle.DUST, at, 1, 0.04, 0.0, 0.04, 0.0, green);
+        }
+        double along = Math.max(2.0d, reach * 0.75d);
+        Location ring = base.clone().add(dir.getX() * along, 0.12d, dir.getZ() * along);
+        for (int i = 0; i < 10; i++) {
+            double a = i * Math.PI / 5.0d + ticks * 0.08d;
+            viewer.spawnParticle(Particle.DUST, ring.clone().add(Math.cos(a) * 1.1d, 0, Math.sin(a) * 1.1d), 1, 0, 0, 0, 0.0, gold);
+        }
+        viewer.spawnParticle(Particle.WAX_ON, ring.clone().add(0, 0.6, 0), 3, 0.25, 0.35, 0.25, 0.0);
     }
 
     private static void finishDemo(AetherionForaging plugin, Player viewer) {
@@ -254,34 +243,6 @@ public final class ForagerChopDemo {
                 Location mid = from.clone().add(0, 1.0, 0).add(dir.multiply(0.8));
                 de.aetherion.core.api.Vfx.puff(mid, Particle.CRIT, 4, Math.max(0.08, 0.08), null);
             }
-        }
-    }
-
-    private static final class DemoPulse {
-        final int zoneStart;
-        final int zoneSize;
-        int marker;
-        private int direction = 1;
-
-        DemoPulse(int zoneStart, int zoneSize) {
-            this.zoneStart = zoneStart;
-            this.zoneSize = zoneSize;
-            this.marker = 0;
-        }
-
-        void advance() {
-            marker += direction;
-            if (marker >= ForagingStrike.SIZE - 1) {
-                marker = ForagingStrike.SIZE - 1;
-                direction = -1;
-            } else if (marker <= 0) {
-                marker = 0;
-                direction = 1;
-            }
-        }
-
-        boolean hot() {
-            return ForagingStrike.inZone(marker, zoneStart, zoneSize);
         }
     }
 }

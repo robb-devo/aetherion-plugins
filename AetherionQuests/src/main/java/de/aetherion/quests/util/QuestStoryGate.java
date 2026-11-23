@@ -44,7 +44,7 @@ public final class QuestStoryGate {
     private static final Stop EGON = new Stop("egon", "Egon", null,
             "tip.tutorial_egon_pier", "Act I · Egon · the pier", NamedTextColor.GREEN);
     private static final Stop FORAGER = new Stop("lumberjack", "Forager", null,
-            "tip.tutorial_forager", "Act I · the Forager · fell oak on the green", NamedTextColor.GREEN);
+            "tip.tutorial_forager", "Act I · the Forager · fell oak where you look", NamedTextColor.GREEN);
     private static final Stop EGON_OAK = new Stop("egon", "Egon", null,
             "tip.tutorial_egon_oak", "Act I · ten oak to Egon · the pier", NamedTextColor.GREEN);
     private static final Stop LEDGER = new Stop("ledger", "Miss Ledger", "/capital",
@@ -369,7 +369,7 @@ public final class QuestStoryGate {
             tips.add(guide(player, "egon", "Go to §aEgon §7on the pier at §fAnker Harbour§7. He's your first stop."));
             tips.add(guide(player, "egon_trail", "Follow the green glow on the planks — it leads to Egon."));
         } else if (stop == FORAGER) {
-            tips.add(guide(player, "forager_fell", "§aThe Forager §7up the hill shows you the Fell — swing when the bar hits green."));
+            tips.add(guide(player, "forager_fell", "§aThe Forager §7up the hill shows you how to fell — you choose where the tree falls."));
         } else if (stop == EGON_OAK) {
             tips.add(guide(player, "oak_back", "Bring the oak logs back to §aEgon §7on the pier."));
         } else if (stop == LEDGER) {
@@ -455,7 +455,7 @@ public final class QuestStoryGate {
             return LangPack.say(player, "redirect.egon_pier", "§aEgon §fon the pier. He kits you out — that's where it starts.");
         }
         if (stop == FORAGER) {
-            return LangPack.say(player, "redirect.forager", "§aThe Forager§f, up the hill from the pier. Oak, on the green.");
+            return LangPack.say(player, "redirect.forager", "§aThe Forager§f, up the hill from the pier. Oak, wherever you want it to fall.");
         }
         if (stop == EGON_OAK) {
             return LangPack.say(player, "redirect.egon_oak", "§aEgon§f's waiting on his oak. Pier.");

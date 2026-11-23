@@ -884,7 +884,7 @@ public final class SkillMenu implements Listener {
                 lines.add(Effect.hint("Better grades — Heartsong included."));
             }
             case STEADY_HANDS -> {
-                lines.add(Effect.hint("CHOP window one cell wider on the isle."));
+                lines.add(Effect.hint("Gold ring (Perfect fell) one step wider on the isle."));
                 lines.add(Effect.stat("Miss cooldown", 25.0 * Math.min(2.0, scale), "-", "%"));
             }
             case DEADFALL_DANCER -> {
@@ -929,7 +929,7 @@ public final class SkillMenu implements Listener {
     private static String loopHint(AetherSkill.Category category) {
         return switch (category) {
             case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.\nOn Mining Eldervale: Rhythm, Crystal Finds, Contracts.";
-            case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.\nOn Foraging Eldervale: Mastery, Crown Finds, the Board.";
+            case FORAGING -> "You choose where trees fall. Perfect fells and streaks pay bonus XP.\nLv. 50 widens the gold ring.\nFortune raises each tree's wood cap.\nOn Foraging Eldervale: Mastery, Crown Finds, the Board.";
             case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Ripe Glint, Prize Crops, Orders.";
             case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
             default -> null;

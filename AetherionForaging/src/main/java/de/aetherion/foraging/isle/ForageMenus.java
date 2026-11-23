@@ -275,7 +275,7 @@ public final class ForageMenus implements Listener {
             lore.add(GroveMastery.progress(profile, wood));
             lore.add("");
             lore.add("§7Per tier: §a+1 wood cap §7· §d+0.25% heartwood");
-            lore.add((tier >= 4 ? "§a✔" : "§8·") + " §7IV: CHOP window +1 on " + wood.display());
+            lore.add((tier >= 4 ? "§a✔" : "§8·") + " §7IV: Gold ring +1 on " + wood.display());
             lore.add((tier >= 7 ? "§a✔" : "§8·") + " §7VII: Crown Finds ×1.5 · Warden of " + wood.display());
             if (tier < GroveMastery.MAX_TIER) {
                 lore.add("");

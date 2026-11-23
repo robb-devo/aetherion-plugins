@@ -37,6 +37,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -90,7 +91,8 @@ public class ForagingListener implements Listener {
     private final ForagingHud hud = new ForagingHud();
     private final Set<String> regenerating = ConcurrentHashMap.newKeySet();
     private final Map<String, TreeJob> jobs = new ConcurrentHashMap<>();
-    private final Map<UUID, FellPulse> pulses = new ConcurrentHashMap<>();
+    /** Live fells: the cutter is choosing where the tree falls (A-51). */
+    private final Map<UUID, FellAim> pulses = new ConcurrentHashMap<>();
     /** Per-player cooldown on a failed tree only (uuid|treeId → untilMillis). */
     private final Map<String, Long> chopMissUntil = new ConcurrentHashMap<>();
     /** Recent misses on a trunk (uuid|treeId → [count, lastMissMillis]) for the graduated lock. */
@@ -104,7 +106,7 @@ public class ForagingListener implements Listener {
     private final Set<UUID> tipped = ConcurrentHashMap.newKeySet();
     /** First miss per boot explains the cooldown in chat; later misses stay on the action bar. */
     private final Set<UUID> taughtMiss = ConcurrentHashMap.newKeySet();
-    /** Players currently shown a look-preview bar (not an active FellPulse). */
+    /** Players currently shown a look-preview bar (not a live fell). */
     private final Set<UUID> previewing = ConcurrentHashMap.newKeySet();
     private final Map<UUID, LookCache> lookCache = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> lastHintTick = new ConcurrentHashMap<>();
@@ -162,7 +164,27 @@ public class ForagingListener implements Listener {
         collapse(job);
     }
 
-    /** The player is in a chop of their own (their fell bar is up). */
+    /** Tutorial fall towards {@code dir} — the same animation a player's own fell gets. */
+    void fallPublic(TreeJob job, Vector dir) {
+        fall(job, dir, 90.0d, null);
+    }
+
+    /** A clear direction for the demo tree to fall (the gold mark the Forager shows). */
+    Vector demoDirection(TreeJob job, Location away) {
+        Location base = job.baseLocation();
+        if (base == null) {
+            return new Vector(1, 0, 0);
+        }
+        Vector avoid = away == null ? null : away.toVector().subtract(base.toVector()).setY(0);
+        if (avoid != null && avoid.lengthSquared() > 0.01d) {
+            avoid.normalize();
+        } else {
+            avoid = null;
+        }
+        return FellLane.markDirection(fellBase(job), job.reach(), job.blockKeys(), avoid);
+    }
+
+    /** The player is in a chop of their own (choosing where their tree falls). */
     boolean chopping(Player player) {
         return player != null && pulses.containsKey(player.getUniqueId());
     }
@@ -379,7 +401,7 @@ public class ForagingListener implements Listener {
         if (!isAxe(player.getInventory().getItemInMainHand())) {
             return;
         }
-        FellPulse pulse = pulses.get(player.getUniqueId());
+        FellAim pulse = pulses.get(player.getUniqueId());
         if (pulse != null) {
             if (action != Action.LEFT_CLICK_AIR && action != Action.LEFT_CLICK_BLOCK) {
                 return;
@@ -426,7 +448,7 @@ public class ForagingListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
-        FellPulse pulse = pulses.get(id);
+        FellAim pulse = pulses.get(id);
         if (pulse != null) {
             missChop(pulse);
         }
@@ -438,11 +460,11 @@ public class ForagingListener implements Listener {
         ForagerChopDemo.releaseOnQuit(event.getPlayer());
     }
 
-    /** Teleporting away mid-swing is not a miss — drop the bar, keep the tree and streak. */
+    /** Teleporting away mid-aim is not a miss — drop the aim, keep the tree and streak. */
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent event) {
         UUID id = event.getPlayer().getUniqueId();
-        FellPulse pulse = pulses.get(id);
+        FellAim pulse = pulses.get(id);
         if (pulse != null) {
             cancelChop(pulse);
         }
@@ -473,22 +495,25 @@ public class ForagingListener implements Listener {
         if (pulses.isEmpty()) {
             return;
         }
-        for (FellPulse pulse : List.copyOf(pulses.values())) {
+        for (FellAim pulse : List.copyOf(pulses.values())) {
             Player player = Bukkit.getPlayer(pulse.playerId);
             if (player == null || !player.isOnline()) {
                 missChop(pulse);
                 continue;
             }
-            boolean timedOut = pulse.tick();
-            if (pulse.readyEdge()) {
-                ForagingFx.creak(player);
+            if (player.getWorld() != pulse.base.getWorld()
+                    || player.getLocation().distanceSquared(pulse.base) > 26.0d * 26.0d) {
+                // Walked off: no fell, no penalty.
+                cancelChop(pulse);
+                continue;
             }
+            boolean timedOut = pulse.tick(player);
             if (pulse.slipEdge()) {
                 ForagingFx.slip(player);
             }
-            hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot(), pulse.ready(),
-                    pulse.slipping(), streaks.current(pulse.playerId));
+            hud.aiming(player, pulse, streaks.current(pulse.playerId));
             if (timedOut) {
+                pulse.slipAway();
                 resolveChop(pulse);
             }
         }
@@ -543,12 +568,8 @@ public class ForagingListener implements Listener {
 
             LookCache cached = lookCache.get(id);
             String treeId;
-            int zoneSize;
-            int zoneStart;
             if (cached != null && cached.blockKey.equals(startKey) && cached.expiresAt > now) {
                 treeId = cached.treeId;
-                zoneStart = cached.zoneStart;
-                zoneSize = cached.zoneSize;
             } else {
                 TreeJob job = jobs.get(startKey);
                 if (job != null) {
@@ -564,18 +585,14 @@ public class ForagingListener implements Listener {
                         continue;
                     }
                 }
-                // Same window rule as startChop — skills, streak and isle marks included.
-                zoneSize = ForagingStrike.zoneSize(zoneFor(player, streaks.current(id), dropLog(target.getType()),
-                        target.getLocation(), false));
-                zoneStart = ForagingStrike.zoneStartForTree(treeId, zoneSize);
-                lookCache.put(id, new LookCache(startKey, treeId, zoneStart, zoneSize, now + LOOK_CACHE_TICKS));
+                lookCache.put(id, new LookCache(startKey, treeId, now + LOOK_CACHE_TICKS));
             }
 
             long missLeft = missCooldownLeftMs(id, treeId);
             if (missLeft > 0L) {
-                hud.previewCooling(player, zoneStart, zoneSize, (missLeft + 999L) / 1000L);
+                hud.previewCooling(player, (missLeft + 999L) / 1000L);
             } else {
-                hud.preview(player, zoneStart, zoneSize);
+                hud.preview(player, streaks.current(id));
                 maybeNewcomerHint(player, now);
             }
             previewing.add(id);
@@ -603,7 +620,8 @@ public class ForagingListener implements Listener {
         }
         lastHintTick.put(player.getUniqueId(), now);
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "Any stem · LMB when ◆ is on green",
+                de.aetherion.core.exile.Say.t(player, "Hit the trunk · then look where it should fall · hit again",
+                        "Stamm schlagen · dann hinschauen, wohin er fallen soll · nochmal schlagen"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
     }
@@ -692,7 +710,7 @@ public class ForagingListener implements Listener {
     }
 
     void shutdown() {
-        for (FellPulse pulse : List.copyOf(pulses.values())) {
+        for (FellAim pulse : List.copyOf(pulses.values())) {
             pulse.job.pulse = null;
             pulse.job.felling = false;
         }
@@ -745,32 +763,50 @@ public class ForagingListener implements Listener {
             ));
             return;
         }
-        FellPulse existing = pulses.get(player.getUniqueId());
+        FellAim existing = pulses.get(player.getUniqueId());
         if (existing != null) {
             if (existing.job == job) {
                 return;
             }
             cancelChop(existing); // switching trees is free — no miss lock
         }
-        // Preview bookkeeping yields the bar to the live pulse (same BossBar instance).
+        Location base = fellBase(job);
+        if (base == null) {
+            return;
+        }
+        // Preview bookkeeping yields the bar to the live aim (same BossBar instance).
         previewing.remove(player.getUniqueId());
         lookCache.remove(player.getUniqueId());
         job.felling = true;
         int streak = streaks.current(player.getUniqueId());
-        Location base = job.baseLocation();
-        FellPulse pulse = new FellPulse(player, job, plugin.fellStrikeTicks(),
-                zoneFor(player, streak, job.family, base, job.notched), speedFor(player, base, job.notched));
+        int zone = ForagingStrike.zoneSize(zoneFor(player, streak, job.family, base, job.notched));
+        int budget = (int) Math.round(plugin.fellAimTicks() / speedFor(player, base, job.notched));
+        FellAim pulse = new FellAim(player, job, base, job.reach(), job.blockKeys(), budget,
+                ForagingStrike.tolerance(zone));
         job.pulse = pulse;
         pulses.put(player.getUniqueId(), pulse);
 
-        // Every living tree runs its own timing bar — no post-teach / sneak instant fell.
+        // Every living tree is aimed: look where it should fall, hit again.
         ForagingFx.start(player, job.fellLocation());
-        hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot(), pulse.ready(), streak);
+        hud.aiming(player, pulse, streak);
+        if (chopHintsDone(player) < 3) {
+            player.sendMessage(de.aetherion.core.exile.Say.t(player,
+                    "§2❦ §fLook where the tree should fall. §7The line on the ground shows its way — §agreen§7 is free, "
+                            + "§cred§7 hits something. Land it on the §6gold ring§7 for a Perfect fell. §fHit again to fell.",
+                    "§2❦ §fSchau dorthin, wohin der Baum fallen soll. §7Die Linie am Boden zeigt seinen Weg — §agrün§7 ist frei, "
+                            + "§crot§7 trifft etwas. Lande ihn im §6goldenen Ring§7 für einen perfekten Fall. §fNochmal schlagen zum Fällen."));
+        }
+    }
+
+    /** Stump centre at the stump block's bottom — where every fall pivots. */
+    private static Location fellBase(TreeJob job) {
+        Location base = job.baseLocation();
+        return base == null ? null : new Location(base.getWorld(), base.getX(), Math.floor(base.getY()), base.getZ());
     }
 
     /**
-     * Full CHOP window: {@link #fellZoneFor} plus Foraging Eldervale's marks, skills, mastery and Frostlit
-     * (isle only). A Titan's second cut is one cell tighter.
+     * Perfect-cone size in steps (see {@link ForagingStrike#tolerance}): {@link #fellZoneFor} plus Foraging
+     * Eldervale's marks, skills, mastery and Frostlit (isle only). A Titan's second cut is one step tighter.
      */
     private int zoneFor(Player player, int streak, Material wood, Location at, boolean titanCut) {
         int zone = fellZoneFor(player, streak);
@@ -781,7 +817,7 @@ public class ForagingListener implements Listener {
         return titanCut ? zone - 1 : zone;
     }
 
-    /** Marker speed: Keen Edge slows it on the isle, a Titan's second cut is quicker. */
+    /** Aim time divisor: Keen Edge gives more time on the isle, a Titan's second cut is quicker. */
     private static double speedFor(Player player, Location at, boolean titanCut) {
         ForageIsle isle = ForageIsle.get();
         double slow = isle == null ? 1.0d : isle.strikeFactor(player, at);
@@ -789,7 +825,7 @@ public class ForagingListener implements Listener {
     }
 
     /**
-     * Midgame growth: the window is config size, +1 once the best Foraging skill reaches
+     * Midgame growth: the cone is config size, +1 once the best Foraging skill reaches
      * {@link ForagingStrike#WIDE_WINDOW_LEVEL}, +1 while on a hot streak.
      */
     private int fellZoneFor(Player player, int streak) {
@@ -819,7 +855,7 @@ public class ForagingListener implements Listener {
             ));
             return;
         }
-        FellPulse existing = pulses.get(player.getUniqueId());
+        FellAim existing = pulses.get(player.getUniqueId());
         if (existing != null) {
             cancelChop(existing);
         }
@@ -842,11 +878,16 @@ public class ForagingListener implements Listener {
                 "Perfect Fell",
                 net.kyori.adventure.text.format.NamedTextColor.GREEN
         ));
-        collapse(job);
-        fellHook(player, job, true, streaks.current(player.getUniqueId()), true);
-        // The Cleaver skips the bar — no streak step, no timing bonus, but the fall still tallies.
-        scheduleTally(job, player.getUniqueId(), "§6Perfect Fell §8(Cleaver)",
-                streaks.current(player.getUniqueId()), 0);
+        Location base = fellBase(job);
+        Vector away = base == null ? new Vector(1, 0, 0)
+                : base.toVector().subtract(player.getLocation().toVector()).setY(0);
+        Vector dir = away.lengthSquared() < 0.04d ? player.getLocation().getDirection().setY(0) : away;
+        dir = dir.lengthSquared() < 0.0001d ? new Vector(1, 0, 0) : dir.normalize();
+        Vector fallDir = dir;
+        int cleaverStreak = streaks.current(player.getUniqueId());
+        // The Cleaver skips the aim — no streak step, no Perfect bonus, but the fall still tallies.
+        fall(job, fallDir, 90.0d, () -> fellHook(player, job, true, cleaverStreak, true, landedCrown(job, fallDir)));
+        scheduleTally(job, player.getUniqueId(), "§6Perfect Fell §8(Cleaver)", cleaverStreak, 0);
     }
 
     private static long canopyCleaverCooldownMs(ItemStack item) {
@@ -871,21 +912,21 @@ public class ForagingListener implements Listener {
         return CANOPY_CLEAVER_ID.equalsIgnoreCase(id);
     }
 
-    private void resolveChop(FellPulse pulse) {
+    private void resolveChop(FellAim pulse) {
         if (pulse == null || pulse.job.collapsing) {
             return;
         }
         if (pulse.hit()) {
             landChop(pulse, false);
         } else {
-            // 10-27 (Pit: the core has to always work): off the window the tree still comes down —
-            // a rough fell, no perfect bonus, streak gone, but no locked trunk. Timing is the bonus, not the gate.
+            // The core always works: a hung-up or twisted tree still comes down — a rough fell, no Perfect,
+            // streak gone, but no locked trunk. A clean lane is the bonus, not the gate.
             streaks.reset(pulse.playerId);
             landChop(pulse, true);
         }
     }
 
-    private void landChop(FellPulse pulse, boolean rough) {
+    private void landChop(FellAim pulse, boolean rough) {
         if (pulse == null || !pulses.remove(pulse.playerId, pulse)) {
             return;
         }
@@ -911,7 +952,10 @@ public class ForagingListener implements Listener {
         if (player != null) {
             ensureWoodCap(pulse.job, player);
             if (rough) {
-                ForagingFx.rough(player, at);
+                ForagingFx.rough(player, at, pulse.missReason());
+                if (isle != null) {
+                    isle.onMiss(player, pulse.job.baseLocation());
+                }
             } else {
                 ForagingFx.success(player, at, perfect, streak);
                 announceStreak(player, streak);
@@ -921,18 +965,32 @@ public class ForagingListener implements Listener {
             tryForestDragonFromChop(player);
             bumpChopHints(player);
         }
-        collapse(pulse.job);
-        fellHook(player, pulse.job, perfect, streak, false);
+        Vector dir = pulse.direction();
+        FellLane.Result lane = pulse.result();
+        TreeJob job = pulse.job;
+        boolean fellPerfect = perfect;
+        int fellStreak = streak;
+        fall(job, dir, lane.hitAngle(), () -> fellHook(player, job, fellPerfect, fellStreak, false, landedCrown(job, dir)));
         int bonus = (perfect ? PERFECT_BONUS_XP : 0)
                 + Math.min(STREAK_BONUS_CAP, Math.max(0, streak - 1) * STREAK_BONUS_STEP);
-        scheduleTally(pulse.job, pulse.playerId, rough ? "§eRough fell." : ForagingFx.word(perfect), streak, bonus);
+        scheduleTally(job, pulse.playerId, rough ? "§eRough fell." : ForagingFx.word(perfect), streak, bonus);
+    }
+
+    /** Where the crown comes to rest after a fall towards {@code dir} (Crown Finds let go above it). */
+    private static Location landedCrown(TreeJob job, Vector dir) {
+        Location base = fellBase(job);
+        if (base == null) {
+            return job.crownLocation();
+        }
+        double along = Math.max(2.0d, job.reach() - 2.0d);
+        return base.clone().add(dir.getX() * along, 2.5d, dir.getZ() * along);
     }
 
     /**
-     * Foraging Eldervale Titans (giant trees) take two clean cuts. The first notches the trunk; the bar
-     * comes straight back, one cell tighter and a little quicker. A miss keeps the notch.
+     * Foraging Eldervale Titans (giant trees) take two cuts. The first notches the trunk; the aim comes
+     * straight back with a tighter gold ring and a little less time.
      */
-    private void notchTitan(Player player, FellPulse pulse) {
+    private void notchTitan(Player player, FellAim pulse) {
         TreeJob job = pulse.job;
         job.pulse = null;
         job.felling = false;
@@ -955,14 +1013,14 @@ public class ForagingListener implements Listener {
     }
 
     /** Hands a finished fell to the Foraging Eldervale router (no-op off the isle / for demo trees). */
-    private void fellHook(Player player, TreeJob job, boolean perfect, int streak, boolean cleaver) {
+    private void fellHook(Player player, TreeJob job, boolean perfect, int streak, boolean cleaver, Location crown) {
         ForageIsle isle = ForageIsle.get();
-        if (isle == null || player == null || job == null || job.noLoot) {
+        if (isle == null || player == null || !player.isOnline() || job == null || job.noLoot) {
             return;
         }
         try {
-            isle.onFell(player, new FellContext(job.baseLocation(), job.crownLocation(), job.logs.size(),
-                    Wood.of(job.family), perfect, streak, cleaver, job.notched));
+            isle.onFell(player, new FellContext(job.baseLocation(), crown == null ? job.crownLocation() : crown,
+                    job.logs.size(), Wood.of(job.family), perfect, streak, cleaver, job.notched));
         } catch (RuntimeException ex) {
             plugin.getLogger().warning("Foraging Eldervale fell hook failed: " + ex);
         }
@@ -976,7 +1034,7 @@ public class ForagingListener implements Listener {
         if (job == null || job.noLoot || playerId == null) {
             return;
         }
-        long wait = job.logs.size() + 3L;
+        long wait = TreeFall.LAND_TICKS + 10L;
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             Player player = Bukkit.getPlayer(playerId);
             if (player == null || !player.isOnline()) {
@@ -1011,7 +1069,7 @@ public class ForagingListener implements Listener {
 
     private static void announceStreak(Player player, int streak) {
         if (streak == ForagingStrike.HOT_STREAK) {
-            player.sendMessage("§6✦ Five clean fells. §7The grove is giving you a wider window. Don't waste it.");
+            player.sendMessage("§6✦ Five clean fells. §7The gold ring just got wider. Don't waste it.");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.7f, 1.5f);
         } else if (streak > ForagingStrike.HOT_STREAK && streak % 10 == 0) {
             player.sendMessage("§6✦ " + streak + " clean fells. §7The trees have started a support group.");
@@ -1030,7 +1088,7 @@ public class ForagingListener implements Listener {
         return name.replace('_', ' ');
     }
 
-    private void missChop(FellPulse pulse) {
+    private void missChop(FellAim pulse) {
         if (pulse == null || !pulses.remove(pulse.playerId, pulse)) {
             return;
         }
@@ -1050,8 +1108,8 @@ public class ForagingListener implements Listener {
                 player.sendMessage("§b✦ Second Wind §8· §7Sure Grip kept your streak alive.");
             }
             if (taughtMiss.add(pulse.playerId)) {
-                player.sendMessage("§7Missed the timing. §fThat trunk§7 needs a breather — a few seconds at first,"
-                        + " longer if you keep fumbling it. §fOther trees are free.");
+                player.sendMessage("§7Left mid-fell. §fThat trunk§7 needs a breather — a few seconds at first,"
+                        + " longer if it keeps happening. §fOther trees are free.");
             }
             if (isle != null) {
                 isle.onMiss(player, pulse.job.baseLocation());
@@ -1059,8 +1117,8 @@ public class ForagingListener implements Listener {
         }
     }
 
-    /** Abort an active bar without punishing the tree (e.g. start another trunk). */
-    private void cancelChop(FellPulse pulse) {
+    /** Abort a live aim without punishing the tree (e.g. start another trunk). */
+    private void cancelChop(FellAim pulse) {
         if (pulse == null || !pulses.remove(pulse.playerId, pulse)) {
             return;
         }
@@ -1231,6 +1289,89 @@ public class ForagingListener implements Listener {
             regenerating.add(snapshot.key());
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> restore(job), restoreAt);
+    }
+
+    /**
+     * The animated fell (A-51): the tree tips over towards {@code dir} and lies down (or hangs up at
+     * {@code stopAt} degrees). The world blocks go at once, the picture falls, and the wood is paid on the
+     * thud; {@code onLand} runs right after. Regrow and swing suppression work like {@link #collapse}.
+     */
+    private void fall(TreeJob job, Vector dir, double stopAt, Runnable onLand) {
+        if (job.collapsing) {
+            return;
+        }
+        Location base = fellBase(job);
+        if (base == null || base.getWorld() == null) {
+            collapse(job);
+            if (onLand != null) {
+                onLand.run();
+            }
+            return;
+        }
+        job.collapsing = true;
+        if (job.breaker != null) {
+            collapsingPlayers.add(job.breaker);
+        }
+        if (job.suppressSwing != null) {
+            collapsingPlayers.add(job.suppressSwing);
+        }
+        Location pivot = base.clone().add(dir.getX() * 0.5d, 0.0d, dir.getZ() * 0.5d);
+        List<TreeFall.Piece> pieces = new ArrayList<>();
+        List<Snapshot> standing = new ArrayList<>();
+        for (Snapshot log : job.logs) {
+            Block block = log.block();
+            if (isLog(block.getType())) {
+                standing.add(log);
+                pieces.add(new TreeFall.Piece(log.x() - pivot.getX(), log.y() - pivot.getY(), log.z() - pivot.getZ(),
+                        block.getBlockData(), true));
+            }
+        }
+        for (Snapshot leaf : job.leaves) {
+            Block block = leaf.block();
+            if (isCanopy(block.getType())) {
+                pieces.add(new TreeFall.Piece(leaf.x() - pivot.getX(), leaf.y() - pivot.getY(), leaf.z() - pivot.getZ(),
+                        block.getBlockData(), false));
+            }
+        }
+        for (Snapshot snapshot : job.all()) {
+            regenerating.add(snapshot.key());
+        }
+        // Clear the real tree in one go — the displays take its place in the same tick.
+        for (Snapshot log : standing) {
+            log.block().setType(Material.AIR, false);
+        }
+        for (Snapshot decor : job.decor) {
+            if (isTreeDecor(decor.block().getType())) {
+                decor.block().setType(Material.AIR, false);
+            }
+        }
+        for (Snapshot leaf : job.leaves) {
+            if (isCanopy(leaf.block().getType())) {
+                leaf.block().setType(Material.AIR, false);
+            }
+        }
+        TreeFall.play(plugin, pivot, dir, stopAt, pieces, () -> {
+            for (Snapshot log : standing) {
+                collectLog(job, log);
+            }
+            if (onLand != null) {
+                try {
+                    onLand.run();
+                } catch (RuntimeException ex) {
+                    plugin.getLogger().warning("Fell landing hook failed: " + ex);
+                }
+            }
+        });
+        int clearAt = TreeFall.LAND_TICKS + 6;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (job.breaker != null) {
+                collapsingPlayers.remove(job.breaker);
+            }
+            if (job.suppressSwing != null) {
+                collapsingPlayers.remove(job.suppressSwing);
+            }
+        }, clearAt);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> restore(job), clearAt + REGROW_TICKS);
     }
 
     private void restore(TreeJob job) {
@@ -1925,7 +2066,7 @@ public class ForagingListener implements Listener {
     }
 
     /** Soft cache for look-preview — never creates entities or TreeJobs. */
-    private record LookCache(String blockKey, String treeId, int zoneStart, int zoneSize, int expiresAt) {
+    private record LookCache(String blockKey, String treeId, int expiresAt) {
     }
 
     static final class TreeJob {
@@ -1954,7 +2095,39 @@ public class ForagingListener implements Listener {
         int touchedTick;
         /** Bottom-row stump marks for sparks (same Y, ground-adjacent). */
         private final List<Snapshot> fellMarks = new ArrayList<>();
-        private FellPulse pulse;
+        private FellAim pulse;
+
+        /** Every block of this tree, as {@link FellLane#key} — never in its own way. */
+        Set<Long> blockKeys() {
+            Set<Long> keys = new HashSet<>(logs.size() + leaves.size() + decor.size());
+            for (Snapshot s : logs) {
+                keys.add(FellLane.key(s.x(), s.y(), s.z()));
+            }
+            for (Snapshot s : leaves) {
+                keys.add(FellLane.key(s.x(), s.y(), s.z()));
+            }
+            for (Snapshot s : decor) {
+                keys.add(FellLane.key(s.x(), s.y(), s.z()));
+            }
+            return keys;
+        }
+
+        /** Trunk + crown height above the stump: how far the tree reaches when it lies flat. */
+        int reach() {
+            int low = Integer.MAX_VALUE;
+            int top = Integer.MIN_VALUE;
+            for (Snapshot s : logs) {
+                low = Math.min(low, s.y());
+                top = Math.max(top, s.y());
+            }
+            for (Snapshot s : leaves) {
+                top = Math.max(top, s.y());
+            }
+            if (low == Integer.MAX_VALUE) {
+                return 6;
+            }
+            return Math.max(4, Math.min(30, top - low + 1));
+        }
 
         private List<Snapshot> all() {
             List<Snapshot> all = new ArrayList<>(logs.size() + leaves.size() + decor.size());
