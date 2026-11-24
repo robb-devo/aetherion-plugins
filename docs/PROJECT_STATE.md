@@ -57,25 +57,25 @@ Helm agent and lacked the `aetherion-armor` datapack the other backends carry; n
 - Live jar hashes, deploy times and backups are logged per deploy in `aetherion-ops/docs/LIVE_STATE_*.md` on Robb's PC
   (newest on top); the table below is the summary.
 
-## Live plugin builds (sha256 prefix, 2026-11-24 00:17 CET)
+## Live plugin builds (sha256 prefix, 2026-11-24 21:01 CET)
 
 Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET) put `main` `f069314`
 (PRs #159 to #187) on every backend. The round of 21:21-21:22 CET added `6f592a1` (#189: A-58, A-54/A-55, A-59,
 A-13: Core, Items, Quests, BossEngine, SamuraiBoss), and Quests followed with `6b2c6f9` (#190) at 22:55 CET. mmo-i alone got
 `969d94b` (#192, Aether Journal) on 2026-11-24 00:17 CET: Core, Items, Quests, Guilds, with `journal.enabled: true` patched into
-its Items config. **`main` equals live** on mmo-i; the other backends keep `6b2c6f9` on purpose until Robb has tested the
+its Items config, and `aba7c1c` (#194, journal polish) at 21:01 CET, the same four jars. **`main` equals live** on mmo-i; the other backends keep `6b2c6f9` on purpose until Robb has tested the
 journal, and the hub server keeps its own Hub jar.
 
 | Plugin | Live build | Backends |
 |---|---|---|
-| Core | `8d9c9a0f` / `8709799c` | mmo-i (#192) / the other five |
-| Items | `40a35772` / `2299eb85` | mmo-i (#192, `journal.enabled: true`) / mmo-r, mmo-d, mmo-c, mmo-m (economy.yml patched to v4 on start, `economy.yml.v3.bak` kept) |
-| Quests | `463f936a` / `d03b742d` | mmo-i (#192; paged talk + cards switched on there) / the other mmo backends (live configs untouched) |
+| Core | `957aa7ff` / `8709799c` | mmo-i (#194) / the other five |
+| Items | `0e511a49` / `2299eb85` | mmo-i (#194, `journal.enabled: true`) / mmo-r, mmo-d, mmo-c, mmo-m (economy.yml patched to v4 on start, `economy.yml.v3.bak` kept) |
+| Quests | `a612b658` / `d03b742d` | mmo-i (#194; paged talk + cards switched on there) / the other mmo backends (live configs untouched) |
 | BossEngine | `50cbbc16` | hub, mmo-r, mmo-d, mmo-c (no LuckPerms player group grants `*` or `helios.*`) |
 | AetherMobs | `68472a44` | every mmo backend |
 | Mining | `7646c17a` | mmo-r, mmo-c, mmo-m |
 | Farming / Fishing / Foraging | `065a45f1` / `4761955f` / `d3949dac` | mmo-r, mmo-c |
-| Guilds | `4788eac6` | mmo-i only, #192 (parked on mmo-r and mmo-d) |
+| Guilds | `a71dc23f` | mmo-i only, #194 (parked on mmo-r and mmo-d) |
 | Hub | `0fb9f70c` | mmo-r; **hub keeps `d1a097e7` (10-05)** |
 | SamuraiBoss | `16210290` | mmo-r (`arena.bell-challenge: true` patched live; no dojo is built there right now, see below) |
 | Dungeons, Beta, Gnomon, Pit | `main` of 11-16 (unchanged since) | as below |
@@ -88,8 +88,9 @@ Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmPr
 Backups of the replaced jars and configs: `backups/beta-a04-a61-20261123-190456` and
 `backups/beta-a54-a59-20261123-211821` (with `quests-190` for the #190 swap; rollback scripts inside and in the matching staging folder),
 `backups/journal-mmoi-20261124-0010` (the replaced mmo-i jars and Items config; the old pack sits next to the served zip as
-`*.bak-pre-journal-*`; `rollback.sh` in the matching staging folder).
-Waiting for a deploy: #192 on the other backends, only after Robb's test (Core on every backend that gets Items, Quests, Hub,
+`*.bak-pre-journal-*`; `rollback.sh` in the matching staging folder), `backups/journal-polish-mmoi-20261124-2058` (the #192
+jars of mmo-i; old pack as `*.bak-pre-journal-polish-*`; `rollback.sh` in the matching staging folder).
+Waiting for a deploy: #192 and #194 on the other backends, only after Robb's test (Core on every backend that gets Items, Quests, Hub,
 Farming or Guilds; the switch stays off there unless he wants the journal network-wide).
 
 Live look of 2026-11-23 (things the repo does not show):
@@ -116,8 +117,8 @@ Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Resource pack (2026-10-21)
 
-**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `2f055c74` (2026-11-24 00:17 CET, journal art
-added, was `03ab6779`).
+**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `d7d99510` (2026-11-24 21:01 CET, the 50 journal
+icons `j_*` and paper CMD 7800-7824 / 7850-7874 added; before: `2f055c74`, journal art, and `03ab6779`).
 The Velocity plugin `AetherionProxy` offers it when a player first reaches a backend (required, hash read
 from the served zip); no backend advertises a pack any more (`resource-pack=` empty everywhere), so moving
 between hub, mmo-r, mmo-d, mmo-c and mmo-i never reloads resources. The hub has the full pack too: vanilla
@@ -460,13 +461,22 @@ Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Conc
   `journal-mmoi-20261124-0010` with `rollback.sh`; pack `03ab6779` -> `2f055c74`, only the 18 journal files added).
   Rest of the network only after Robb's test: Core on every backend that gets Items, Quests, Hub, Farming or Guilds
   (they call JournalText), the switch off there until he wants it.
-- Polish after Robb's first test (2026-11-24, PR "journal polish"): pages fill from the top (`JournalMenu.pack`, Atlas
+- Polish after Robb's first test (2026-11-24, PR #194, live on mmo-i since 21:01 CET, main `aba7c1c`): pages fill from the top (`JournalMenu.pack`, Atlas
   without Teleports on non-Hub servers left row 1 empty); Today's first line is the quest's step as the quest bar says
   it (`QuestProgressDisplay.step`, shared), with where and how far, and a click shows the way (a comet of light, only
   the player sees it); without a quest it is the island's goal (`IslandAccess.nextGoal`, Guilds `IslandBar.goal`:
   tour step or factory goal), else the guide's tips. Second line adds Codex rewards to claim. A sub-menu's Back turns
   to the chapter the player came from (`AetherionManager.back`, `ManagerNav`). Every journal line has its own icon
   (`menu/JournalIcon.java`: paper, CMD 7800 + i, locked 7850 + i; art in `gen_gui_icons.py` `JOURNAL`, append only).
+- Final polish before the network rollout (2026-11-24, after Robb's second test): the hotbar book has its own cover
+  per stage (BOOK, CMD 7900 + `JournalMenu.coverStage`: Worn tan leather, Bound brown leather with brass and a strap,
+  Aether = the old Manager book with the A rune breathing light, 8 frames; `tools/gen_journal_cover.py`, written by
+  `gen_gui_icons.py`). `menu/JournalSounds.java`: one sound family from vanilla foley (open by cover stage, a page
+  turn per ribbon a shade higher each chapter, enchanting ink + two chimes for a new chapter, a muffled clasp for
+  locked lines, a chime from the target when the way light arrives, a book set down on Escape). `JournalText` now
+  also catches "§eManager" (Lark said "Manager → Pets"), smooths the sentences that only fit the star, and Quests runs
+  cards, the quest bar, hints and the journal's step line through it, so texts from other plugins and live YAML read
+  as the journal too.
 
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 

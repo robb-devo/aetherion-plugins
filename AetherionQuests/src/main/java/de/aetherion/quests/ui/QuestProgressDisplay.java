@@ -207,7 +207,8 @@ public class QuestProgressDisplay {
         BarChrome.Icon icon = progress >= 1.0 && color == BarColor.GREEN ? BarChrome.Icon.QUEST_READY
                 : color == BarColor.PURPLE ? BarChrome.Icon.QUEST_SPECIAL
                 : BarChrome.Icon.QUEST;
-        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.QUEST, icon, withCompass(player, title)));
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.QUEST, icon,
+                withCompass(player, de.aetherion.core.api.JournalText.t(title))));
         BarSync.progress(bar, progress);
         BarSync.color(bar, color);
     }

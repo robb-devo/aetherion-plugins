@@ -28,6 +28,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from px_art import (AMBER, ASH, BONE, CRIMSON, EMBER, EMERALD, GOLD, ROSE, SKY, SLATE, STEEL, TEAL, Px, edge,  # noqa: E402
                     grow, hx, mix, ramp, shift, shrink)
+import gen_journal_cover  # noqa: E402
 
 N = 16
 OUT = hx('#0a090e')
@@ -827,6 +828,8 @@ JOURNAL = (
 )
 JOURNAL_OPEN = 7800
 JOURNAL_LOCKED = 7850
+# BOOK: the journal's hotbar cover per stage (Worn, Bound, Aether), see JournalMenu.coverStage.
+JOURNAL_COVER = 7900
 
 
 def empty():
@@ -959,6 +962,14 @@ def main(root, preview=None):
         im = render(fn)
         write(name, im, JOURNAL_OPEN + i, 'paper')
         write(name + '_locked', locked(im), JOURNAL_LOCKED + i, 'paper')
+    # The journal's hotbar book, one cover per stage (gen_journal_cover.py; 32x32, the last one animated).
+    for stage, (name, im, animated) in enumerate(gen_journal_cover.covers()):
+        write(name, im, JOURNAL_COVER + stage, 'book')
+        if animated:
+            images[name] = im.crop((0, 0, im.width, im.width))
+            with open(os.path.join(tex, name + '.png.mcmeta'), 'w', encoding='utf-8', newline='\n') as f:
+                json.dump(gen_journal_cover.ANIMATION, f, indent=2)
+                f.write('\n')
     empty().save(os.path.join(tex, 'empty.png'), optimize=True)
     with open(os.path.join(mdl, 'empty.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump({'parent': 'minecraft:item/generated', 'textures': {'layer0': 'aetherion:item/gui/empty'}}, f, indent=2)
