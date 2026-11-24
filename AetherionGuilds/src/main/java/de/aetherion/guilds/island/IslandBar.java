@@ -67,6 +67,34 @@ public final class IslandBar implements Listener {
         this.goals = goals;
     }
 
+    /**
+     * What the player's own island wants next, for the Aether Journal: the tour step while it runs, else the next
+     * factory goal (the same lines this bar shows). Null without an island or once the ladder is climbed.
+     */
+    public de.aetherion.core.api.IslandAccess.IslandGoal goal(Player player) {
+        if (player == null) {
+            return null;
+        }
+        UUID owner = player.getUniqueId();
+        IslandHost host = IslandHost.personal(owner);
+        if (!hosts.exists(host)) {
+            return null;
+        }
+        String objective = guide == null ? null : guide.objective(owner);
+        if (objective != null) {
+            int total = guide.total();
+            return new de.aetherion.core.api.IslandAccess.IslandGoal(objective, guide.name() + "'s island tour",
+                    Math.min(total, guide.progress(owner)), total);
+        }
+        FactoryGoals.Goal next = goals == null ? null : goals.next(host);
+        if (next == null) {
+            return null;
+        }
+        String how = "first_chain".equals(next.id()) ? firstStep(host, next.how()) : next.how();
+        return new de.aetherion.core.api.IslandAccess.IslandGoal(next.title(), how, goals.doneCount(host),
+                goals.total(host));
+    }
+
     private boolean statusBar() {
         return plugin.getConfig().getBoolean("island-bar.enabled", true);
     }

@@ -56,6 +56,19 @@ public class AetherionManager {
         noteManagerOpened(player);
     }
 
+    /** A sub-menu's Back: the journal turns to the chapter the player came from; the Manager simply opens. */
+    public void back(Player player) {
+        if (player == null || !de.aetherion.core.api.JournalText.enabled()) {
+            open(player);
+            return;
+        }
+        if (tryOpenDungeonMap(player)) {
+            return;
+        }
+        journal.back(player);
+        noteManagerOpened(player);
+    }
+
     private static void noteManagerOpened(Player player) {
         de.aetherion.items.util.QuestProgressHook.noteUsed(player, "AETHERION_MANAGER");
     }

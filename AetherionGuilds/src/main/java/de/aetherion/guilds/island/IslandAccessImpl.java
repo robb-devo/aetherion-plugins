@@ -23,10 +23,23 @@ public final class IslandAccessImpl implements IslandAccess {
     private final GuildService guilds;
     private final IslandService islands;
 
+    private IslandBar bar;
+
     public IslandAccessImpl(PersonalIslandService personal, GuildService guilds, IslandService islands) {
         this.personal = personal;
         this.guilds = guilds;
         this.islands = islands;
+    }
+
+    /** The status bar that knows the tour step and the factory goals ({@link #nextGoal}). */
+    public IslandAccessImpl attachBar(IslandBar bar) {
+        this.bar = bar;
+        return this;
+    }
+
+    @Override
+    public IslandGoal nextGoal(Player player) {
+        return bar == null ? null : bar.goal(player);
     }
 
     @Override

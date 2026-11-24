@@ -69,8 +69,16 @@ public interface QuestProgressAccess {
 
     String despawnNpc(Entity entity);
 
-    /** One quest on the Aether Journal's Journey page. */
-    record JournalQuest(String id, String title, String detail, boolean ready, boolean tracked) {
+    /**
+     * One quest on the Aether Journal's Journey page. {@code step} is what to do now, as the quest bar says it
+     * ("Copper Ore 12/20", "Return to Lark"; legacy colours, may be empty); {@code where} names the place or person
+     * the quest points at and {@code target} is where that stands (both null when unknown).
+     */
+    record JournalQuest(String id, String title, String detail, boolean ready, boolean tracked, String step,
+                        String where, Location target) {
+        public JournalQuest(String id, String title, String detail, boolean ready, boolean tracked) {
+            this(id, title, detail, ready, tracked, null, null, null);
+        }
     }
 
     /** Active and ready-to-turn-in quests for the Aether Journal, tracked quest first (empty without Quests). */

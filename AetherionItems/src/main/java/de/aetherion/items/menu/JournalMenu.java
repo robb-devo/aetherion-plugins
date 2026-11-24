@@ -2,6 +2,7 @@ package de.aetherion.items.menu;
 
 import de.aetherion.core.api.AetherServices;
 import de.aetherion.core.api.ChromePage;
+import de.aetherion.core.api.IslandAccess;
 import de.aetherion.core.api.JournalPage;
 import de.aetherion.core.api.JournalPage.Chapter;
 import de.aetherion.core.api.JournalPage.Ink;
@@ -9,6 +10,7 @@ import de.aetherion.core.api.JournalPage.Look;
 import de.aetherion.core.api.QuestProgressAccess;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.codex.CodexMenus;
+import de.aetherion.items.codex.CodexRewards;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.guide.GuideAdvice;
 import de.aetherion.items.progress.ProgressionService;
@@ -17,8 +19,11 @@ import de.aetherion.items.util.GuiItems;
 import de.aetherion.items.util.QuestProgressHook;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
@@ -29,9 +34,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -141,9 +149,9 @@ public final class JournalMenu {
         ANVIL(AetherionManagerGUI.ANVIL_SLOT, "Anvil", Material.ANVIL, Chapter.WORKSHOP,
                 "Booster sockets: gear left, booster right. Fourteen slots, swap any time."),
         ISLAND(AetherionManagerGUI.ISLAND_SLOT, "Island", Material.GRASS_BLOCK, Chapter.COMPANY,
-                "Your private island, quarries and friend visits. Opens in chat."),
+                "Your private island: a click takes you home. Without one, the island menu opens."),
         GUILD(AetherionManagerGUI.GUILD_SLOT, "Guild", Material.YELLOW_BANNER, Chapter.COMPANY,
-                "Shared island, invites, ranks and guild quarries. Opens in chat.");
+                "Shared island, invites, ranks and guild quarries: the guild menu.");
 
         final int slot;
         final String label;
@@ -370,6 +378,22 @@ public final class JournalMenu {
         }
     }
 
+    /**
+     * Back from a sub-menu: the chapter the player came from (the bookmark, even while a lesson glows), else the
+     * book as the hotbar item opens it.
+     */
+    public void back(Player player) {
+        if (player == null) {
+            return;
+        }
+        Bookmark mark = bookmarks.get(player.getUniqueId());
+        if (mark != null && System.currentTimeMillis() - mark.at() < BOOKMARK_MS) {
+            open(player, mark.chapter());
+            return;
+        }
+        open(player);
+    }
+
     private void open(Player player, Chapter chapter, Read read) {
         if (chapter == null || !read.visible.contains(chapter)) {
             chapter = Chapter.TODAY;
@@ -380,7 +404,7 @@ public final class JournalMenu {
                     read.seen | bit(chapter));
         }
         Holder holder = new Holder(chapter);
-        List<Entry> entries = entries(read, chapter);
+        List<Entry> entries = pack(entries(read, chapter));
 
         Map<Chapter, Look> ribbons = new EnumMap<>(Chapter.class);
         for (Chapter each : Chapter.values()) {
@@ -498,18 +522,28 @@ public final class JournalMenu {
                          boolean strong, boolean pulse) {
     }
 
-    /** Commands a chapter lists when this server has them: label, command line, icon, tooltip. */
-    private record Cmd(String label, String command, Material icon, String about) {
+    /**
+     * Commands a chapter lists when this server has them: label, command line, its journal picture (or a Manager
+     * icon by material when {@code icon} is null), tooltip.
+     */
+    private record Cmd(String label, String command, JournalIcon icon, Material material, String about) {
+        Cmd(String label, String command, JournalIcon icon, String about) {
+            this(label, command, icon, null, about);
+        }
+
+        ItemStack item(String name, List<String> lore) {
+            return icon != null ? icon.item(name, lore) : ManagerIcons.apply(GuiItems.named(material, name, lore));
+        }
     }
 
     private static final List<Cmd> ATLAS_LINES = List.of(
-            new Cmd("Dungeons", "dhub", Material.SKELETON_SKULL, "The dungeon hub, from anywhere."),
-            new Cmd("Exile", "exile", Material.ECHO_SHARD, "Cross to the exile island, or come back."),
-            new Cmd("Capital", "capital", Material.BELL, "Back to the Capital, once you have been there."));
+            new Cmd("Dungeons", "dhub", JournalIcon.DUNGEONS, "The dungeon hub, from anywhere."),
+            new Cmd("Exile", "exile", JournalIcon.EXILE, "Cross to the exile island, or come back."),
+            new Cmd("Capital", "capital", JournalIcon.CAPITAL, "Back to the Capital, once you have been there."));
     private static final List<Cmd> ISLE_JOURNALS = List.of(
-            new Cmd("Grove", "grove", Material.OAK_SAPLING, "Foraging Eldervale: journal, tour and wayfinder."),
-            new Cmd("Mine Isle", "mineisle", Material.IRON_PICKAXE, "Mining Eldervale: journal, compass and crew tour."),
-            new Cmd("Origin", "origin", Material.MAP, "Origin Journal: districts, glowcaps, bells, skyways."));
+            new Cmd("Grove", "grove", JournalIcon.GROVE, "Foraging Eldervale: journal, tour and wayfinder."),
+            new Cmd("Mine Isle", "mineisle", JournalIcon.MINE_ISLE, "Mining Eldervale: journal, compass and crew tour."),
+            new Cmd("Origin", "origin", JournalIcon.ORIGIN, "Origin Journal: districts, glowcaps, bells, skyways."));
 
     private List<Entry> entries(Read read, Chapter chapter) {
         List<Entry> out = new ArrayList<>();
@@ -541,20 +575,24 @@ public final class JournalMenu {
             case CODEX -> codex(read, out);
             case COMPANY -> {
                 commands(read, out, false, List.of(
-                        new Cmd("Party", "party", Material.CAKE, "Make or manage a party."),
-                        new Cmd("Friends", "friend", Material.POPPY, "Friends list, visits and guild invites.")), 1);
+                        new Cmd("Party", "party", JournalIcon.PARTY, "Make or manage a party."),
+                        new Cmd("Friends", "friend", JournalIcon.FRIENDS, "Friends list, visits and guild invites.")), 1);
                 tile(read, out, 1, true, Tile.ISLAND);
-                tile(read, out, 2, true, Tile.GUILD);
+                if (read.state(Tile.ISLAND) == State.OPEN) {
+                    commands(read, out, true, List.of(new Cmd("Isle menu", "island menu", JournalIcon.ISLE_MENU,
+                            "Your island's menu: quarries, friends, land and biome.")), 2);
+                }
+                tile(read, out, 3, true, Tile.GUILD);
             }
             case SETTINGS -> {
                 commands(read, out, false, List.of(
-                        new Cmd("Language", "language", Material.NAME_TAG, "Quest and hint language."),
-                        new Cmd("Talk mode", "npctalk", Material.FEATHER, "Bubbles and reply chips, or classic chat."),
-                        new Cmd("Report", "report", Material.REDSTONE, "Send a bug report to the team."),
-                        new Cmd("Checklist", "checklist", Material.MAP, "The beta checklist.")), 1);
+                        new Cmd("Language", "language", JournalIcon.LANGUAGE, "Quest and hint language."),
+                        new Cmd("Talk mode", "npctalk", JournalIcon.TALK_MODE, "Bubbles and reply chips, or classic chat."),
+                        new Cmd("Report", "report", JournalIcon.REPORT, "Send a bug report to the team."),
+                        new Cmd("Checklist", "checklist", JournalIcon.CHECKLIST, "The beta checklist.")), 1);
                 commands(read, out, true, List.of(
-                        new Cmd("Dev menu", "devmenu", Material.COMMAND_BLOCK, "Staff: the Aetherion DEV chest."),
-                        new Cmd("Raid ban", "raidban", Material.IRON_BARS, "Staff: the anti bot-raid menu.")), 1);
+                        new Cmd("Dev menu", "devmenu", null, Material.COMMAND_BLOCK, "Staff: the Aetherion DEV chest."),
+                        new Cmd("Raid ban", "raidban", JournalIcon.RAID_BAN, "Staff: the anti bot-raid menu.")), 1);
             }
         }
         return out;
@@ -562,28 +600,21 @@ public final class JournalMenu {
 
     private void today(Read read, List<Entry> out) {
         Player player = read.player;
-        // Left page: where you are going, what lights up, who you are, what opens next.
         GuideAdvice.Result advice = GuideAdvice.next(player);
-        QuestProgressAccess.JournalQuest tracked = read.quests.isEmpty() || read.quests.get(0).ready()
-                ? null : read.quests.get(0);
-        List<String> lore = new ArrayList<>();
-        lore.add("§6§lNEXT");
-        if (tracked != null) {
-            lore.add("§f" + tracked.title());
-            lore.addAll(wrap(tracked.detail(), "§7"));
-            lore.add("");
-        }
-        if (advice != null && advice.tips != null) {
-            for (String tip : advice.tips.subList(0, Math.min(3, advice.tips.size()))) {
-                lore.addAll(wrap(tip, "§7"));
-            }
-        }
-        lore.add("");
-        lore.add("§eClick §7for the next step in chat");
-        out.add(new Entry(1, false, tracked == null ? "Next step" : shortTitle(tracked.title()), Ink.INK,
-                icon(Material.PAPER, "§6" + (tracked == null ? "Next step" : tracked.title()), lore, false),
-                () -> command(player, "guide"), read.guide == null, false));
+        QuestProgressAccess.JournalQuest focus = read.quests.isEmpty() ? null : read.quests.get(0);
+        IslandAccess.IslandGoal island = islandGoal(player);
+        boolean strong = read.guide == null;
 
+        // Left page, line 1: the one thing to do now. The quest's step, else the island's goal, else a tip.
+        if (focus != null) {
+            out.add(questLine(read, 1, focus, advice, strong));
+        } else if (island != null) {
+            out.add(islandLine(player, 1, island, strong));
+        } else {
+            out.add(tipLine(player, advice, strong));
+        }
+
+        // Line 2: what else wants you. A lesson's glowing tile, a new chapter, turn-ins, rewards, the island.
         if (read.guide != null) {
             Tile tile = read.guide.tile();
             List<String> guide = new ArrayList<>();
@@ -597,23 +628,33 @@ public final class JournalMenu {
         } else if (read.firstNew() != null) {
             Chapter fresh = read.firstNew();
             out.add(new Entry(2, false, name(fresh), Ink.FRESH,
-                    icon(Material.GLOW_INK_SAC, "§c✦ New chapter: §6" + name(fresh),
-                            withClick(wrap(blurb(fresh), "§7"), "§eClick to turn there"), false),
+                    JournalIcon.CHAPTER.item("§c✦ New chapter: §6" + name(fresh),
+                            withClick(wrap(blurb(fresh), "§7"), "§eClick to turn there")),
                     () -> turn(player, fresh), false, false));
         } else {
             List<String> ready = new ArrayList<>();
             for (QuestProgressAccess.JournalQuest quest : read.quests) {
-                if (quest.ready()) {
-                    ready.add("§a✔ §f" + quest.title());
+                if (quest.ready() && quest != focus) {
+                    ready.add("§a✔ §f" + quest.title() + (quest.where() == null ? "" : " §8· §7" + quest.where()));
                 }
             }
+            int claims = read.visible.contains(Chapter.CODEX) ? CodexRewards.claimableTotal(player) : 0;
             if (!ready.isEmpty()) {
+                int count = ready.size();
                 ready.add(0, "§7Done. Bring these back:");
                 ready.add("");
                 ready.add("§eClick for your Journey");
-                out.add(new Entry(2, false, "Turn in " + (ready.size() - 3), Ink.AMBER,
-                        glow(icon(Material.PAPER, "§eReady to turn in", ready, false)),
+                out.add(new Entry(2, false, "Turn in " + count, Ink.AMBER,
+                        glow(JournalIcon.QUEST_READY.item("§eReady to turn in", ready)),
                         () -> turn(player, Chapter.JOURNEY), false, false));
+            } else if (claims > 0) {
+                out.add(new Entry(2, false, "Claim " + claims, Ink.AMBER,
+                        glow(JournalIcon.CLAIM.item("§6" + claims + (claims == 1 ? " reward" : " rewards") + " to claim",
+                                withClick(wrap("Collection, Bestiary and skill seals have tiers waiting for you.",
+                                        "§7"), "§eClick to open the Codex"))),
+                        () -> AetherionManagerListener.runTile(player, AetherionManagerGUI.CODEX_SLOT), false, false));
+            } else if (focus != null && island != null) {
+                out.add(islandLine(player, 2, island, false));
             }
         }
 
@@ -652,6 +693,91 @@ public final class JournalMenu {
         }
     }
 
+    /**
+     * A quest as one line: what to do now (the quest bar's step), where that is and how far, and a click that shows
+     * the way there. {@code advice} adds the tutorial's own tips (Today only).
+     */
+    private Entry questLine(Read read, int row, QuestProgressAccess.JournalQuest quest, GuideAdvice.Result advice,
+                            boolean strong) {
+        Player player = read.player;
+        List<String> lore = new ArrayList<>();
+        lore.add(quest.ready() ? "§a§l✔ READY TO TURN IN" : quest.tracked() ? "§6§lYOUR QUEST" : "§7§lACTIVE");
+        lore.add("§f" + quest.title());
+        if (quest.step() != null && !quest.step().isBlank()) {
+            lore.addAll(wrap("§7Now: " + quest.step(), "§7"));
+        }
+        String where = whereLine(player, quest.where(), quest.target());
+        if (where != null) {
+            lore.add(where);
+        }
+        List<String> detail = wrap(quest.detail(), "§8");
+        if (!detail.isEmpty()) {
+            lore.add("");
+            lore.addAll(detail.subList(0, Math.min(4, detail.size())));
+        }
+        if (advice != null && advice.tutorial && advice.tips != null && !advice.tips.isEmpty()) {
+            lore.add("");
+            for (String tip : advice.tips.subList(0, Math.min(2, advice.tips.size()))) {
+                lore.addAll(wrap("§e› §7" + tip, "§7"));
+            }
+        }
+        boolean way = canShowWay(player, quest.target());
+        lore.add("");
+        lore.add(way ? "§eClick §7to show the way" : "§eClick §7for the next step in chat");
+        ItemStack icon = (quest.ready() ? JournalIcon.QUEST_READY : JournalIcon.QUEST)
+                .item((quest.ready() ? "§a" : "§6") + quest.title(), lore);
+        String name = quest.where() != null ? quest.where() : quest.title();
+        Runnable click = way ? () -> showWay(player, quest.target(), name) : () -> command(player, "guide");
+        return new Entry(row, false, shortTitle(quest.title()), quest.ready() ? Ink.AMBER : Ink.INK,
+                quest.ready() ? glow(icon) : icon, click, strong, false);
+    }
+
+    /** The island's next goal (tour step or factory goal) as a line; a click opens the island menu. */
+    private Entry islandLine(Player player, int row, IslandAccess.IslandGoal goal, boolean strong) {
+        List<String> lore = new ArrayList<>();
+        lore.add("§a§lISLAND GOAL");
+        lore.addAll(wrap("§f" + goal.title(), "§f"));
+        if (goal.how() != null && !goal.how().isBlank()) {
+            lore.addAll(wrap(goal.how(), "§7"));
+        }
+        if (goal.total() > 0) {
+            lore.add("");
+            lore.add("§7Step §f" + Math.min(goal.total(), goal.done() + 1) + " §7of §f" + goal.total());
+        }
+        boolean menu = available(player, "island");
+        lore.add("");
+        lore.add(menu ? "§eClick §7for your island menu" : "§7On the island server: §f/island menu");
+        return new Entry(row, false, "Island goal", Ink.INK, JournalIcon.ISLAND_GOAL.item("§aIsland goal", lore),
+                menu ? () -> command(player, "island menu") : null, strong, false);
+    }
+
+    /** No quest and no island goal: the guide's next tips; every tip in chat on a click. */
+    private Entry tipLine(Player player, GuideAdvice.Result advice, boolean strong) {
+        List<String> lore = new ArrayList<>();
+        lore.add("§6§lNEXT STEP");
+        if (advice != null && advice.tips != null) {
+            for (String tip : advice.tips.subList(0, Math.min(3, advice.tips.size()))) {
+                lore.addAll(wrap("§e› §7" + tip, "§7"));
+            }
+        }
+        lore.add("");
+        lore.add("§eClick §7for every tip in chat");
+        return new Entry(1, false, "Next step", Ink.INK, JournalIcon.GUIDE.item("§6Next step", lore),
+                () -> command(player, "guide"), strong, false);
+    }
+
+    private static IslandAccess.IslandGoal islandGoal(Player player) {
+        IslandAccess islands = AetherServices.islands();
+        if (islands == null) {
+            return null;
+        }
+        try {
+            return islands.nextGoal(player);
+        } catch (RuntimeException | LinkageError e) {
+            return null;
+        }
+    }
+
     private void journey(Read read, List<Entry> out) {
         Player player = read.player;
         int row = 1;
@@ -659,67 +785,63 @@ public final class JournalMenu {
             if (row > 4) {
                 break;
             }
-            List<String> lore = new ArrayList<>();
-            lore.add(quest.ready() ? "§a✔ Done §8· bring it back" : quest.tracked() ? "§6✦ Your quest" : "§7Active");
-            lore.add("");
-            lore.addAll(wrap(quest.detail(), "§7"));
-            lore.add("");
-            lore.add("§eClick §7for the next step in chat");
-            ItemStack icon = icon(Material.PAPER, (quest.ready() ? "§a" : "§6") + quest.title(), lore, false);
-            out.add(new Entry(row, false, shortTitle(quest.title()), quest.ready() ? Ink.AMBER : Ink.INK,
-                    quest.ready() ? glow(icon) : icon, () -> command(player, "guide"),
-                    row == 1 && quest.tracked() && !quest.ready(), false));
+            out.add(questLine(read, row, quest, null, row == 1 && quest.tracked() && !quest.ready()));
             row++;
         }
         if (read.quests.isEmpty()) {
             out.add(new Entry(1, false, "No quest", Ink.FADED,
-                    icon(Material.PAPER, "§7No quest right now",
-                            List.of("§7Talk to the people around you.", "§7Some of them have work."), false),
+                    JournalIcon.QUEST_NONE.item("§7No quest right now",
+                            List.of("§7Talk to the people around you.", "§7Some of them have work.")),
                     null, false, false));
         }
         // The talk log answers /aetalk from a chat listener (no command-map entry), so it goes out as chat.
         boolean talkLog = Bukkit.getPluginManager().isPluginEnabled("AetherionQuests");
         if (talkLog) {
             out.add(new Entry(1, true, "Talk log", Ink.INK,
-                    icon(Material.BOOK, "§fTalk log", withClick(wrap("Your recent conversations, as a book.", "§7"),
-                            "§eClick §8· /aetalk log"), false),
+                    JournalIcon.TALK_LOG.item("§fTalk log", withClick(wrap("Your recent conversations, as a book.",
+                            "§7"), "§eClick §8· /aetalk log")),
                     () -> chat(player, "/aetalk log"), false, false));
         }
         commands(read, out, true, List.of(
-                new Cmd("Guide", "guide", Material.SPYGLASS, "Next steps, and where to find a recipe.")), talkLog ? 2 : 1);
+                new Cmd("Guide", "guide", JournalIcon.GUIDE, "Next steps, and where to find a recipe.")), talkLog ? 2 : 1);
     }
 
     private void codex(Read read, List<Entry> out) {
         Player player = read.player;
         ProgressionService progress = read.progress;
         tile(read, out, 1, false, Tile.CODEX);
-        book(out, 2, "Collection", Material.IRON_PICKAXE, progress == null || progress.collection(player),
+        book(out, 2, "Collection", Material.IRON_PICKAXE, null, progress == null || progress.collection(player),
                 progress == null ? null : progress.collectionHint(), "Every block you have broken, in tiers.",
                 () -> CodexMenus.openCollection(player, null), player);
-        book(out, 3, "Bestiary", Material.BONE, progress == null || progress.bestiary(player),
+        book(out, 3, "Bestiary", Material.BONE, null, progress == null || progress.bestiary(player),
                 progress == null ? null : progress.bestiaryHint(), "Every mob you have beaten, in tiers.",
                 () -> CodexMenus.openBestiary(player, null), player);
-        book(out, 4, "Bosses", Material.WITHER_SKELETON_SKULL,
+        book(out, 4, "Bosses", null, JournalIcon.BOSSES,
                 de.aetherion.items.codex.JournalHubGUI.available(player),
                 progress == null ? null : progress.journalHint(), "The Boss Journal and the Chronicle.",
                 () -> CodexMenus.openJournal(player), player);
         if (AetherionManagerGUI.codexOpen(player, progress)) {
-            out.add(new Entry(1, true, "Milestones", Ink.INK,
-                    icon(Material.GOLD_NUGGET, "§6Milestones",
-                            withClick(wrap("What the Codex pays out, and what is still to claim.", "§7"),
-                                    "§eClick to open"), false),
+            int claims = CodexRewards.claimableTotal(player);
+            List<String> lore = new ArrayList<>(wrap("What the Codex pays out, and what is still to claim.", "§7"));
+            if (claims > 0) {
+                lore.add("");
+                lore.add("§6✦ " + claims + (claims == 1 ? " reward" : " rewards") + " to claim");
+            }
+            ItemStack icon = JournalIcon.MILESTONES.item("§6Milestones", withClick(lore, "§eClick to open"));
+            out.add(new Entry(1, true, "Milestones", claims > 0 ? Ink.AMBER : Ink.INK, claims > 0 ? glow(icon) : icon,
                     () -> CodexMenus.openMilestones(player), false, false));
         }
         commands(read, out, true, List.of(
-                new Cmd("Aetherlex", "aetherlex", Material.TURTLE_EGG, "The pet encyclopedia.")), 2);
+                new Cmd("Aetherlex", "aetherlex", JournalIcon.AETHERLEX, "The pet encyclopedia.")), 2);
     }
 
-    /** One Codex book: open, or faded with its unlock hint (Manager icons where the material has one). */
-    private void book(List<Entry> out, int row, String label, Material material, boolean open, String hint,
-                      String about, Runnable action, Player player) {
+    /** One Codex book: open, or greyed with its unlock hint (a Manager icon by material, else its own picture). */
+    private void book(List<Entry> out, int row, String label, Material material, JournalIcon picture, boolean open,
+                      String hint, String about, Runnable action, Player player) {
         if (open) {
+            List<String> lore = withClick(wrap(about, "§7"), "§eClick to open");
             out.add(new Entry(row, false, label, Ink.INK,
-                    icon(material, "§d" + label, withClick(wrap(about, "§7"), "§eClick to open"), true),
+                    picture != null ? picture.item("§d" + label, lore) : icon(material, "§d" + label, lore, true),
                     action, false, false));
             return;
         }
@@ -728,7 +850,8 @@ public final class JournalMenu {
         lore.add("");
         lore.addAll(wrap(hint == null ? "§7Not open yet." : hint, "§7"));
         out.add(new Entry(row, false, label, Ink.FADED,
-                ManagerIcons.locked(icon(Material.GRAY_DYE, "§8" + label, lore, true), material),
+                picture != null ? picture.locked("§8" + label, lore)
+                        : ManagerIcons.locked(icon(Material.GRAY_DYE, "§8" + label, lore, true), material),
                 () -> locked(player, hint), false, false));
     }
 
@@ -802,8 +925,7 @@ public final class JournalMenu {
                 continue;
             }
             out.add(new Entry(row++, right, cmd.label(), Ink.INK,
-                    icon(cmd.icon(), "§f" + cmd.label(), withClick(wrap(cmd.about(), "§7"),
-                            "§eClick §8· /" + cmd.command()), false),
+                    cmd.item("§f" + cmd.label(), withClick(wrap(cmd.about(), "§7"), "§eClick §8· /" + cmd.command())),
                     () -> command(player, cmd.command()), false, false));
         }
     }
@@ -876,6 +998,141 @@ public final class JournalMenu {
         if (hint != null && !hint.isBlank()) {
             player.sendMessage(hint);
         }
+    }
+
+    /* =========================================================
+     * Showing the way
+     * ========================================================= */
+
+    /** Beyond this the light stops short; the compass carries the rest. */
+    private static final double WAY_REACH = 24.0;
+
+    /** True when {@code target} is in the player's world and further than a step away. */
+    private static boolean canShowWay(Player player, Location target) {
+        return target != null && target.getWorld() != null && target.getWorld().equals(player.getWorld())
+                && target.distanceSquared(player.getLocation()) > 9.0;
+    }
+
+    /**
+     * Closes the book and points the way: a comet of light runs out from the player's eyes toward {@code target}
+     * (only they see it), with a chime and the distance on the action bar. Close targets get a ring where they stand.
+     */
+    private static void showWay(Player player, Location target, String name) {
+        player.closeInventory();
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null || !canShowWay(player, target)) {
+            return;
+        }
+        Location eye = player.getEyeLocation();
+        Vector to = target.clone().add(0, 1.2, 0).toVector().subtract(eye.toVector());
+        double length = to.length();
+        Vector dir = to.clone().normalize();
+        double reach = Math.min(length - 0.8, WAY_REACH);
+        Location feet = player.getLocation();
+        double dx = target.getX() - feet.getX();
+        double dz = target.getZ() - feet.getZ();
+        long metres = Math.round(Math.sqrt(dx * dx + dz * dz));
+        String plain = name == null ? "" : name.replaceAll("§.", "").trim();
+        player.playSound(feet, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.5f);
+        player.playSound(feet, Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.3f);
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                "➜ " + (plain.isEmpty() ? "" : plain + " · ") + metres + " m " + compassWord(dx, dz),
+                net.kyori.adventure.text.format.NamedTextColor.GOLD));
+        Particle.DustOptions tail = new Particle.DustOptions(Color.fromRGB(255, 206, 96), 0.9f);
+        new BukkitRunnable() {
+            private int tick;
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || !eye.getWorld().equals(player.getWorld()) || tick > 20) {
+                    cancel();
+                    return;
+                }
+                double head = 1.6 + tick * 1.2;
+                for (int k = 0; k < 4; k++) {
+                    double d = head - k * 0.5;
+                    if (d < 1.2 || d > reach) {
+                        continue;
+                    }
+                    Location at = eye.clone().add(dir.clone().multiply(d)).subtract(0, 0.3, 0);
+                    if (k == 0) {
+                        player.spawnParticle(Particle.END_ROD, at, 1, 0, 0, 0, 0);
+                    } else {
+                        player.spawnParticle(Particle.DUST, at, 1, 0, 0, 0, 0, tail);
+                    }
+                }
+                if (head - 1.5 > reach && length <= WAY_REACH + 1.0) {
+                    // the comet arrived: a quiet ring where the target stands, then done
+                    for (int i = 0; i < 12; i++) {
+                        double angle = Math.PI * 2 * i / 12;
+                        player.spawnParticle(Particle.END_ROD, target.clone().add(Math.cos(angle) * 0.8, 0.2,
+                                Math.sin(angle) * 0.8), 1, 0, 0, 0, 0);
+                    }
+                    cancel();
+                    return;
+                }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 2L, 1L);
+    }
+
+    /** "Where: Corin · 42 m north-east" for a tooltip, or null when the quest names no place. */
+    private static String whereLine(Player player, String where, Location target) {
+        String name = where == null || where.isBlank() ? null : where;
+        if (target == null || target.getWorld() == null) {
+            return name == null ? null : "§7Where: §f" + name;
+        }
+        if (!target.getWorld().equals(player.getWorld())) {
+            return "§7Where: §f" + (name == null ? "elsewhere" : name) + " §8· §7another area";
+        }
+        Location feet = player.getLocation();
+        double dx = target.getX() - feet.getX();
+        double dz = target.getZ() - feet.getZ();
+        long metres = Math.round(Math.sqrt(dx * dx + dz * dz));
+        String lead = "§7Where: " + (name == null ? "" : "§f" + name + " §8· ");
+        return metres < 4 ? lead + "§aright here" : lead + "§e" + metres + " m §7" + compassWord(dx, dz);
+    }
+
+    /** One of eight compass words for a horizontal offset (north is -Z). */
+    static String compassWord(double dx, double dz) {
+        double degrees = Math.toDegrees(Math.atan2(dx, -dz));
+        int octant = (int) Math.floorMod(Math.round(degrees / 45.0), 8L);
+        return switch (octant) {
+            case 0 -> "north";
+            case 1 -> "north-east";
+            case 2 -> "east";
+            case 3 -> "south-east";
+            case 4 -> "south";
+            case 5 -> "south-west";
+            case 6 -> "west";
+            default -> "north-west";
+        };
+    }
+
+    /**
+     * Each page fills from the top in the order its lines were asked for, so a line this server or player does
+     * not have leaves no gap (Atlas without Teleports, Today without a second line). Never more than four a page.
+     */
+    private static List<Entry> pack(List<Entry> entries) {
+        List<Entry> out = new ArrayList<>(entries.size());
+        for (boolean right : new boolean[] {false, true}) {
+            List<Entry> side = new ArrayList<>();
+            for (Entry entry : entries) {
+                if (entry.right() == right) {
+                    side.add(entry);
+                }
+            }
+            side.sort(Comparator.comparingInt(Entry::row));
+            int row = 1;
+            for (Entry entry : side) {
+                if (row > 4) {
+                    break;
+                }
+                out.add(new Entry(row++, right, entry.label(), entry.ink(), entry.icon(), entry.action(),
+                        entry.strong(), entry.pulse()));
+            }
+        }
+        return out;
     }
 
     /* =========================================================

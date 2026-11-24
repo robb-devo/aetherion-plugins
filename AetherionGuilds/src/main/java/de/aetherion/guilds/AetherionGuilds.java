@@ -448,7 +448,7 @@ public final class AetherionGuilds extends JavaPlugin {
         }
 
         // Core (island backend) lands arrivals on their island and respawns them there.
-        islandAccess = new de.aetherion.guilds.island.IslandAccessImpl(personal, guilds, islands);
+        islandAccess = new de.aetherion.guilds.island.IslandAccessImpl(personal, guilds, islands).attachBar(islandBar);
         de.aetherion.core.api.AetherServices.registerIslands(islandAccess);
 
         getLogger().info("AetherionGuilds enabled. Private + guild island worlds, quarries tick while the server runs."

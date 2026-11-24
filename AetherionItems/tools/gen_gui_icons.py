@@ -26,8 +26,8 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from px_art import (AMBER, BONE, CRIMSON, EMBER, GOLD, STEEL, Px, edge, grow, hx, mix, ramp,  # noqa: E402
-                    shift, shrink)
+from px_art import (AMBER, ASH, BONE, CRIMSON, EMBER, EMERALD, GOLD, ROSE, SKY, SLATE, STEEL, TEAL, Px, edge,  # noqa: E402
+                    grow, hx, mix, ramp, shift, shrink)
 
 N = 16
 OUT = hx('#0a090e')
@@ -498,6 +498,337 @@ def i_fish():
     return p.finish(a[0])
 
 
+# ----------------------------------------------------------------------------- the journal's own lines
+
+def note(p, rmp=PAPER, x0=3, y0=1, x1=12, y1=14):
+    """A note sheet with its top-right corner folded down; returns the sheet mask."""
+    cut = poly(p, [(x1 - 2, y0), (x1 + 1, y0), (x1 + 1, y0 + 3)])
+    sheet = rect(p, x0, y0, x1, y1) & ~cut
+    p.body(sheet, rmp, soft=True)
+    p.put(poly(p, [(x1 - 2, y0), (x1 - 2, y0 + 3), (x1 + 1, y0 + 3)]), rmp[2])
+    return sheet
+
+
+def i_quest():
+    p = Icon()
+    note(p)
+    p.put(rect(p, 7, 3, 8, 9), AMBER[3])
+    p.put(rect(p, 7, 3, 7, 8), AMBER[4])
+    p.put(rect(p, 7, 11, 8, 12), AMBER[3])
+    p.at(7, 11, AMBER[4])
+    p.put(rect(p, 7, 10, 8, 10) | rect(p, 9, 4, 9, 9) | rect(p, 9, 12, 9, 12), AMBER[1])
+    return p.finish(PAPER[0])
+
+
+def i_quest_ready():
+    p = Icon()
+    note(p)
+    tick = line(p, 4, 8, 7, 11, 2) | line(p, 7, 11, 11, 4, 2)
+    p.put(tick, EMERALD[3])
+    p.put(line(p, 4, 8, 7, 11) | line(p, 7, 11, 11, 4), EMERALD[4])
+    return p.finish(PAPER[0])
+
+
+def i_quest_none():
+    p = Icon()
+    note(p, ASH)
+    p.sprite(['.###.', '#...#', '...#.', '..#..', '.....', '..#..'], {'#': ASH[1]}, 5, 4)
+    return p.finish(ASH[0])
+
+
+def i_chapter():
+    p = Icon()
+    ribbon = poly(p, [(4, 0.5), (10, 0.5), (10, 14.5), (7, 11.5), (4, 14.5)])
+    p.body(ribbon, CRIMSON)
+    p.put(rect(p, 5, 1, 5, 11), CRIMSON[4])
+    for x, y in ((12, 1), (13, 2), (12, 3), (11, 2)):
+        p.at(x, y, GOLD[4])
+    p.at(12, 2, (255, 255, 255))
+    p.at(13, 6, GOLD[5])
+    return p.finish(CRIMSON[0])
+
+
+def i_claim():
+    p, a = Icon(), accent('#b294e6')
+    box = rect(p, 2, 7, 13, 14)
+    p.body(box, a)
+    lid = rect(p, 1, 5, 14, 7)
+    p.body(lid, a, soft=True)
+    p.put(rect(p, 7, 5, 8, 14), GOLD[3])
+    p.put(rect(p, 7, 5, 7, 14), GOLD[4])
+    bow = poly(p, [(7.5, 5), (3.5, 1.5), (3.5, 4.5)]) | poly(p, [(8.5, 5), (12.5, 1.5), (12.5, 4.5)])
+    p.put(bow, GOLD[3])
+    p.put(bow & (p.g.y < 3.5), GOLD[4])
+    return p.finish(a[0])
+
+
+def i_island_goal():
+    p, a = Icon(), ACC['island']
+    under = poly(p, [(1, 10), (15, 10), (11, 13.5), (8, 15.5), (5, 13.5)])
+    p.body(under, DIRT)
+    top = rect(p, 1, 9, 14, 10)
+    p.body(top, GRASS, soft=True)
+    p.put(rect(p, 5, 2, 5, 9), WOOD[2])
+    flag = poly(p, [(6, 1.5), (13, 3.5), (6, 6.5)])
+    p.body(flag, GOLD, soft=True)
+    p.put(flag & (p.g.y < 3.2), GOLD[5])
+    return p.finish(a[0])
+
+
+def i_isle_menu():
+    p = Icon()
+    sheet = rect(p, 1, 2, 14, 13)
+    p.body(sheet, SKY, soft=True)
+    land = disc(p, 7, 7.5, 3.6) | disc(p, 10, 9, 2.2)
+    p.body(land, GRASS, soft=True)
+    p.put(rect(p, 6, 6, 7, 7), GRASS[5])
+    for x in range(1, 15, 3):
+        p.put(rect(p, x, 1, x + 1, 1) | rect(p, x, 14, x + 1, 14), PAPER[3])
+    x = line(p, 9, 6, 11, 8) | line(p, 11, 6, 9, 8)
+    p.put(x, CRIMSON[3])
+    return p.finish(SKY[0])
+
+
+def i_talk_log():
+    p = Icon()
+    bubble = rect(p, 1, 2, 14, 10) & ~(rect(p, 1, 2, 1, 2) | rect(p, 14, 2, 14, 2) | rect(p, 1, 10, 1, 10)
+                                         | rect(p, 14, 10, 14, 10))
+    bubble |= poly(p, [(4, 10.5), (8, 10.5), (3.5, 14.5)])
+    p.body(bubble, PAPER, soft=True)
+    for x in (4, 7, 10):
+        p.put(rect(p, x, 6, x + 1, 6), PAPER[1])
+    return p.finish(PAPER[0])
+
+
+def i_guide():
+    p = Icon()
+    p.put(rect(p, 7, 3, 8, 15), WOOD[2])
+    p.put(rect(p, 7, 3, 7, 15), WOOD[3])
+    right = poly(p, [(2, 2), (12, 2), (14.5, 4.5), (12, 7), (2, 7)])
+    p.body(right, GOLD, soft=True)
+    left = poly(p, [(3.5, 8), (13, 8), (13, 12), (3.5, 12), (1, 10)])
+    p.body(left, WOOD, soft=True)
+    p.put(rect(p, 4, 4, 10, 4), GOLD[1])
+    p.put(rect(p, 5, 10, 11, 10), WOOD[1])
+    return p.finish(WOOD[0])
+
+
+def i_dungeons():
+    p = Icon()
+    arch = rect(p, 1, 4, 14, 15) | disc(p, 8, 5.5, 6.6)
+    p.body(arch, STONE)
+    door = (rect(p, 4, 7, 11, 15) | disc(p, 8, 7.5, 3.6)) & (p.g.y < 15.5)
+    p.put(door, SLATE[1])
+    bars = door & ((np.mod(p.g.x, 2.5) < 1.0) | (np.abs(p.g.y - 10.5) < 0.5))
+    p.put(bars, STEEL[3])
+    p.put(bars & (p.g.y < 9), STEEL[4])
+    p.at(8, 2, STONE[5])
+    return p.finish(STONE[0])
+
+
+def i_exile():
+    p = Icon()
+    g = p.g
+    back = (g.dist(5, 6) < 4.4) & (g.dist(5, 6) > 2.2)
+    front = (g.dist(10.5, 10) < 4.4) & (g.dist(10.5, 10) > 2.2)
+    p.body(back, STEEL)
+    p.erase(grow(front) & back & (g.x > 6.5))
+    p.body(front, TEAL)
+    p.put(front & (g.y < 8.2), TEAL[5])
+    p.put(back & (g.y < 3.2), STEEL[5])
+    # the broken end: the back link is cut open on its far side
+    p.erase(rect(p, 0, 5, 1, 7))
+    return p.finish(SLATE[0])
+
+
+def i_capital():
+    p, a = Icon(), accent('#9d86cf')
+    tower = rect(p, 3, 6, 12, 15)
+    p.body(tower, STONE)
+    for x in (3, 6, 9, 12):
+        p.body(rect(p, x, 4, x + 1 if x < 12 else 12, 5), STONE, soft=True)
+    p.put(rect(p, 7, 10, 8, 15), SLATE[1])
+    p.put(rect(p, 7, 10, 8, 10), SLATE[2])
+    p.put(rect(p, 7, 0, 7, 4), WOOD[2])
+    flag = poly(p, [(8, 0.5), (13.5, 1.8), (8, 3.5)])
+    p.put(flag, a[3])
+    p.put(flag & (p.g.y < 1.6), a[4])
+    return p.finish(STONE[0])
+
+
+def i_grove():
+    p = Icon()
+    p.put(rect(p, 7, 9, 8, 15), WOOD[2])
+    p.put(rect(p, 7, 9, 7, 15), WOOD[3])
+    crown = disc(p, 8, 6, 5.6) | disc(p, 4.5, 8.5, 3.2) | disc(p, 11.5, 8.5, 3.2)
+    p.body(crown, LEAF)
+    p.put(disc(p, 6, 4, 1.6) & crown, LEAF[5])
+    return p.finish(LEAF[0])
+
+
+def i_mine_isle():
+    p = Icon()
+    ore = disc(p, 5, 6, 2.6) | disc(p, 9, 5, 2.8) | disc(p, 12, 6.5, 2.0)
+    p.body(ore, GOLD, soft=True)
+    cart = poly(p, [(1, 7), (15, 7), (13, 13), (3, 13)])
+    p.body(cart, STEEL)
+    p.put(rect(p, 2, 8, 13, 8), STEEL[5])
+    for cx in (5, 11):
+        p.put(disc(p, cx, 13.8, 1.7), SLATE[2])
+        p.at(cx, 13, STEEL[4])
+    return p.finish(STEEL[0])
+
+
+def i_origin():
+    p = Icon()
+    stem = rect(p, 6, 8, 9, 15)
+    p.body(stem, BONE, soft=True)
+    cap = p.g.ellipse(8, 7, 7.2, 5.2) & (p.g.y < 8.5)
+    p.body(cap, TEAL)
+    for x, y in ((5, 4), (10, 3), (8, 6), (12, 6), (3, 7)):
+        p.at(x, y, TEAL[5])
+    p.put(rect(p, 5, 8, 10, 8), TEAL[1])
+    return p.finish(TEAL[0])
+
+
+def i_bosses():
+    p = Icon()
+    horns = poly(p, [(4, 6), (0.5, 0.5), (2.5, 6.5)]) | poly(p, [(12, 6), (15.5, 0.5), (13.5, 6.5)])
+    p.put(horns, SLATE[4])
+    p.put(horns & (p.g.y < 3), BONE[4])
+    skull = disc(p, 8, 7.5, 5.4) | rect(p, 5, 11, 10, 14)
+    p.body(skull, BONE)
+    for x in (5, 9):
+        p.put(rect(p, x, 7, x + 1, 9), SLATE[1])
+        p.at(x, 8, CRIMSON[4])
+    p.put(rect(p, 7, 10, 8, 10), SLATE[2])
+    p.put(rect(p, 6, 13, 6, 14) | rect(p, 8, 13, 8, 14), BONE[2])
+    return p.finish(BONE[0])
+
+
+def i_milestones():
+    p = Icon()
+    cup = poly(p, [(3, 1), (13, 1), (12, 6), (9.5, 8.5), (6.5, 8.5), (4, 6)])
+    p.body(cup, GOLD)
+    handles = (disc(p, 3, 4, 2.4) & ~disc(p, 3, 4, 1.2)) | (disc(p, 13, 4, 2.4) & ~disc(p, 13, 4, 1.2))
+    p.put(handles & ~cup, GOLD[2])
+    p.put(rect(p, 7, 9, 8, 11), GOLD[2])
+    base = rect(p, 4, 12, 11, 14)
+    p.body(base, WOOD, soft=True)
+    p.put(rect(p, 6, 13, 9, 13), GOLD[4])
+    p.at(6, 3, GOLD[5])
+    return p.finish(GOLD[0])
+
+
+def i_aetherlex():
+    p, a = Icon(), ACC['pets']
+    egg = p.g.ellipse(8, 9, 5.0, 6.3)
+    p.body(egg, ramp('#3a2620', '#7a5a48', '#bfa088', '#ecdcc8', '#fff4e6', '#ffffff'))
+    for x, y, r in ((6, 7, 1.3), (10, 10, 1.6), (7, 12, 1.0), (10, 5, 0.9)):
+        p.put(disc(p, x, y, r) & egg, a[3])
+    return p.finish(a[0])
+
+
+def i_party():
+    p = Icon()
+    for cx, rmp in ((3.5, SKY), (12.5, CRIMSON)):
+        p.body(p.g.ellipse(cx, 13.5, 3.2, 3.4) & (p.g.y < 15.5), rmp)
+        p.body(disc(p, cx, 7.5, 2.1), BONE, soft=True)
+    front = p.g.ellipse(8, 13.5, 3.6, 4.0) & (p.g.y < 15.5)
+    head = disc(p, 8, 5.5, 2.6)
+    p.erase(grow(front | head))
+    p.body(front, GOLD)
+    p.body(head, BONE, soft=True)
+    p.at(7, 4, BONE[5])
+    return p.finish(SLATE[0])
+
+
+def i_friends():
+    p = Icon()
+    heart = disc(p, 5, 5.5, 3.6) | disc(p, 11, 5.5, 3.6) | poly(p, [(1.5, 6.5), (14.5, 6.5), (8, 14.5)])
+    p.body(heart, ROSE)
+    p.put(disc(p, 4.5, 4.5, 1.3), ROSE[5])
+    return p.finish(ROSE[0])
+
+
+def i_language():
+    p = Icon()
+    globe = disc(p, 8, 8, 6.4)
+    p.body(globe, SKY)
+    land = (disc(p, 6, 6, 2.6) | disc(p, 10.5, 10.5, 2.4) | disc(p, 4.5, 10.5, 1.3)) & globe
+    p.body(land, EMERALD, soft=True)
+    p.put(globe & (np.abs(p.g.y - 8) < 0.5), SKY[5])
+    p.put(globe & (np.abs(p.g.x - 8) < 0.5), SKY[4])
+    return p.finish(SKY[0])
+
+
+def i_talk_mode():
+    p = Icon()
+    vane = poly(p, [(14.5, 0.5), (12, 6.5), (6, 12.5), (4.5, 11), (5.5, 6.5), (10, 2)])
+    p.body(vane, BONE, soft=True)
+    p.put(line(p, 13, 2, 5, 11), BONE[2])
+    for x, y in ((11, 3), (9, 5), (7, 7)):
+        p.at(x, y, BONE[5])
+    p.put(line(p, 4, 12, 2, 14, 2), GOLD[3])
+    p.at(1, 15, SLATE[1])
+    return p.finish(BONE[0])
+
+
+def i_report():
+    p = Icon()
+    body = p.g.ellipse(8, 9.5, 4.2, 5.2)
+    legs = line(p, 1, 6, 4, 8) | line(p, 1, 10, 4, 10) | line(p, 1, 14, 4, 12) | \
+        line(p, 15, 6, 12, 8) | line(p, 15, 10, 12, 10) | line(p, 15, 14, 12, 12)
+    p.put(legs & ~body, SLATE[2])
+    p.body(body, CRIMSON)
+    p.put(body & (np.abs(p.g.x - 8) < 0.5) & (p.g.y > 6.5), CRIMSON[1])
+    head = disc(p, 8, 3.8, 2.4)
+    p.body(head, SLATE, soft=True)
+    p.put(line(p, 6, 2, 4, 0) | line(p, 10, 2, 12, 0), SLATE[3])
+    for x, y in ((6, 8), (10, 8), (6, 12), (10, 12)):
+        p.at(x, y, SLATE[1])
+    return p.finish(CRIMSON[0])
+
+
+def i_checklist():
+    p = Icon()
+    board = rect(p, 2, 2, 13, 15)
+    p.body(board, WOOD)
+    sheet = rect(p, 3, 4, 12, 14)
+    p.put(sheet, PAPER[4])
+    p.put(rect(p, 5, 1, 10, 3), STEEL[4])
+    p.put(rect(p, 5, 3, 10, 3), STEEL[2])
+    for y in (6, 9, 12):
+        p.put(line(p, 4, y, 5, y + 1) | line(p, 5, y + 1, 7, y - 1), EMERALD[3])
+        p.put(rect(p, 8, y, 11, y), PAPER[2])
+    return p.finish(WOOD[0])
+
+
+def i_raid_ban():
+    p = Icon()
+    shield = poly(p, [(2, 1), (14, 1), (14, 8), (8, 15.5), (2, 8)])
+    p.body(shield, STEEL)
+    inner = poly(p, [(4, 3), (12, 3), (12, 8), (8, 13), (4, 8)])
+    p.put(inner, SLATE[2])
+    p.put(inner & (np.mod(p.g.x, 3) < 1.0), STEEL[4])
+    p.put(line(p, 4, 12, 12, 3, 2) & shield, CRIMSON[3])
+    return p.finish(STEEL[0])
+
+
+# The Aether Journal's lines (JournalIcon.java, same order: append only): paper, open at 7800 + i, locked at 7850 + i.
+JOURNAL = (
+    ('j_quest', i_quest), ('j_quest_ready', i_quest_ready), ('j_quest_none', i_quest_none),
+    ('j_chapter', i_chapter), ('j_claim', i_claim), ('j_island_goal', i_island_goal), ('j_isle_menu', i_isle_menu),
+    ('j_talk_log', i_talk_log), ('j_guide', i_guide), ('j_dungeons', i_dungeons), ('j_exile', i_exile),
+    ('j_capital', i_capital), ('j_grove', i_grove), ('j_mine_isle', i_mine_isle), ('j_origin', i_origin),
+    ('j_bosses', i_bosses), ('j_milestones', i_milestones), ('j_aetherlex', i_aetherlex), ('j_party', i_party),
+    ('j_friends', i_friends), ('j_language', i_language), ('j_talk_mode', i_talk_mode), ('j_report', i_report),
+    ('j_checklist', i_checklist), ('j_raid_ban', i_raid_ban),
+)
+JOURNAL_OPEN = 7800
+JOURNAL_LOCKED = 7850
+
+
 def empty():
     return Image.new('RGBA', (N, N), (0, 0, 0, 0))
 
@@ -624,6 +955,10 @@ def main(root, preview=None):
     for i, tab in enumerate(TABS):
         for suffix, base, material, look in VARIANTS:
             write('%s_%s' % (tab, suffix), look(images[tab]), base + i, material)
+    for i, (name, fn) in enumerate(JOURNAL):
+        im = render(fn)
+        write(name, im, JOURNAL_OPEN + i, 'paper')
+        write(name + '_locked', locked(im), JOURNAL_LOCKED + i, 'paper')
     empty().save(os.path.join(tex, 'empty.png'), optimize=True)
     with open(os.path.join(mdl, 'empty.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump({'parent': 'minecraft:item/generated', 'textures': {'layer0': 'aetherion:item/gui/empty'}}, f, indent=2)
