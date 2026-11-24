@@ -57,23 +57,25 @@ Helm agent and lacked the `aetherion-armor` datapack the other backends carry; n
 - Live jar hashes, deploy times and backups are logged per deploy in `aetherion-ops/docs/LIVE_STATE_*.md` on Robb's PC
   (newest on top); the table below is the summary.
 
-## Live plugin builds (sha256 prefix, 2026-11-23 22:55 CET)
+## Live plugin builds (sha256 prefix, 2026-11-24 00:17 CET)
 
 Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET) put `main` `f069314`
 (PRs #159 to #187) on every backend. The round of 21:21-21:22 CET added `6f592a1` (#189: A-58, A-54/A-55, A-59,
-A-13: Core, Items, Quests, BossEngine, SamuraiBoss), and Quests followed with `6b2c6f9` (#190) at 22:55 CET. **`main` equals live**;
-the one exception is the hub server's own Hub jar.
+A-13: Core, Items, Quests, BossEngine, SamuraiBoss), and Quests followed with `6b2c6f9` (#190) at 22:55 CET. mmo-i alone got
+`969d94b` (#192, Aether Journal) on 2026-11-24 00:17 CET: Core, Items, Quests, Guilds, with `journal.enabled: true` patched into
+its Items config. **`main` equals live** on mmo-i; the other backends keep `6b2c6f9` on purpose until Robb has tested the
+journal, and the hub server keeps its own Hub jar.
 
 | Plugin | Live build | Backends |
 |---|---|---|
-| Core | `8709799c` | all six |
-| Items | `2299eb85` | mmo-r, mmo-d, mmo-c, mmo-i, mmo-m (economy.yml patched to v4 on start, `economy.yml.v3.bak` kept) |
-| Quests | `d03b742d` | every mmo backend (live configs untouched; mmo-i had paged talk + cards switched on before) |
+| Core | `8d9c9a0f` / `8709799c` | mmo-i (#192) / the other five |
+| Items | `40a35772` / `2299eb85` | mmo-i (#192, `journal.enabled: true`) / mmo-r, mmo-d, mmo-c, mmo-m (economy.yml patched to v4 on start, `economy.yml.v3.bak` kept) |
+| Quests | `463f936a` / `d03b742d` | mmo-i (#192; paged talk + cards switched on there) / the other mmo backends (live configs untouched) |
 | BossEngine | `50cbbc16` | hub, mmo-r, mmo-d, mmo-c (no LuckPerms player group grants `*` or `helios.*`) |
 | AetherMobs | `68472a44` | every mmo backend |
 | Mining | `7646c17a` | mmo-r, mmo-c, mmo-m |
 | Farming / Fishing / Foraging | `065a45f1` / `4761955f` / `d3949dac` | mmo-r, mmo-c |
-| Guilds | `25b1b93c` | mmo-i only (parked on mmo-r and mmo-d) |
+| Guilds | `4788eac6` | mmo-i only, #192 (parked on mmo-r and mmo-d) |
 | Hub | `0fb9f70c` | mmo-r; **hub keeps `d1a097e7` (10-05)** |
 | SamuraiBoss | `16210290` | mmo-r (`arena.bell-challenge: true` patched live; no dojo is built there right now, see below) |
 | Dungeons, Beta, Gnomon, Pit | `main` of 11-16 (unchanged since) | as below |
@@ -84,8 +86,11 @@ Farming, Fishing on mmo-r and mmo-c; Dungeons and Beta on mmo-r and mmo-d; Guild
 Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmProxy` on the proxy.
 
 Backups of the replaced jars and configs: `backups/beta-a04-a61-20261123-190456` and
-`backups/beta-a54-a59-20261123-211821` (with `quests-190` for the #190 swap; rollback scripts inside and in the matching staging folder). Nothing merged is
-waiting for a deploy.
+`backups/beta-a54-a59-20261123-211821` (with `quests-190` for the #190 swap; rollback scripts inside and in the matching staging folder),
+`backups/journal-mmoi-20261124-0010` (the replaced mmo-i jars and Items config; the old pack sits next to the served zip as
+`*.bak-pre-journal-*`; `rollback.sh` in the matching staging folder).
+Waiting for a deploy: #192 on the other backends, only after Robb's test (Core on every backend that gets Items, Quests, Hub,
+Farming or Guilds; the switch stays off there unless he wants the journal network-wide).
 
 Live look of 2026-11-23 (things the repo does not show):
 - mmo-r has **no Samurai dojo** (both were removed with `/samurai remove` on 10-31; boot says "0 Dojo(s)"). The temple
@@ -111,7 +116,8 @@ Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Resource pack (2026-10-21)
 
-**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `52784940`.
+**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `2f055c74` (2026-11-24 00:17 CET, journal art
+added, was `03ab6779`).
 The Velocity plugin `AetherionProxy` offers it when a player first reaches a backend (required, hash read
 from the served zip); no backend advertises a pack any more (`resource-pack=` empty everywhere), so moving
 between hub, mmo-r, mmo-d, mmo-c and mmo-i never reloads resources. The hub has the full pack too: vanilla
@@ -433,7 +439,7 @@ its live config turns them on (first mmo-i; the rest of the network after Robb's
   toasts, first chain / Hub founded / Compressed Cobble / stage-ups get big cards, ship, factory goals, upgrades and
   first-pick part notes are toasts, the hand press and "built" lines go to the action bar.
 
-## Aether Journal, phase 1 (2026-11-23, cloud session, PR #192, switch off by default)
+## Aether Journal, phase 1 (2026-11-23, cloud session, PR #192, switch off by default, on for mmo-i since 2026-11-24)
 
 Robb's ask: the Manager is too overloaded; make it one clean book that grows with the player. Backup of the old
 Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Concept: the Claude Doc linked in the PR.
@@ -450,8 +456,10 @@ Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Conc
   switch is on. Sinks: `LangPack`, `TalkText.fill`, `DialogueRuntime.fill`, `UnlockToast`, `ProgressionService.hint`;
   other Manager strings are wrapped where they are sent. New Manager-pointing texts: write them as today, the
   rewrite follows, and keep JournalText.TILES in step with the chapters in JournalMenu.
-- Deploy: Core on every backend that gets Items, Quests, Hub, Farming or Guilds (they call JournalText), served pack
-  with the journal art, then patch `journal: enabled: true` into the live Items config, mmo-i first.
+- Live on mmo-i since 2026-11-24 00:17 CET (main `969d94b`, one restart, log clean; backup and staging
+  `journal-mmoi-20261124-0010` with `rollback.sh`; pack `03ab6779` -> `2f055c74`, only the 18 journal files added).
+  Rest of the network only after Robb's test: Core on every backend that gets Items, Quests, Hub, Farming or Guilds
+  (they call JournalText), the switch off there until he wants it.
 
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 
