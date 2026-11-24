@@ -1,5 +1,7 @@
 package de.aetherion.hub.origin;
 
+import de.aetherion.core.api.JournalText;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -53,10 +55,20 @@ public final class OriginConfig {
         }
     }
 
+    /** {@link #blurb} reads as the journal while it is on ("Where the Aetherion Manager was born" names the book). */
     public record Landmark(String id, String name, String district, double[] at, double radius, Material icon, String blurb) {
+        @Override
+        public String blurb() {
+            return JournalText.t(blurb);
+        }
     }
 
+    /** {@link #blurb} reads as the journal while it is on, like {@link Landmark#blurb}. */
     public record Waystone(String id, String name, String district, double[] stand, double[] cap, boolean sprout, String blurb) {
+        @Override
+        public String blurb() {
+            return JournalText.t(blurb);
+        }
     }
 
     public record Vista(String id, String name, double[] at, double radius) {
