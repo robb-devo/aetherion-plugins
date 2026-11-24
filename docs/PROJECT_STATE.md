@@ -460,6 +460,13 @@ Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Conc
   `journal-mmoi-20261124-0010` with `rollback.sh`; pack `03ab6779` -> `2f055c74`, only the 18 journal files added).
   Rest of the network only after Robb's test: Core on every backend that gets Items, Quests, Hub, Farming or Guilds
   (they call JournalText), the switch off there until he wants it.
+- Polish after Robb's first test (2026-11-24, PR "journal polish"): pages fill from the top (`JournalMenu.pack`, Atlas
+  without Teleports on non-Hub servers left row 1 empty); Today's first line is the quest's step as the quest bar says
+  it (`QuestProgressDisplay.step`, shared), with where and how far, and a click shows the way (a comet of light, only
+  the player sees it); without a quest it is the island's goal (`IslandAccess.nextGoal`, Guilds `IslandBar.goal`:
+  tour step or factory goal), else the guide's tips. Second line adds Codex rewards to claim. A sub-menu's Back turns
+  to the chapter the player came from (`AetherionManager.back`, `ManagerNav`). Every journal line has its own icon
+  (`menu/JournalIcon.java`: paper, CMD 7800 + i, locked 7850 + i; art in `gen_gui_icons.py` `JOURNAL`, append only).
 
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 

@@ -1,6 +1,7 @@
 package de.aetherion.core.api;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
@@ -21,5 +22,17 @@ public interface IslandAccess {
     /** True when the location is inside a personal or guild island world. */
     default boolean isIslandWorld(Location location) {
         return false;
+    }
+
+    /**
+     * What the player's own island wants next, as its status bar shows it: the tour step while the tour runs, else
+     * the next factory goal ({@code title}, {@code how}, goals {@code done} of {@code total}). Null without one.
+     */
+    default IslandGoal nextGoal(Player player) {
+        return null;
+    }
+
+    /** One island goal for the Aether Journal. {@code how} may be null; {@code total} 0 when there is no ladder. */
+    record IslandGoal(String title, String how, int done, int total) {
     }
 }

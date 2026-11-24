@@ -227,6 +227,7 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
             return List.of();
         }
         String trackedId = manager.getTrackedQuestId(player);
+        de.aetherion.quests.ui.QuestCompass compass = plugin.getQuestCompass();
         List<JournalQuest> out = new ArrayList<>();
         for (de.aetherion.quests.model.Quest quest : manager.getQuests()) {
             if (quest == null || quest.getId() == null) {
@@ -238,12 +239,33 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
                 continue;
             }
             boolean tracked = quest.getId().equals(trackedId);
+            boolean ready = state == de.aetherion.quests.model.QuestState.READY;
+            // Where it points: the compass follows the tracked quest; a finished one goes back to its turn-in NPC.
+            String where = null;
+            org.bukkit.Location target = null;
+            if (tracked && compass != null) {
+                target = compass.targetLocation(player);
+                String name = compass.targetName(player);
+                where = name == null || name.isBlank() ? null : name;
+            } else if (ready) {
+                QuestNPC npc = quest.hasTurnInNpc() ? QuestNPCRegistry.getNPC(quest.getTurnInNpcId()) : null;
+                if (npc == null) {
+                    npc = QuestNPCRegistry.findForQuest(quest);
+                }
+                if (npc != null) {
+                    where = npc.getName();
+                    target = compass == null ? null : compass.locationOf(npc);
+                }
+            }
             JournalQuest line = new JournalQuest(
                     quest.getId(),
                     de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle()),
                     de.aetherion.quests.lang.LangPack.questDescription(player, quest.getId(), quest.getDescription()),
-                    state == de.aetherion.quests.model.QuestState.READY,
-                    tracked);
+                    ready,
+                    tracked,
+                    QuestProgressDisplay.step(player, manager, quest).line(),
+                    where,
+                    target);
             if (tracked) {
                 out.add(0, line);
             } else {

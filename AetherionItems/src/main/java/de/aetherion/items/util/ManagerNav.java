@@ -37,7 +37,7 @@ public final class ManagerNav {
         }
         AetherionItems plugin = AetherionItems.getInstance();
         if (plugin != null && plugin.getManager() != null) {
-            plugin.getManager().open(player);
+            plugin.getManager().back(player);
             return;
         }
         player.closeInventory();
@@ -60,7 +60,14 @@ public final class ManagerNav {
                 player.closeInventory();
                 return;
             }
-            manager.getClass().getMethod("open", Player.class).invoke(manager, player);
+            // Back to the chapter the player came from (the journal); older Items builds only know open.
+            java.lang.reflect.Method back;
+            try {
+                back = manager.getClass().getMethod("back", Player.class);
+            } catch (NoSuchMethodException old) {
+                back = manager.getClass().getMethod("open", Player.class);
+            }
+            back.invoke(manager, player);
         } catch (ReflectiveOperationException | LinkageError ignored) {
             player.closeInventory();
         }

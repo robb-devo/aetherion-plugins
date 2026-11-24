@@ -108,35 +108,48 @@ public class QuestProgressDisplay {
             return;
         }
 
-        QuestState state = questManager.getQuestState(player, quest);
-
         BossBar bar = getOrCreateBar(player);
         BarSync.style(bar, BarStyle.SOLID);
         BarSync.visible(bar, true);
 
+        Step step = step(player, questManager, quest);
+        String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
+        String line = step.line().isEmpty() ? "§f" + title : "§f" + title + " §8• " + step.line();
+        paint(player, bar, line, step.progress(), step.color());
+
+    }
+
+    /** What the quest bar shows after the title, how full the bar is and its colour. */
+    public record Step(String line, double progress, BarColor color) {
+    }
+
+    /**
+     * The step {@code quest} is on for {@code player}, exactly as the quest bar shows it: objectives with their
+     * counts, "Return to …" once it is ready, the guided specials' own steps. Also read by the Aether Journal.
+     */
+    public static Step step(Player player, QuestManager questManager, Quest quest) {
+
+        QuestState state = questManager.getQuestState(player, quest);
+
         if (state == QuestState.READY) {
             String npcName = turnInName(quest);
-            String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
             String ret = de.aetherion.quests.lang.LangPack.progress(player, "return_to", "Return to {0}");
             try {
                 ret = java.text.MessageFormat.format(ret, npcName);
             } catch (IllegalArgumentException ignored) {
                 ret = "Return to " + npcName;
             }
-            paint(player, bar, "§f" + title + " §8• §a" + ret, 1.0, BarColor.GREEN);
-            return;
+            return new Step("§a" + ret, 1.0, BarColor.GREEN);
         }
 
         // Pocket Zoo: show one step at a time (catch → talk to Lark → equip).
         if ("pocket_zoo".equalsIgnoreCase(quest.getId())) {
-            showPocketZooProgress(player, questManager, quest, bar);
-            return;
+            return pocketZooStep(player, questManager, quest);
         }
 
         // Border Rites: vial first → altar arrow + spawn prompt.
         if ("border_rites".equalsIgnoreCase(quest.getId())) {
-            showBorderRitesProgress(player, questManager, quest, bar);
-            return;
+            return borderRitesStep(player, questManager, quest);
         }
 
         int totalRequired = 0;
@@ -180,10 +193,8 @@ public class QuestProgressDisplay {
                 ? 1.0
                 : Math.min(1.0, Math.max(0.0, (double) totalProgress / totalRequired));
 
-        String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
-        String line = totalRequired <= 0 ? "§f" + title : "§f" + title + " §8• " + objectiveText;
         BarColor color = progress < 0.34 ? BarColor.RED : progress < 0.67 ? BarColor.YELLOW : BarColor.GREEN;
-        paint(player, bar, line, progress, color);
+        return new Step(totalRequired <= 0 ? "" : objectiveText.toString(), progress, color);
 
     }
 
@@ -202,14 +213,12 @@ public class QuestProgressDisplay {
     }
 
 
-    private static void showBorderRitesProgress(
+    private static Step borderRitesStep(
             Player player,
             QuestManager questManager,
-            Quest quest,
-            BossBar bar
+            Quest quest
     ) {
         int riteProgress = questManager.getProgress(player, quest.getId(), "BORDERLANDS_RITE");
-        String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
         if (riteProgress >= 1) {
             String ret = de.aetherion.quests.lang.LangPack.progress(player, "return_to", "Return to {0}");
             try {
@@ -217,18 +226,14 @@ public class QuestProgressDisplay {
             } catch (IllegalArgumentException ignored) {
                 ret = "Return to " + turnInName(quest);
             }
-            paint(player, bar, "§f" + title + " §8• §a" + ret, 1.0, BarColor.GREEN);
-            return;
+            return new Step("§a" + ret, 1.0, BarColor.GREEN);
         }
         if (!hasBorderlandsSpiritVial(player)) {
-            paint(player, bar, "§f" + title + " §8• §c"
-                    + de.aetherion.quests.lang.LangPack.progress(
-                            player, "obtain_vial", "Obtain a spirit vial"), 0.25, BarColor.RED);
-            return;
+            return new Step("§c" + de.aetherion.quests.lang.LangPack.progress(
+                    player, "obtain_vial", "Obtain a spirit vial"), 0.25, BarColor.RED);
         }
-        paint(player, bar, "§f" + title + " §8• §e"
-                + de.aetherion.quests.lang.LangPack.progress(
-                        player, "spawn_boss", "Spawn a boss"), 0.6, BarColor.YELLOW);
+        return new Step("§e" + de.aetherion.quests.lang.LangPack.progress(
+                player, "spawn_boss", "Spawn a boss"), 0.6, BarColor.YELLOW);
     }
 
     static boolean hasBorderlandsSpiritVial(Player player) {
@@ -250,11 +255,10 @@ public class QuestProgressDisplay {
         return false;
     }
 
-    private static void showPocketZooProgress(
+    private static Step pocketZooStep(
             Player player,
             QuestManager questManager,
-            Quest quest,
-            BossBar bar
+            Quest quest
     ) {
         int catchProgress = questManager.getProgress(player, quest.getId(), "ANY");
         int equipProgress = questManager.getProgress(player, quest.getId(), "AETHER_PET");
@@ -267,27 +271,19 @@ public class QuestProgressDisplay {
         } catch (Throwable ignored) {
         }
 
-        String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
         if (catchProgress < 1) {
-            paint(player, bar, "§f" + title + " §8• §f"
-                    + de.aetherion.quests.lang.LangPack.progress(player, "catch_pet", "Catch a pet")
+            return new Step("§f" + de.aetherion.quests.lang.LangPack.progress(player, "catch_pet", "Catch a pet")
                     + " §e0§7/§f1", 0.25, BarColor.YELLOW);
-            return;
         }
         if (!equipLesson || equipProgress < 1) {
             if (!equipLesson) {
-                paint(player, bar, "§f" + title + " §8• §a"
-                        + de.aetherion.quests.lang.LangPack.progress(player, "talk_to_lark", "Talk to Lark"),
+                return new Step("§a" + de.aetherion.quests.lang.LangPack.progress(player, "talk_to_lark", "Talk to Lark"),
                         0.55, BarColor.GREEN);
-                return;
             }
-            paint(player, bar, "§f" + title + " §8• §d"
-                    + de.aetherion.quests.lang.LangPack.progress(player, "equip_pet", "Equip a Pet")
+            return new Step("§d" + de.aetherion.quests.lang.LangPack.progress(player, "equip_pet", "Equip a Pet")
                     + " §e" + Math.min(1, equipProgress) + "§7/§f1", 0.75, BarColor.PURPLE);
-            return;
         }
-        paint(player, bar, "§f" + title + " §8• §a"
-                + de.aetherion.quests.lang.LangPack.progress(player, "return_to_lark", "Return to Lark"),
+        return new Step("§a" + de.aetherion.quests.lang.LangPack.progress(player, "return_to_lark", "Return to Lark"),
                 1.0, BarColor.GREEN);
     }
 
@@ -329,7 +325,8 @@ public class QuestProgressDisplay {
     }
 
 
-    private static String turnInName(Quest quest) {
+    /** Who takes {@code quest} back: its turn-in NPC, else the NPC that gives it. */
+    public static String turnInName(Quest quest) {
 
         if (quest != null && quest.hasTurnInNpc()) {
             QuestNPC turnIn = QuestNPCRegistry.getNPC(quest.getTurnInNpcId());
