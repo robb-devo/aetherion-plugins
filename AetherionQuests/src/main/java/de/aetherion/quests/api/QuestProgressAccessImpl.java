@@ -263,7 +263,7 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
                     de.aetherion.quests.lang.LangPack.questDescription(player, quest.getId(), quest.getDescription()),
                     ready,
                     tracked,
-                    QuestProgressDisplay.step(player, manager, quest).line(),
+                    de.aetherion.core.api.JournalText.t(QuestProgressDisplay.step(player, manager, quest).line()),
                     where,
                     target);
             if (tracked) {

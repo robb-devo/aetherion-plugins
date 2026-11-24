@@ -24,7 +24,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
@@ -448,20 +447,28 @@ public final class JournalMenu {
         boolean today = chapter == Chapter.TODAY;
         List<String> backLore = today ? List.<String>of() : List.of("§8Or pick a ribbon along the top.");
         inventory.setItem(BACK_SLOT, carrier(today ? "§7Close the journal" : "§e‹ Back to Today", backLore));
-        Runnable back = today ? player::closeInventory : () -> turn(player, Chapter.TODAY);
+        Runnable back = today ? () -> {
+            JournalSounds.close(player);
+            player.closeInventory();
+        } : () -> turn(player, Chapter.TODAY);
         holder.actions.put(BACK_SLOT, back);
 
         stopPulse(player);
+        // Turning a ribbon inside the open book, or taking the book out of the hotbar (or back from a sub-menu).
+        boolean turning = player.getOpenInventory().getTopInventory().getHolder() instanceof Holder;
         player.openInventory(inventory);
         bookmarks.put(player.getUniqueId(), new Bookmark(chapter, System.currentTimeMillis()));
         if (fresh) {
-            player.playSound(player.getLocation(), Sound.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, 0.8f, 1.0f);
-            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7f, 1.3f);
+            JournalSounds.reveal(player);
             player.sendActionBar(net.kyori.adventure.text.Component.text(
                     "✦ New chapter in your journal: " + name(chapter),
                     net.kyori.adventure.text.format.NamedTextColor.GOLD));
         } else {
-            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.9f, today ? 0.9f : 1.1f);
+            if (turning) {
+                JournalSounds.turn(player, chapter.ordinal());
+            } else {
+                JournalSounds.open(player, coverStage(player));
+            }
             if (read.guide != null && (today || chapter == read.guide.tile().chapter)) {
                 player.sendActionBar(net.kyori.adventure.text.Component.text(
                         "→ " + name(read.guide.tile().chapter) + " › " + read.guide.tile().label + " is glowing",
@@ -994,7 +1001,7 @@ public final class JournalMenu {
     }
 
     private static void locked(Player player, String hint) {
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 0.6f, 0.7f);
+        JournalSounds.locked(player);
         if (hint != null && !hint.isBlank()) {
             player.sendMessage(hint);
         }
@@ -1033,8 +1040,7 @@ public final class JournalMenu {
         double dz = target.getZ() - feet.getZ();
         long metres = Math.round(Math.sqrt(dx * dx + dz * dz));
         String plain = name == null ? "" : name.replaceAll("§.", "").trim();
-        player.playSound(feet, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.5f);
-        player.playSound(feet, Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.3f);
+        JournalSounds.way(player);
         player.sendActionBar(net.kyori.adventure.text.Component.text(
                 "➜ " + (plain.isEmpty() ? "" : plain + " · ") + metres + " m " + compassWord(dx, dz),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD));
@@ -1062,7 +1068,8 @@ public final class JournalMenu {
                     }
                 }
                 if (head - 1.5 > reach && length <= WAY_REACH + 1.0) {
-                    // the comet arrived: a quiet ring where the target stands, then done
+                    // the comet arrived: a quiet ring where the target stands and a chime from there, then done
+                    JournalSounds.arrive(player, target);
                     for (int i = 0; i < 12; i++) {
                         double angle = Math.PI * 2 * i / 12;
                         player.spawnParticle(Particle.END_ROD, target.clone().add(Math.cos(angle) * 0.8, 0.2,
@@ -1190,17 +1197,29 @@ public final class JournalMenu {
 
     /** Cover by how far the player is: worn, then bound (skills and the market open), then Aether at level 75. */
     static String coverName(Player player) {
+        return switch (coverStage(player)) {
+            case 2 -> "§d§lAether Journal";
+            case 1 -> "§6§lBound Journal";
+            default -> "§6§lWorn Journal";
+        };
+    }
+
+    /** CustomModelData of the hotbar book's cover: {@code COVER_CMD + coverStage} on BOOK (tools/gen_journal_cover.py). */
+    static final int COVER_CMD = 7900;
+
+    /** 0 Worn (new), 1 Bound (Skills and the Bazaar open), 2 Aether (account level 75). */
+    static int coverStage(Player player) {
         AetherionItems plugin = AetherionItems.getInstance();
         int level = plugin == null || plugin.getSkills() == null || player == null
                 ? 0 : plugin.getSkills().accountLevel(player);
         if (level >= 75) {
-            return "§d§lAether Journal";
+            return 2;
         }
         ProgressionService progress = plugin == null ? null : plugin.progress();
         if (progress != null && player != null && progress.skills(player) && progress.bazaar(player)) {
-            return "§6§lBound Journal";
+            return 1;
         }
-        return "§6§lWorn Journal";
+        return 0;
     }
 
     /** The hotbar book's quest tip, or null: the same four lessons the glow trail follows. */

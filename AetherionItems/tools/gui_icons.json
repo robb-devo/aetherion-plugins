@@ -67,6 +67,20 @@
       "aetherion:item/gui/bestiary"
     ]
   ],
+  "book": [
+    [
+      7900,
+      "aetherion:item/gui/journal_cover_worn"
+    ],
+    [
+      7901,
+      "aetherion:item/gui/journal_cover_bound"
+    ],
+    [
+      7902,
+      "aetherion:item/gui/journal_cover_aether"
+    ]
+  ],
   "brown_stained_glass_pane": [
     [
       7700,

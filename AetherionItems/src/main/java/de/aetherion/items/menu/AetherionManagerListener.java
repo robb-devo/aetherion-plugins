@@ -177,6 +177,7 @@ public class AetherionManagerListener implements Listener {
             meta.setLore(lore);
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.setMaxStackSize(1);
+            meta.setCustomModelData(JournalMenu.COVER_CMD + JournalMenu.coverStage(player));
             meta.getPersistentDataContainer().set(ItemKeys.manager(), PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);
         }
@@ -268,6 +269,9 @@ public class AetherionManagerListener implements Listener {
         }
         if (event.getInventory().getHolder() instanceof JournalMenu.Holder) {
             manager.getJournal().stopPulse(player);
+            if (event.getReason() == InventoryCloseEvent.Reason.PLAYER) {
+                JournalSounds.close(player);
+            }
         }
         // Always kill ghost manager on the cursor when any inventory closes.
         if (isManagerItem(player.getItemOnCursor())) {

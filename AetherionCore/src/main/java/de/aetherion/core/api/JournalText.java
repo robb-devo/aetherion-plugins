@@ -64,7 +64,22 @@ public final class JournalText {
     }
 
     private static final Pattern DOUBLE = Pattern.compile("Journal(\\s*(?:§.)*\\s*)→\\s*(?:§.)*\\s*(?:Aether )?Journal");
-    private static final Pattern WORD = Pattern.compile("(?<![\\p{L}.])Manager(?![\\p{L}])");
+    /** "Manager" as a word; a colour code right before it ("§eManager → Pets") still counts as a word start. */
+    private static final Pattern WORD = Pattern.compile("(?<!(?<!§)[\\p{L}.])Manager(?![\\p{L}])");
+    /**
+     * Whole sentences that only made sense for the star (English and German), and slot talk that would name the
+     * journal twice ("in the Journal, slot 9: your Journal"). Applied before the word rewrite.
+     */
+    private static final String[][] SENTENCES = {
+            {"That Nether Star isn't jewelry. It's the Aetherion Manager.",
+                    "That book in slot 9 isn't decoration. It's your Aether Journal."},
+            {"Der Nether Star ist kein Schmuck. Das ist der Aetherion Manager.",
+                    "Das Buch in Slot 9 ist keine Deko. Das ist dein Aether Journal."},
+            {"The Nether Star in your inventory.", "The book in slot 9 of your hotbar."},
+            {", slot 9: your Manager.", ", slot 9."},
+            {", Slot 9: dein Manager.", ", Slot 9."},
+            {"/aetherion for the Manager", "/journal for the Manager"},
+    };
 
     private JournalText() {
     }
@@ -89,7 +104,11 @@ public final class JournalText {
 
     /** The rewrite itself, journal on or off (tests). */
     static String rewrite(String text) {
-        String out = text.replace("Aetherion Manager", "Aether Journal")
+        String out = text;
+        for (String[] sentence : SENTENCES) {
+            out = out.replace(sentence[0], sentence[1]);
+        }
+        out = out.replace("Aetherion Manager", "Aether Journal")
                 .replace("Der Manager", "Das Journal")
                 .replace("der Manager", "das Journal")
                 .replace("Nether Star", "Journal")

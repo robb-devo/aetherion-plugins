@@ -147,8 +147,8 @@ public final class QuestHint {
         if (player == null || npcId == null || npcId.isBlank()) {
             return;
         }
-        String name = label == null || label.isBlank() ? pretty(npcId) : label;
-        Hint hint = new Hint(npcId.toLowerCase(Locale.ROOT), name, note);
+        String name = label == null || label.isBlank() ? pretty(npcId) : de.aetherion.core.api.JournalText.t(label);
+        Hint hint = new Hint(npcId.toLowerCase(Locale.ROOT), name, de.aetherion.core.api.JournalText.t(note));
         ARRIVED_AT.remove(player.getUniqueId());
         HINTS.put(player.getUniqueId(), hint);
         PENDING.put(player.getUniqueId(), hint);

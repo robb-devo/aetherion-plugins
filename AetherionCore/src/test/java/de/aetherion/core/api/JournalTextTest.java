@@ -37,12 +37,25 @@ class JournalTextTest {
     @Test
     void germanTakesTheNeuter() {
         JournalText.setEnabled(true);
-        assertEquals("Das Journal ist kein Schmuck. Das ist das Aether Journal.",
+        assertEquals("Das Buch in Slot 9 ist keine Deko. Das ist dein Aether Journal.",
                 JournalText.t("Der Nether Star ist kein Schmuck. Das ist der Aetherion Manager."));
+        assertEquals("Alles andere steckt im §eJournal§f, Slot 9. §eTeleports§f → Capital.",
+                JournalText.t("Alles andere steckt im §eNether Star§f, Slot 9: dein Manager. §eTeleports§f → Capital."));
         assertEquals("Hört, hört! Das Journal wohnt in Hotbar-Slot neun!",
                 JournalText.t("Hört, hört! Der Manager wohnt in Hotbar-Slot neun!"));
         assertEquals("§7zu deinen §fTeleports §7hinzugefügt §8(Journal)§7.",
                 JournalText.t("§7zu deinen §fTeleports §7hinzugefügt §8(Netherstern)§7."));
+    }
+
+    @Test
+    void colourCodesDoNotHideTheManager() {
+        JournalText.setEnabled(true);
+        assertEquals("Now equip it: §eJournal › Character › Pets§f — it glows. Pick your catch.",
+                JournalText.t("Now equip it: §eManager → Pets§f — it blinks. Pick your catch."));
+        assertEquals("That book in slot 9 isn't decoration. It's your Aether Journal.",
+                JournalText.t("That Nether Star isn't jewelry. It's the Aetherion Manager."));
+        assertEquals("Use /atrecipes for crafting and /journal for the Journal.",
+                JournalText.t("Use /atrecipes for crafting and /aetherion for the Manager."));
     }
 
     @Test

@@ -468,6 +468,15 @@ Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Conc
   tour step or factory goal), else the guide's tips. Second line adds Codex rewards to claim. A sub-menu's Back turns
   to the chapter the player came from (`AetherionManager.back`, `ManagerNav`). Every journal line has its own icon
   (`menu/JournalIcon.java`: paper, CMD 7800 + i, locked 7850 + i; art in `gen_gui_icons.py` `JOURNAL`, append only).
+- Final polish before the network rollout (2026-11-24, after Robb's second test): the hotbar book has its own cover
+  per stage (BOOK, CMD 7900 + `JournalMenu.coverStage`: Worn tan leather, Bound brown leather with brass and a strap,
+  Aether = the old Manager book with the A rune breathing light, 8 frames; `tools/gen_journal_cover.py`, written by
+  `gen_gui_icons.py`). `menu/JournalSounds.java`: one sound family from vanilla foley (open by cover stage, a page
+  turn per ribbon a shade higher each chapter, enchanting ink + two chimes for a new chapter, a muffled clasp for
+  locked lines, a chime from the target when the way light arrives, a book set down on Escape). `JournalText` now
+  also catches "§eManager" (Lark said "Manager → Pets"), smooths the sentences that only fit the star, and Quests runs
+  cards, the quest bar, hints and the journal's step line through it, so texts from other plugins and live YAML read
+  as the journal too.
 
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 

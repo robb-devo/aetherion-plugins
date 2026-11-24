@@ -339,7 +339,7 @@ public final class HudCards implements Listener {
         if (card == null || !enabledFor(player)) {
             return false;
         }
-        card = wrapped(card);
+        card = wrapped(journal(card));
         UUID id = player.getUniqueId();
         queues.computeIfAbsent(id, k -> new ArrayDeque<>()).addLast(card);
         Shown now = active.get(id);
@@ -348,6 +348,24 @@ public final class HudCards implements Listener {
             now.endAt = Math.min(now.endAt, tick + 1);
         }
         return true;
+    }
+
+    /** While the journal is on, Manager and Nether Star read as the journal, texts other plugins hand in included. */
+    private static Card journal(Card c) {
+        if (!de.aetherion.core.api.JournalText.enabled()) {
+            return c;
+        }
+        List<Row> rows = null;
+        if (c.rows() != null) {
+            rows = new ArrayList<>(c.rows().size());
+            for (Row row : c.rows()) {
+                rows.add(row == null ? null : new Row(de.aetherion.core.api.JournalText.t(row.text()), row.icon()));
+            }
+        }
+        return new Card(c.kind(), de.aetherion.core.api.JournalText.t(c.header()),
+                de.aetherion.core.api.JournalText.t(c.title()), c.accent(), rows,
+                de.aetherion.core.api.JournalText.t(c.footer()), de.aetherion.core.api.JournalText.t(c.summary()),
+                c.emblem());
     }
 
     /** Long lines wrap (a toast's rows and footer, a big card's footer), so no card grows wider than it reads. */
