@@ -105,10 +105,16 @@ public final class BuildMenu implements MenuKit.Menu {
         }
         Inventory inventory = MenuKit.framed(this, host, 36, "§8Build Tool · pick a part");
         PlacementService.Part current = placement.part(player);
+        long packCobble = BuildCosts.COBBLE.carried(player);
+        long packCompressed = BuildCosts.COMPRESSED.carried(player);
         inventory.setItem(HEADER, MenuKit.glow(MenuKit.named(Material.NETHERITE_PICKAXE, "§6§lBuild Tool",
                 "§7In storage: §f" + GuildFormat.compact(structures.stock(host, BuildCosts.COBBLE)) + " Cobblestone"
                         + (structures.stock(host, BuildCosts.COMPRESSED) > 0
                         ? "§7, §f" + GuildFormat.compact(structures.stock(host, BuildCosts.COMPRESSED)) + " Compressed" : ""),
+                packCobble + packCompressed > 0
+                        ? "§7In your pack: §f" + GuildFormat.compact(packCobble) + " Cobblestone"
+                        + (packCompressed > 0 ? "§7, §f" + GuildFormat.compact(packCompressed) + " Compressed" : "")
+                        : "§8Builds pay from storage and your pack",
                 "",
                 "§fSneak + scroll §7next part",
                 "§fRight-click §7build · §fLeft-click §7turn",
@@ -219,7 +225,7 @@ public final class BuildMenu implements MenuKit.Menu {
         }
         if (slot == QUARRIES) {
             if (placement.quarriesIn(player) > 0) {
-                placement.openTool(player, host, PlacementService.Part.QUARRY);
+                placement.pick(player, host, PlacementService.Part.QUARRY);
             } else if (market != null && structures.hasWorkshop(host) && structures.atDesk(player, host)) {
                 market.open(player, host);
             } else {
@@ -245,7 +251,7 @@ public final class BuildMenu implements MenuKit.Menu {
             player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.8f);
             return;
         }
-        placement.openTool(player, host, part);
+        placement.pick(player, host, part);
     }
 
     /**

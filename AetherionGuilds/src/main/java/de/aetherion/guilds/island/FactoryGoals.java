@@ -204,7 +204,7 @@ public final class FactoryGoals {
                 }
                 Goal next = next(host);
                 if (next != null) {
-                    player.sendMessage("§b➤ Factory goals are here. §7Next: §f" + next.title() + " §8— §7" + next.how());
+                    player.sendMessage("§b➤ Factory goals are here. §7Next: §f" + next.title() + " §8— §7" + howNow(host, next));
                 }
                 return;
             }
@@ -219,7 +219,7 @@ public final class FactoryGoals {
             Goal next = next(host);
             if (IslandUi.toast(player, goal.title(),
                     "§6+" + GuildFormat.compact(goal.reward()) + " §7" + hosts.fundsLabel(host),
-                    next == null ? "§7Every factory goal done." : "§8Next: §f" + next.title() + " §8— §7" + next.how())) {
+                    next == null ? "§7Every factory goal done." : "§8Next: §f" + next.title() + " §8— §7" + howNow(host, next))) {
                 de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.END_ROD, 24, Math.max(0.6, 0.6), null);
                 return; // one beat at a time
             }
@@ -231,7 +231,7 @@ public final class FactoryGoals {
             player.sendMessage("§b✦ Goal done: §f" + goal.title() + " §8(§6+" + GuildFormat.compact(goal.reward())
                     + " " + hosts.fundsLabel(host) + "§8)");
             if (next != null) {
-                player.sendMessage("§7Next: §f" + next.title() + " §8— §7" + next.how());
+                player.sendMessage("§7Next: §f" + next.title() + " §8— §7" + howNow(host, next));
             }
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.4f);
             de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.END_ROD, 24, Math.max(0.6, 0.6), null);
@@ -270,6 +270,66 @@ public final class FactoryGoals {
             }
         }
         return false;
+    }
+
+    /**
+     * The goal's next step read off the island right now (the belt-piece goals walk you through: placed, fed,
+     * second exit), else its fixed how. Short enough for the island bar.
+     */
+    public String howNow(IslandHost host, Goal goal) {
+        if (goal == null) {
+            return null;
+        }
+        String step = switch (goal.id()) {
+            case "split" -> pieceStep(host, StructureType.SPLITTER);
+            case "overflow" -> pieceStep(host, StructureType.OVERFLOW);
+            case "sort" -> pieceStep(host, StructureType.SORTER);
+            default -> null;
+        };
+        return step != null ? step : goal.how();
+    }
+
+    private String pieceStep(IslandHost host, StructureType type) {
+        if (!structures.unlocked(host, type)) {
+            return null; // the how says where it unlocks
+        }
+        PlacedStructure best = null;
+        int bestScore = -1;
+        for (PlacedStructure structure : structures.of(host)) {
+            if (structure.type() != type) {
+                continue;
+            }
+            int score = (logistics.feeding(structure) > 0 ? 10 : 0) + logistics.liveExits(structure);
+            if (score > bestScore) {
+                best = structure;
+                bestScore = score;
+            }
+        }
+        String name = type.display();
+        if (best == null) {
+            return "Build Tool → " + name + ", right-click it onto a running belt";
+        }
+        if (logistics.feeding(best) == 0) {
+            return "set your " + name + " onto a belt that carries goods";
+        }
+        if (type == StructureType.SORTER && best.filter() == null) {
+            return "right-click the Sorter, pick the good for its front";
+        }
+        boolean front = false;
+        int live = 0;
+        for (LogisticsService.Route route : logistics.exits(best)) {
+            if (route.to() != null) {
+                live++;
+                front |= route.front();
+            }
+        }
+        if (type != StructureType.SPLITTER && !front) {
+            return "a belt from its front (gold arrow) into a hut or machine";
+        }
+        if (live == 0) {
+            return "a belt from one of its sides into a hut or machine";
+        }
+        return "now a 2nd belt from an orange side into a hut (1/2)";
     }
 
     /** A machine of this type that something feeds and whose output reaches another machine. */

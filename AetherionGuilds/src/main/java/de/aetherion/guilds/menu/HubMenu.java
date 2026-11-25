@@ -42,6 +42,7 @@ public final class HubMenu implements MenuKit.Menu {
     private static final int DOCK = 42;
     private static final int BACK = 45;
     private static final int CLOSE = 49;
+    private static final int PICK_UP = 53;
 
     private final HostService hosts;
     private final StructureService structures;
@@ -179,7 +180,7 @@ public final class HubMenu implements MenuKit.Menu {
                 lore.add("§7Every factory goal is done.");
             } else {
                 lore.add("§f" + next.title());
-                lore.add("§7" + next.how());
+                lore.add("§7" + goals.howNow(host, next));
                 lore.add("");
                 lore.add("§7Reward §6" + GuildFormat.compact(next.reward()) + " " + hosts.fundsLabel(host));
             }
@@ -187,6 +188,12 @@ public final class HubMenu implements MenuKit.Menu {
                     next != null));
         }
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, host.isGuild() ? "§eGuild menu" : "§eIsland menu"));
+        if (hub != null && hosts.canPlace(player, host)) {
+            // moving the Hub is a normal thing to want (it went down in a bad spot): same Pick up as every building
+            inventory.setItem(PICK_UP, MenuKit.pickUpTile("§7Move your Hub: it comes up and goes",
+                    "§7down again wherever you like.", "§7It keeps its tier; a free one stays free.",
+                    "§8Mills, Forges and belt pieces need it,", "§8so it moves before those stand."));
+        }
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.0f);
@@ -217,6 +224,14 @@ public final class HubMenu implements MenuKit.Menu {
             case BACK -> {
                 player.closeInventory();
                 player.performCommand(host.isGuild() ? "guild" : "island");
+            }
+            case PICK_UP -> {
+                if (hub != null && hosts.canPlace(player, host) && MenuKit.confirmPickUp(player, slot, hub.id(), click)) {
+                    player.closeInventory();
+                    if (structures.deconstruct(player, hub)) {
+                        placement.openTool(player, host, PlacementService.Part.HUB); // straight on to where it goes
+                    }
+                }
             }
             case BUILD -> placement.openTool(player, host, null);
             case MARKET -> market.open(player, host);
@@ -253,7 +268,7 @@ public final class HubMenu implements MenuKit.Menu {
                 FactoryGoals.Goal next = goals == null ? null : goals.next(host);
                 if (next != null) {
                     player.closeInventory();
-                    player.sendMessage("§b➤ " + next.title() + "§7: " + next.how());
+                    player.sendMessage("§b➤ " + next.title() + "§7: " + goals.howNow(host, next));
                 }
             }
             default -> {
@@ -409,15 +424,15 @@ public final class HubMenu implements MenuKit.Menu {
     }
 
     private ItemStack pressTile(Player player, IslandHost host) {
-        long cobble = structures.stock(host, BuildCosts.COBBLE);
+        long cobble = structures.available(player, host, BuildCosts.COBBLE);
         boolean can = cobble >= de.aetherion.guilds.island.DockService.PRESS_RAW;
         List<String> lore = new ArrayList<>();
-        lore.add("§7Press §f128 Cobblestone §7from storage");
+        lore.add("§7Press §f128 Cobblestone §7(storage or pack)");
         lore.add("§7into §a1 Compressed Cobblestone§7,");
         lore.add("§7by hand, right now. Your Mill");
         lore.add("§7does the same all day long.");
         lore.add("");
-        lore.add("§7In storage: " + (can ? "§a" : "§c") + GuildFormat.compact(cobble) + " §7Cobblestone");
+        lore.add("§7You have: " + (can ? "§a" : "§c") + GuildFormat.compact(cobble) + " §7Cobblestone");
         lore.add("");
         lore.add(can ? "§e▶ Press one" : "§c✖ needs " + GuildFormat.compact(de.aetherion.guilds.island.DockService.PRESS_RAW - cobble)
                 + " more Cobblestone");

@@ -45,9 +45,10 @@ import java.util.UUID;
  * <ul>
  *   <li><b>Status tag</b> over every machine, hut and belt piece: its name and one word in colour
  *   ({@link MachineState}) — "● Running", "○ Needs a belt out", "■ Full".</li>
- *   <li><b>Port markers</b> only while something is missing: a glowing <b>orange</b> pad with an arrow where a
- *   belt should start ("belt out"), <b>green</b> pads pointing in where one may end ("belt in"). Connect it
- *   and the markers vanish: the island stays clean once it works.</li>
+ *   <li><b>Port markers</b> only while something is missing, and only for players holding the Build Tool: a
+ *   glowing <b>orange</b> pad with an arrow where a belt should start ("belt out"), <b>green</b> pads pointing
+ *   in where one may end ("belt in"), one in the middle of every side but the chute's. Connect it and the
+ *   markers vanish: the island stays clean once it works, and clean for anyone not building.</li>
  *   <li><b>Running animations</b>: mill stones turn, the forge hammer beats the anvil, the quarry drill pumps,
  *   belt pieces show their exits (gold = front) and a sorter holds up what it sorts.</li>
  *   <li>Soft machine sounds close by (config {@code logistics.machine-sounds}).</li>
@@ -93,6 +94,8 @@ final class MachineFx {
         String tagText = "";
         String markerKey = "";
         final List<Entity> markers = new ArrayList<>();
+        /** Players the (hidden by default) markers are shown to right now. */
+        final Set<UUID> markerSeen = new HashSet<>();
         final List<TextDisplay> pulsing = new ArrayList<>();
         String pieceKey = "";
         final List<Entity> piece = new ArrayList<>();
@@ -127,6 +130,25 @@ final class MachineFx {
     private int radius = 32;
     private int perHost = 60;
     private int global = 1500;
+
+    private org.bukkit.plugin.Plugin plugin;
+    private java.util.function.Predicate<org.bukkit.entity.Player> markerViewer = player -> true;
+    private Collection<org.bukkit.entity.Player> people = List.of();
+    /** Light for a machine's body parts, sampled once per spot in the open air above it. */
+    private final Map<UUID, Display.Brightness> light = new HashMap<>();
+
+    /**
+     * Port markers only for the players this says (the Build Tool in hand); without a plugin everyone sees them.
+     */
+    void attachMarkers(org.bukkit.plugin.Plugin plugin, java.util.function.Predicate<org.bukkit.entity.Player> viewer) {
+        this.plugin = plugin;
+        this.markerViewer = viewer == null ? player -> true : viewer;
+    }
+
+    /** The players on the island being rendered (set right before each render). */
+    void people(Collection<org.bukkit.entity.Player> people) {
+        this.people = people == null ? List.of() : people;
+    }
 
     void configure(boolean enabled, boolean sounds, int radius, int perHost, int global) {
         this.enabled = enabled;
@@ -276,6 +298,7 @@ final class MachineFx {
         if (!k.equals(props.markerKey) || !alive(props.markers)) {
             killList(props.markers);
             props.pulsing.clear();
+            props.markerSeen.clear();
             props.markerKey = k;
             if (view.outCell() != null) {
                 int[] c = view.outCell();
@@ -292,6 +315,7 @@ final class MachineFx {
                 }
             }
         }
+        syncMarkers(props);
         // breathe: the arrows grow and shrink a little, every second
         boolean big = (tick / 20L) % 2L == 0L;
         for (TextDisplay arrow : props.pulsing) {
@@ -306,6 +330,38 @@ final class MachineFx {
         }
     }
 
+    /** Markers are hints for building: shown to whoever holds the Build Tool, hidden from everyone else. */
+    private void syncMarkers(Props props) {
+        if (plugin == null || props.markers.isEmpty()) {
+            return;
+        }
+        for (org.bukkit.entity.Player player : people) {
+            boolean want = markerViewer.test(player);
+            boolean seen = props.markerSeen.contains(player.getUniqueId());
+            if (want == seen) {
+                continue;
+            }
+            for (Entity marker : props.markers) {
+                if (want) {
+                    player.showEntity(plugin, marker);
+                } else {
+                    player.hideEntity(plugin, marker);
+                }
+            }
+            if (want) {
+                props.markerSeen.add(player.getUniqueId());
+            } else {
+                props.markerSeen.remove(player.getUniqueId());
+            }
+        }
+    }
+
+    private void hideByDefault(Display display) {
+        if (plugin != null) {
+            display.setVisibleByDefault(false);
+        }
+    }
+
     private void pad(World world, Props props, int x, int y, int z, BlockFace dir, BlockData glass, TextColor color) {
         Location corner = new Location(world, x, y, z);
         BlockDisplay plate = world.spawn(corner, BlockDisplay.class, d -> {
@@ -316,10 +372,11 @@ final class MachineFx {
             d.setViewRange(0.4f);
             d.setShadowRadius(0f);
             d.setPersistent(false);
+            hideByDefault(d);
             d.addScoreboardTag(TAG);
         });
         props.markers.add(plate);
-        TextDisplay arrow = flatGlyph(world, corner, "»", color, dir, 2.6f, 0.035f);
+        TextDisplay arrow = flatGlyph(world, corner, "»", color, dir, 2.6f, 0.035f, plugin != null);
         props.markers.add(arrow);
         props.pulsing.add(arrow);
         entities += 2;
@@ -336,6 +393,7 @@ final class MachineFx {
             d.setPersistent(false);
             d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
                     new Vector3f(0.7f, 0.7f, 0.7f), new Quaternionf()));
+            hideByDefault(d);
             d.addScoreboardTag(TAG);
         });
         props.markers.add(label);
@@ -345,6 +403,11 @@ final class MachineFx {
     /** A glyph lying flat on a cell's floor, pointing {@code dir} (same maths as the belt chevrons). */
     private static TextDisplay flatGlyph(World world, Location corner, String glyph, TextColor color, BlockFace dir,
                                          float scale, float lift) {
+        return flatGlyph(world, corner, glyph, color, dir, scale, lift, false);
+    }
+
+    private static TextDisplay flatGlyph(World world, Location corner, String glyph, TextColor color, BlockFace dir,
+                                         float scale, float lift, boolean hidden) {
         float angle = switch (dir) {
             case NORTH -> (float) (Math.PI / 2);
             case SOUTH -> (float) (-Math.PI / 2);
@@ -366,6 +429,9 @@ final class MachineFx {
             d.setPersistent(false);
             d.setTransformation(new Transformation(translation, rotation, new Vector3f(scale, scale, scale),
                     new Quaternionf()));
+            if (hidden) {
+                d.setVisibleByDefault(false);
+            }
             d.addScoreboardTag(TAG);
         });
     }
@@ -588,8 +654,38 @@ final class MachineFx {
         }
     }
 
+    /**
+     * Every body part stands on the machine's corner, which is the ground block itself: without shaders the game
+     * lights a display by the block it is in, so a part "in" the grass went dark and blotchy. Each part gets the
+     * light of the open air right above the machine instead (sky stays sky, so night still darkens it, and a
+     * torch next to it still lights it).
+     */
+    private Display.Brightness lightFor(World world, PlacedStructure s) {
+        Display.Brightness known = light.get(s.id());
+        if (known != null) {
+            return known;
+        }
+        int x = (int) Math.floor(s.centerX());
+        int z = (int) Math.floor(s.centerZ());
+        Display.Brightness found = new Display.Brightness(0, 15);
+        for (int y = s.y() + 1; y <= s.y() + 8; y++) {
+            org.bukkit.block.Block block = world.getBlockAt(x, y, z);
+            if (!block.getType().isOccluding()) {
+                // (sky at least 12: a chunk whose light isn't worked out yet must not paint the machine black)
+                found = new Display.Brightness(block.getLightFromBlocks(), Math.max(block.getLightFromSky(), 12));
+                break;
+            }
+        }
+        if (light.size() > 4096) {
+            light.clear();
+        }
+        light.put(s.id(), found);
+        return found;
+    }
+
     private Display spawnPart(World world, PlacedStructure s, PropBodies.Part part, boolean assemble, int index) {
         Location corner = new Location(world, s.x(), s.y(), s.z());
+        Display.Brightness lit = part.bright() ? new Display.Brightness(15, 15) : lightFor(world, s);
         Transformation target = PropBodies.transform(part, s.rot(), null, 0f, 0f);
         Transformation start = assemble
                 ? new Transformation(new org.joml.Vector3f(target.getTranslation()).add(0f, 3.2f + index * 0.08f, 0f),
@@ -604,9 +700,7 @@ final class MachineFx {
                 d.setViewRange(1.0f);
                 d.setShadowRadius(0f);
                 d.setPersistent(false);
-                if (part.bright()) {
-                    d.setBrightness(new Display.Brightness(15, 15));
-                }
+                d.setBrightness(lit);
                 d.addScoreboardTag(TAG);
             });
         } else {
@@ -616,9 +710,7 @@ final class MachineFx {
                 d.setViewRange(1.0f);
                 d.setShadowRadius(0f);
                 d.setPersistent(false);
-                if (part.bright()) {
-                    d.setBrightness(new Display.Brightness(15, 15));
-                }
+                d.setBrightness(lit);
                 d.addScoreboardTag(TAG);
             });
         }
@@ -1068,6 +1160,7 @@ final class MachineFx {
         remove(props.tag);
         props.tag = null;
         killList(props.markers);
+        props.markerSeen.clear();
         killList(props.piece);
         killParts(props.body);
         killParts(props.crates);
@@ -1089,6 +1182,7 @@ final class MachineFx {
 
     /** One structure changed shape or went away: drop its props, they come back next second. */
     void forget(String hostKey, UUID structureId) {
+        light.remove(structureId);
         Map<UUID, Props> shown = hosts.get(hostKey);
         Props props = shown == null ? null : shown.remove(structureId);
         if (props != null) {

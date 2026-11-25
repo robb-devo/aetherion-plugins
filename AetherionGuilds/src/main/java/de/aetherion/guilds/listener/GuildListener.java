@@ -103,7 +103,7 @@ public final class GuildListener implements Listener {
         if (event.getView().getTopInventory().getHolder() instanceof QuarryMenu.Holder holder) {
             event.setCancelled(true);
             if (event.getWhoClicked() instanceof Player player) {
-                quarryMenu.handle(player, holder, event.getRawSlot());
+                quarryMenu.handle(player, holder, event.getRawSlot(), event.getClick());
             }
             return;
         }

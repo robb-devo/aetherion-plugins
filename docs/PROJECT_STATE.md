@@ -410,6 +410,28 @@ Island tour in flow order (2026-11-22, branch `claude/island-chain-onboarding`, 
   belt shows its rate and "belt its chute". Personal factory goals: the first chain means quarry → Mill → hut
   (`mill_line` and the old `press` goal are guild-only or gone), bar total counts only the island's own ladder.
 
+Island polish after Robb's run with a friend (2026-11-25, branch `claude/island-polish-101`, Guilds + Quests):
+- Island choice: `island/StarterGates.java` stands three gates on the Isle Dock (display entities, one per starter,
+  icon and name in the arch, a banner behind). Walking through opens `StarterSelectMenu.openGate` (one yes, the
+  choice is for good); a crossing is caught per step, and whoever steps off the dock is set back on it. Config
+  `starter-gates.enabled` (default true), `.forward` (3.0), `.spacing` (3.0). Needs Core's `islandsHost()` (mmo-i).
+- Build Tool lesson: after the kit Corin no longer switches the tool; the player holds sneak and scrolls to the
+  Quarry once (`PlacementService.attachSwitched`, a `coach` line on the tool's action bar, "Switch it for me"
+  chip, kits bit `TOOL_TAUGHT`). Tour steps wait 2 s after the "done" toast (`guide.step-pause-ticks`, default 40).
+- Splitter, Sorter, Overflow: a run counts as an exit when it leaves the cell (also a corner right after the cut or
+  a belt laid sideways); free sides are marked orange and start a belt; the tool jumps to Belt after a cut; the
+  goal bar says the next step for this island (`FactoryGoals.howNow`).
+- Honest rates: Mills and Forges convert 128:1 in the flow (`LogisticsService.flows`), full quarries send nothing,
+  the hut screen lists every feeder ("idle, nothing coming"), trickles read "1 every 11 min".
+- Props without shaders: body parts take their light from the open air above the building (`MachineFx.lightFor`).
+- Port markers only with the Build Tool in hand (Belt mode draws its own): `logistics.markers-with-tool-only`
+  (default true). Green pads sit on the middle cell of each side, never on the chute's side.
+- Costs pay from storage first, then the pack (`StructureService.available` / `pay`); the hut screen takes goods
+  from the pack (`MenuKit.PackClick`, "Put everything in").
+- "Pick up" everywhere, two clicks to confirm (`MenuKit.confirmPickUp`): a picked-up building keeps its tier and
+  free status for the next of its kind (`picked-up.kept` in each island file); what it held moves to the other huts
+  and the rest comes back with the next one. The Hub screen moves the Hub (pick up, Build Tool in hand).
+
 ## Paged talk and screen cards (2026-11-22, cloud session, Quests + Guilds, mmo-i first)
 
 Robb's ask: far less text. Two switches in the Quests config, both off by default, so a server only changes when
@@ -425,8 +447,9 @@ its live config turns them on (first mmo-i; the rest of the network after Robb's
 - `hud-cards.*` (`talk/HudCards.java`): a small toast at the top (step done, what's next) and a big animated card
   above the middle (quest done, island milestone: rows tick in, real item icons, "+250" counts up), then one summary
   chat line. Display entities at the player's eye with billboard CENTER, so the camera-space translation keeps them
-  in front however the head turns; only the owner sees them; probed every other tick and pulled closer (same size
-  on screen) in front of walls and the talking NPC. Big cards hold paged lines back; a left-click sends one away.
+  in front however the head turns; only the owner sees them; probed every tick across the whole card (nine rays:
+  blocks, block and item displays by their drawn box, bodies, the talking NPC) and pulled closer (same size on
+  screen) in front of whatever is nearer. Big cards hold paged lines back; a left-click sends one away.
 - Card look (second pass, same evening, Robb: "aktuell einfach nur ne box"): the big card is a crest with the
   moment's item turning in it, a fan of rays behind it, a ribbon with the header across a framed plate with a point;
   rows with an icon and "+N" become reward slots whose number counts up, other rows a list with icons. The toast is

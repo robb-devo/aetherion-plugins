@@ -141,6 +141,68 @@ public record Res(QuarryType type, Form form) {
         return out;
     }
 
+    /**
+     * The good this item is (a plain vanilla stack of a quarry's product, or a Compressed / Compacted Aetherion
+     * item), or null for anything else (renamed stacks and other items never count).
+     */
+    public static Res fromItem(ItemStack item) {
+        if (item == null || item.getType().isAir()) {
+            return null;
+        }
+        String id = AetherionItemsAccess.itemId(item);
+        if (id != null) {
+            for (QuarryType type : QuarryType.values()) {
+                if (id.equals(type.compressedId())) {
+                    return of(type, Form.COMPRESSED);
+                }
+                if (id.equals(type.compactedId())) {
+                    return of(type, Form.COMPACTED);
+                }
+            }
+            return null;
+        }
+        for (QuarryType type : QuarryType.values()) {
+            if (item.getType() == type.product()) {
+                return new ItemStack(type.product()).isSimilar(item) ? of(type, Form.RAW) : null;
+            }
+        }
+        return null;
+    }
+
+    /** How many of this good the player carries. */
+    public long carried(org.bukkit.entity.Player player) {
+        if (player == null) {
+            return 0L;
+        }
+        long have = 0L;
+        for (ItemStack item : player.getInventory().getStorageContents()) {
+            if (this.equals(fromItem(item))) {
+                have += item.getAmount();
+            }
+        }
+        return have;
+    }
+
+    /** Takes up to {@code amount} of this good out of the player's inventory; returns how many it took. */
+    public long takeCarried(org.bukkit.entity.Player player, long amount) {
+        if (player == null || amount <= 0L) {
+            return 0L;
+        }
+        long left = amount;
+        ItemStack[] contents = player.getInventory().getStorageContents();
+        for (int slot = 0; slot < contents.length && left > 0L; slot++) {
+            ItemStack item = contents[slot];
+            if (!this.equals(fromItem(item))) {
+                continue;
+            }
+            int take = (int) Math.min(left, item.getAmount());
+            item.setAmount(item.getAmount() - take);
+            player.getInventory().setItem(slot, item.getAmount() <= 0 ? null : item);
+            left -= take;
+        }
+        return amount - left;
+    }
+
     /** Icon for menus and belt cargo (always something visible). */
     public ItemStack icon() {
         ItemStack stack = stack(1);

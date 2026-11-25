@@ -31,9 +31,8 @@ public enum StarterLayout {
             Land.ROCKY,
             List.of(
                     "§7A rocky isle with an ore-veined",
-                    "§7outcrop, a timber mine mouth,",
-                    "§7a tool shed and a ready",
-                    "§7§fQuarry Pad§7.",
+                    "§7outcrop, a timber mine mouth",
+                    "§7and a tool shed.",
                     "",
                     "§8Best for: §7production chains."
             )),

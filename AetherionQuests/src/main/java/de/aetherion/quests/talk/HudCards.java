@@ -17,6 +17,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
@@ -31,11 +32,13 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 
 import org.joml.AxisAngle4f;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -69,9 +72,9 @@ import java.util.regex.Pattern;
  * player (a player with passengers can't be teleported by plugins).
  *
  * <p>The card is drawn with depth like any other display, so a wall or an NPC closer than the card would cover it.
- * Every other tick the space in front is probed (blocks along the card's line of sight, and the NPC the player is
- * talking to); when something is nearer, the whole card moves closer and shrinks by the same factor, so on screen
- * it keeps its exact size and place.
+ * Every tick the space in front is probed across the whole card (nine rays: corners, edges, centre; blocks, block
+ * and item displays by their drawn box, bodies, the NPC the player is talking to); when something is nearer, the
+ * whole card moves closer and shrinks by the same factor, so on screen it keeps its exact size and place.
  *
  * <p>Visible to the owner only, never saved, tagged like the talk UI so the janitors clean up after a crash.
  * Off by default ({@code hud-cards.enabled}). One card at a time per player, the rest wait their turn; a big card
@@ -263,6 +266,9 @@ public final class HudCards implements Listener {
         long closeAt = -1;
         /** Pulled in front of something near (1 = the configured depth); size shrinks with it, so nothing moves on screen. */
         float near = 1f;
+        /** How far the card reaches from its centre, in card px (the probe's rays span it). */
+        float halfW = 90f;
+        float halfH = 60f;
         long lastProbe = -10;
         Location lastAt;
         boolean shimmer;
@@ -513,11 +519,15 @@ public final class HudCards implements Listener {
     }
 
     /**
-     * Something nearer than the card along its line of sight (a wall, the NPC in front): bring the card in front of
-     * it. Translation and scale shrink by the same factor, so it keeps its size and place on screen.
+     * Something nearer than the card anywhere across it (a wall, a house, a machine's props, the NPC in front):
+     * bring the card in front of it. Translation and scale shrink by the same factor, so it keeps its size and
+     * place on screen, and a pull that wasn't needed costs nothing. Nine rays span the card (corners, edges,
+     * centre), so a corner or the side of a building can't cut into it. Block and item displays (the islands'
+     * buildings and props are made of them) count by their drawn box, bodies by their hitbox. Runs every tick and
+     * pulls in within a tick; it lets go slowly.
      */
     private void probe(Player player, Shown sh) {
-        if (tick - sh.lastProbe < 2 || sh.closeAt >= 0) {
+        if (sh.closeAt >= 0) {
             return;
         }
         sh.lastProbe = tick;
@@ -526,35 +536,126 @@ public final class HudCards implements Listener {
         if (world == null) {
             return;
         }
-        Vector forward = eye.getDirection().normalize();
-        Vector up = new Vector(0, 1, 0).subtract(forward.clone().multiply(forward.getY()));
-        up = up.lengthSquared() < 1.0E-4 ? new Vector() : up.normalize();
-        Vector line = forward.clone().multiply(depth).add(up.multiply(sh.centerY));
-        double full = line.length();
-        Vector dir = line.clone().normalize();
-        double room = full;
-        RayTraceResult wall = world.rayTraceBlocks(eye, dir, full + 0.35, FluidCollisionMode.NEVER, true);
-        if (wall != null && wall.getHitBlock() != null) {
-            room = Math.min(room, wall.getHitPosition().distance(eye.toVector()) - 0.3);
+        double yaw = Math.toRadians(eye.getYaw());
+        double pitch = Math.toRadians(eye.getPitch());
+        Vector forward = new Vector(-Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+        Vector right = new Vector(-Math.cos(yaw), 0.0, -Math.sin(yaw));
+        Vector up = new Vector(-Math.sin(yaw) * Math.sin(pitch), Math.cos(pitch), Math.cos(yaw) * Math.sin(pitch));
+        double unit = PX * sh.scale;
+        double hw = sh.halfW * unit;
+        double hh = sh.halfH * unit;
+        Vector origin = eye.toVector();
+        List<Vector> lines = new ArrayList<>(9);
+        for (int ix = -1; ix <= 1; ix++) {
+            for (int iy = -1; iy <= 1; iy++) {
+                lines.add(forward.clone().multiply(depth).add(up.clone().multiply(sh.centerY + iy * hh))
+                        .add(right.clone().multiply(ix * hw)));
+            }
         }
-        TalkUx talk = TalkUx.get();
-        Location npc = talk == null ? null : talk.npcNear(player);
-        if (npc != null && npc.getWorld() == world) {
-            Vector to = npc.toVector().add(new Vector(0, 1.1, 0)).subtract(eye.toVector());
-            double along = to.dot(forward);
-            if (along > 0.0 && along < full + 0.6) {
-                double off = to.clone().subtract(forward.clone().multiply(along)).length();
-                if (off < 1.1) {
-                    room = Math.min(room, along - 0.6);
+        double k = 1.0;
+        for (Vector line : lines) {
+            double full = line.length();
+            Vector dir = line.clone().multiply(1.0 / full);
+            RayTraceResult wall = world.rayTraceBlocks(eye, dir, full + 0.35, FluidCollisionMode.NEVER, true);
+            if (wall != null && wall.getHitBlock() != null) {
+                double d = wall.getHitPosition().distance(origin);
+                k = Math.min(k, (d - Math.min(0.3, d * 0.25)) / full);
+            }
+        }
+        double reach = depth + Math.max(hw, hh) + Math.abs(sh.centerY) + 0.6;
+        Entity vehicle = player.getVehicle();
+        for (Entity e : world.getNearbyEntities(eye, reach, reach, reach)) {
+            if (e == player || e == vehicle || e instanceof TextDisplay || e.getScoreboardTags().contains(TalkUx.TAG)
+                    || player.getPassengers().contains(e)) {
+                continue;
+            }
+            BoundingBox box = e instanceof Display d ? drawnBox(d) : e.getBoundingBox();
+            if (box == null || small(box)) {
+                continue;
+            }
+            for (Vector line : lines) {
+                double full = line.length();
+                RayTraceResult hit = box.rayTrace(origin, line, full + 0.35);
+                if (hit != null) {
+                    double d = hit.getHitPosition().distance(origin);
+                    k = Math.min(k, (d - Math.min(0.25, d * 0.25)) / full);
                 }
             }
         }
-        float k = (float) clamp(room / full, 0.22, 1.0);
-        if (Math.abs(k - sh.near) < 0.05 && !(k >= 0.999f && sh.near < 0.999f)) {
+        // the NPC being talked to (a packet NPC has no body on the server)
+        TalkUx talk = TalkUx.get();
+        Location npc = talk == null ? null : talk.npcNear(player);
+        if (npc != null && npc.getWorld() == world) {
+            Vector centre = lines.get(4);
+            double full = centre.length();
+            Vector to = npc.toVector().add(new Vector(0, 1.1, 0)).subtract(origin);
+            double along = to.dot(forward);
+            if (along > 0.0 && along < full + 0.6) {
+                double off = to.clone().subtract(forward.clone().multiply(along)).length();
+                if (off < 1.1 + Math.max(hw, hh) * 0.5) {
+                    k = Math.min(k, (along - 0.6) / full);
+                }
+            }
+        }
+        float kk = (float) clamp(k, 0.12, 1.0);
+        if (Math.abs(kk - sh.near) < 0.04 && !(kk >= 0.999f && sh.near < 0.999f)) {
             return;
         }
-        sh.near = k;
-        moveAll(sh, 3);
+        boolean closer = kk < sh.near;
+        sh.near = kk;
+        moveAll(sh, closer ? 1 : 4);
+    }
+
+    /** Too small to hide a card behind (goods on a belt, a dropped item, sparks). */
+    private static boolean small(BoundingBox box) {
+        return box.getWidthX() < 0.5 && box.getHeight() < 0.5 && box.getWidthZ() < 0.5;
+    }
+
+    /**
+     * Where a block or item display is drawn, as a box in the world: its model's cube through the transformation
+     * and the entity's own turn (an item shows smaller on the ground or in a hand than as a block).
+     */
+    private static BoundingBox drawnBox(Display d) {
+        if (!(d instanceof BlockDisplay) && !(d instanceof ItemDisplay)) {
+            return null;
+        }
+        float size = 1f;
+        if (d instanceof ItemDisplay item) {
+            size = switch (item.getItemDisplayTransform()) {
+                case GROUND -> 0.5f;
+                case THIRDPERSON_LEFTHAND, THIRDPERSON_RIGHTHAND -> 0.55f;
+                case FIRSTPERSON_LEFTHAND, FIRSTPERSON_RIGHTHAND -> 0.7f;
+                default -> 1f;
+            };
+        }
+        Transformation t = d.getTransformation();
+        Matrix4f m = new Matrix4f().translation(t.getTranslation()).rotate(t.getLeftRotation()).scale(t.getScale())
+                .rotate(t.getRightRotation());
+        Location at = d.getLocation();
+        Quaternionf turn = new Quaternionf().rotationYXZ((float) Math.toRadians(-at.getYaw()),
+                (float) Math.toRadians(at.getPitch()), 0f);
+        float lo = d instanceof BlockDisplay ? 0f : -0.5f * size;
+        float span = d instanceof BlockDisplay ? 1f : size;
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double minZ = Double.MAX_VALUE;
+        double maxX = -Double.MAX_VALUE;
+        double maxY = -Double.MAX_VALUE;
+        double maxZ = -Double.MAX_VALUE;
+        Vector3f v = new Vector3f();
+        for (int i = 0; i < 8; i++) {
+            v.set(lo + span * (i & 1), lo + span * ((i >> 1) & 1), lo + span * ((i >> 2) & 1));
+            m.transformPosition(v);
+            turn.transform(v);
+            minX = Math.min(minX, v.x);
+            minY = Math.min(minY, v.y);
+            minZ = Math.min(minZ, v.z);
+            maxX = Math.max(maxX, v.x);
+            maxY = Math.max(maxY, v.y);
+            maxZ = Math.max(maxZ, v.z);
+        }
+        return new BoundingBox(at.getX() + minX, at.getY() + minY, at.getZ() + minZ,
+                at.getX() + maxX, at.getY() + maxY, at.getZ() + maxZ);
     }
 
     private void step(Player player, Shown sh) {
@@ -892,6 +993,9 @@ public final class HudCards implements Listener {
         // card y (up) of a yd (down from the plate's top): mid - yd
         float mid = ((crestYd - 23f) + (ph + 13f)) / 2f;
         float crestY = mid - crestYd;
+        // the card's reach for the probe: ribbon tails at the sides, crest and rays above, the point below
+        sh.halfW = rw / 2f + 19f;
+        sh.halfH = ((ph + 13f) - (crestYd - 23f)) / 2f + 12f;
 
         // rays: a fan rising behind the crest, long and short
         for (int i = 0; i < RAYS.length; i++) {
@@ -1059,6 +1163,8 @@ public final class HudCards implements Listener {
         int n = lines.size();
         float ph = n * 10f + 7f;
         float pw = w + 34f;
+        sh.halfW = pw / 2f + 9f; // the badge sticks out on the left
+        sh.halfH = ph / 2f + 2f;
         float left = -pw / 2f;
         rect(sh, eye, FRAME, 0, 0f, 0f, pw + 2f, ph + 2f, 0f, 0f, argb(TalkChrome.mix(accent, TalkChrome.INK, 0.62), 255));
         rect(sh, eye, FRAME, 0, 0f, 0f, pw, ph, 0f, 0.0004f, TalkChrome.ink(232));

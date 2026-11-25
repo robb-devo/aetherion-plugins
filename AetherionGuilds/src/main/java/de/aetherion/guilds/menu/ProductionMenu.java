@@ -137,7 +137,7 @@ public final class ProductionMenu implements MenuKit.Menu {
         if (next != null) {
             head.add("");
             head.add("§b➤ Next goal: §f" + next.title());
-            head.add("§8" + next.how());
+            head.add("§8" + goals.howNow(host, next));
         }
         head.add("");
         head.add("§8⬆ = an upgrade you can pay now");
