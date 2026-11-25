@@ -2090,6 +2090,16 @@ public final class IslandGuide implements Listener {
 
     /** A standing spot near (x, z) on solid ground, facing (lookX, lookZ); null over void. */
     private Location spotNear(IslandHost host, int x, int z, int lookX, int lookZ) {
+        // on the ground the owner stands on first (never up on a log seat or a bench: his answer chips sit at
+        // his head, and from below they are awkward to click), anything standable only if there is no such spot
+        Location spawn = hosts.spawn(host);
+        int floor = spawn == null ? HostService.SURFACE_Y : spawn.getBlockY() - 1;
+        Location level = spotNear(host, x, z, lookX, lookZ, floor);
+        return level != null ? level : spotNear(host, x, z, lookX, lookZ, Integer.MIN_VALUE);
+    }
+
+    /** {@code floor} = the ground's block y a spot must have, or {@link Integer#MIN_VALUE} for any. */
+    private Location spotNear(IslandHost host, int x, int z, int lookX, int lookZ, int floor) {
         World world = hosts.world(host);
         if (world == null) {
             return null;
@@ -2103,8 +2113,8 @@ public final class IslandGuide implements Listener {
                     int bx = x + dx;
                     int bz = z + dz;
                     int y = ground(world, bx, bz);
-                    if (y == Integer.MIN_VALUE || structures.atColumn(world, bx, bz) != null
-                            || logistics.isBelt(world, bx, y + 1, bz)) {
+                    if (y == Integer.MIN_VALUE || (floor != Integer.MIN_VALUE && y != floor)
+                            || structures.atColumn(world, bx, bz) != null || logistics.isBelt(world, bx, y + 1, bz)) {
                         continue;
                     }
                     Location at = new Location(world, bx + 0.5, y + 1, bz + 0.5);
