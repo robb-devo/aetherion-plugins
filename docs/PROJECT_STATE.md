@@ -57,7 +57,7 @@ Helm agent and lacked the `aetherion-armor` datapack the other backends carry; n
 - Live jar hashes, deploy times and backups are logged per deploy in `aetherion-ops/docs/LIVE_STATE_*.md` on Robb's PC
   (newest on top); the table below is the summary.
 
-## Live plugin builds (sha256 prefix, 2026-11-24 23:04 CET)
+## Live plugin builds (sha256 prefix, 2026-11-25 23:40 CET)
 
 Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET) put `main` `f069314`
 (PRs #159 to #187) on every backend. The round of 21:21-21:22 CET added `6f592a1` (#189: A-58, A-54/A-55, A-59,
@@ -65,20 +65,23 @@ A-13: Core, Items, Quests, BossEngine, SamuraiBoss), and Quests followed with `6
 `969d94b` (#192, Aether Journal) on 2026-11-24 00:17 CET and `aba7c1c` (#194, journal polish) at 21:01 CET. The network
 rollout of `7400453` (#196, journal final polish) at 22:58-23:04 CET put Core on all six backends, Items and Quests on the
 five mmo backends, Guilds on mmo-i, Hub on mmo-r and Farming on mmo-r and mmo-c, and patched `journal.enabled: true` into
-the Items config of mmo-r, mmo-d, mmo-c and mmo-m (mmo-i had it already). **`main` equals live** on every backend; the
-hub server keeps its own Hub jar.
+the Items config of mmo-r, mmo-d, mmo-c and mmo-m (mmo-i had it already). mmo-i alone then got `c0c6d7d` (#199, Guilds
++ Quests) on 2026-11-25 02:03 CET and `1e7c08f` (#200, Guilds + Items) at 21:08 CET. The ship-all round of 2026-11-25
+(main after #197) put Items and Quests of that `main` on mmo-r, mmo-d, mmo-c and mmo-m, Hub (#197) on mmo-r, and
+switched paged talk + screen cards on there (a new `plugins/AetherionQuests/config.yml` with both switches, as on
+mmo-i). **`main` equals live** on every backend; the hub server keeps its own Hub jar, mmo-r keeps its Gnomon jar.
 
 | Plugin | Live build | Backends |
 |---|---|---|
 | Core | `6c3dbe10` | all six (#196) |
-| Items | `55063b1c` | every mmo backend (#196, `journal.enabled: true` on all five; economy.yml patched to v4 on start on mmo-r, mmo-d, mmo-c, mmo-m, `economy.yml.v3.bak` kept) |
-| Quests | `94741535` | every mmo backend (#196; paged talk + cards switched on on mmo-i only, the other live configs untouched) |
+| Items | `0936666a` / `e1ab49c9` | mmo-r, mmo-d, mmo-c, mmo-m (ship-all) / mmo-i (#200), same entries; `journal.enabled: true` on all five; economy.yml patched to v4 on start on mmo-r, mmo-d, mmo-c, mmo-m, `economy.yml.v3.bak` kept |
+| Quests | `3b562c2b` / `9064489b` | mmo-r, mmo-d, mmo-c, mmo-m (ship-all) / mmo-i (#199), same entries; paged talk + cards on in every mmo backend's Quests config |
 | BossEngine | `50cbbc16` | hub, mmo-r, mmo-d, mmo-c (no LuckPerms player group grants `*` or `helios.*`) |
 | AetherMobs | `68472a44` | every mmo backend |
 | Mining | `7646c17a` | mmo-r, mmo-c, mmo-m |
 | Farming / Fishing / Foraging | `04ae6c20` (#196) / `4761955f` / `d3949dac` | mmo-r, mmo-c |
-| Guilds | `e23b9cd1` | mmo-i only, #196 (parked on mmo-r and mmo-d, untouched) |
-| Hub | `ae7d3bad` | mmo-r (#196); **hub keeps `d1a097e7` (10-05)** |
+| Guilds | `0dac6d3e` | mmo-i only, #200 (parked on mmo-r and mmo-d, untouched) |
+| Hub | `6c4fe397` | mmo-r (#197, ship-all); **hub keeps `d1a097e7` (10-05)** |
 | SamuraiBoss | `16210290` | mmo-r (`arena.bell-challenge: true` patched live; no dojo is built there right now, see below) |
 | Dungeons, Beta, Gnomon, Pit | `main` of 11-16 (unchanged since) | as below |
 
@@ -93,9 +96,11 @@ Backups of the replaced jars and configs: `backups/beta-a04-a61-20261123-190456`
 `*.bak-pre-journal-*`; `rollback.sh` in the matching staging folder), `backups/journal-polish-mmoi-20261124-2058` (the #192
 jars of mmo-i; old pack as `*.bak-pre-journal-polish-*`; `rollback.sh` in the matching staging folder),
 `backups/journal-network-20261124-2258` (one folder per server with the replaced jars and Items configs; `rollback.sh` in
-`staging/journal-network-20261124-2258`).
-Waiting for a deploy: #197 (Origin blurbs read as the journal: Ledger's Court in the live `origin.yml` of hub, mmo-r and
-mmo-c still says "Aetherion Manager"). Merge it with the next round that deploys Hub to mmo-r, not on its own.
+`staging/journal-network-20261124-2258`), `backups/ship-all-20261125-2320` (one folder per server with the replaced
+jars; `rollback.sh` in `staging/ship-all-20261125-2320`, `--config-only` switches paged talk + cards off again).
+Not merged on purpose (2026-11-25): #153 (stress bots network-wide: an offline test-bot door in the proxy, a proxy
+restart, bot dialog loops written before paged talk) and #145 (exile round 2: conflicts with `main` in `ExileDoors`,
+needs world edits on mmo-c and mmo-r and a story decision).
 
 Live look of 2026-11-23 (things the repo does not show):
 - mmo-r has **no Samurai dojo** (both were removed with `/samurai remove` on 10-31; boot says "0 Dojo(s)"). The temple
@@ -418,7 +423,7 @@ Island tour in flow order (2026-11-22, branch `claude/island-chain-onboarding`, 
 ## Paged talk and screen cards (2026-11-22, cloud session, Quests + Guilds, mmo-i first)
 
 Robb's ask: far less text. Two switches in the Quests config, both off by default, so a server only changes when
-its live config turns them on (first mmo-i; the rest of the network after Robb's OK).
+its live config turns them on (first mmo-i; on every mmo backend since 2026-11-25, Robb's OK).
 - `paged-talk.enabled` (`talk/TalkUx.java`): a bubble line waits for the player's click (left/right-click the NPC
   or its bubble, or left-click while looking at them); a click while typing shows it at once; a breathing ▾ means
   more is coming; reply chips come once the last line is read. NPC lines no longer go to chat: one grey log line
@@ -485,8 +490,8 @@ Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Conc
 - Live on every backend since 2026-11-24 23:04 CET (main `7400453`, switch on in all five Items configs, one restart
   each, logs clean; pack `d7d99510` -> `f6ad1a14`, only the covers added; backup and staging
   `journal-network-20261124-2258` with `rollback.sh`). A scan of every live plugin text file found no "Nether Star" or
-  "Netherstern"; "Aetherion Manager" is left only in Ledger's Court's blurb (#197, waits for the next Hub deploy) and
-  in a DeluxeHub config comment players never see.
+  "Netherstern"; "Aetherion Manager" was left only in Ledger's Court's blurb (#197, live on mmo-r since 2026-11-25; the
+  hub server keeps its own Hub jar and runs no journal) and in a DeluxeHub config comment players never see.
 
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 
