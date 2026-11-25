@@ -258,7 +258,7 @@ public final class UnlockService {
     };
     private LandingCamera camera;
 
-    /** The five-second sweep over a new island before you drift down onto it. */
+    /** The film shot over a new island that ends in the player's own eyes on the ground. */
     public void attachCamera(LandingCamera camera) {
         this.camera = camera;
     }
@@ -282,16 +282,22 @@ public final class UnlockService {
                 return;
             }
             Location spawn = personal.spawn(island);
-            Runnable land = () -> descend(player, spawn, "§a✦ " + starter.display() + " §a✦", "§fYour island. Grow it.", () -> {
+            String title = "§a✦ " + starter.display() + " §a✦";
+            String subtitle = "§fYour island. Grow it.";
+            Runnable intro = () -> {
                 if (guide == null || !guide.introduce(player)) {
                     firstSteps(player, starter);
                 }
-            });
-            if (camera != null && spawn != null) {
-                player.sendTitle("", "§7" + starter.display(), 5, 70, 15);
-                camera.sweep(player, spawn, land);
+            };
+            Runnable drift = () -> descend(player, spawn, title, subtitle, intro);
+            if (camera != null && camera.enabled() && spawn != null) {
+                // the camera flies, the player stands: the shot ends in their own eyes on their own ground
+                Location focus = new Location(spawn.getWorld(), personal.originX(island) + 0.5, spawn.getY(),
+                        personal.originZ(island) + 0.5);
+                player.sendTitle("", "§7" + starter.display(), 5, 60, 20);
+                camera.fly(player, spawn, focus, () -> arrive(player, title, subtitle, intro), drift);
             } else {
-                land.run();
+                drift.run();
             }
         });
     }
@@ -346,6 +352,15 @@ public final class UnlockService {
                 }
             }
         }.runTaskTimer(plugin, 10L, 5L);
+    }
+
+    /** The camera set them down on their own ground: the fanfare where they stand, then the guide. */
+    private void arrive(Player player, String title, String subtitle, Runnable after) {
+        fanfare(player, title, subtitle);
+        if (after != null) {
+            later(50L, after);
+        }
+        personal.refreshFlight(player);
     }
 
     private void fanfare(Player player, String title, String subtitle) {

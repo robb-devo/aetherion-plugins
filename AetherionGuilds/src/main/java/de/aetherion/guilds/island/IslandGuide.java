@@ -55,9 +55,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
@@ -107,16 +109,18 @@ public final class IslandGuide implements Listener {
         COMPACT,
         DOCK,
         SHIP,
+        /** After the first ship: the first piece of land, a gift, so you know where land is bought. */
+        LAND,
         DONE,
         SKIPPED;
 
         public boolean touring() {
-            return ordinal() >= HUB.ordinal() && ordinal() <= SHIP.ordinal();
+            return ordinal() >= HUB.ordinal() && ordinal() <= LAND.ordinal();
         }
 
-        /** The Dock half of the tour (the first chain stands; now the Dock and the first ship). */
+        /** The Dock half of the tour (the first chain stands; now the Dock, the first ship and the first land). */
         public boolean actTwo() {
-            return ordinal() >= DOCK.ordinal() && ordinal() <= SHIP.ordinal();
+            return ordinal() >= DOCK.ordinal() && ordinal() <= LAND.ordinal();
         }
 
         /** Steps only old saves still carry: the island itself says where those players go on. */
@@ -145,6 +149,8 @@ public final class IslandGuide implements Listener {
     private static final int SPARE_QUARRY = 1 << 4;
     /** Kits bit: the Build Tool lesson is over (the player switched to the Quarry, or let him do it). */
     private static final int TOOL_TAUGHT = 1 << 7;
+    /** Kits bit: the tour's free parcel was taken. */
+    private static final int LAND_GIFT = 1 << 8;
     /** The tool's action bar while the lesson waits for the switch. */
     private static final String COACH = "§e⇅ §fHold sneak §7and §fscroll the wheel §8→ §7switch to the §eQuarry";
 
@@ -379,6 +385,7 @@ public final class IslandGuide implements Listener {
             case HUT -> "Set the Storage Hut down behind the Mill §7(free)";
             case BELT -> "Belt the Mill's chute into the hut";
             case DOCK, SHIP -> factoryObjective(host, step);
+            case LAND -> "Take your first land, a gift §7(Hub → Land)";
             default -> null;
         };
     }
@@ -394,6 +401,7 @@ public final class IslandGuide implements Listener {
             case FEED -> "Mill fed";
             case HUT -> "Storage Hut built";
             case DOCK -> "Dock built";
+            case LAND -> "Your first land";
             default -> null;
         };
         if (title == null) {
@@ -404,12 +412,12 @@ public final class IslandGuide implements Listener {
                 next == null ? null : "§8Next: §7" + next);
     }
 
-    /** Steps in the whole tour (for "step n/8"). */
+    /** Steps in the whole tour (for "step n/9"). */
     public int total() {
-        return 8;
+        return 9;
     }
 
-    /** 0..8 steps done (for progress bars). */
+    /** 0..9 steps done (for progress bars). */
     public int progress(UUID owner) {
         return switch (step(owner)) {
             case QUARRY -> 1;
@@ -419,7 +427,8 @@ public final class IslandGuide implements Listener {
             case BELT -> 5;
             case DOCK -> 6;
             case SHIP -> 7;
-            case DONE, SKIPPED -> 8;
+            case LAND -> 8;
+            case DONE, SKIPPED -> 9;
             default -> 0;
         };
     }
@@ -547,6 +556,13 @@ public final class IslandGuide implements Listener {
             for (String line : lines) {
                 player.sendMessage("§e" + name() + "§7: §f" + line);
             }
+            return;
+        }
+        if (state(hand.owner).step == Step.LAND) {
+            // the first ship's beat: one more thing before he lets you go, the land
+            speak(player, hand, lines, List.of(
+                    reply("Go on", NamedTextColor.GREEN, () -> landPrompt(player, hand, true)),
+                    reply("Later", NamedTextColor.GRAY, null)));
             return;
         }
         speak(player, hand, lines, List.of(
@@ -745,6 +761,7 @@ public final class IslandGuide implements Listener {
         chats.remove(id);
         chatReplies.remove(id);
         clickCool.remove(id);
+        landOffered.remove(id);
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -776,6 +793,7 @@ public final class IslandGuide implements Listener {
             case BELT -> beltPrompt(player, hand, fresh);
             case DOCK -> dockPrompt(player, hand, fresh);
             case SHIP -> shipPrompt(player, hand, fresh);
+            case LAND -> landPrompt(player, hand, fresh);
             default -> yardTalk(player, hand);
         }
     }
@@ -1290,6 +1308,60 @@ public final class IslandGuide implements Listener {
                         reply("Got it", NamedTextColor.GRAY, null)));
     }
 
+    private LandService land;
+    private BiConsumer<Player, IslandHost> openLand = (player, host) -> player.performCommand("island land");
+
+    /**
+     * Land: the tour ends with one free parcel (before land opens on its own at the Grand Hub), so a player knows
+     * where land is bought and sees the ground rise and the border move out with it.
+     */
+    public void attachLand(LandService land, BiConsumer<Player, IslandHost> openLand) {
+        this.land = land;
+        if (openLand != null) {
+            this.openLand = openLand;
+        }
+        if (land != null) {
+            land.attachGift(host -> host != null && !host.isGuild() && available() && step(host.id()) == Step.LAND
+                            && (state(host.id()).kits & LAND_GIFT) == 0,
+                    host -> {
+                        state(host.id()).kits |= LAND_GIFT;
+                        dirty = true;
+                    });
+        }
+    }
+
+    /** Players he has told about the land this session (so a late reminder never repeats the whole speech). */
+    private final Set<UUID> landOffered = new HashSet<>();
+
+    private void landPrompt(Player player, Hand hand, boolean fresh) {
+        IslandHost host = IslandHost.personal(hand.owner);
+        fresh = fresh && landOffered.add(player.getUniqueId());
+        List<String> lines = fresh
+                ? List.of("One more thing, and it's the best bit: your island grows.",
+                "Every stage widens your border on its own. Past it, you buy land: a 16 by 16 piece next to yours, "
+                        + "and new ground rises there in your island's look.",
+                "Land opens for good at the Grand Hub. The first piece is on me: open your Hub, pick Land, "
+                        + "click a green square.")
+                : List.of("Your first land is waiting, free: Hub → Land, then a green square next to yours.");
+        speak(player, hand, lines, List.of(
+                reply("Show me the land", NamedTextColor.GREEN, () -> openLand.accept(player, host)),
+                reply("Later", NamedTextColor.GRAY, null)));
+    }
+
+    /** The gift is taken: the ground is rising, and the tour is over. */
+    private void landTaken(Player player, Hand hand) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline() || chats.containsKey(player.getUniqueId())) {
+                return;
+            }
+            speak(player, hand, List.of("There it rises. That's yours now, and your border moved out with it.",
+                    "More land opens at the Grand Hub, always at your Hub under Land. That's the tour. The bar up top "
+                            + "shows what's next."),
+                    List.of(reply("What's next?", NamedTextColor.GREEN, () -> tip(player, hand)),
+                            reply("Thanks, " + name(), NamedTextColor.GRAY, null)));
+        }, 50L);
+    }
+
     /** The tour ended some other way than the ship (an admin stage, an old save): a short goodbye. */
     private void finishTalk(Player player, Hand hand) {
         speak(player, hand, List.of("You're set. Quarries dig, machines refine, the Dock ships. The bar up top shows what's next."),
@@ -1671,6 +1743,9 @@ public final class IslandGuide implements Listener {
             state.step = Step.SHIP;
         }
         if (state.step == Step.SHIP && (dock == null || dock.stage(host) >= 1)) {
+            state.step = land == null ? Step.DONE : Step.LAND;
+        }
+        if (state.step == Step.LAND && (land == null || (state.kits & LAND_GIFT) != 0)) {
             state.step = Step.DONE;
         }
         if (state.step != before) {
@@ -1905,8 +1980,20 @@ public final class IslandGuide implements Listener {
                         prompt(owner, hand, true);
                     }
                 }
+                case LAND -> {
+                    // the Dock plays the first ship's beat and he speaks there ("go on" leads to the land); if that
+                    // never comes (an admin stage, a beat cut short) he brings the land up himself a little later
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (owner.isOnline() && state(island.ownerId()).step == Step.LAND
+                                && !landOffered.contains(owner.getUniqueId()) && !chats.containsKey(owner.getUniqueId())) {
+                            landPrompt(owner, hand, true);
+                        }
+                    }, 400L);
+                }
                 case DONE -> {
-                    if (before != Step.SHIP) {
+                    if (before == Step.LAND) {
+                        landTaken(owner, hand);
+                    } else if (before != Step.SHIP) {
                         finishTalk(owner, hand); // the Dock plays the first ship's beat itself and he speaks there
                     }
                 }

@@ -1313,21 +1313,23 @@ public final class LogisticsService {
      * ({@code made}).
      */
     private record Flows(Map<UUID, Double> in, Map<UUID, Double> raw, Map<UUID, Double> made,
-                         Map<Route, Double> carried) {
+                         Map<Route, Double> carried, boolean converts) {
     }
 
     /**
      * Goods per minute each machine is fed, following every quarry's dig rate down its line: splitters share it,
      * overflow gates send it front, sorters by their pick, depots pass it on, and a Mill sends on 1 for every
      * 128 it gets (a Forge 1 for 128 Compressed), so a hut behind an idle-looking Mill is never promised its raw.
-     * A quarry that is full (its line backed up) feeds nothing.
+     * A quarry that is full (its line backed up) feeds nothing, and a machine that takes nothing right now (still
+     * being built, a full hut, a backed-up Mill) gets nothing and sends nothing on: only what really arrives counts.
      */
     public Map<UUID, Double> feedPerMinute(IslandHost host) {
         return flows(host).in();
     }
 
     private Flows flows(IslandHost host) {
-        Flows flows = new Flows(new HashMap<>(), new HashMap<>(), new HashMap<>(), new java.util.IdentityHashMap<>());
+        Flows flows = new Flows(new HashMap<>(), new HashMap<>(), new HashMap<>(), new java.util.IdentityHashMap<>(),
+                AetherionItemsAccess.available());
         for (Route route : routes(host)) {
             if (route.from().type().role() != StructureType.Role.SOURCE || route.to() == null) {
                 continue;
@@ -1336,10 +1338,42 @@ public final class LogisticsService {
             if (minion == null || minion.rawEquivalent() >= minion.cap()) {
                 continue; // full: it has stopped digging until the line takes again
             }
-            flows.carried().merge(route, (double) digPerMinute(minion), Double::sum);
-            flow(route.to(), digPerMinute(minion), Res.of(minion.quarryType(), Res.Form.RAW), flows, 0, new HashSet<>());
+            carry(flows, route, flow(route.to(), digPerMinute(minion), Res.of(minion.quarryType(), Res.Form.RAW), flows, 0,
+                    new HashSet<>()));
         }
         return flows;
+    }
+
+    private static void carry(Flows flows, Route route, double took) {
+        if (took > 0.0) {
+            flows.carried().merge(route, took, Double::sum);
+        }
+    }
+
+    /**
+     * Whether a machine takes goods off its belt right now: one still being built takes nothing, nor does a full hut
+     * or a Mill whose input or output is full (its line waits). The steady rates follow only what really arrives.
+     */
+    private static boolean takes(PlacedStructure node) {
+        if (node == null || node.building()) {
+            return false;
+        }
+        return switch (node.type().role()) {
+            case SINK -> PlacedStructure.total(node.store()) < node.capacity();
+            case PROCESSOR, ROUTER -> PlacedStructure.total(node.input()) < node.capacity()
+                    && (node.type().router() || PlacedStructure.total(node.output()) < node.capacity());
+            default -> true;
+        };
+    }
+
+    private static List<Route> taking(List<Route> routes) {
+        List<Route> out = new ArrayList<>();
+        for (Route route : routes) {
+            if (takes(route.to())) {
+                out.add(route);
+            }
+        }
+        return out;
     }
 
     /**
@@ -1352,12 +1386,16 @@ public final class LogisticsService {
             return out;
         }
         Flows flows = flows(target.host());
+        // a hut that takes nothing right now says why, instead of naming its senders idle
+        String waiting = target.building() ? "§8waits, this one is still being built"
+                : takes(target) ? null : "§8waits, this one is full";
         for (Route route : routes(target.host())) {
             if (route.to() != target) {
                 continue;
             }
             double carried = flows.carried().getOrDefault(route, 0.0);
-            out.add("§7← §f" + route.from().label() + " " + (carried > 0.0 ? "§a" + rate(carried) : "§8idle, nothing coming"));
+            out.add("§7← §f" + route.from().label() + " " + (carried > 0.0 ? "§a" + rate(carried)
+                    : waiting != null ? waiting : "§8idle, nothing coming"));
         }
         return out;
     }
@@ -1375,16 +1413,17 @@ public final class LogisticsService {
         return forge && res.form() == Res.Form.COMPRESSED ? Res.of(res.type(), Res.Form.COMPACTED) : null;
     }
 
-    private void flow(PlacedStructure node, double rate, Res res, Flows flows, int depth, Set<UUID> path) {
-        if (node == null || rate <= 0.0 || depth > 24 || !path.add(node.id())) {
-            return;
+    /** Follows {@code rate} of {@code res} into {@code node}; returns what it took (0 if it takes nothing now). */
+    private double flow(PlacedStructure node, double rate, Res res, Flows flows, int depth, Set<UUID> path) {
+        if (node == null || rate <= 0.0 || depth > 24 || !takes(node) || !path.add(node.id())) {
+            return 0.0;
         }
         flows.in().merge(node.id(), rate, Double::sum);
         flows.raw().merge(node.id(), res.rawEquivalent(1L) * rate, Double::sum);
         Res out = res;
         double outRate = rate;
         if (node.type().role() == StructureType.Role.PROCESSOR) {
-            Res made = madeFrom(node, res);
+            Res made = flows.converts() ? madeFrom(node, res) : null; // without AetherionItems it passes all through
             if (made != null) {
                 out = made;
                 outRate = res.rawEquivalent(1L) * rate / made.rawEquivalent(1L);
@@ -1404,21 +1443,22 @@ public final class LogisticsService {
                 for (Route route : live) {
                     (route.front() ? front : sides).add(route);
                 }
+                // what one exit refuses goes to the others (spread), so share only among those that take
+                List<Route> frontTaking = taking(front);
                 List<Route> take = switch (node.type()) {
-                    case OVERFLOW -> front.isEmpty() ? sides : front;
-                    case SORTER -> node.filterMatches(res) ? front : sides;
-                    default -> live;
+                    case OVERFLOW -> frontTaking.isEmpty() ? taking(sides) : frontTaking;
+                    case SORTER -> node.filterMatches(res) ? frontTaking : taking(sides);
+                    default -> taking(live);
                 };
                 for (Route route : take) {
-                    flows.carried().merge(route, rate / take.size(), Double::sum);
-                    flow(route.to(), rate / take.size(), res, flows, depth + 1, path);
+                    carry(flows, route, flow(route.to(), rate / take.size(), res, flows, depth + 1, path));
                 }
             } else if (node.type().role() == StructureType.Role.PROCESSOR || node.type() == StructureType.DEPOT) {
-                flows.carried().merge(live.get(0), outRate, Double::sum);
-                flow(live.get(0).to(), outRate, out, flows, depth + 1, path);
+                carry(flows, live.get(0), flow(live.get(0).to(), outRate, out, flows, depth + 1, path));
             }
         }
         path.remove(node.id());
+        return rate;
     }
 
     /** "12/min", or for a trickle "1 every 11 min" / "1 every 3 h" (never a rounded-away 0/min). */

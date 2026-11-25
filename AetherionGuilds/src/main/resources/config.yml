@@ -53,8 +53,11 @@ guide:
 # The isle's quiet sound bed (wind, gulls, a hum near running machines), only for players on an island.
 ambience:
   enabled: true
-# Five seconds of camera sweep over a new island before the first landing.
+# The first landing as a film shot: out of the cloud, once round the new island, down into the player's eyes.
 landing-camera:
+  enabled: true
+# The island's border, always shown: a slim rail of light with crystal posts along the land you may build on.
+island-border:
   enabled: true
 stages:
   ramp-multiplier: 10             # stage 0 (the tour): every quarry of a personal island digs this many times as fast

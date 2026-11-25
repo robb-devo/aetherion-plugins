@@ -91,6 +91,7 @@ public final class AetherionGuilds extends JavaPlugin {
     private de.aetherion.guilds.island.FactoryProgress progress;
     private de.aetherion.guilds.island.DockService dock;
     private de.aetherion.guilds.island.LandingCamera landingCamera;
+    private de.aetherion.guilds.island.IslandBorder islandBorder;
     private de.aetherion.core.api.IslandAccess islandAccess;
 
     @Override
@@ -255,6 +256,9 @@ public final class AetherionGuilds extends JavaPlugin {
         goals.attachTitleOwner(guide::ownsTitle);
         guide.register();
         guide.attachDock(dock, dockMenu::open);
+        // land at the Hub (where it's looked for) and as the tour's last step: the first parcel is the tour's gift
+        hubMenu.attachLand(landMenu, land);
+        guide.attachLand(land, landMenu::open);
         dock.attachVoice(guide::say);
         unlock.attachGuide(guide);
         landingCamera = new de.aetherion.guilds.island.LandingCamera(this);
@@ -451,6 +455,9 @@ public final class AetherionGuilds extends JavaPlugin {
                 structures, logistics);
         ambience.setEnabled(getConfig().getBoolean("ambience.enabled", true));
         getServer().getScheduler().runTaskTimer(this, ambience::tick, 80L, 20L);
+        islandBorder = new de.aetherion.guilds.island.IslandBorder(this, hosts);
+        islandBorder.setEnabled(getConfig().getBoolean("island-border.enabled", true));
+        getServer().getScheduler().runTaskTimer(this, islandBorder::tick, 70L, 40L);
         getServer().getScheduler().runTaskTimer(this, () -> {
             minions.catchUpAll();
             logistics.stepAll();
@@ -556,6 +563,9 @@ public final class AetherionGuilds extends JavaPlugin {
         }
         if (landingCamera != null) {
             landingCamera.clear();
+        }
+        if (islandBorder != null) {
+            islandBorder.clear();
         }
         if (islandAccess != null) {
             de.aetherion.core.api.AetherServices.clearIslands(islandAccess);
