@@ -78,6 +78,7 @@ public final class AetherionGuilds extends JavaPlugin {
     private StructureService structures;
     private LogisticsService logistics;
     private PlacementService placement;
+    private de.aetherion.guilds.island.StarterGates starterGates;
     private UnlockService unlock;
     private GuildProjectService projects;
     private Highlight highlight;
@@ -148,6 +149,9 @@ public final class AetherionGuilds extends JavaPlugin {
         projects.load();
 
         StarterSelectMenu starterMenu = new StarterSelectMenu(personal, unlock);
+        // the island choice on the Isle Dock: three gates to walk through (only where Core runs the dock)
+        starterGates = new de.aetherion.guilds.island.StarterGates(this, personal, starterMenu::openGate);
+        getServer().getScheduler().runTaskTimer(this, starterGates::tick, 80L, 4L);
         BuildMenu buildMenu = new BuildMenu(hosts, structures, logistics, placement, land);
         LandMenu landMenu = new LandMenu(hosts, land);
         StorageMenu storageMenu = new StorageMenu(hosts, structures, logistics);
@@ -272,6 +276,9 @@ public final class AetherionGuilds extends JavaPlugin {
         menu.attachHighlight(projectMenu, buildMenu, landMenu);
         quarryMenu.attachHighlight(hosts, structures, logistics);
 
+        // "belt out" / "belt in" markers are building hints: only for whoever holds the Build Tool (Belt mode draws its own)
+        logistics.attachMarkerViewers(player -> placement.holdingTool(player)
+                && placement.kind(player) != PlacementService.Kind.BELTS);
         placement.attachQuarries(new PlacementService.Quarries() {
             @Override
             public org.bukkit.inventory.ItemStack find(Player player) {
@@ -297,6 +304,21 @@ public final class AetherionGuilds extends JavaPlugin {
             @Override
             public boolean place(Player player, org.bukkit.block.Block ground, org.bukkit.inventory.ItemStack item) {
                 return minions.place(player, ground, item) != null;
+            }
+
+            @Override
+            public boolean pickUp(Player player, de.aetherion.guilds.structure.PlacedStructure housing) {
+                IslandHost host = housing.host();
+                de.aetherion.guilds.model.QuarryMinion minion = hosts.minion(host, housing.minionId());
+                if (minion == null) {
+                    return false;
+                }
+                if (host.isGuild()) {
+                    de.aetherion.guilds.model.Guild guild = hosts.guild(host);
+                    return guild != null && minions.pickup(player, guild, minion);
+                }
+                de.aetherion.guilds.model.PersonalIsland island = hosts.island(host);
+                return island != null && minions.pickup(player, island, minion);
             }
 
             @Override
@@ -529,6 +551,9 @@ public final class AetherionGuilds extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (starterGates != null) {
+            starterGates.remove();
+        }
         if (landingCamera != null) {
             landingCamera.clear();
         }

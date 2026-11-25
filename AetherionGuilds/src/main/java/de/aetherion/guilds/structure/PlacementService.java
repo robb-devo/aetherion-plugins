@@ -43,8 +43,8 @@ import java.util.UUID;
  *   building after each click; every copy is paid from your island's storage.</li>
  *   <li><b>Belt</b>: right-click a chute (or the quarry), then the hut or machine it should feed: the run picks
  *   the nearest free side and turns its last tile in. An end in the open keeps chaining; left-click clears it.</li>
- *   <li><b>Take down</b>: look at a belt or a building (it turns red), right-click. Buildings ask for a second
- *   click; half their cost goes back to storage.</li>
+ *   <li><b>Pick up</b>: look at a belt, a building or a quarry (it turns red), right-click. Buildings and quarries
+ *   ask for a second click; everything they cost comes back (a building keeps its tier for the next one).</li>
  *   <li>Right-click one of your buildings with a part picked: it opens, like without the tool.</li>
  *   <li><b>Quarry</b>: sets a quarry from your pack down; the hologram is the rig that rises round it.</li>
  * </ul>
@@ -77,6 +77,11 @@ public final class PlacementService {
         /** Sets the quarry down on this ground block (it stands on top). True when it stands. */
         boolean place(Player player, Block ground, ItemStack item);
 
+        /** Picks the quarry in this housing up into the player's inventory (keeps everything). */
+        default boolean pickUp(Player player, PlacedStructure housing) {
+            return false;
+        }
+
         /** Which quarry this item is (its trade picks the hologram's yard), or null. */
         default de.aetherion.guilds.model.QuarryType type(ItemStack item) {
             return null;
@@ -101,7 +106,7 @@ public final class PlacementService {
         OVERFLOW(StructureType.OVERFLOW, "Overflow Gate", Material.WAXED_WEATHERED_COPPER_GRATE, "Front first, sides take the spill."),
         SORTER(StructureType.SORTER, "Sorter", Material.WAXED_OXIDIZED_COPPER_GRATE, "One good out the front, the rest out the sides."),
         DOCK(StructureType.DOCK, "Dock", Material.SPRUCE_BOAT, "Contracts and the airship. Belts end here."),
-        DISMANTLE(null, "Take down", Material.BARRIER, "Removes belts and buildings. Everything it cost comes back.");
+        DISMANTLE(null, "Pick up", Material.CHEST, "Picks up belts, buildings and quarries. Everything it cost comes back.");
 
         private final StructureType type;
         private final String label;
@@ -165,6 +170,8 @@ public final class PlacementService {
         int clock;
         boolean holding;
         long quietUntil;
+        /** A line from the island guide that the action bar shows instead of the tool's own (null: none). */
+        String coach;
         UUID armed;
         long armedUntil;
 
@@ -186,6 +193,9 @@ public final class PlacementService {
     /** The turn a quarry is being set down with (read once by the housing as it rises). */
     private final Map<UUID, Integer> quarryRot = new HashMap<>();
     private java.util.function.BiConsumer<Player, IslandHost> picker = (player, host) -> {
+    };
+    /** Told whenever the player switches the tool's part themselves (sneak + scroll, the picker). */
+    private java.util.function.BiConsumer<Player, Part> switched = (player, part) -> {
     };
 
     public PlacementService(JavaPlugin plugin, HostService hosts, StructureService structures,
@@ -211,6 +221,27 @@ public final class PlacementService {
     public int takeQuarryRot(Player player, int fallback) {
         Integer rot = player == null ? null : quarryRot.remove(player.getUniqueId());
         return rot == null ? fallback : rot;
+    }
+
+    /** Who hears that a player switched parts by hand (the island guide's Build Tool lesson). */
+    public void attachSwitched(java.util.function.BiConsumer<Player, Part> listener) {
+        this.switched = listener == null ? (player, part) -> {
+        } : listener;
+    }
+
+    /**
+     * A line the action bar shows instead of the tool's own while the tool is in hand (the guide's "sneak + scroll
+     * to the Quarry"); null puts the tool's own lines back. Lives as long as this tool session.
+     */
+    public void coach(Player player, String line) {
+        Session session = player == null ? null : sessions.get(player.getUniqueId());
+        if (session == null || java.util.Objects.equals(session.coach, line)) {
+            return;
+        }
+        session.coach = line;
+        if (line != null && holdingTool(player)) {
+            actionBar(player, line);
+        }
     }
 
     /** The picker screen (F with the tool in hand). */
@@ -290,16 +321,32 @@ public final class PlacementService {
         return out;
     }
 
-    /** What a new pick defaults to: the next thing a fresh island needs, else the last pick. */
+    /**
+     * What a new pick defaults to: the next thing a fresh island needs, else the last pick. Personal islands go
+     * the way the stone flows, like the tour (quarry, Mill, hut); guild yards keep hut first.
+     */
     private Part suggested(Player player, IslandHost host) {
         if (!structures.hasWorkshop(host)) {
             return Part.HUB; // the Hub comes first, everything else hangs off it
         }
-        if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
-            return Part.STORAGE_HUT;
-        }
-        if (structures.count(host, StructureType.QUARRY_HOUSING) == 0 && quarriesIn(player) > 0) {
-            return Part.QUARRY;
+        boolean noQuarry = structures.count(host, StructureType.QUARRY_HOUSING) == 0 && quarriesIn(player) > 0;
+        if (host.isGuild()) {
+            if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
+                return Part.STORAGE_HUT;
+            }
+            if (noQuarry) {
+                return Part.QUARRY;
+            }
+        } else {
+            if (noQuarry) {
+                return Part.QUARRY;
+            }
+            if (structures.count(host, StructureType.MILL) == 0 && lockReason(host, Part.MILL) == null) {
+                return Part.MILL;
+            }
+            if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
+                return Part.STORAGE_HUT;
+            }
         }
         if (logistics.count(host) == 0) {
             return Part.BELT;
@@ -318,7 +365,7 @@ public final class PlacementService {
         }
         StringBuilder out = new StringBuilder();
         for (BuildCosts.Line line : bill) {
-            long have = line.coins() ? hosts.funds(player, host) : structures.stock(host, line.res());
+            long have = line.coins() ? hosts.funds(player, host) : structures.available(player, host, line.res());
             if (out.length() > 0) {
                 out.append("§8, ");
             }
@@ -371,9 +418,9 @@ public final class PlacementService {
                     case BELT -> {
                         lore.add("§fRight-click §7orange chute, then the hut (snaps in)");
                         lore.add("§fLeft-click §7cancel start");
-                        lore.add("§fQ §7put away · Take down for remove");
+                        lore.add("§fQ §7put away · Pick up to remove");
                     }
-                    case DISMANTLE -> lore.add("§fRight-click §7take down what's red");
+                    case DISMANTLE -> lore.add("§fRight-click §7pick up what's red");
                     default -> {
                         lore.add("§fRight-click §7build");
                         lore.add("§fLeft-click §7turn");
@@ -680,6 +727,23 @@ public final class PlacementService {
      * the picker, /island → Build, the Hub, Hollis and every "build X" button.
      */
     public void openTool(Player player, IslandHost host, Part wanted) {
+        openTool(player, host, wanted, false);
+    }
+
+    /** The picker and the guide's lesson: the part goes into the hand, and the player's own pick is reported. */
+    public void pick(Player player, IslandHost host, Part part) {
+        openTool(player, host, part);
+        if (part != null && part(player) == part) {
+            switched.accept(player, part);
+        }
+    }
+
+    /** Quiet: into the hand without the title and the part's how-to line (the guide is talking already). */
+    public void openToolQuiet(Player player, IslandHost host, Part wanted) {
+        openTool(player, host, wanted, true);
+    }
+
+    private void openTool(Player player, IslandHost host, Part wanted, boolean quiet) {
         if (!onIsland(player, host)) {
             return;
         }
@@ -716,6 +780,10 @@ public final class PlacementService {
         } else {
             player.closeInventory();
         }
+        if (quiet) {
+            player.playSound(player.getLocation(), Sound.ITEM_SPYGLASS_USE, 0.6f, 1.4f);
+            return;
+        }
         announce(player, session, fresh);
     }
 
@@ -729,7 +797,7 @@ public final class PlacementService {
         player.sendMessage(switch (part) {
             case BELT -> "§7Belt: §fright-click §7the §6orange chute§7, then §fright-click §7the hut or machine §8(§agreen pads§8)§7 — it snaps in."
                     + " Ending in the open keeps chaining. §fLeft-click §7cancels the start.";
-            case DISMANTLE -> "§7Take down: look at a belt or building, it turns §cred§7, then §fright-click§7.";
+            case DISMANTLE -> "§7Pick up: look at a belt, building or quarry, it turns §cred§7, then §fright-click§7.";
             case QUARRY -> "§7Quarry: the hologram is its rig. Look at flat ground, §fright-click §7sets the quarry from your"
                     + " pack down, §fleft-click §7turns its chute.";
             case SPLITTER, OVERFLOW, SORTER -> "§7" + part.label() + ": §fright-click §7a belt to cut it in. "
@@ -764,6 +832,7 @@ public final class PlacementService {
         session.quietUntil = System.currentTimeMillis() + 900L;
         actionBar(player, "§7" + next.line());
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.4f, 1.2f + 0.08f * at);
+        switched.accept(player, next);
     }
 
     /** F with the tool in hand: the picker. */
@@ -1031,7 +1100,7 @@ public final class PlacementService {
             return "Still going up";
         }
         return switch (structure.type()) {
-            case QUARRY_HOUSING -> "Quarries are picked up from their own menu";
+            case QUARRY_HOUSING -> null; // picked up whole: level, mill and storage go with it
             case PROJECT -> "Guild projects stay";
             default -> PlacedStructure.total(structure.store()) > 0L || PlacedStructure.total(structure.input()) > 0L
                     || PlacedStructure.total(structure.output()) > 0L ? "Empty it first, so nothing is lost" : null;
@@ -1075,13 +1144,17 @@ public final class PlacementService {
             session.armed = structure.id();
             session.armedUntil = now + CONFIRM_MS;
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.7f);
-            actionBar(player, "§c§lRight-click again §7to take down your §f" + structure.label()
-                    + " §8(all of its cost comes back)");
+            actionBar(player, "§c§lRight-click again §7to pick up your §f" + structure.label()
+                    + " §8(" + (structure.type() == StructureType.QUARRY_HOUSING ? "it goes into your inventory"
+                    : "all of its cost comes back") + ")");
             session.quietUntil = now + 1500L;
             return;
         }
         session.armed = null;
-        if (structures.deconstruct(player, structure)) {
+        boolean done = structure.type() == StructureType.QUARRY_HOUSING
+                ? quarries != null && quarries.pickUp(player, structure)
+                : structures.deconstruct(player, structure);
+        if (done) {
             session.ghost.clearMark();
             refreshTool(player, session);
         }
@@ -1091,7 +1164,7 @@ public final class PlacementService {
         Block target = player.getTargetBlockExact(24);
         if (target == null) {
             session.ghost.clearMark();
-            bar(player, session, "§7Look at a belt or a building to take it down");
+            bar(player, session, "§7Look at a belt, building or quarry to pick it up");
             return;
         }
         World world = target.getWorld();
@@ -1104,7 +1177,7 @@ public final class PlacementService {
         PlacedStructure structure = buildingAt(session.host, target);
         if (structure == null) {
             session.ghost.clearMark();
-            bar(player, session, "§7Nothing of yours to take down here");
+            bar(player, session, "§7Nothing of yours to pick up here");
             return;
         }
         int y1 = Math.max(structure.minY(), structure.y() + 1);
@@ -1113,8 +1186,9 @@ public final class PlacementService {
         String keep = keepReason(structure);
         boolean armed = structure.id().equals(session.armed) && System.currentTimeMillis() <= session.armedUntil;
         bar(player, session, keep != null ? "§e" + structure.label() + " §8· §7" + keep
-                : armed ? "§c§lRight-click again §7to take down your §f" + structure.label()
-                : "§c✖ " + structure.label() + " §8· §fright-click §7take down §8(all of its cost comes back)");
+                : armed ? "§c§lRight-click again §7to pick up your §f" + structure.label()
+                : "§c✖ " + structure.label() + " §8· §fright-click §7pick up §8(" + (structure.type() == StructureType.QUARRY_HOUSING
+                ? "into your inventory" : "all of its cost comes back") + ")");
     }
 
     private void handleBelts(Player player, Session session, boolean rightClick, Block clicked) {
@@ -1129,7 +1203,7 @@ public final class PlacementService {
             clicked = player.getTargetBlockExact(24);
         }
         // Left-click always cancels the start (Satisfactory-style). Never removes belts here —
-        // that is Take down / /island done. One cancel rule, taught once.
+        // that is Pick up / /island done. One cancel rule, taught once.
         if (!rightClick) {
             if (session.beltStart != null) {
                 session.beltStart = null;
@@ -1234,6 +1308,12 @@ public final class PlacementService {
         if (logistics.belt(world, target.getX(), target.getY(), target.getZ()) == null
                 && !logistics.isBeltSupport(world, target.getX(), target.getY(), target.getZ())) {
             PlacedStructure structure = structureAt(host, world, target);
+            if (structure != null && structure.type().router()) {
+                int[] side = freeSideToward(structure, player.getLocation().getX(), player.getLocation().getZ());
+                if (side != null) {
+                    return side;
+                }
+            }
             if (structure != null && structure.type().hasOutput() && !structure.type().router()) {
                 int[] port = structures.outputPort(structure);
                 if (port != null) {
@@ -1271,6 +1351,33 @@ public final class PlacementService {
             }
         }
         return best != null ? best.clone() : cell;
+    }
+
+    /** The free side of a belt piece nearest (px, pz) where a new exit belt can start, or null. */
+    private int[] freeSideToward(PlacedStructure piece, double px, double pz) {
+        int[] best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (int[] side : logistics.freeSides(piece)) {
+            double dx = side[0] + 0.5 - px;
+            double dz = side[2] + 0.5 - pz;
+            double dist = dx * dx + dz * dz;
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = new int[]{side[0], side[1], side[2]};
+            }
+        }
+        return best;
+    }
+
+    /** The belt piece this cell sits right beside (the cell is one of its sides), or null. */
+    private PlacedStructure pieceBeside(IslandHost host, World world, int[] cell) {
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+            PlacedStructure next = structures.atColumn(world, cell[0] - face.getModX(), cell[2] - face.getModZ());
+            if (next != null && next.type().router() && next.host().equals(host) && next.y() + 1 == cell[1]) {
+                return next;
+            }
+        }
+        return null;
     }
 
     /** The cell right beside a structure on the side facing (px, pz), one above its ground. */
@@ -1347,6 +1454,9 @@ public final class PlacementService {
         IslandHost host = session.host;
         int[] start = session.beltStart;
         PlacedStructure from = ownerOfPort(host, start);
+        if (from == null && logistics.belt(world, start[0], start[1], start[2]) == null) {
+            from = pieceBeside(host, world, start); // a new exit of a belt piece: never loop back into it
+        }
         EndAim aim = new EndAim();
         boolean onBelt = logistics.belt(world, target.getX(), target.getY(), target.getZ()) != null
                 || logistics.isBeltSupport(world, target.getX(), target.getY(), target.getZ());
@@ -1522,6 +1632,17 @@ public final class PlacementService {
         PlacedStructure placed = logistics.placePiece(player, session.host, session.type, cell[0], cell[1], cell[2], facing);
         if (placed != null) {
             session.lastBuild = now;
+            if (logistics.liveExits(placed) < 2 && apply(player, session, Part.BELT)) {
+                // a piece only does something once a second belt leaves it: the tool turns to Belt and its free
+                // sides glow orange, so the next click is the right one
+                refreshTool(player, session);
+                player.sendTitle("", "§6⚒ §eBelt §8· §7from an §6orange side §7of the " + placed.type().display(), 0, 40, 10);
+                actionBar(player, "§6⚒ §eBelt §8· §fright-click §7an §6orange side §7of your " + placed.type().display()
+                        + "§7, then the hut or machine");
+                session.quietUntil = System.currentTimeMillis() + 3500L;
+                player.playSound(player.getLocation(), Sound.ITEM_SPYGLASS_USE, 0.8f, 1.4f);
+                return;
+            }
             afterBuild(player, session);
         }
     }
@@ -1734,18 +1855,23 @@ public final class PlacementService {
                 if (p != null && ports.size() < 16) {
                     ports.add(p);
                 }
+                if (structure.type().router() && !structure.building()) {
+                    // a belt piece: every free side is where a new exit can start
+                    for (int[] side : logistics.freeSides(structure)) {
+                        if (ports.size() < 20) {
+                            ports.add(new int[]{side[0], side[1], side[2]});
+                        }
+                    }
+                }
                 if (structure.type().acceptsInput() && !structure.type().router() && !structure.building()
                         && pads.size() < 24) {
                     int y = structure.y() + 1;
-                    int midX = (structure.minX() + structure.maxX()) / 2;
-                    int midZ = (structure.minZ() + structure.maxZ()) / 2;
-                    int[][] sides = {{structure.minX() - 1, y, midZ}, {structure.maxX() + 1, y, midZ},
-                            {midX, y, structure.minZ() - 1}, {midX, y, structure.maxZ() + 1}};
-                    for (int[] side : sides) {
-                        if (p != null && p[0] == side[0] && p[2] == side[2]) {
-                            continue; // its own chute side stays orange
+                    BlockFace chuteSide = logistics.chuteSide(structure);
+                    for (int[] side : LogisticsService.inputSides(structure)) {
+                        if (chuteSide != null && BlockFace.values()[side[2]].getOppositeFace() == chuteSide) {
+                            continue; // its own chute side stays orange: nothing green right beside the way out
                         }
-                        pads.add(side);
+                        pads.add(new int[]{side[0], y, side[1]});
                     }
                 }
             }
@@ -1769,10 +1895,12 @@ public final class PlacementService {
                 return;
             }
             PlacedStructure source = ownerOfPort(session.host, cell);
+            PlacedStructure piece = source == null ? pieceBeside(session.host, world, cell) : null;
             placeBoard(player, session, world, cell[1], cell[0], cell[2], cell[0] + 1, cell[2] + 1,
                     beltSpec(player, session, false));
             bar(player, session, problem == null
-                    ? (source != null ? "§a✔ Start at your §f" + source.label() + "§a's chute" : "§a✔ Start here")
+                    ? (source != null ? "§a✔ Start at your §f" + source.label() + "§a's chute"
+                    : piece != null ? "§a✔ New exit of your §f" + piece.label() : "§a✔ Start here")
                     + " §8· §fright-click §7· belts §f" + logistics.count(session.host) + "§8/"
                     + logistics.cap(session.host) + " §8· §fQ §7away"
                     : "§c✖ " + problem);
@@ -1829,7 +1957,7 @@ public final class PlacementService {
 
     private static void bar(Player player, Session session, String text) {
         if (System.currentTimeMillis() >= session.quietUntil) {
-            actionBar(player, text);
+            actionBar(player, session.coach != null ? session.coach : text);
         }
     }
 

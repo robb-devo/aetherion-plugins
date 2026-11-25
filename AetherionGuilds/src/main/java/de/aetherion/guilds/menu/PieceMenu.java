@@ -117,8 +117,8 @@ public final class PieceMenu implements MenuKit.Menu {
                 inventory.setItem(CHOICES[i], picked ? MenuKit.glow(icon) : icon);
             }
         }
-        inventory.setItem(DECONSTRUCT, MenuKit.named(Material.IRON_AXE, "§cTake it down",
-                "§7Only when empty. Everything it cost comes back.", "§7The belts around it stay.", "§eShift-click §7to confirm"));
+        inventory.setItem(DECONSTRUCT, MenuKit.pickUpTile("§7It comes up, everything it cost comes back.",
+                "§7The belts around it stay.", "§8Only when empty."));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
@@ -216,11 +216,9 @@ public final class PieceMenu implements MenuKit.Menu {
             return;
         }
         if (slot == DECONSTRUCT) {
-            if (click.isShiftClick()) {
+            if (MenuKit.confirmPickUp(player, slot, piece.id(), click)) {
                 player.closeInventory();
                 structures.deconstruct(player, piece);
-            } else {
-                player.sendMessage("§7Shift-click to take the " + piece.type().display() + " down.");
             }
             return;
         }

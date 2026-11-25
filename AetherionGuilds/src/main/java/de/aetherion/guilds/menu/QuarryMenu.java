@@ -168,13 +168,8 @@ public final class QuarryMenu {
                             : "§8(Or build a Mill on the belt line.)"
             ));
         }
-        inventory.setItem(PICKUP_SLOT, named(
-                Material.CHEST,
-                "§ePick Up",
-                "§7Move this quarry.",
-                "§7Keeps level, mill and storage.",
-                "§eClick"
-        ));
+        inventory.setItem(PICKUP_SLOT, MenuKit.pickUpTile("§7It goes back into your inventory: set it",
+                "§7down anywhere. Keeps level, mill and storage."));
         inventory.setItem(CLOSE_SLOT, named(Material.BARRIER, "§cClose"));
         if (structures != null && logistics != null) {
             IslandHost host = holder.personal() ? IslandHost.personal(holder.ownerId()) : IslandHost.guild(holder.ownerId());
@@ -208,6 +203,10 @@ public final class QuarryMenu {
     }
 
     public void handle(Player player, Holder holder, int slot) {
+        handle(player, holder, slot, null);
+    }
+
+    public void handle(Player player, Holder holder, int slot, org.bukkit.event.inventory.ClickType click) {
         MinionService.QuarryRef ref = find(holder);
         if (ref == null) {
             player.closeInventory();
@@ -258,7 +257,7 @@ public final class QuarryMenu {
             return;
         }
         if (slot == PICKUP_SLOT) {
-            if (minions.pickup(player, ref)) {
+            if (MenuKit.confirmPickUp(player, slot, ref.minion().id(), click) && minions.pickup(player, ref)) {
                 player.closeInventory();
             }
         }

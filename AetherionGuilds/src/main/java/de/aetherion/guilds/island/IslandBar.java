@@ -90,7 +90,7 @@ public final class IslandBar implements Listener {
         if (next == null) {
             return null;
         }
-        String how = "first_chain".equals(next.id()) ? firstStep(host, next.how()) : next.how();
+        String how = "first_chain".equals(next.id()) ? firstStep(host, next.how()) : goals.howNow(host, next);
         return new de.aetherion.core.api.IslandAccess.IslandGoal(next.title(), how, goals.doneCount(host),
                 goals.total(host));
     }
@@ -223,7 +223,7 @@ public final class IslandBar implements Listener {
             int done = goals.doneCount(host);
             int total = goals.total(host);
             // One sentence next step — title + how, same text Hollis / /island use.
-            String how = "first_chain".equals(next.id()) ? firstStep(host, next.how()) : next.how();
+            String how = "first_chain".equals(next.id()) ? firstStep(host, next.how()) : goals.howNow(host, next);
             String line = how == null || how.isBlank() ? next.title() : next.title() + " §8— §7" + how;
             if (line.length() > 96) {
                 line = next.title(); // too long for the bar: the title alone, Hollis / /island carry the how

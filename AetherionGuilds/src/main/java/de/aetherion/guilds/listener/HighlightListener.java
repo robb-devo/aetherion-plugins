@@ -124,6 +124,12 @@ public final class HighlightListener implements Listener {
             return;
         }
         int slot = event.getRawSlot();
+        if (slot >= event.getView().getTopInventory().getSize() && event.getClickedInventory() != null
+                && event.getClickedInventory().equals(player.getInventory())
+                && holder.menu() instanceof MenuKit.PackClick pack) {
+            pack.packClick(player, holder, event.getSlot(), event.getClick()); // e.g. put goods into a hut
+            return;
+        }
         if (slot < 0 || slot >= event.getView().getTopInventory().getSize()) {
             return;
         }
@@ -311,7 +317,7 @@ public final class HighlightListener implements Listener {
         }
         if (logistics.isBelt(world, block.getX(), block.getY(), block.getZ())) {
             event.setCancelled(true);
-            player.sendMessage("§7That's a belt. Take it up with the Build Tool: §fsneak + scroll §7to §fTake down§7, right-click it.");
+            player.sendMessage("§7That's a belt. Pick it up with the Build Tool: §fsneak + scroll §7to §fPick up§7, right-click it.");
             return;
         }
         if (logistics.isBeltSupport(world, block.getX(), block.getY(), block.getZ())) {
@@ -325,7 +331,7 @@ public final class HighlightListener implements Listener {
             String label = structure == null ? "structure" : structure.label();
             player.sendMessage(structure != null && structure.type() == StructureType.PROJECT
                     ? "§7That's part of the guild's build. It stays."
-                    : "§7Part of your " + label + ". To move it: Build Tool → §fTake down§7.");
+                    : "§7Part of your " + label + ". To move it: open it and §fPick up§7, or Build Tool → §fPick up§7.");
         }
     }
 

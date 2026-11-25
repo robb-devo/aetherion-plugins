@@ -89,10 +89,8 @@ public final class MachineMenu implements MenuKit.Menu {
                 bufferLore(structure.input(), "§8Leftovers under 128 wait for more.")));
         inventory.setItem(OUTPUT, MenuKit.named(Material.CHEST, "§eReady to leave",
                 bufferLore(structure.output(), "§8Goes onto the belt from the chute.")));
-        inventory.setItem(DECONSTRUCT, MenuKit.named(Material.IRON_AXE, "§cTake it down",
-                "§7Empty it first. Everything it",
-                "§7cost comes back.",
-                "§eShift-click §7to confirm"));
+        inventory.setItem(DECONSTRUCT, MenuKit.pickUpTile("§7It comes down, everything it cost comes back",
+                "§7and it keeps its tier for the next one you build.", "§8Empty it first."));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
@@ -171,11 +169,9 @@ public final class MachineMenu implements MenuKit.Menu {
                 open(player, structure);
             }
             case DECONSTRUCT -> {
-                if (click.isShiftClick()) {
+                if (MenuKit.confirmPickUp(player, slot, structure.id(), click)) {
                     player.closeInventory();
                     structures.deconstruct(player, structure);
-                } else {
-                    player.sendMessage("§7Shift-click to take the " + structure.type().display() + " down.");
                 }
             }
             default -> {

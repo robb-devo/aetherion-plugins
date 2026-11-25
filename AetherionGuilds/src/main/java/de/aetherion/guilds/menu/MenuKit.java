@@ -25,6 +25,11 @@ public final class MenuKit {
         void click(Player player, Holder holder, int slot, ClickType click);
     }
 
+    /** A menu that also takes clicks on the player's own inventory below it ({@code slot}: the inventory slot). */
+    public interface PackClick {
+        void packClick(Player player, Holder holder, int slot, ClickType click);
+    }
+
     public static final class Holder implements InventoryHolder {
         private final Menu menu;
         private final Object context;
@@ -74,6 +79,44 @@ public final class MenuKit {
             inventory.setItem(size - 9 + slot, frame.clone());
         }
         return inventory;
+    }
+
+    /**
+     * The one "Pick up" tile every building, machine, belt piece and quarry screen shows: same chest, same name,
+     * same rule (click twice, or shift-click once).
+     */
+    public static ItemStack pickUpTile(String... lines) {
+        List<String> lore = new ArrayList<>(List.of(lines));
+        lore.add("");
+        lore.add("§eClick twice §7to pick it up §8(shift-click: at once)");
+        return named(Material.CHEST, "§ePick up", lore);
+    }
+
+    private static final java.util.Map<java.util.UUID, Object[]> ARMED = new java.util.HashMap<>();
+
+    /**
+     * Pick up asks once more: the first click turns the tile red ("click again"), a second click within four
+     * seconds (or any shift-click) confirms. True when this click is the confirming one.
+     */
+    public static boolean confirmPickUp(Player player, int slot, java.util.UUID target, ClickType click) {
+        if (click != null && click.isShiftClick()) {
+            ARMED.remove(player.getUniqueId());
+            return true;
+        }
+        long now = System.currentTimeMillis();
+        Object[] armed = ARMED.get(player.getUniqueId());
+        if (armed != null && target.equals(armed[0]) && now <= (long) armed[1]) {
+            ARMED.remove(player.getUniqueId());
+            return true;
+        }
+        ARMED.put(player.getUniqueId(), new Object[]{target, now + 4000L});
+        Inventory top = player.getOpenInventory().getTopInventory();
+        if (slot >= 0 && slot < top.getSize()) {
+            top.setItem(slot, glow(named(Material.CHEST, "§c§lClick again to pick it up",
+                    "§7Everything it cost comes back.", "§8Or wait and it stays.")));
+        }
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.9f);
+        return false;
     }
 
     /** A hub tile: glows (and gets a "next" marker) when it is the obvious next thing to do. */

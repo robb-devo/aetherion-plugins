@@ -477,6 +477,7 @@ public final class LogisticsService {
                 bill.add(new de.aetherion.guilds.structure.BuildCosts.Line(null, tiles * tileCost()));
             }
         }
+        long stocked = structures.stock(host, de.aetherion.guilds.structure.BuildCosts.COBBLE);
         if (!structures.pay(player, host, bill)) {
             return false;
         }
@@ -527,7 +528,9 @@ public final class LogisticsService {
         }
         long cobble = tiles * de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE;
         if (cobble > 0) {
-            lastLayCostLine = "§e−" + GuildFormat.compact(cobble) + " Cobble from storage";
+            // storage pays first, the pack the rest (StructureService.pay)
+            lastLayCostLine = "§e−" + GuildFormat.compact(cobble) + " Cobble " + (stocked >= cobble ? "from storage"
+                    : stocked > 0 ? "from storage + pack" : "from your pack");
         } else if (tourFree > 0) {
             lastLayCostLine = "§afree (tour)";
         } else if (bootFree > 0) {
@@ -858,7 +861,7 @@ public final class LogisticsService {
                     int fx = structure.x() + face.getModX();
                     int fz = structure.z() + face.getModZ();
                     Belt first = net.belts.get(pos(fx, structure.y() + 1, fz));
-                    if (first != null && first.dir() == face) {
+                    if (first != null && leavesFrom(net, first, face)) {
                         addRoute(net, world, structure, first, face);
                         continue;
                     }
@@ -932,6 +935,63 @@ public final class LogisticsService {
                 net.processorOrder.add(structure);
             }
         }
+    }
+
+    /**
+     * Does this belt beside a belt piece carry goods away from it? Straight away always. A run that starts right
+     * beside it (no belt feeds that tile) also when its first tile turns: a corner right after the cut, or a side
+     * belt laid off sideways, still counts. Never the belt that runs into the piece, never one passing by.
+     */
+    private static boolean leavesFrom(Net net, Belt first, BlockFace face) {
+        if (first.dir() == face) {
+            return true;
+        }
+        if (first.dir() == face.getOppositeFace()) {
+            return false;
+        }
+        for (BlockFace side : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+            Belt before = net.belts.get(pos(first.x() - side.getModX(), first.y(), first.z() - side.getModZ()));
+            if (before != null && before.dir() == side) {
+                return false; // something feeds this tile: it is a line passing by
+            }
+        }
+        return true;
+    }
+
+    /**
+     * The sides of a belt piece where a new exit belt can start: {x, y, z, face ordinal} for every free cell
+     * beside it (no belt, no building, buildable ground). The Build Tool marks them orange.
+     */
+    public List<int[]> freeSides(PlacedStructure piece) {
+        List<int[]> out = new ArrayList<>();
+        World world = piece == null || !piece.type().router() ? null : hosts.world(piece.host());
+        if (world == null) {
+            return out;
+        }
+        int y = piece.y() + 1;
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+            int x = piece.x() + face.getModX();
+            int z = piece.z() + face.getModZ();
+            if (!hosts.inBuildZone(piece.host(), x, z) || isBelt(world, x, y, z) || structures.atColumn(world, x, z) != null) {
+                continue;
+            }
+            if (!PasteService.replaceable(world.getBlockAt(x, y, z)) || !world.getBlockAt(x, y - 1, z).getType().isSolid()) {
+                continue;
+            }
+            out.add(new int[]{x, y, z, face.ordinal()});
+        }
+        return out;
+    }
+
+    /** How many exits of this belt piece reach a machine right now. */
+    public int liveExits(PlacedStructure piece) {
+        int live = 0;
+        for (Route route : exits(piece)) {
+            if (route.to() != null) {
+                live++;
+            }
+        }
+        return live;
     }
 
     /** Does this structure's own chute (or exit) point at that cell? (Then handing back would loop.) */
@@ -1012,10 +1072,22 @@ public final class LogisticsService {
     // flow
     // ------------------------------------------------------------------------------------------------
 
+    /**
+     * Port markers ("belt out" / "belt in") are building hints: with {@code logistics.markers-with-tool-only}
+     * (default on) only the players this says see them (the Build Tool in hand, not in Belt mode, which draws
+     * its own).
+     */
+    public void attachMarkerViewers(java.util.function.Predicate<Player> viewer) {
+        if (plugin.getConfig().getBoolean("logistics.markers-with-tool-only", true)) {
+            machineFx.attachMarkers(plugin, viewer);
+        }
+    }
+
     /** Every second: step the islands people are standing on, and animate them. */
     public void tickActive() {
         Set<String> now = new HashSet<>();
         Map<String, List<Location>> viewers = new HashMap<>();
+        Map<String, List<Player>> people = new HashMap<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!hosts.isIslandWorld(player.getWorld())) {
                 continue;
@@ -1024,6 +1096,7 @@ public final class LogisticsService {
             if (host != null && Math.abs(player.getLocation().getBlockX() - hosts.originX(host)) <= 128) {
                 now.add(host.key());
                 viewers.computeIfAbsent(host.key(), k -> new ArrayList<>()).add(player.getLocation());
+                people.computeIfAbsent(host.key(), k -> new ArrayList<>()).add(player);
             }
         }
         for (String key : new ArrayList<>(activeHosts)) {
@@ -1043,6 +1116,7 @@ public final class LogisticsService {
             step(host, time);
             animate(host);
             dressBelts(host, viewers.getOrDefault(key, List.of()));
+            machineFx.people(people.getOrDefault(key, List.of()));
             dressMachines(host, viewers.getOrDefault(key, List.of()));
         }
     }
@@ -1113,7 +1187,7 @@ public final class LogisticsService {
         }
         long now = System.currentTimeMillis();
         List<MachineFx.View> views = new ArrayList<>();
-        Map<UUID, Double> feeds = feedPerMinute(host);
+        Flows flows = flows(host);
         for (PlacedStructure s : structures.of(host)) {
             StructureType type = s.type();
             if (type == StructureType.PROJECT) {
@@ -1153,25 +1227,14 @@ public final class LogisticsService {
                     BlockFace front = frontOf(s);
                     addIn(host, world, in, s.x() - front.getModX(), s.y() + 1, s.z() - front.getModZ(), front);
                 } else {
-                    int[] port = structures.outputPort(s);
                     int y = s.y() + 1;
-                    int[][] sides = {
-                            {s.x(), s.minZ() - 1, BlockFace.SOUTH.ordinal()},
-                            {s.x(), s.maxZ() + 1, BlockFace.NORTH.ordinal()},
-                            {s.minX() - 1, s.z(), BlockFace.EAST.ordinal()},
-                            {s.maxX() + 1, s.z(), BlockFace.WEST.ordinal()}};
-                    for (int[] side : sides) {
-                        int cx = side[0];
-                        int cz = side[1];
-                        if (side[2] == BlockFace.SOUTH.ordinal() || side[2] == BlockFace.NORTH.ordinal()) {
-                            cx = s.x();
-                        } else {
-                            cz = s.z();
+                    BlockFace chuteSide = chuteSide(s);
+                    for (int[] side : inputSides(s)) {
+                        BlockFace into = BlockFace.values()[side[2]];
+                        if (chuteSide != null && into.getOppositeFace() == chuteSide) {
+                            continue; // the chute's side is the way out: no "belt in" right beside it
                         }
-                        if (port != null && port[0] == cx && port[2] == cz) {
-                            continue;
-                        }
-                        addIn(host, world, in, cx, y, cz, BlockFace.values()[side[2]]);
+                        addIn(host, world, in, side[0], y, side[1], into);
                     }
                 }
             }
@@ -1193,17 +1256,21 @@ public final class LogisticsService {
                 case SINK, EXPORT -> state == MachineState.RECEIVING;
                 default -> false;
             };
-            // world labels show the steady rate the quarries feed (from their levels), never a jumpy average
-            long feed = Math.round(feeds.getOrDefault(s.id(), 0.0));
+            // world labels show the steady rate the quarries feed (from their levels), never a jumpy average;
+            // what a Mill sends on is what it makes (1 for 128), so the hut behind it is never promised the raw
+            double feed = flows.in().getOrDefault(s.id(), 0.0);
+            double made = flows.made().getOrDefault(s.id(), 0.0);
             long used = PlacedStructure.total(s.store());
             String sub = switch (type.role()) {
                 case SINK -> fillBar(used, s.capacity())
-                        + (feed > 0 ? "\n§7▸ fed " + perMinute(feed) + fullIn(s.capacity() - used, feed) : "");
-                case PROCESSOR -> recipeLine(s) + batchLine(s) + (feed > 0 ? "\n§7▸ fed " + perMinute(feed) : "");
+                        + (feed > 0.0 ? "\n§7▸ fed " + rate(feed)
+                        + fullIn(s.capacity() - used, flows.raw().getOrDefault(s.id(), 0.0)) : "");
+                case PROCESSOR -> recipeLine(s) + batchLine(s) + (feed > 0.0 ? "\n§7▸ fed " + rate(feed)
+                        + (made > 0.0 ? " §8→ §fmakes " + rate(made) : "") : "");
                 case ROUTER -> (type == StructureType.SORTER
                         ? (s.filter() == null ? "§8front: nothing picked" : "§8front: §f" + filterName(s.filter()))
                         : type == StructureType.OVERFLOW ? "§8front first, then sides" : "§8shares evenly")
-                        + (feed > 0 ? "\n§7▸ " + perMinute(feed) + " through" : "");
+                        + (feed > 0.0 ? "\n§7▸ " + rate(feed) + " through" : "");
                 case EXPORT -> export == null ? null : export.line(s);
                 default -> null;
             };
@@ -1241,29 +1308,89 @@ public final class LogisticsService {
     }
 
     /**
+     * The steady flow on an island: per machine the goods it is fed a minute ({@code in}, counted as they arrive:
+     * a Compressed is one), the same in raw ({@code raw}, what fills a hut), and what a Mill or Forge sends on
+     * ({@code made}).
+     */
+    private record Flows(Map<UUID, Double> in, Map<UUID, Double> raw, Map<UUID, Double> made,
+                         Map<Route, Double> carried) {
+    }
+
+    /**
      * Goods per minute each machine is fed, following every quarry's dig rate down its line: splitters share it,
-     * overflow gates send it front, sorters by their pick, mills and depots pass it on.
+     * overflow gates send it front, sorters by their pick, depots pass it on, and a Mill sends on 1 for every
+     * 128 it gets (a Forge 1 for 128 Compressed), so a hut behind an idle-looking Mill is never promised its raw.
+     * A quarry that is full (its line backed up) feeds nothing.
      */
     public Map<UUID, Double> feedPerMinute(IslandHost host) {
-        Map<UUID, Double> in = new HashMap<>();
+        return flows(host).in();
+    }
+
+    private Flows flows(IslandHost host) {
+        Flows flows = new Flows(new HashMap<>(), new HashMap<>(), new HashMap<>(), new java.util.IdentityHashMap<>());
         for (Route route : routes(host)) {
             if (route.from().type().role() != StructureType.Role.SOURCE || route.to() == null) {
                 continue;
             }
             QuarryMinion minion = hosts.minion(host, route.from().minionId());
-            if (minion == null) {
-                continue;
+            if (minion == null || minion.rawEquivalent() >= minion.cap()) {
+                continue; // full: it has stopped digging until the line takes again
             }
-            flow(route.to(), digPerMinute(minion), Res.of(minion.quarryType(), Res.Form.RAW), in, 0, new HashSet<>());
+            flows.carried().merge(route, (double) digPerMinute(minion), Double::sum);
+            flow(route.to(), digPerMinute(minion), Res.of(minion.quarryType(), Res.Form.RAW), flows, 0, new HashSet<>());
         }
-        return in;
+        return flows;
     }
 
-    private void flow(PlacedStructure node, double rate, Res res, Map<UUID, Double> in, int depth, Set<UUID> path) {
+    /**
+     * Every line that ends in this hut or machine, with what it steadily brings ("Cobble Quarry 12/min",
+     * "Mill 1 every 11 min", "Mill idle"): the storage screen names each sender instead of one total.
+     */
+    public List<String> feeders(PlacedStructure target) {
+        List<String> out = new ArrayList<>();
+        if (target == null) {
+            return out;
+        }
+        Flows flows = flows(target.host());
+        for (Route route : routes(target.host())) {
+            if (route.to() != target) {
+                continue;
+            }
+            double carried = flows.carried().getOrDefault(route, 0.0);
+            out.add("§7← §f" + route.from().label() + " " + (carried > 0.0 ? "§a" + rate(carried) : "§8idle, nothing coming"));
+        }
+        return out;
+    }
+
+    /** What a Mill / Forge turns this good into (null: not its recipe, it passes straight through). */
+    private static Res madeFrom(PlacedStructure processor, Res res) {
+        if (res == null || !res.canUpgrade()) {
+            return null;
+        }
+        boolean forge = processor.type() == StructureType.FORGE;
+        if (res.form() == Res.Form.RAW) {
+            Res once = Res.of(res.type(), Res.Form.COMPRESSED);
+            return forge && once.canUpgrade() ? Res.of(res.type(), Res.Form.COMPACTED) : once;
+        }
+        return forge && res.form() == Res.Form.COMPRESSED ? Res.of(res.type(), Res.Form.COMPACTED) : null;
+    }
+
+    private void flow(PlacedStructure node, double rate, Res res, Flows flows, int depth, Set<UUID> path) {
         if (node == null || rate <= 0.0 || depth > 24 || !path.add(node.id())) {
             return;
         }
-        in.merge(node.id(), rate, Double::sum);
+        flows.in().merge(node.id(), rate, Double::sum);
+        flows.raw().merge(node.id(), res.rawEquivalent(1L) * rate, Double::sum);
+        Res out = res;
+        double outRate = rate;
+        if (node.type().role() == StructureType.Role.PROCESSOR) {
+            Res made = madeFrom(node, res);
+            if (made != null) {
+                out = made;
+                outRate = res.rawEquivalent(1L) * rate / made.rawEquivalent(1L);
+                flows.made().merge(node.id(), outRate, Double::sum);
+            }
+        }
         List<Route> live = new ArrayList<>();
         for (Route route : exits(node)) {
             if (route.to() != null) {
@@ -1283,21 +1410,39 @@ public final class LogisticsService {
                     default -> live;
                 };
                 for (Route route : take) {
-                    flow(route.to(), rate / take.size(), res, in, depth + 1, path);
+                    flows.carried().merge(route, rate / take.size(), Double::sum);
+                    flow(route.to(), rate / take.size(), res, flows, depth + 1, path);
                 }
             } else if (node.type().role() == StructureType.Role.PROCESSOR || node.type() == StructureType.DEPOT) {
-                flow(live.get(0).to(), rate, res, in, depth + 1, path);
+                flows.carried().merge(live.get(0), outRate, Double::sum);
+                flow(live.get(0).to(), outRate, out, flows, depth + 1, path);
             }
         }
         path.remove(node.id());
     }
 
-    /** " · full in 3h 20m" at the rate it is fed. */
-    private static String fullIn(long free, long perMinute) {
-        if (perMinute <= 0 || free <= 0) {
+    /** "12/min", or for a trickle "1 every 11 min" / "1 every 3 h" (never a rounded-away 0/min). */
+    public static String rate(double perMinute) {
+        if (perMinute >= 0.95) {
+            return perMinute(Math.round(perMinute));
+        }
+        if (perMinute <= 0.0) {
+            return perMinute(0L);
+        }
+        double minutes = 1.0 / perMinute;
+        if (minutes < 90.0) {
+            return "1 every " + Math.max(2L, Math.round(minutes)) + " min";
+        }
+        double hours = minutes / 60.0;
+        return "1 every " + (hours < 10.0 ? String.format(java.util.Locale.ROOT, "%.1f", hours) : String.valueOf(Math.round(hours))) + " h";
+    }
+
+    /** " · full in 3h 20m" at the rate (in raw) it is fed. */
+    private static String fullIn(long free, double rawPerMinute) {
+        if (rawPerMinute <= 0.0 || free <= 0) {
             return free <= 0 ? " §c· full" : "";
         }
-        long minutes = free / perMinute;
+        long minutes = (long) (free / rawPerMinute);
         if (minutes > 60L * 24 * 30) {
             return "";
         }
@@ -1389,6 +1534,35 @@ public final class LogisticsService {
             out.append("\n").append(footer);
         }
         return out.toString();
+    }
+
+    /**
+     * The middle cell beside each side of a footprint, with the way into it: {x, z, face ordinal}. The Build
+     * Tool's green pads and the "belt in" markers both use these, so they never disagree.
+     */
+    public static List<int[]> inputSides(PlacedStructure s) {
+        int midX = Math.floorDiv(s.minX() + s.maxX(), 2);
+        int midZ = Math.floorDiv(s.minZ() + s.maxZ(), 2);
+        return List.of(
+                new int[]{midX, s.minZ() - 1, BlockFace.SOUTH.ordinal()},
+                new int[]{midX, s.maxZ() + 1, BlockFace.NORTH.ordinal()},
+                new int[]{s.minX() - 1, midZ, BlockFace.EAST.ordinal()},
+                new int[]{s.maxX() + 1, midZ, BlockFace.WEST.ordinal()});
+    }
+
+    /** Which side of its footprint a machine's chute leaves from (null without a chute). */
+    public BlockFace chuteSide(PlacedStructure s) {
+        int[] port = structures.outputPort(s);
+        if (port == null) {
+            return null;
+        }
+        if (port[0] < s.minX()) {
+            return BlockFace.WEST;
+        }
+        if (port[0] > s.maxX()) {
+            return BlockFace.EAST;
+        }
+        return port[2] < s.minZ() ? BlockFace.NORTH : port[2] > s.maxZ() ? BlockFace.SOUTH : null;
     }
 
     private void addIn(IslandHost host, World world, List<int[]> in, int x, int y, int z, BlockFace into) {
@@ -2241,8 +2415,12 @@ public final class LogisticsService {
             case OVERFLOW -> "Front belt first, sides take the spill.";
             default -> "Every belt leading away from it gets an equal share.";
         });
-        if (cut != null) {
-            player.sendMessage("§7It cut into your belt. Lay a belt §faway §7from its side to make a second exit.");
+        int live = liveExits(piece);
+        if (live < 2) {
+            // the piece does nothing new until a second belt leaves it: say so plainly, the tool turns to Belt
+            player.sendMessage(cut != null
+                    ? "§6➜ §7It sits in your line now. §fNext: §7a second belt from one of its §6orange sides §7into a hut or machine."
+                    : "§6➜ §fNext: §7a belt into its back, then belts away from its §6orange sides §7into huts or machines.");
         }
         return piece;
     }

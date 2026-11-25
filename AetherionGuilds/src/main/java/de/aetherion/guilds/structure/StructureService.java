@@ -623,9 +623,69 @@ public final class StructureService {
         return have;
     }
 
+    // ------------------------------------------------------------------------------------------------
+    // picked up: a building that comes down keeps its tier (and a free one stays free) for the next of its kind
+    // ------------------------------------------------------------------------------------------------
+
+    /** Per island: "TYPE:level:free" for every building picked up that the next one of its kind gets back. */
+    private final Map<String, List<String>> pickedUp = new HashMap<>();
+
+    private void remember(IslandHost host, PlacedStructure structure) {
+        if (structure.level() <= 1 && !structure.freeBuilt()) {
+            return; // its full cost went back: nothing left to keep
+        }
+        pickedUp.computeIfAbsent(host.key(), k -> new ArrayList<>())
+                .add(structure.type().name() + ":" + structure.level() + ":" + (structure.freeBuilt() ? 1 : 0));
+        dirty = true;
+    }
+
+    /** The best credit for this type ({level, free}), or null; {@code take} removes it. Free ones first if asked. */
+    private int[] credit(IslandHost host, StructureType type, boolean freeOnly, boolean take) {
+        List<String> list = pickedUp.get(host.key());
+        if (list == null) {
+            return null;
+        }
+        String best = null;
+        int[] got = null;
+        for (String entry : list) {
+            String[] part = entry.split(":");
+            if (part.length != 3 || !part[0].equals(type.name())) {
+                continue;
+            }
+            int level = parseInt(part[1], 1);
+            boolean free = "1".equals(part[2]);
+            if (freeOnly && !free) {
+                continue;
+            }
+            if (got == null || level > got[0] || (free && got[1] == 0)) {
+                best = entry;
+                got = new int[]{level, free ? 1 : 0};
+            }
+        }
+        if (take && best != null) {
+            list.remove(best);
+            if (list.isEmpty()) {
+                pickedUp.remove(host.key());
+            }
+            dirty = true;
+        }
+        return got;
+    }
+
+    private static int parseInt(String raw, int fallback) {
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
+    }
+
     public List<BuildCosts.Line> buildCost(IslandHost host, StructureType type) {
         if (count(host, type) == 0 && freeFirst.test(host, type)) {
             return List.of(); // the island tour pays for the first one
+        }
+        if (credit(host, type, true, false) != null) {
+            return List.of(); // a free one was picked up: putting it down again stays free
         }
         return BuildCosts.build(type, type == StructureType.STORAGE_HUT && count(host, StructureType.STORAGE_HUT) == 0);
     }
@@ -637,16 +697,21 @@ public final class StructureService {
         this.freeFirst = freeFirst == null ? (host, type) -> false : freeFirst;
     }
 
-    /** What's missing to pay this bill ("needs 40 more Cobblestone in storage"), or null when it can be paid. */
+    /** What's missing to pay this bill ("needs 40 more Cobblestone"), or null when it can be paid. */
     public String missing(Player player, IslandHost host, List<BuildCosts.Line> bill) {
         for (BuildCosts.Line line : bill) {
-            long have = line.coins() ? hosts.funds(player, host) : stock(host, line.res());
+            long have = line.coins() ? hosts.funds(player, host) : available(player, host, line.res());
             if (have < line.amount()) {
                 return "needs " + GuildFormat.compact(line.amount() - have) + " more " + line.label()
-                        + (line.coins() ? "" : " in storage");
+                        + (line.coins() ? "" : " (storage or inventory)");
             }
         }
         return null;
+    }
+
+    /** What the island can pay with for a good: its huts and depots, plus what the builder carries. */
+    public long available(Player player, IslandHost host, Res res) {
+        return stock(host, res) + (player == null ? 0L : res.carried(player));
     }
 
     /** Takes the bill (all or nothing): goods from the island's storage, coins from the player / guild bank. */
@@ -667,7 +732,11 @@ public final class StructureService {
         }
         for (BuildCosts.Line line : bill) {
             if (!line.coins()) {
-                takeGoods(host, line.res(), line.amount());
+                // storage first (that is what the belts are for), the rest from the builder's inventory
+                long taken = takeGoods(host, line.res(), line.amount());
+                if (taken < line.amount()) {
+                    line.res().takeCarried(player, line.amount() - taken);
+                }
             }
         }
         dirty = true;
@@ -748,6 +817,12 @@ public final class StructureService {
         String paid = BuildCosts.describe(bill);
         PlacedStructure structure = new PlacedStructure(UUID.randomUUID(), type, host, world.getName(), ax, ay, az, rot,
                 System.currentTimeMillis());
+        // a free build takes a free credit (never a paid one: its cost already went back), a paid one the best tier
+        int[] kept = credit(host, type, bill.isEmpty(), true);
+        boolean moved = kept != null;
+        if (moved && kept[0] > 1 && Props.isProp(template.id())) {
+            structure.setLevel(Math.min(kept[0], StructureUpgrades.maxLevel(type))); // picked up at a tier: back at it
+        }
         structure.setFreeBuilt(bill.isEmpty());
         milestone.accept(host, switch (type) {
             case STORAGE_HUT -> "first_hut";
@@ -768,7 +843,7 @@ public final class StructureService {
             de.aetherion.core.api.Vfx.puff(center.clone().add(0, 1.2, 0), Particle.END_ROD, 14, Math.max(1.2, 1.2), null);
             world.playSound(center, Sound.BLOCK_SMITHING_TABLE_USE, 0.9f, 1.1f);
             world.playSound(center, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.4f);
-            if (type == StructureType.WORKSHOP && count(host, StructureType.WORKSHOP) == 1) {
+            if (type == StructureType.WORKSHOP && count(host, StructureType.WORKSHOP) == 1 && !moved) {
                 hubFounded.accept(player, structure);
                 return;
             }
@@ -1081,7 +1156,7 @@ public final class StructureService {
         }
         switch (structure.type()) {
             case QUARRY_HOUSING -> {
-                player.sendMessage("§7Pick the quarry up instead; the housing comes down with it.");
+                player.sendMessage("§7Pick the quarry up from its own screen; the housing comes with it.");
                 return false;
             }
             case PROJECT -> {
@@ -1099,7 +1174,7 @@ public final class StructureService {
         if (structure.type() == StructureType.WORKSHOP) {
             for (PlacedStructure other : of(host)) {
                 if (other.type().needsWorkshop()) {
-                    player.sendMessage("§cMills, Forges, Depots and belt pieces need the Hub. Take those down first.");
+                    player.sendMessage("§cMills, Forges, Depots and belt pieces need the Hub. Pick those up first.");
                     return false;
                 }
             }
@@ -1110,6 +1185,7 @@ public final class StructureService {
         List<BuildCosts.Line> bill = free ? List.of() : BuildCosts.build(structure.type(),
                 structure.type() == StructureType.STORAGE_HUT && count(host, StructureType.STORAGE_HUT) <= 1);
         remove(structure, true);
+        remember(host, structure);
         long refund = 0L;
         for (BuildCosts.Line line : structure.itemPaid() ? List.<BuildCosts.Line>of() : bill) {
             // a machine built with a Quarry Mill/Forge item (before unlocks) gives that item back instead
@@ -1128,8 +1204,9 @@ public final class StructureService {
                         .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
             }
         }
-        player.sendMessage("§7" + structure.type().display() + " taken down §8(" + (structure.itemPaid() ? "its item went back to you"
-                : free ? "it was free, nothing to give back" : "its full cost went back") + ")§7.");
+        String kept = structure.level() > 1 ? " · the next one you build comes back at tier " + structure.level() : "";
+        player.sendMessage("§7" + structure.type().display() + " picked up §8(" + (structure.itemPaid() ? "its item went back to you"
+                : free ? "it was free: the next one is free again" : "its full cost went back") + kept + ")§7.");
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 0.8f, 0.8f);
         return true;
     }
@@ -1617,11 +1694,21 @@ public final class StructureService {
                 writeMap(c, "out", s.output());
             }
         }
+        java.util.Set<String> creditHosts = new java.util.HashSet<>(pickedUp.keySet());
+        creditHosts.addAll(savedCredits);
+        for (String hostKey : creditHosts) {
+            files.replace(hostKey, "picked-up").set("kept", new ArrayList<>(pickedUp.getOrDefault(hostKey, List.of())));
+        }
+        savedCredits.clear();
+        savedCredits.addAll(pickedUp.keySet());
         savedHosts.clear();
         savedHosts.addAll(byHost.keySet());
         files.flush();
         dirty = false;
     }
+
+    /** Islands whose pick-up credits were written last time (so an emptied list gets written empty). */
+    private final java.util.Set<String> savedCredits = new java.util.HashSet<>();
 
     private static void writeMap(ConfigurationSection config, String path, Map<Res, Long> map) {
         for (Map.Entry<Res, Long> entry : map.entrySet()) {
@@ -1645,6 +1732,11 @@ public final class StructureService {
         } else {
             for (String hostKey : files.keys()) {
                 loaded += readHost(hostKey, files.doc(hostKey).getConfigurationSection("structures"));
+                List<String> kept = files.doc(hostKey).getStringList("picked-up.kept");
+                if (!kept.isEmpty()) {
+                    pickedUp.put(hostKey, new ArrayList<>(kept));
+                    savedCredits.add(hostKey);
+                }
             }
         }
         savedHosts.addAll(byHost.keySet());
