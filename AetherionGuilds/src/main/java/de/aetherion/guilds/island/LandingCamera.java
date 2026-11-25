@@ -162,10 +162,17 @@ public final class LandingCamera implements Listener {
             finish(player, false);
             return;
         }
-        if (player.getWorld() != shot.lens.getWorld() || player.getGameMode() != GameMode.SPECTATOR) {
-            // a command, a portal or another plugin took them elsewhere: let it stand, just give the mode back
+        if (player.getWorld() != shot.lens.getWorld()) {
+            // a command or a portal took them elsewhere: let it stand, just give the mode back
             letGo(player);
             return;
+        }
+        if (player.getGameMode() != GameMode.SPECTATOR) {
+            // the world's own game mode (a world manager) or another plugin reset it right after the hop: keep the lens
+            player.setGameMode(GameMode.SPECTATOR);
+            if (shot.attached) {
+                player.setSpectatorTarget(shot.lens);
+            }
         }
         Entity target = player.getSpectatorTarget();
         boolean onLens = target != null && target.getUniqueId().equals(shot.lens.getUniqueId());
