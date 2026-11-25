@@ -72,6 +72,8 @@ public final class LandMenu implements MenuKit.Menu {
             herePz = LandService.parcelOf(player.getLocation().getBlockZ() - hosts.originZ(host));
         }
         long price = land.price(host);
+        boolean free = land.gift(host);
+        String closed = land.gate(host);
         StarterLayout starter = hosts.starter(host);
         for (int row = 0; row < 5; row++) {
             int pz = view.top + row;
@@ -79,22 +81,28 @@ public final class LandMenu implements MenuKit.Menu {
                 int px = col - 4;
                 LandService.Status status = land.status(host, px, pz);
                 boolean youAreHere = px == here && pz == herePz;
-                inventory.setItem(row * 9 + col, cell(host, px, pz, status, youAreHere, price, view.raise, starter));
+                inventory.setItem(row * 9 + col, cell(host, px, pz, status, youAreHere, price, view.raise, starter, free, closed));
             }
         }
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eBack"));
         inventory.setItem(UP, MenuKit.named(Material.SPECTRAL_ARROW, view.top > -LandService.RING ? "§eScroll north" : "§8North edge"));
         inventory.setItem(DOWN, MenuKit.named(Material.SPECTRAL_ARROW,
                 view.top + 4 < LandService.RING ? "§eScroll south" : "§8South edge"));
-        inventory.setItem(INFO, MenuKit.named(Material.FILLED_MAP, "§6Your land",
+        List<String> info = new ArrayList<>(List.of(
                 "§7Parcels owned: §f" + hosts.parcels(host).size(),
                 "§7Each parcel: §f16×16",
-                "§7Next parcel: §6" + GuildFormat.compact(price) + " " + hosts.fundsLabel(host),
-                "§7You have: §6" + (hosts.funds(player, host) == Long.MAX_VALUE ? "∞" : GuildFormat.compact(hosts.funds(player, host))),
-                "",
-                "§8Buy land touching yours. New ground",
-                "§8rises there in your island's look.",
-                host.isGuild() ? "§8Guild land: Mayor+, paid from the bank." : "§8Tier upgrades still add radius too."));
+                free ? "§7Next parcel: §afree §8(a gift from the tour)"
+                        : "§7Next parcel: §6" + GuildFormat.compact(price) + " " + hosts.fundsLabel(host),
+                "§7You have: §6" + (hosts.funds(player, host) == Long.MAX_VALUE ? "∞" : GuildFormat.compact(hosts.funds(player, host)))));
+        if (closed != null) {
+            info.add("");
+            info.add("§c🔒 " + firstSentence(closed));
+        }
+        info.add("");
+        info.add("§8Buy land touching yours. New ground");
+        info.add("§8rises there in your island's look.");
+        info.add(host.isGuild() ? "§8Guild land: Mayor+, paid from the bank." : "§8Each stage widens your border too.");
+        inventory.setItem(INFO, MenuKit.named(Material.FILLED_MAP, "§6Your land", info));
         inventory.setItem(RAISE, MenuKit.named(view.raise ? Material.GRASS_BLOCK : Material.GLASS,
                 view.raise ? "§aRaise new ground: ON" : "§7Raise new ground: OFF",
                 "§7ON: bought land rises from the void.",
@@ -108,7 +116,7 @@ public final class LandMenu implements MenuKit.Menu {
     }
 
     private ItemStack cell(IslandHost host, int px, int pz, LandService.Status status, boolean youAreHere, long price,
-                           boolean raise, StarterLayout starter) {
+                           boolean raise, StarterLayout starter, boolean free, String closed) {
         String coords = "§8(" + px + ", " + pz + ")";
         List<String> lore = new ArrayList<>();
         if (youAreHere) {
@@ -132,11 +140,18 @@ public final class LandMenu implements MenuKit.Menu {
             }
             case BUYABLE -> {
                 lore.add("§7Touches your land.");
-                lore.add("§7Price: §6" + GuildFormat.compact(price) + " " + hosts.fundsLabel(host));
+                if (closed != null) {
+                    // not open yet: says so instead of glowing "buy" and refusing on the click
+                    lore.add("§c🔒 " + firstSentence(closed));
+                    item = MenuKit.named(Material.GREEN_STAINED_GLASS_PANE, "§7Land for later " + coords, lore);
+                    break;
+                }
+                lore.add(free ? "§aFree: a gift from the tour" : "§7Price: §6" + GuildFormat.compact(price) + " " + hosts.fundsLabel(host));
                 lore.add(raise ? "§7New ground rises here." : "§7Build rights only (no ground).");
                 lore.add("");
-                lore.add("§e▶ Click to buy");
-                item = MenuKit.glow(MenuKit.named(Material.LIME_STAINED_GLASS_PANE, "§eBuy this land " + coords, lore));
+                lore.add(free ? "§e▶ Click to take it" : "§e▶ Click to buy");
+                item = MenuKit.glow(MenuKit.named(Material.LIME_STAINED_GLASS_PANE,
+                        (free ? "§aTake this land " : "§eBuy this land ") + coords, lore));
             }
             case OUT_OF_REACH -> {
                 lore.add("§7Buy the land next to it first.");
@@ -148,6 +163,12 @@ public final class LandMenu implements MenuKit.Menu {
             MenuKit.glow(item);
         }
         return item;
+    }
+
+    /** "Land opens on Stage 3 · Grand Hub." out of the gate's two sentences (the second goes to chat on a click). */
+    private static String firstSentence(String text) {
+        int end = text.indexOf(". ");
+        return end < 0 ? text : text.substring(0, end + 1);
     }
 
     @Override
@@ -184,6 +205,12 @@ public final class LandMenu implements MenuKit.Menu {
                 int px = slot % 9 - 4;
                 int pz = view.top + slot / 9;
                 if (land.status(view.host, px, pz) != LandService.Status.BUYABLE) {
+                    return;
+                }
+                String closed = land.gate(view.host);
+                if (closed != null) {
+                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.6f, 1f);
+                    player.sendMessage("§7" + closed);
                     return;
                 }
                 if (land.buy(player, view.host, px, pz, view.raise)) {

@@ -40,6 +40,7 @@ public final class HubMenu implements MenuKit.Menu {
     private static final int GOAL = 40;
     private static final int PRESS = 38;
     private static final int DOCK = 42;
+    private static final int LAND = 44;
     private static final int BACK = 45;
     private static final int CLOSE = 49;
     private static final int PICK_UP = 53;
@@ -65,6 +66,15 @@ public final class HubMenu implements MenuKit.Menu {
     public void attachDock(de.aetherion.guilds.island.DockService dock, DockMenu dockMenu) {
         this.dock = dock;
         this.dockMenu = dockMenu;
+    }
+
+    private LandMenu landMenu;
+    private de.aetherion.guilds.island.LandService land;
+
+    /** Land is bought at the Hub too, where a player looks for it: the tile opens the land map. */
+    public void attachLand(LandMenu landMenu, de.aetherion.guilds.island.LandService land) {
+        this.landMenu = landMenu;
+        this.land = land;
     }
 
     private boolean staged(IslandHost host) {
@@ -163,6 +173,9 @@ public final class HubMenu implements MenuKit.Menu {
         inventory.setItem(PRODUCTION, MenuKit.named(Material.BLAST_FURNACE, "§aProduction",
                 "§7Every machine: its state,", "§7its stock, its upgrade.", "", "§e▶ Open Production"));
         inventory.setItem(LINES, linesTile(host));
+        if (landMenu != null && land != null) {
+            inventory.setItem(LAND, landTile(player, host));
+        }
         if (staged(host)) {
             inventory.setItem(TIER, stageTile(player, host));
             inventory.setItem(PRESS, pressTile(player, host));
@@ -204,6 +217,28 @@ public final class HubMenu implements MenuKit.Menu {
         return next != null && List.of("mill_line", "split", "sort", "overflow", "forge_line").contains(next.id());
     }
 
+    private ItemStack landTile(Player player, IslandHost host) {
+        boolean free = land.gift(host);
+        String closed = land.gate(host);
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Owned: §f" + hosts.parcels(host).size() + " §7parcels §8(16×16)");
+        lore.add(free ? "§7Next parcel: §afree §8(a gift from the tour)"
+                : "§7Next parcel: §6" + GuildFormat.compact(land.price(host)) + " " + hosts.fundsLabel(host));
+        lore.add("");
+        lore.add("§7Buy land touching yours: new");
+        lore.add("§7ground rises there in your");
+        lore.add("§7island's look, and your border");
+        lore.add("§7moves out with it.");
+        if (closed != null) {
+            int end = closed.indexOf(". ");
+            lore.add("");
+            lore.add("§c🔒 " + (end < 0 ? closed : closed.substring(0, end + 1)));
+        }
+        lore.add("");
+        lore.add("§e▶ Open the land map");
+        return MenuKit.tile(Material.GRASS_BLOCK, "§b§lLand", lore, free);
+    }
+
     private ItemStack linesTile(IslandHost host) {
         List<String> lore = new ArrayList<>();
         for (String line : logistics.hubBoard(host).split("\n")) {
@@ -234,6 +269,11 @@ public final class HubMenu implements MenuKit.Menu {
                 }
             }
             case BUILD -> placement.openTool(player, host, null);
+            case LAND -> {
+                if (landMenu != null) {
+                    landMenu.open(player, host);
+                }
+            }
             case MARKET -> market.open(player, host);
             case PRODUCTION -> production.open(player, host);
             case PRESS -> {

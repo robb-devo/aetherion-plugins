@@ -432,6 +432,27 @@ Island polish after Robb's run with a friend (2026-11-25, branch `claude/island-
   free status for the next of its kind (`picked-up.kept` in each island file); what it held moves to the other huts
   and the rest comes back with the next one. The Hub screen moves the Hub (pick up, Build Tool in hand).
 
+Island round 2 after Robb's note on #199 (2026-11-25, branch `claude/island-polish-102`, Guilds only):
+- First landing as one film shot (`island/LandingCamera.java`, `landing-camera.enabled`): the player spectates an
+  item-display lens moved every tick with `teleport_duration` 4. It opens in white cloud until the lens's chunk and
+  the island's chunks are on the client (`Player#isChunkSent`; the old armor-stand sweep showed nothing because the
+  camera packet came before the client knew the stand), sends the lens once more inside the cloud, then 10 s:
+  high and wide on the far side, a 170° descending circle, down into the player's own eyes on the spawn. The body
+  comes back one eye height under the last frame, so there is no cut. Smootherstep in time, the path lifts over
+  anything solid, sneak skips, quit/crash give the game mode back. Without the camera the old slow-fall drop runs.
+- Honest storage, the rest of it: a machine that takes nothing right now (still being built, a full hut, a
+  backed-up Mill) gets nothing in the flow and sends nothing on; a splitter shares only among exits that take; the
+  hut screen says "waits, this one is full / still being built"; without AetherionItems a Mill passes all through.
+- Land at the Hub: a Land tile on the Hub screen (slot 44) opens the land map. The map says when land is locked
+  ("Land opens on Stage 3 · Grand Hub.") instead of glowing "buy" and refusing on the click.
+- Tour step `LAND` after the first ship (tour is 9 steps now): Corin offers the first parcel as a gift
+  (`LandService.attachGift`, kits bit `LAND_GIFT`), free and past the stage gate, once. Players already done with
+  the tour don't get it. Land itself still opens at stage 3 for everything after that.
+- Permanent border (`island/IslandBorder.java`, `island-border.enabled`): a slim rail at knee height (light blue
+  glass round a sea-lantern core) along the build zone's edge (tier square + parcels), a crystal post at each
+  corner. Display entities, never saved, built while someone is on the island, rebuilt (it draws itself in) when
+  the land changes, gone a minute after the last person left.
+
 ## Paged talk and screen cards (2026-11-22, cloud session, Quests + Guilds, mmo-i first)
 
 Robb's ask: far less text. Two switches in the Quests config, both off by default, so a server only changes when

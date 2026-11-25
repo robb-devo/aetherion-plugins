@@ -112,6 +112,9 @@ public final class LandService {
     // ------------------------------------------------------------------------------------------------
 
     public long price(IslandHost host) {
+        if (gift(host)) {
+            return 0L;
+        }
         int owned = hosts.parcels(host).size();
         long base = host != null && host.isGuild()
                 ? Math.max(1L, plugin.getConfig().getLong("land.guild-parcel-base", 10_000L))
@@ -144,13 +147,30 @@ public final class LandService {
         this.gate = gate == null ? host -> null : gate;
     }
 
-    /** Why land can't be bought on this island yet (null when it can). */
+    /** Why land can't be bought on this island yet (null when it can; the tour's free parcel always can). */
     public String gate(IslandHost host) {
-        return gate.apply(host);
+        return gift(host) ? null : gate.apply(host);
+    }
+
+    private java.util.function.Predicate<IslandHost> gift = host -> false;
+    private java.util.function.Consumer<IslandHost> giftUsed = host -> {
+    };
+
+    /** The island tour gives one parcel away (free, before land opens): the guide says when, and hears it used. */
+    public void attachGift(java.util.function.Predicate<IslandHost> gift, java.util.function.Consumer<IslandHost> used) {
+        this.gift = gift == null ? host -> false : gift;
+        this.giftUsed = used == null ? host -> {
+        } : used;
+    }
+
+    /** The next parcel on this island is the tour's gift. */
+    public boolean gift(IslandHost host) {
+        return host != null && gift.test(host);
     }
 
     public boolean buy(Player player, IslandHost host, int px, int pz, boolean raiseLand) {
-        String closed = gate.apply(host);
+        boolean free = gift(host);
+        String closed = free ? null : gate.apply(host);
         if (closed != null) {
             player.sendMessage("§c" + closed);
             return false;
@@ -169,13 +189,17 @@ public final class LandService {
             return false;
         }
         long cost = price(host);
-        if (!hosts.charge(player, host, cost)) {
+        if (cost > 0L && !hosts.charge(player, host, cost)) {
             return false;
         }
         hosts.parcels(host).add(key(px, pz));
         hosts.save(host);
-        player.sendMessage("§a✦ Land bought §8(" + px + ", " + pz + ")§a for §6" + GuildFormat.compact(cost)
-                + " " + hosts.fundsLabel(host) + "§a." + (raiseLand ? " §7The ground is rising…" : ""));
+        player.sendMessage("§a✦ Land bought §8(" + px + ", " + pz + ")§a"
+                + (free ? ", a gift from the tour" : " for §6" + GuildFormat.compact(cost) + " " + hosts.fundsLabel(host))
+                + "§a." + (raiseLand ? " §7The ground is rising…" : ""));
+        if (free) {
+            giftUsed.accept(host);
+        }
         World world = hosts.world(host);
         if (world != null) {
             world.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.6f, 1.3f);

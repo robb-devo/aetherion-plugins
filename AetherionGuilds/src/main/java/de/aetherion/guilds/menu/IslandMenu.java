@@ -185,8 +185,10 @@ public final class IslandMenu implements MenuKit.Menu {
         if (land != null) {
             List<String> lore = new ArrayList<>();
             lore.add("§7Owned: §f" + hosts.parcels(host).size() + " §7parcels §8(16×16)");
+            boolean gift = landService != null && landService.gift(host);
             if (landService != null) {
-                lore.add("§7Next parcel: §6" + GuildFormat.compact(landService.price(host)) + " §7coins");
+                lore.add(gift ? "§7Next parcel: §afree §8(a gift from the tour)"
+                        : "§7Next parcel: §6" + GuildFormat.compact(landService.price(host)) + " §7coins");
             }
             lore.add("");
             lore.add("§7Buy land touching yours; new");
@@ -199,7 +201,7 @@ public final class IslandMenu implements MenuKit.Menu {
             }
             lore.add("");
             lore.add("§e▶ Open the land map");
-            inventory.setItem(LAND, MenuKit.tile(Material.FILLED_MAP, "§b§lLand", lore, false));
+            inventory.setItem(LAND, MenuKit.tile(Material.FILLED_MAP, "§b§lLand", lore, gift));
         }
 
         inventory.setItem(HOME, MenuKit.named(Material.OAK_DOOR, "§aGo Home", "§7Teleport to your island.", "",
@@ -210,7 +212,7 @@ public final class IslandMenu implements MenuKit.Menu {
                 "§7Friends can visit your island", "§7while the server is online.", "", "§e▶ Open friends"));
         inventory.setItem(COLLECT, collectTile(island));
         inventory.setItem(BORDER, MenuKit.named(Material.SPYGLASS, "§eShow build border",
-                "§7Gold particles trace where", "§7you may build, for a few seconds."));
+                "§7A rail of light always runs", "§7along your land. This traces it", "§7in gold too, for a few seconds."));
 
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, de.aetherion.core.api.JournalText.t("§7Aetherion Manager")));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
@@ -346,9 +348,9 @@ public final class IslandMenu implements MenuKit.Menu {
         String objective = guide.objective(island.ownerId());
         List<String> lore = new ArrayList<>();
         lore.add("§7The isle hand. He walks you");
-        lore.add("§7through hut → quarry → belt,");
-        lore.add("§7then Hub → Mill → Forge →");
-        lore.add("§bCompacted Cobble§7.");
+        lore.add("§7through Hub → quarry → Mill →");
+        lore.add("§7hut → Dock, your first ship");
+        lore.add("§7and your first land.");
         lore.add("");
         if (objective != null) {
             lore.add("§6◆ " + "§f" + objective.replace("§7", "§8"));
