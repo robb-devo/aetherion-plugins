@@ -70,17 +70,18 @@ public final class BuildCosts {
             new Unlock(StructureType.SORTER, 2, List.of(new Line(COMPRESSED, 6L), new Line(null, 6_000L))));
 
     /**
-     * Personal islands: the Hub board is the stage ladder. Stage 0 (the tour) opens the Mill (the guide hands it
-     * over in the starter kit, so the price only matters when the tour was skipped) and the Dock (one Compressed
-     * Cobble, the first block the new chain makes); the Werkhof the Splitter; the Foreman's Hall the Forge, Overflow
-     * Gate and Sorter. No Depot: the Storage Hut does that job.
+     * Personal islands: the Hub board is the stage ladder. Stage 0 (the tour) opens the Mill and the Splitter (the
+     * guide hands both over in chapter 3, so the prices only matter when the tour was skipped) and the Dock (one
+     * Compressed Cobble, the first block the new chain makes); the Werkhof the Overflow Gate (sharing with a
+     * priority, right after sharing evenly); the Foreman's Hall the Forge and the Sorter. No Depot: the Storage Hut
+     * does that job.
      */
     public static final List<Unlock> PERSONAL_UNLOCKS = List.of(
             new Unlock(StructureType.MILL, 1, List.of(new Line(COMPRESSED, 1L), new Line(COBBLE, 64L)), 0),
+            new Unlock(StructureType.SPLITTER, 1, List.of(new Line(COBBLE, 96L)), 0),
             new Unlock(StructureType.DOCK, 1, List.of(new Line(COMPRESSED, 1L)), 0),
-            new Unlock(StructureType.SPLITTER, 1, List.of(new Line(COBBLE, 96L), new Line(null, 1_000L)), 1),
+            new Unlock(StructureType.OVERFLOW, 1, List.of(new Line(COMPRESSED, 4L), new Line(null, 4_000L)), 1),
             new Unlock(StructureType.FORGE, 2, List.of(new Line(COMPRESSED, 12L), new Line(null, 10_000L)), 2),
-            new Unlock(StructureType.OVERFLOW, 2, List.of(new Line(COMPRESSED, 4L), new Line(null, 4_000L)), 2),
             new Unlock(StructureType.SORTER, 2, List.of(new Line(COMPRESSED, 6L), new Line(null, 6_000L)), 2));
 
     /** The unlock board of this island (personal: the stage ladder; guild: the Hub-tier list). */

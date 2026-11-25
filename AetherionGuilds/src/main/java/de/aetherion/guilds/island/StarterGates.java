@@ -45,31 +45,44 @@ import java.util.function.BiConsumer;
  */
 public final class StarterGates {
 
-    /** How each starter's gate looks: frame, cap, the glass in the arch, its line under the name. */
-    private record Look(String frame, String cap, Material glass, String color, String tagline, Particle.DustOptions dust) {
+    /**
+     * How each starter's gate looks: frame, cap, the glass in the arch, its line under the name, its sparks, the
+     * floor in front of it (the column you walk through, and around it) and what stands at its feet.
+     */
+    private record Look(String frame, String cap, Material glass, String color, String tagline, Particle.DustOptions dust,
+                        Material inlay, Material inlayRim, String foot) {
     }
 
     private static final Map<String, Look> LOOKS = Map.of(
             "grove", new Look("minecraft:stripped_oak_log", "minecraft:flowering_azalea_leaves",
                     Material.LIME_STAINED_GLASS, "§a", "§7Mossy woods, a lily pond, quiet",
-                    new Particle.DustOptions(Color.fromRGB(0x9BE36B), 1.1f)),
+                    new Particle.DustOptions(Color.fromRGB(0x9BE36B), 1.1f),
+                    Material.MOSSY_STONE_BRICKS, Material.MOSS_BLOCK, "minecraft:flowering_azalea"),
             "quarry", new Look("minecraft:polished_deepslate", "minecraft:copper_block",
                     Material.ORANGE_STAINED_GLASS, "§6", "§7Rock and ore, made for long lines",
-                    new Particle.DustOptions(Color.fromRGB(0xFFA54A), 1.1f)),
+                    new Particle.DustOptions(Color.fromRGB(0xFFA54A), 1.1f),
+                    Material.WAXED_CUT_COPPER, Material.POLISHED_DEEPSLATE, "minecraft:waxed_copper_bulb[lit=true]"),
             "tide", new Look("minecraft:smooth_sandstone", "minecraft:prismarine_bricks",
                     Material.LIGHT_BLUE_STAINED_GLASS, "§b", "§7Sand, a lagoon and a dock",
-                    new Particle.DustOptions(Color.fromRGB(0x6FD3FF), 1.1f)));
+                    new Particle.DustOptions(Color.fromRGB(0x6FD3FF), 1.1f),
+                    Material.SEA_LANTERN, Material.PRISMARINE_BRICKS, "minecraft:sea_lantern"));
 
     private static final String TAG = "aeg_gate";
-    private static final float HALF = 0.8f;   // half the opening's width
-    private static final float POST = 0.4f;   // post thickness
-    private static final float HEIGHT = 2.9f; // the opening's height
+    private static final float HALF = 1.0f;   // half the opening's width
+    private static final float POST = 0.45f;  // post thickness
+    private static final float HEIGHT = 3.4f; // the opening's height
+    /** A light wave runs across each gate's glass every this many gate ticks (4 game ticks each). */
+    private static final int WAVE = 10;
 
     private final JavaPlugin plugin;
     private final PersonalIslandService personal;
     private final BiConsumer<Player, StarterLayout> open;
     private final List<Entity> entities = new ArrayList<>();
     private final List<ItemDisplay> icons = new ArrayList<>();
+    /** Per gate: the light wave over its glass, with its full size (x, y, z in world axes). */
+    private final List<BlockDisplay> waves = new ArrayList<>();
+    private final List<float[]> waveSizes = new ArrayList<>();
+    private final IsleDock isle;
     /** Where each player stood on the last check (x, z, y), for the crossing. */
     private final Map<UUID, double[]> last = new HashMap<>();
     /** No second screen for a moment after one opened (standing in the plane, a step back and forth). */
@@ -86,6 +99,7 @@ public final class StarterGates {
         this.plugin = plugin;
         this.personal = personal;
         this.open = open;
+        this.isle = new IsleDock(plugin);
     }
 
     private boolean enabled() {
@@ -197,15 +211,47 @@ public final class StarterGates {
             }
             open.accept(player, starter);
         }
-        if (shimmer) {
-            for (int i = 0; i < gates.size() && i < starters.size(); i++) {
-                Look look = LOOKS.get(starters.get(i).id());
-                double[] c = gates.get(i);
-                if (look != null) {
-                    world.spawnParticle(Particle.DUST, c[0], c[1] + 0.3 + Math.random() * HEIGHT, c[2], 2,
-                            HALF * 0.7, 0.2, 0.05, 0, look.dust());
-                }
+        for (int i = 0; i < gates.size() && i < starters.size(); i++) {
+            Look look = LOOKS.get(starters.get(i).id());
+            double[] c = gates.get(i);
+            if (look == null) {
+                continue;
             }
+            // two strands of sparks winding up through the arch, in the island's colour
+            double climb = (ticks * 0.17 + i * 1.1) % HEIGHT;
+            for (int strand = 0; strand < 2; strand++) {
+                double a = ticks * 0.55 + strand * Math.PI + i;
+                double u = Math.cos(a) * HALF * 0.78;
+                double w = Math.sin(a) * 0.22;
+                world.spawnParticle(Particle.DUST, c[0] + u * right[0] + w * forward[0], c[1] + 0.25 + climb,
+                        c[2] + u * right[1] + w * forward[1], 1, 0, 0, 0, 0, look.dust());
+            }
+            if (shimmer && Math.random() < 0.35) {
+                world.spawnParticle(Particle.END_ROD, c[0], c[1] + 0.4 + Math.random() * (HEIGHT - 0.6), c[2], 1,
+                        HALF * 0.5, 0.1, 0.05, 0.004);
+            }
+        }
+        wave();
+    }
+
+    /** The light wave: small in the middle of the glass, it grows to the arch's edges, then starts again. */
+    private void wave() {
+        long step = ticks % WAVE;
+        if (step != 0 && step != 1) {
+            return;
+        }
+        for (int i = 0; i < waves.size(); i++) {
+            BlockDisplay wave = waves.get(i);
+            if (!wave.isValid()) {
+                continue;
+            }
+            float[] full = waveSizes.get(i);
+            float k = step == 0 ? 0.04f : 1.0f;
+            wave.setInterpolationDelay(0);
+            wave.setInterpolationDuration(step == 0 ? 0 : (WAVE - 1) * 4);
+            wave.setTransformation(new Transformation(
+                    new Vector3f(-full[0] * k / 2f, full[1] * (1f - k) / 2f, -full[2] * k / 2f), new AxisAngle4f(),
+                    new Vector3f(full[0] * k, full[1] * k, full[2] * k), new AxisAngle4f()));
         }
     }
 
@@ -266,46 +312,72 @@ public final class StarterGates {
         double rad = Math.toRadians(yaw);
         forward = new double[]{Math.round(-Math.sin(rad)), Math.round(Math.cos(rad))};
         right = new double[]{-forward[1], forward[0]};
-        double ahead = plugin.getConfig().getDouble("starter-gates.forward", 3.0);
-        double spacing = plugin.getConfig().getDouble("starter-gates.spacing", 3.0);
+        double ahead = Math.round(plugin.getConfig().getDouble("starter-gates.forward", 7.0));
+        double spacing = Math.round(plugin.getConfig().getDouble("starter-gates.spacing", 4.0));
         List<StarterLayout> starters = StarterLayout.personalChoices();
         int n = starters.size();
         double y = Math.floor(spot.getY());
+        double[][] frame = new double[n][];
+        Material[][] inlays = new Material[n][];
         for (int i = 0; i < n; i++) {
-            double u = (i - (n - 1) / 2.0) * spacing;
-            double cx = spot.getX() + u * right[0] + ahead * forward[0];
-            double cz = spot.getZ() + u * right[1] + ahead * forward[1];
+            double u = Math.round((i - (n - 1) / 2.0) * spacing);
+            Look look = LOOKS.getOrDefault(starters.get(i).id(), LOOKS.get("quarry"));
+            frame[i] = new double[]{u, ahead};
+            inlays[i] = new Material[]{look.inlay(), look.inlayRim()};
+        }
+        // the floating isle under it all (real blocks, once), then the gates on it
+        int[] f = {(int) forward[0], (int) forward[1]};
+        int[] r = {(int) right[0], (int) right[1]};
+        String[] feet = new String[n];
+        for (int i = 0; i < n; i++) {
+            feet[i] = LOOKS.getOrDefault(starters.get(i).id(), LOOKS.get("quarry")).foot();
+        }
+        isle.ensure(spot, f, r, frame, inlays, feet);
+        for (int i = 0; i < n; i++) {
+            double cx = spot.getX() + frame[i][0] * right[0] + ahead * forward[0];
+            double cz = spot.getZ() + frame[i][0] * right[1] + ahead * forward[1];
             gates.add(new double[]{cx, y, cz});
             gate(world, starters.get(i), cx, y, cz, yaw);
         }
-        // one banner behind the middle gate, high enough to clear the arches, low enough to be seen on arrival
-        double bx = spot.getX() + (ahead + 1.2) * forward[0];
-        double bz = spot.getZ() + (ahead + 1.2) * forward[1];
-        text(world, new Location(world, bx, y + HEIGHT + 0.9, bz),
-                "§6✦ §f§lChoose your island §6✦\n§7Walk through a gate. §8It's yours for good.", 1.25f, true);
+        // the one line you need, right in front of you as you land: just over your head, so you walk under it
+        // toward the gates behind it
+        double bx = spot.getX() + 2.6 * forward[0];
+        double bz = spot.getZ() + 2.6 * forward[1];
+        text(world, new Location(world, bx, y + 2.25, bz),
+                "§6✦ §f§lChoose your island §6✦\n§7Walk through a gate §8· §7it's yours for good", 0.85f, true);
     }
 
     private void gate(World world, StarterLayout starter, double cx, double y, double cz, float yaw) {
         Look look = LOOKS.getOrDefault(starter.id(), LOOKS.get("quarry"));
         BlockData frame = Bukkit.createBlockData(look.frame());
-        // posts, lintel, a cap on top: (u0, u1, v0, v1, w0, w1) in the gate's own frame
-        box(world, frame, cx, y, cz, -HALF - POST, -HALF, 0f, HEIGHT, -0.25f, 0.25f, false);
-        box(world, frame, cx, y, cz, HALF, HALF + POST, 0f, HEIGHT, -0.25f, 0.25f, false);
-        box(world, frame, cx, y, cz, -HALF - POST - 0.15f, HALF + POST + 0.15f, HEIGHT, HEIGHT + 0.4f, -0.32f, 0.32f, false);
-        box(world, Bukkit.createBlockData(look.cap()), cx, y, cz, -0.3f, 0.3f, HEIGHT + 0.4f, HEIGHT + 0.85f, -0.3f, 0.3f, false);
-        // the glass in the arch and a strip of it on the floor where you step through
+        float outer = HALF + POST;
+        // feet, posts, a lintel with a heavier top, the arch's inner corners cut round, a cap with its crown:
+        // (u0, u1, v0, v1, w0, w1) in the gate's own frame
+        box(world, frame, cx, y, cz, -outer - 0.12f, -HALF + 0.06f, 0f, 0.4f, -0.36f, 0.36f, false);
+        box(world, frame, cx, y, cz, HALF - 0.06f, outer + 0.12f, 0f, 0.4f, -0.36f, 0.36f, false);
+        box(world, frame, cx, y, cz, -outer, -HALF, 0f, HEIGHT, -0.27f, 0.27f, false);
+        box(world, frame, cx, y, cz, HALF, outer, 0f, HEIGHT, -0.27f, 0.27f, false);
+        box(world, frame, cx, y, cz, -HALF, -HALF + 0.32f, HEIGHT - 0.32f, HEIGHT, -0.22f, 0.22f, false);
+        box(world, frame, cx, y, cz, HALF - 0.32f, HALF, HEIGHT - 0.32f, HEIGHT, -0.22f, 0.22f, false);
+        box(world, frame, cx, y, cz, -outer - 0.2f, outer + 0.2f, HEIGHT, HEIGHT + 0.42f, -0.34f, 0.34f, false);
+        box(world, frame, cx, y, cz, -outer + 0.1f, outer - 0.1f, HEIGHT + 0.42f, HEIGHT + 0.6f, -0.26f, 0.26f, false);
+        BlockData cap = Bukkit.createBlockData(look.cap());
+        box(world, cap, cx, y, cz, -0.34f, 0.34f, HEIGHT + 0.6f, HEIGHT + 1.02f, -0.3f, 0.3f, false);
+        box(world, cap, cx, y, cz, -outer - 0.12f, -outer + 0.24f, HEIGHT + 0.42f, HEIGHT + 0.78f, -0.18f, 0.18f, false);
+        box(world, cap, cx, y, cz, outer - 0.24f, outer + 0.12f, HEIGHT + 0.42f, HEIGHT + 0.78f, -0.18f, 0.18f, false);
+        // the glass in the arch, lit, and the light wave that keeps running over it
         BlockData glass = look.glass().createBlockData();
-        box(world, glass, cx, y, cz, -HALF, HALF, 0.02f, HEIGHT, -0.02f, 0.02f, true);
-        box(world, glass, cx, y, cz, -HALF, HALF, 0.0f, 0.03f, -0.5f, 0.5f, true);
+        box(world, glass, cx, y, cz, -HALF, HALF, 0.02f, HEIGHT, -0.03f, 0.03f, true);
+        wave(world, cx, y, cz);
         // its icon turning in the arch, a hand's breadth in front of the glass
         ItemStack icon = new ItemStack(starter.icon());
-        double fx = -0.15 * forward[0];
-        double fz = -0.15 * forward[1];
-        Location mid = new Location(world, cx + fx, y + 1.2, cz + fz, yaw + 180f, 0f);
+        double fx = -0.2 * forward[0];
+        double fz = -0.2 * forward[1];
+        Location mid = new Location(world, cx + fx, y + 1.35, cz + fz, yaw + 180f, 0f);
         ItemDisplay item = world.spawn(mid, ItemDisplay.class, d -> {
             d.setItemStack(icon);
             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(1.0f, 1.0f, 1.0f),
+            d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(1.3f, 1.3f, 1.3f),
                     new AxisAngle4f()));
             d.setBrightness(new Display.Brightness(15, 15));
             d.setPersistent(false);
@@ -313,9 +385,31 @@ public final class StarterGates {
         });
         icons.add(item);
         entities.add(item);
-        // its name and line in the arch's top, at eye height from the dock spawn
-        text(world, new Location(world, cx + fx, y + 1.95, cz + fz), look.color() + "§l" + starter.display()
-                + "\n" + look.tagline(), 0.62f, false);
+        // its name on the lintel, toward the dock spawn, on a dark plate so it reads against the sky
+        double lx = -0.4 * forward[0];
+        double lz = -0.4 * forward[1];
+        text(world, new Location(world, cx + lx, y + HEIGHT + 0.06, cz + lz), look.color() + "§l" + starter.display()
+                + "\n" + look.tagline(), 0.7f, true);
+    }
+
+    /** The wave: a sheet of white glass just in front of the gate's glass (sized and moved by {@link #wave()}). */
+    private void wave(World world, double cx, double y, double cz) {
+        float wx = (float) (Math.abs(right[0]) * 2 * HALF + Math.abs(forward[0]) * 0.02);
+        float wz = (float) (Math.abs(right[1]) * 2 * HALF + Math.abs(forward[1]) * 0.02);
+        float wy = HEIGHT - 0.04f;
+        Location at = new Location(world, cx - 0.06 * forward[0], y + 0.04, cz - 0.06 * forward[1]);
+        BlockDisplay wave = world.spawn(at, BlockDisplay.class, d -> {
+            d.setBlock(Material.WHITE_STAINED_GLASS.createBlockData());
+            d.setTransformation(new Transformation(new Vector3f(-wx * 0.02f, wy * 0.48f, -wz * 0.02f), new AxisAngle4f(),
+                    new Vector3f(wx * 0.04f, wy * 0.04f, wz * 0.04f), new AxisAngle4f()));
+            d.setBrightness(new Display.Brightness(15, 15));
+            d.setShadowRadius(0f);
+            d.setPersistent(false);
+            d.addScoreboardTag(TAG);
+        });
+        waves.add(wave);
+        waveSizes.add(new float[]{wx, wy, wz});
+        entities.add(wave);
     }
 
     /** An axis-aligned box in the gate's frame (u right, v up, w forward) as one block display. */
@@ -345,10 +439,12 @@ public final class StarterGates {
     private void text(World world, Location at, String text, float scale, boolean background) {
         TextDisplay display = world.spawn(at, TextDisplay.class, d -> {
             d.text(LegacyComponentSerializer.legacySection().deserialize(text));
-            d.setBillboard(Display.Billboard.CENTER);
+            // upright and turning to whoever reads it (never tilted back the way a CENTER billboard leans)
+            d.setBillboard(Display.Billboard.VERTICAL);
             d.setAlignment(TextDisplay.TextAlignment.CENTER);
             d.setDefaultBackground(false);
-            d.setBackgroundColor(background ? Color.fromARGB(150, 18, 14, 24) : Color.fromARGB(0, 0, 0, 0));
+            d.setBackgroundColor(background ? Color.fromARGB(170, 16, 13, 22) : Color.fromARGB(0, 0, 0, 0));
+            d.setLineWidth(260);
             d.setShadowed(!background);
             d.setBrightness(new Display.Brightness(15, 15));
             d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, scale),
@@ -372,12 +468,14 @@ public final class StarterGates {
         }
         entities.clear();
         icons.clear();
+        waves.clear();
+        waveSizes.clear();
         gates.clear();
         dock = null;
         // gate parts left by a crash or an older build (never saved, but a chunk can hold them over a restart)
         Location spot = lobby();
         if (spot != null && spot.getWorld() != null) {
-            for (Entity entity : spot.getWorld().getNearbyEntities(spot, 16, 12, 16)) {
+            for (Entity entity : spot.getWorld().getNearbyEntities(spot, 24, 14, 24)) {
                 if (entity.getScoreboardTags().contains(TAG)) {
                     entity.remove();
                 }

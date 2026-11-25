@@ -85,6 +85,9 @@ mmo-i). **`main` equals live** on every backend; the hub server keeps its own Hu
 | SamuraiBoss | `16210290` | mmo-r (`arena.bell-challenge: true` patched live; no dojo is built there right now, see below) |
 | Dungeons, Beta, Gnomon, Pit | `main` of 11-16 (unchanged since) | as below |
 
+mmo-i has run newer island jars since: `main` `1e7c08f` (#199, #200) from 2026-11-25 21:08 CET, so its rows above are
+older; the hashes are in LIVE_STATE.
+
 Which backend loads which plugin: Core on all six (hub, mmo-r, mmo-d, mmo-c, mmo-i, mmo-m); Items, Quests,
 AetherMobs on every mmo backend; BossEngine on hub, mmo-r, mmo-d, mmo-c; Mining on mmo-r, mmo-c, mmo-m; Foraging,
 Farming, Fishing on mmo-r and mmo-c; Dungeons and Beta on mmo-r and mmo-d; Guilds on mmo-i only (parked on mmo-r and mmo-d);
@@ -462,6 +465,34 @@ Island round 2 after Robb's note on #199 (2026-11-25, branch `claude/island-poli
   glass round a sea-lantern core) along the build zone's edge (tier square + parcels), a crystal post at each
   corner. Display entities, never saved, built while someone is on the island, rebuilt (it draws itself in) when
   the land changes, gone a minute after the last person left.
+
+Round 2 went out as PR #200 together with a DEV tile "Reset MY Island" (Items `DevHubs` slot 30, runs
+`/island admin wipe`, island server only): live on mmo-i since 2026-11-25 21:08 CET (Guilds + Items, `main` `1e7c08f`).
+
+Island round 3 after Robb's playtest (2026-11-25, branch `claude/island-round-3`, Guilds only):
+- Isle Dock as a place (`island/IsleDock.java`): a small floating isle of real blocks under the dock spawn, built
+  once per spot (`isle-dock.yml`), only into air, after taking up Core's quartz landing; skipped (and logged) when
+  something else stands under the spawn. Grass and moss, a stone path from the arrival stone to the gates, an inlay
+  in each gate's colours, lantern posts on the rim, a rock cone with roots and dripstone below.
+  `starter-gates.build-dock` (default true).
+- Gates (`island/StarterGates.java`): 3.4 high with rounded inner corners, a double lintel and a crown, their own
+  feet blocks; a light wave runs through each gate sheet; the name sits on the lintel. The "Choose your island"
+  banner now stands in front of the spawn at eye height, the gates behind it (`.forward` 7, `.spacing` 4).
+- Corin stands at the spawn's height (`IslandGuide.spotNear` tries the spawn's floor level first), no more logs.
+- Tour order, 11 steps, `island_guide.yml` version 3: Hub, Storage Hut (the Build Tool lesson is on the hut now),
+  Corin's quarry, belt quarry → hut (goods flow, the hut counts), then Corin's second kit (Mill and Splitter
+  unlocked, the first of each free): Mill beside the belt, Splitter cut into that belt, belt Splitter side → Mill,
+  belt Mill → hut (the first Compressed), Dock, First Shipment (now 1 Compressed + 64 Cobble), first land. A chain
+  already standing jumps to the Dock. Older saves keep Dock/Ship/Land; every other step restarts at the Hub and
+  `advance()` skips what the island already shows.
+- Calm chat: Corin speaks in his bubble only. Too far away, the owner gets one "Come over to me" line (at most every
+  2 min, with a bell) and the talk waits until they come. The Build Tool's how-to chat lines stay off during the tour
+  (`PlacementService.attachCalm`). Chapter parts still arrive on their own about 2 s after a step is done.
+- Ladder: Splitter at stage 0, Overflow Gate at stage 1 (Werkhof), Forge and Sorter at stage 2. The ship step shows
+  a one-time card of what the Werkhof brings; the stage beats name the new parts. Personal goal "Keep the Mill fed
+  first" (Overflow) after "split"; the old Overflow goal is guild-only.
+- Out of the beta on purpose (Robb, 2026-11-25): a machine that makes something new out of several resources. Kept
+  as an idea for after the beta.
 
 ## Paged talk and screen cards (2026-11-22, cloud session, Quests + Guilds, mmo-i first)
 

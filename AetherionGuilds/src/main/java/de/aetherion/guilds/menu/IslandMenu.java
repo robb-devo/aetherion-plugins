@@ -348,9 +348,9 @@ public final class IslandMenu implements MenuKit.Menu {
         String objective = guide.objective(island.ownerId());
         List<String> lore = new ArrayList<>();
         lore.add("§7The isle hand. He walks you");
-        lore.add("§7through Hub → quarry → Mill →");
-        lore.add("§7hut → Dock, your first ship");
-        lore.add("§7and your first land.");
+        lore.add("§7through Hub → hut → quarry →");
+        lore.add("§7Mill and Splitter → Dock, your");
+        lore.add("§7first ship and your first land.");
         lore.add("");
         if (objective != null) {
             lore.add("§6◆ " + "§f" + objective.replace("§7", "§8"));
