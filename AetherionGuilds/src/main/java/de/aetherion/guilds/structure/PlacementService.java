@@ -787,9 +787,21 @@ public final class PlacementService {
         announce(player, session, fresh);
     }
 
+    /** True while the island tour runs for this player: the tool then shows its part, but writes nothing to chat. */
+    private java.util.function.Predicate<Player> calm = player -> false;
+
+    public void attachCalm(java.util.function.Predicate<Player> calm) {
+        if (calm != null) {
+            this.calm = calm;
+        }
+    }
+
     private void announce(Player player, Session session, boolean fresh) {
         Part part = session.part;
         player.sendTitle("", "§6⚒ §e" + part.label(), 0, 22, 8);
+        if (calm.test(player)) {
+            return; // the tour's card and the board beside the hologram say how; no how-to line in chat
+        }
         if (fresh) {
             player.sendMessage("§6⚒ Build Tool §7in your hand. §fSneak + scroll §7picks a part, §fF §7shows all,"
                     + " §fQ §7puts it away.");

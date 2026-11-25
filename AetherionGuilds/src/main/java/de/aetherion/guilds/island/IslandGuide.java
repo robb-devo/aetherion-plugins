@@ -67,18 +67,20 @@ import java.util.function.Consumer;
 
 /**
  * The isle hand (Corin by default, {@code guide.name}): a FancyNPC on every personal starter island who explains
- * the island one piece at a time, in the TalkUx speech bubble. He never walks: he greets the owner where they
- * land, and once the Hub stands he keeps his post beside it (a straight walk over player-built belts and machines
- * always looked lost). From further away his lines come as chat lines; the island bar always shows the step.
+ * the island in five short chapters, in the TalkUx speech bubble. He never walks: he greets the owner where they
+ * land, and once the Hub stands he keeps his post beside it. He speaks at the start of a chapter, when he hands
+ * over its parts, and at the big moments; in between only the card at the top says the next step. From further
+ * away he calls the owner over once and says the rest when they stand by him (never a speech into chat).
  * <ol>
- *   <li>the <b>Hub</b> first, free, wherever the player likes,</li>
- *   <li>the <b>starter kit</b>, on the house: a Cobble Quarry (into the hand), the Mill (unlocked for them), the
- *   first Storage Hut and enough free belt tiles for the whole first chain,</li>
- *   <li>built the way the stone flows, every piece once: the <b>quarry</b>, the <b>Mill</b> in front of its chute
- *   and a belt into it (he tips a starter load in, so it presses at once), the <b>hut</b> behind it and the last
- *   belt: the first <b>Compressed Cobble</b> lands in the hut a minute or so later,</li>
- *   <li>at the Hub lectern, how new parts come: the <b>Dock</b> costs the one Compressed Cobble just made,</li>
- *   <li>the <b>First Shipment</b> (2 Compressed Cobble) and the airship: stage 1, and a second quarry.</li>
+ *   <li><b>Your base</b>: the Hub, then the Storage Hut beside it (the one Build Tool lesson: sneak and scroll),</li>
+ *   <li><b>Goods flow</b>: he hands over the Cobble Quarry and free belt tiles; the quarry, a belt into the hut,
+ *   and the hut's count climbs at once,</li>
+ *   <li><b>Split and refine</b>: he hands over the Mill and the Splitter; the Mill beside the belt, the Splitter cut
+ *   into the running belt (nothing is torn down), its side belted into the Mill (he tips a starter load in) and the
+ *   Mill belted into the hut: raw stone builds, pressed stone ships,</li>
+ *   <li><b>Ship it</b>: the Dock, unlocked at the Hub lectern, and the First Shipment (pressed and raw stone):
+ *   stage 1,</li>
+ *   <li><b>Grow</b>: the first piece of land, a gift.</li>
  * </ol>
  * There are no pads, rings or marked spots: the player picks every place; the Build Tool's board beside each
  * hologram says what the part does and where it fits best. Every step is detected from the island itself, so the
@@ -91,19 +93,21 @@ import java.util.function.Consumer;
 public final class IslandGuide implements Listener {
 
     /**
-     * The tour is stage 0 of the island, in the order the stone flows: Hub → starter kit → quarry → Mill → belt
-     * into the Mill → hut → belt into the hut (the first Compressed Cobble) → the Dock, unlocked at the Hub → the
-     * first ship (which lifts the island to stage 1). PRESS, FORGE and COMPACT stay only so old saves still load:
-     * they, and every step saved by the old hut-first tour, start again from the island itself.
+     * The tour is stage 0 of the island: Hub → hut → (his quarry) quarry → belt into the hut → (his Mill and
+     * Splitter) Mill → Splitter cut into the belt → its side into the Mill → the Mill into the hut → the Dock,
+     * unlocked at the Hub → the first ship (stage 1) → the first land. PRESS, FORGE and COMPACT stay only so old
+     * saves still load: they, and every step saved by an older tour, start again from the island itself.
      */
     public enum Step {
         WELCOME,
         HUB,
-        QUARRY,
-        MILL,
-        FEED,
         HUT,
+        QUARRY,
         BELT,
+        MILL,
+        SPLIT,
+        FEED,
+        OUTPUT,
         PRESS,
         FORGE,
         COMPACT,
@@ -133,8 +137,8 @@ public final class IslandGuide implements Listener {
         }
     }
 
-    /** island_guide.yml format: 2 = the flow-order tour (the steps of older files mean the hut-first tour). */
-    private static final int SAVE_VERSION = 2;
+    /** island_guide.yml format: 3 = the chapter tour (the steps of older files mean an older tour's order). */
+    private static final int SAVE_VERSION = 3;
 
     private static final String NPC_PREFIX = "aeg_hand_";
     private static final String SPEAKER_PREFIX = "isle_hand_";
@@ -151,8 +155,12 @@ public final class IslandGuide implements Listener {
     private static final int TOOL_TAUGHT = 1 << 7;
     /** Kits bit: the tour's free parcel was taken. */
     private static final int LAND_GIFT = 1 << 8;
+    /** Kits bit: chapter 3's parts (the Mill and the Splitter) were handed over. */
+    private static final int REFINE_KIT = 1 << 9;
+    /** Kits bit: the card with what the first ship brings was shown. */
+    private static final int GOAL_CARD = 1 << 10;
     /** The tool's action bar while the lesson waits for the switch. */
-    private static final String COACH = "§e⇅ §fHold sneak §7and §fscroll the wheel §8→ §7switch to the §eQuarry";
+    private static final String COACH = "§e⇅ §fHold sneak §7and §fscroll the wheel §8→ §7switch to the §eStorage Hut";
 
     private static final class State {
         Step step = Step.WELCOME;
@@ -240,6 +248,10 @@ public final class IslandGuide implements Listener {
         this.file = new File(plugin.getDataFolder(), "island_guide.yml");
         load();
         placement.attachSwitched(this::switched);
+        placement.attachCalm(player -> {
+            State state = available() ? states.get(player.getUniqueId()) : null;
+            return state != null && state.step.touring();
+        });
         logistics.setBeltPass(new LogisticsService.BeltPass() {
             @Override
             public boolean noWorkshopNeeded(Player player, IslandHost host) {
@@ -375,15 +387,19 @@ public final class IslandGuide implements Listener {
                 PlacedStructure hub = structures.hub(host);
                 yield hub != null && hub.building() ? "Hub going up…" : "Place your Hub anywhere §7(free)";
             }
-            case QUARRY -> state != null && lessonPending(state)
-                    ? "Switch the Build Tool to the Quarry §7(hold sneak, scroll)"
-                    : state != null && state.quarryGiven
+            case HUT -> state != null && lessonPending(state)
+                    ? "Switch the Build Tool to the Storage Hut §7(hold sneak, scroll)"
+                    : "Set your Storage Hut next to the Hub §7(free)";
+            case QUARRY -> state != null && (state.kits & KIT) != 0
                     ? "Set your quarry down §7(Build Tool, flat ground)"
-                    : "Talk to " + name() + " §7(your starter kit)";
-            case MILL -> "Set the Mill down near the quarry's chute §7(free)";
-            case FEED -> "Belt the quarry's chute into the Mill";
-            case HUT -> "Set the Storage Hut down behind the Mill §7(free)";
-            case BELT -> "Belt the Mill's chute into the hut";
+                    : "Talk to " + name() + " §7(he has your quarry)";
+            case BELT -> "Belt the quarry's chute into the hut";
+            case MILL -> state != null && (state.kits & REFINE_KIT) != 0
+                    ? "Set the Mill down beside your belt §7(free)"
+                    : "Talk to " + name() + " §7(he has your next parts)";
+            case SPLIT -> "Cut the Splitter into your belt §7(right-click the belt)";
+            case FEED -> "Belt the Splitter's side into the Mill";
+            case OUTPUT -> "Belt the Mill's chute into the hut";
             case DOCK, SHIP -> factoryObjective(host, step);
             case LAND -> "Take your first land, a gift §7(Hub → Land)";
             default -> null;
@@ -394,12 +410,14 @@ public final class IslandGuide implements Listener {
      * A tour step just got done: a small screen card at the top ("✔ Mill set down", step n/8, what's next).
      * Steps with their own big moment (Hub, first chain, the ship) get none. False = no card (cards off).
      */
-    private boolean stepToast(Player owner, Step done) {
+    private boolean stepToast(Player owner, Step done, boolean primed) {
         String title = switch (done) {
-            case QUARRY -> "Quarry set down";
-            case MILL -> "Mill set down";
-            case FEED -> "Mill fed";
             case HUT -> "Storage Hut built";
+            case QUARRY -> "Quarry set down";
+            case BELT -> "Goods are flowing";
+            case MILL -> "Mill set down";
+            case SPLIT -> "Splitter cut in";
+            case FEED -> "Mill fed";
             case DOCK -> "Dock built";
             case LAND -> "Your first land";
             default -> null;
@@ -408,27 +426,43 @@ public final class IslandGuide implements Listener {
             return false;
         }
         String next = objective(owner.getUniqueId());
-        return IslandUi.toast(owner, title, "§7Island tour · step " + progress(owner.getUniqueId()) + "/" + total(),
-                next == null ? null : "§8Next: §7" + next);
+        String line = done == Step.FEED && primed ? "§7" + name() + " tipped a starter load in: it presses at once"
+                : done == Step.BELT ? "§7Watch your hut's count climb"
+                : "§7Island tour · step " + progress(owner.getUniqueId()) + "/" + total();
+        return IslandUi.toast(owner, title, line, next == null ? null : "§8Next: §7" + next);
     }
 
-    /** Steps in the whole tour (for "step n/9"). */
+    /** After {@code pause} ticks, if the owner is still on {@code step}: {@code then} (nothing when null). */
+    private void later(long pause, Player owner, Step step, Runnable then) {
+        if (then == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (owner.isOnline() && state(owner.getUniqueId()).step == step) {
+                then.run();
+            }
+        }, pause);
+    }
+
+    /** Steps in the whole tour (for "step n/11"). */
     public int total() {
-        return 9;
+        return 11;
     }
 
-    /** 0..9 steps done (for progress bars). */
+    /** 0..11 steps done (for progress bars). */
     public int progress(UUID owner) {
         return switch (step(owner)) {
-            case QUARRY -> 1;
-            case MILL -> 2;
-            case FEED -> 3;
-            case HUT -> 4;
-            case BELT -> 5;
-            case DOCK -> 6;
-            case SHIP -> 7;
-            case LAND -> 8;
-            case DONE, SKIPPED -> 9;
+            case HUT -> 1;
+            case QUARRY -> 2;
+            case BELT -> 3;
+            case MILL -> 4;
+            case SPLIT -> 5;
+            case FEED -> 6;
+            case OUTPUT -> 7;
+            case DOCK -> 8;
+            case SHIP -> 9;
+            case LAND -> 10;
+            case DONE, SKIPPED -> 11;
             default -> 0;
         };
     }
@@ -448,12 +482,13 @@ public final class IslandGuide implements Listener {
         return step == Step.DOCK && !structures.unlocked(host, StructureType.DOCK) ? StructureType.DOCK : null;
     }
 
-    /** While the tour runs, the first Hub, Mill and Dock are on the house (the first hut is always free). */
+    /** While the tour runs, the first Hub, Mill, Splitter and Dock are on the house (the first hut is always free). */
     public boolean freeFirst(IslandHost host, StructureType type) {
         if (host == null || host.isGuild() || !available()) {
             return false;
         }
-        if (type != StructureType.WORKSHOP && type != StructureType.MILL && type != StructureType.DOCK) {
+        if (type != StructureType.WORKSHOP && type != StructureType.MILL && type != StructureType.DOCK
+                && type != StructureType.SPLITTER) {
             return false;
         }
         State state = states.get(host.id());
@@ -488,12 +523,14 @@ public final class IslandGuide implements Listener {
         }
         return switch (part) {
             case HUB -> step == Step.HUB ? "Anywhere flat, machines go round it" : null;
-            case QUARRY -> step == Step.QUARRY ? "Leave room in front of its chute" : null;
-            case MILL -> step == Step.MILL ? "In front of the quarry's chute" : null;
-            case STORAGE_HUT -> step == Step.HUT ? "Behind the Mill, by its chute" : null;
+            case STORAGE_HUT -> step == Step.HUT ? "Right next to your Hub" : null;
+            case QUARRY -> step == Step.QUARRY ? "A few blocks from the hut, chute toward it" : null;
+            case MILL -> step == Step.MILL ? "Beside your belt, a few blocks off it" : null;
+            case SPLITTER -> step == Step.SPLIT ? "Right-click your running belt" : null;
             case DOCK -> step == Step.DOCK ? "Near the island's edge looks best" : null;
-            case BELT -> step == Step.FEED ? "Quarry chute → Mill"
-                    : step == Step.BELT ? "Mill chute → hut" : null;
+            case BELT -> step == Step.BELT ? "Quarry chute → hut"
+                    : step == Step.FEED ? "Splitter's side → Mill"
+                    : step == Step.OUTPUT ? "Mill chute → hut" : null;
             default -> null;
         };
     }
@@ -537,10 +574,15 @@ public final class IslandGuide implements Listener {
                 if (first == null || first.needs().isEmpty()) {
                     yield "Send your first ship from the Dock";
                 }
-                DockService.Need need = first.needs().get(0);
-                yield first.full() ? "The airship is coming for your first shipment"
-                        : "Fill the First Shipment at the Dock §7(" + Math.min(need.amount(), first.loaded(need.res()))
-                        + "/" + need.amount() + " Compressed)";
+                if (first.full()) {
+                    yield "The airship is coming for your first shipment";
+                }
+                StringBuilder have = new StringBuilder();
+                for (DockService.Need need : first.needs()) {
+                    have.append(have.length() == 0 ? "" : ", ").append(Math.min(need.amount(), first.loaded(need.res())))
+                            .append("/").append(need.amount()).append(need.res().form() == Res.Form.RAW ? " Cobble" : " Compressed");
+                }
+                yield "Fill the First Shipment at the Dock §7(" + have + ")";
             }
             default -> null;
         };
@@ -762,6 +804,7 @@ public final class IslandGuide implements Listener {
         chatReplies.remove(id);
         clickCool.remove(id);
         landOffered.remove(id);
+        called.remove(id);
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -786,11 +829,13 @@ public final class IslandGuide implements Listener {
         switch (state.step) {
             case WELCOME -> greet(player, hand);
             case HUB -> hubPrompt(player, hand, fresh);
+            case HUT -> hutPrompt(player, hand, fresh);
             case QUARRY -> quarryPrompt(player, hand, fresh);
-            case MILL -> millPrompt(player, hand, fresh);
-            case FEED -> feedPrompt(player, hand, fresh);
-            case HUT -> hutPrompt(player, hand, fresh, false);
             case BELT -> beltPrompt(player, hand, fresh);
+            case MILL -> millPrompt(player, hand, fresh);
+            case SPLIT -> splitPrompt(player, hand, fresh);
+            case FEED -> feedPrompt(player, hand, fresh);
+            case OUTPUT -> outputPrompt(player, hand, fresh);
             case DOCK -> dockPrompt(player, hand, fresh);
             case SHIP -> shipPrompt(player, hand, fresh);
             case LAND -> landPrompt(player, hand, fresh);
@@ -815,17 +860,13 @@ public final class IslandGuide implements Listener {
             state.step = Step.HUB;
             advance(host, state);
             if (state.step == Step.DONE) {
-                speak(player, hand, List.of(
-                        "Oi! I'm " + name() + ", I keep isles like this one ticking.",
-                        "Hub, quarry, Mill, the lot… you don't need me. Nice work."),
+                speak(player, hand, List.of("Oi! I'm " + name() + ". Hub, quarry, Mill, the lot: you don't need me. Nice work."),
                         List.of(reply("What's next?", NamedTextColor.GREEN, () -> tip(player, hand)),
                                 reply("Island menu", NamedTextColor.GOLD, () -> openHub.accept(player)),
                                 reply("Carry on", NamedTextColor.GRAY, null)));
                 return;
             }
-            speak(player, hand, List.of(
-                    "Oi! I'm " + name() + ", I keep isles like this one ticking.",
-                    "Your quarry's already running. I'll show you the rest, one piece at a time."),
+            speak(player, hand, List.of("Oi! I'm " + name() + ". Your quarry's already running. I'll show you the rest."),
                     List.of(reply("Show me", NamedTextColor.GREEN, () -> prompt(player, hand, true)),
                             reply("Island menu", NamedTextColor.GOLD, () -> openHub.accept(player)),
                             reply("I know the drill", NamedTextColor.GRAY, () -> skip(player, hand))));
@@ -835,17 +876,16 @@ public final class IslandGuide implements Listener {
                 reply("Let's go", NamedTextColor.GREEN, () -> startTour(player, hand)),
                 reply("I know the drill", NamedTextColor.GRAY, () -> skip(player, hand)),
                 reply("Later", NamedTextColor.DARK_GRAY, () -> speak(player, hand, List.of(
-                        "Right. I'll be right here. Give me a shout when you're ready."), List.of())));
+                        "Right. I'll be right here."), List.of())));
         if (state.welcomeSpoken) {
             // Already said the lines this session — offer choices, don't replay line 1.
-            speak(player, hand, List.of("Still with me? Hub first, then your starter kit."), welcomeReplies);
+            speak(player, hand, List.of("Still with me? Your Hub first, then your storage."), welcomeReplies);
             return;
         }
         state.welcomeSpoken = true;
         speak(player, hand, List.of(
-                "Oi, welcome! I'm " + name() + ", I keep isles like this one running.",
-                "This island is your factory. Quarries dig, machines refine, belts carry it all into your storage.",
-                "First the heart of it: your Hub. Put it wherever you like, then I'll hand you your starter kit."),
+                "Oi, welcome! I'm " + name() + ". This isle is your factory, and I'll get you started.",
+                "First your Hub, the heart of it all. Then your storage, right beside it."),
                 welcomeReplies);
     }
 
@@ -863,24 +903,28 @@ public final class IslandGuide implements Listener {
         IslandHost host = IslandHost.personal(hand.owner);
         state.step = Step.SKIPPED;
         dirty = true;
+        placement.coach(player, null);
         if (!state.quarryGiven && firstHousing(host) == null && hosts.minions(host).isEmpty()) {
             // skipping must never cost the starter quarry (without it there is no first chain)
             state.quarryGiven = true;
             giveQuarry(player);
         }
         if ((state.kits & KIT) == 0) {
-            // ...nor the Mill the tour would have handed over
             state.kits |= KIT;
-            unlocker.accept(host, StructureType.MILL);
+            state.freeTiles = Math.max(state.freeTiles, kitTiles());
         }
-        speak(player, hand, List.of(tourAlreadyDone(host)
-                        ? "Fair enough. Hub board, Mill, Dock: the bar up top shows what's next. Change your mind? /island → " + name() + "."
-                        : "Fair enough. Quarry, Mill, hut, in the order the stone flows. The Mill's unlocked for you. Change your mind? /island → " + name() + "."),
+        if ((state.kits & REFINE_KIT) == 0) {
+            // ...nor the Mill and the Splitter the tour would have handed over
+            state.kits |= REFINE_KIT;
+            unlocker.accept(host, StructureType.MILL);
+            unlocker.accept(host, StructureType.SPLITTER);
+        }
+        speak(player, hand, List.of("Fair enough. The bar up top shows what's next. Change your mind? /island → " + name() + "."),
                 List.of());
     }
 
     // ------------------------------------------------------------------------------------------------
-    // the first chain, in the order the stone flows: Hub → kit → quarry → Mill → belt → hut → belt
+    // chapter 1, your base: the Hub, then the hut beside it (the one Build Tool lesson)
     // ------------------------------------------------------------------------------------------------
 
     private void hubPrompt(Player player, Hand hand, boolean fresh) {
@@ -891,100 +935,33 @@ public final class IslandGuide implements Listener {
             return;
         }
         placement.openTool(player, host, PlacementService.Part.HUB);
-        speak(player, hand, fresh
-                        ? List.of("The Hub first. It's free, and every new part unlocks at its lectern.",
-                        "The Build Tool shows it as a hologram, with a sign beside it. Pick a flat spot and right-click."
-                                + " Left-click turns it.")
-                        : List.of("Still needs a Hub. Pick any flat spot and right-click."),
+        speak(player, hand, List.of(fresh
+                        ? "Pick a flat spot for your Hub and right-click. Left-click turns it."
+                        : "Still the Hub: flat ground, right-click."),
                 List.of(reply("Place the Hub", NamedTextColor.GREEN, () -> placement.openTool(player, host,
                                 PlacementService.Part.HUB)),
                         reply("Later", NamedTextColor.GRAY, null),
                         reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
     }
 
-    /**
-     * The starter kit, once per island: the quarry into the hand, the Mill unlocked, free belt tiles for the whole
-     * first chain (the first hut is free anyway). True when it was handed over just now.
-     */
-    private boolean ensureKit(Player player, IslandHost host, State state) {
-        if ((state.kits & KIT) != 0) {
-            return false;
-        }
-        state.kits |= KIT;
-        state.freeTiles = Math.max(state.freeTiles, kitTiles());
-        unlocker.accept(host, StructureType.MILL);
-        if (!state.quarryGiven && firstHousing(host) == null) {
-            state.quarryGiven = true;
-            handQuarry(player, true);
-        }
-        dirty = true;
-        return true;
-    }
-
-    /**
-     * Right after the Hub: Corin hands over the starter kit, then the one Build Tool lesson of the tour. He doesn't
-     * switch the tool for the player: they hold sneak and scroll to the Quarry themselves, once, so they know how
-     * once nobody does it for them (the Splitter, every part after the tour). "Switch it for me" is always there.
-     */
-    private void handKit(Player player, Hand hand) {
+    private void hutPrompt(Player player, Hand hand, boolean fresh) {
         IslandHost host = IslandHost.personal(hand.owner);
-        State state = state(hand.owner);
-        boolean fresh = ensureKit(player, host, state);
-        if (fresh) {
-            kitCard(player);
-        }
-        handQuarry(player, false);
         if (toolLesson(player, hand, fresh)) {
             return;
         }
-        placement.openTool(player, host, PlacementService.Part.QUARRY);
-        speak(player, hand, fresh
-                        ? List.of("Hub's up. That's the heart of your island: new parts unlock at its lectern.",
-                        "Here's your starter kit, on me: a Cobble Quarry, a Mill, a Storage Hut and the belts to join them.",
-                        "Build them the way the stone flows. Quarry first: it digs on its own, day and night.")
-                        : List.of("Quarry first. It's in your bag, and the Build Tool shows its rig."),
-                List.of(reply("Place the quarry", NamedTextColor.GREEN, () -> placeQuarry(player, hand)),
-                        reply("How does it all work?", NamedTextColor.GOLD, () -> explain(player, hand)),
+        placement.openTool(player, host, PlacementService.Part.STORAGE_HUT);
+        speak(player, hand, List.of(fresh
+                        ? "Set your hut right next to the Hub. Everything you get lands in it."
+                        : "The hut: next to your Hub, right-click."),
+                List.of(reply("Place the hut", NamedTextColor.GREEN, () ->
+                                placement.openTool(player, host, PlacementService.Part.STORAGE_HUT)),
+                        reply("Later", NamedTextColor.GRAY, null),
                         reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
     }
 
-    /** The kit as a card: the three machines in the order they go, and the belts that join them. */
-    private void kitCard(Player player) {
-        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 0.9f);
-        boolean card = IslandUi.big(player, "From " + name(), "Your starter kit", List.of(
-                        "§fCobble Quarry §7digs stone on its own",
-                        "§fMill §7presses 128 stones into one block",
-                        "§fStorage Hut §7keeps what the belts bring",
-                        "§f" + kitTiles() + " belt tiles §7join them up"),
-                Arrays.asList(new ItemStack(Material.IRON_PICKAXE), new ItemStack(Material.GRINDSTONE),
-                        new ItemStack(Material.BARREL), new ItemStack(Material.IRON_TRAPDOOR)),
-                "§7Build them the way the stone flows: quarry, Mill, hut", "§6",
-                "§6✦ §eStarter kit from " + name() + " §8· §7quarry → Mill → hut");
-        if (!card) {
-            player.sendMessage("§6✦ §eStarter kit from " + name() + "§7: a §fCobble Quarry §7(in your bag), a §fMill§7, a"
-                    + " §fStorage Hut §7and §f" + kitTiles() + " belt tiles§7.");
-            player.sendMessage("§7Build them the way the stone flows: §fquarry §8→ §fMill §8→ §fhut§7.");
-        }
-    }
-
-    /** "How does it all work?": the whole game in three lines. */
-    private void explain(Player player, Hand hand) {
-        State state = state(hand.owner);
-        speak(player, hand, List.of(
-                "Quarries dig raw goods. Machines press 128 of them into one block worth far more.",
-                "Belts carry it all, from an orange chute into a green pad. Your huts keep it.",
-                "The Hub builds new parts from what's in your huts and your pack, and every stage you ship at the Dock"
-                        + " opens more."),
-                lessonPending(state)
-                        ? List.of(reply("Back to the tool", NamedTextColor.GREEN, () -> toolLesson(player, hand, false)),
-                        reply("Switch it for me", NamedTextColor.GOLD, () -> switchForThem(player, hand)))
-                        : List.of(reply("Place the quarry", NamedTextColor.GREEN, () -> placeQuarry(player, hand)),
-                        reply("Got it", NamedTextColor.GRAY, null)));
-    }
-
-    /** The lesson waits: kit handed over, the quarry not down yet, the player never switched parts themselves. */
+    /** The lesson waits: the Hub stands, the hut not yet, and the player never switched parts themselves. */
     private boolean lessonPending(State state) {
-        return state != null && state.step == Step.QUARRY && (state.kits & KIT) != 0 && (state.kits & TOOL_TAUGHT) == 0;
+        return state != null && state.step == Step.HUT && (state.kits & TOOL_TAUGHT) == 0;
     }
 
     private void taught(Player player, State state) {
@@ -996,9 +973,9 @@ public final class IslandGuide implements Listener {
     }
 
     /**
-     * The Build Tool lesson, calm: one tool, one part at a time, and the player switches to the Quarry themselves.
-     * The tool stays on whatever it holds (the Belt after the Hub), the action bar says what to do. False when
-     * there's nothing to teach (done, or already on the Quarry), so the caller carries on with the quarry.
+     * The Build Tool lesson, calm: one tool, one part at a time, and the player switches to the Storage Hut
+     * themselves. The tool stays on whatever it holds, the action bar says what to do. False when there's nothing
+     * to teach (done, or already on the hut), so the caller carries on with the hut.
      */
     private boolean toolLesson(Player player, Hand hand, boolean full) {
         IslandHost host = IslandHost.personal(hand.owner);
@@ -1006,7 +983,7 @@ public final class IslandGuide implements Listener {
         if (!lessonPending(state)) {
             return false;
         }
-        if (placement.part(player) == PlacementService.Part.QUARRY && placement.holdingTool(player)) {
+        if (placement.part(player) == PlacementService.Part.STORAGE_HUT && placement.holdingTool(player)) {
             taught(player, state); // got there on their own before he asked
             return false;
         }
@@ -1015,29 +992,25 @@ public final class IslandGuide implements Listener {
         }
         placement.coach(player, COACH);
         speak(player, hand, full
-                        ? List.of("Hub's up. That's the heart of your island: new parts unlock at its lectern.",
-                        "Here's your starter kit, on me: a Cobble Quarry, a Mill, a Storage Hut and the belts to join them.",
-                        "All of it goes down with one tool, the Build Tool in your hand. It holds one part at a time.",
-                        "Hold sneak and scroll the mouse wheel to switch the part. Go on, switch it to the Quarry.")
-                        : List.of("Hold sneak and scroll the mouse wheel: that switches the Build Tool's part. Switch it to the Quarry."),
+                        ? List.of("Hub's up! New parts unlock at its lectern.",
+                        "Now hold sneak and scroll the mouse wheel: switch your Build Tool to the Storage Hut.")
+                        : List.of("Hold sneak and scroll the wheel: switch to the Storage Hut."),
                 List.of(reply("Switch it for me", NamedTextColor.GOLD, () -> switchForThem(player, hand)),
-                        reply("How does it all work?", NamedTextColor.GRAY, () -> explain(player, hand)),
                         reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
         return true;
     }
 
     /** "Switch it for me": he does it, and still says how it goes next time. */
     private void switchForThem(Player player, Hand hand) {
+        IslandHost host = IslandHost.personal(hand.owner);
         taught(player, state(hand.owner));
-        placeQuarry(player, hand);
-        speak(player, hand, List.of("There. Next time it's yours: sneak and scroll, or F for every part at once.",
-                        "Now set it down: flat ground, right-click. Leave a few blocks in front of its orange chute."),
-                List.of());
+        placement.openTool(player, host, PlacementService.Part.STORAGE_HUT);
+        speak(player, hand, List.of("There. Next time it's yours: sneak and scroll, or F for every part."), List.of());
     }
 
     /** The player switched the tool's part by hand (sneak + scroll, the picker): the lesson's moment. */
     private void switched(Player player, PlacementService.Part part) {
-        if (player == null || part != PlacementService.Part.QUARRY || !available()) {
+        if (player == null || part != PlacementService.Part.STORAGE_HUT || !available()) {
             return;
         }
         State state = states.get(player.getUniqueId());
@@ -1051,20 +1024,75 @@ public final class IslandGuide implements Listener {
             talk.end(player);
         }
         chats.remove(player.getUniqueId());
-        if (!IslandUi.toast(player, "Switched to the Quarry", "§7Build Tool · sneak + scroll",
-                "§8Next: §7set it down on flat ground")) {
+        if (!IslandUi.toast(player, "Switched to the Storage Hut", "§7Sneak + scroll switches · §fF §7shows all · §fQ §7puts away",
+                "§8Next: §7set it next to your Hub")) {
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 1.6f);
-        }
-        Hand hand = hands.get(player.getUniqueId());
-        if (hand == null) {
             player.sendMessage("§a✔ §7That's it: §fsneak + scroll §7switches parts, §fF §7shows them all, §fQ §7puts the tool away.");
-            return;
         }
+    }
+
+    /** "How does it all work?": the whole game in two lines. */
+    private void explain(Player player, Hand hand) {
         speak(player, hand, List.of(
-                        "That's it. Sneak and scroll walks through your parts, F shows them all at once, Q puts the tool away.",
-                        "Now set the quarry down: flat ground, right-click. Leave a few blocks in front of its orange chute for the Mill."),
-                List.of(reply("Got it", NamedTextColor.GREEN, null),
+                "Quarries dig. Machines press 128 of a good into one block worth far more.",
+                "Belts carry it from an orange chute to a green pad. Raw stone builds, pressed stone ships."),
+                List.of(reply("Got it", NamedTextColor.GRAY, null)));
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // chapter 2, goods flow: his quarry, set down, belted into the hut
+    // ------------------------------------------------------------------------------------------------
+
+    /**
+     * Chapter 2's parts, once per island: the quarry into the hand and free belt tiles for the whole first chain.
+     * True when it was handed over just now.
+     */
+    private boolean ensureKit(Player player, IslandHost host, State state) {
+        if ((state.kits & KIT) != 0) {
+            return false;
+        }
+        state.kits |= KIT;
+        state.freeTiles = Math.max(state.freeTiles, kitTiles());
+        if (!state.quarryGiven && firstHousing(host) == null) {
+            state.quarryGiven = true;
+            handQuarry(player, true);
+        }
+        dirty = true;
+        return true;
+    }
+
+    /** Chapter 2 starts: he hands over the quarry and the belts. */
+    private void handKit(Player player, Hand hand) {
+        IslandHost host = IslandHost.personal(hand.owner);
+        State state = state(hand.owner);
+        boolean fresh = ensureKit(player, host, state);
+        if (fresh) {
+            kitCard(player);
+        }
+        handQuarry(player, false);
+        placement.openTool(player, host, PlacementService.Part.QUARRY);
+        speak(player, hand, fresh
+                        ? List.of("Here's your first quarry, and the belts are on me. It digs Cobble on its own, day and night.",
+                        "Set it down near your hut, then belt its orange chute into the hut.")
+                        : List.of("Your quarry: flat ground near the hut, right-click."),
+                List.of(reply("Place the quarry", NamedTextColor.GREEN, () -> placeQuarry(player, hand)),
+                        reply("How does it work?", NamedTextColor.GOLD, () -> explain(player, hand)),
                         reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
+    }
+
+    /** Chapter 2's parts as a card. */
+    private void kitCard(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 0.9f);
+        boolean card = IslandUi.big(player, "From " + name(), "Your first quarry", List.of(
+                        "§fCobble Quarry §7digs stone on its own",
+                        "§f" + kitTiles() + " belt tiles §7carry it into your hut"),
+                Arrays.asList(new ItemStack(Material.IRON_PICKAXE), new ItemStack(Material.IRON_TRAPDOOR)),
+                "§7Set it down, then belt it into the hut", "§6",
+                "§6✦ §eFrom " + name() + " §8· §7a quarry and " + kitTiles() + " belt tiles");
+        if (!card) {
+            player.sendMessage("§6✦ §eFrom " + name() + "§7: a §fCobble Quarry §7(in your bag) and §f" + kitTiles()
+                    + " belt tiles§7. Set it down, then belt it into the hut.");
+        }
     }
 
     private void quarryPrompt(Player player, Hand hand, boolean fresh) {
@@ -1075,14 +1103,8 @@ public final class IslandGuide implements Listener {
             return;
         }
         handQuarry(player, false);
-        if (toolLesson(player, hand, false)) {
-            return;
-        }
         placement.openTool(player, host, PlacementService.Part.QUARRY);
-        speak(player, hand, fresh
-                        ? List.of("Quarry first. It digs Cobble on its own and drops it out of its orange chute.",
-                        "Set it on flat ground, and leave a few blocks in front of the chute for the Mill.")
-                        : List.of("Quarry's in the Build Tool. Look at flat ground and right-click."),
+        speak(player, hand, List.of("Your quarry: flat ground near the hut, right-click."),
                 List.of(reply("Place the quarry", NamedTextColor.GREEN, () -> placeQuarry(player, hand)),
                         reply("Later", NamedTextColor.GRAY, null),
                         reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
@@ -1092,7 +1114,6 @@ public final class IslandGuide implements Listener {
     private void placeQuarry(Player player, Hand hand) {
         IslandHost host = IslandHost.personal(hand.owner);
         State state = state(hand.owner);
-        taught(player, state);
         boolean spare = firstHousing(host) == null && (state.kits & SPARE_QUARRY) == 0 && !hasQuarryItem(player);
         if (spare) {
             state.kits |= SPARE_QUARRY;
@@ -1103,94 +1124,113 @@ public final class IslandGuide implements Listener {
         placement.openTool(player, host, PlacementService.Part.QUARRY);
     }
 
-    private void millPrompt(Player player, Hand hand, boolean fresh) {
+    private void beltPrompt(Player player, Hand hand, boolean fresh) {
         IslandHost host = IslandHost.personal(hand.owner);
-        ensureKit(player, host, state(hand.owner)); // old saves: the Mill is theirs too
+        placement.startBelts(player, host);
+        speak(player, hand, List.of("Right-click the quarry's orange chute, then the hut's green pad. It snaps in." + freeNote(host)),
+                List.of(reply("Place the belt", NamedTextColor.GREEN, () -> placement.startBelts(player, host)),
+                        reply("Show me", NamedTextColor.GOLD, () -> outline(player, firstHousing(host), firstHut(host), 4)),
+                        reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // chapter 3, split and refine: his Mill and Splitter; the Mill beside the belt, the Splitter cut into it,
+    // its side into the Mill, the Mill into the hut
+    // ------------------------------------------------------------------------------------------------
+
+    /** Chapter 3 starts: the hut is filling, he hands over the Mill and the Splitter. */
+    private void refineKit(Player player, Hand hand) {
+        IslandHost host = IslandHost.personal(hand.owner);
+        State state = state(hand.owner);
+        boolean fresh = (state.kits & REFINE_KIT) == 0;
+        if (fresh) {
+            state.kits |= REFINE_KIT;
+            dirty = true;
+            unlocker.accept(host, StructureType.MILL);
+            unlocker.accept(host, StructureType.SPLITTER);
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 0.9f);
+            boolean card = IslandUi.big(player, "From " + name(), "Mill and Splitter", List.of(
+                            "§fMill §7presses 128 Cobble into 1 Compressed",
+                            "§fSplitter §7cuts into a belt and shares it out"),
+                    Arrays.asList(new ItemStack(Material.GRINDSTONE), new ItemStack(Material.WAXED_COPPER_GRATE)),
+                    "§7Raw stone builds, pressed stone ships", "§6",
+                    "§6✦ §eFrom " + name() + " §8· §7a Mill and a Splitter");
+            if (!card) {
+                player.sendMessage("§6✦ §eFrom " + name() + "§7: a §fMill §7and a §fSplitter§7, both free. Raw stone builds,"
+                        + " pressed stone ships.");
+            }
+        }
         placement.openTool(player, host, PlacementService.Part.MILL);
         speak(player, hand, fresh
-                        ? List.of("It's digging. Now the Mill: it presses 128 Cobble into one Compressed Cobble, worth far more.",
-                        "It's in your Build Tool now. Set it a few blocks in front of the quarry's orange chute. It's on me.")
-                        : List.of("The Mill next: a few blocks in front of the quarry's chute, then right-click."),
+                        ? List.of("See your hut fill up? That Cobble pays for everything you build.",
+                        "Now let's press some of it into blocks worth far more. Set the Mill beside your belt.")
+                        : List.of("The Mill: beside your belt, a few blocks off it."),
                 List.of(reply("Place the Mill", NamedTextColor.GREEN, () ->
                                 placement.openTool(player, host, PlacementService.Part.MILL)),
-                        reply("Where's the chute?", NamedTextColor.GOLD, () -> {
-                            outline(player, firstHousing(host), null, 4);
-                            speak(player, hand, List.of("That orange glow is the quarry's chute. The Mill goes in front of it."),
-                                    List.of());
-                        }),
+                        reply("How does it work?", NamedTextColor.GOLD, () -> explain(player, hand)),
+                        reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
+    }
+
+    private void millPrompt(Player player, Hand hand, boolean fresh) {
+        refineKit(player, hand);
+    }
+
+    private void splitPrompt(Player player, Hand hand, boolean fresh) {
+        IslandHost host = IslandHost.personal(hand.owner);
+        placement.openTool(player, host, PlacementService.Part.SPLITTER);
+        speak(player, hand, List.of("Right-click your running belt to cut the Splitter in. Nothing gets torn down."),
+                List.of(reply("Place the Splitter", NamedTextColor.GREEN, () ->
+                                placement.openTool(player, host, PlacementService.Part.SPLITTER)),
                         reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
     }
 
     private void feedPrompt(Player player, Hand hand, boolean fresh) {
         IslandHost host = IslandHost.personal(hand.owner);
-        PlacedStructure housing = firstHousing(host);
-        PlacedStructure mill = lineMachine(host, StructureType.MILL);
-        PlacedStructure old = pullable(host);
-        List<TalkAccess.Reply> chips = new ArrayList<>();
-        List<String> lines;
-        if (old != null) {
-            // an island from the old hut-first tour: its quarry still belts straight past the Mill
-            lines = List.of("Your quarry's belt still runs past the Mill. I'll pull it up, then you belt it into the Mill.");
-            chips.add(reply("Pull up old belt", NamedTextColor.GREEN, () -> pullUp(player, hand, old)));
-        } else {
-            placement.startBelts(player, host);
-            String free = freeNote(host);
-            lines = fresh
-                    ? List.of("Now join them with a belt. Your Build Tool holds the Belt now.",
-                    "Right-click the quarry's orange chute, then the Mill's green pad. The belt lays itself and snaps in." + free)
-                    : List.of("Belt: the quarry's orange chute, then the Mill's green pad." + free);
-        }
-        chips.add(reply("Place the belt", old == null ? NamedTextColor.GREEN : NamedTextColor.GOLD,
-                () -> placement.startBelts(player, host)));
-        chips.add(reply("Show me", NamedTextColor.GOLD, () -> {
-            outline(player, housing, mill, 4);
-            speak(player, hand, List.of("Start at the orange glow, end on the Mill. It snaps in."), List.of());
-        }));
-        chips.add(reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand)));
-        speak(player, hand, lines, chips);
-    }
-
-    private void hutPrompt(Player player, Hand hand, boolean fresh, boolean primedNow) {
-        IslandHost host = IslandHost.personal(hand.owner);
-        placement.openTool(player, host, PlacementService.Part.STORAGE_HUT);
-        List<String> lines = new ArrayList<>();
-        if (primedNow) {
-            lines.add("Fed. I tipped a starter load in, so it presses right away. Watch the Mill.");
-        }
-        if (fresh || primedNow) {
-            lines.add("Last piece: a Storage Hut, behind the Mill. It's in your tool, and free. Everything your belts bring lands there.");
-            lines.add("The Hub builds new parts from what's in it, so it's your bank too.");
-        } else {
-            lines.add("Still the hut: behind the Mill, then right-click.");
-        }
-        speak(player, hand, lines, List.of(
-                reply("Place the hut", NamedTextColor.GREEN, () ->
-                        placement.openTool(player, host, PlacementService.Part.STORAGE_HUT)),
-                reply("Later", NamedTextColor.GRAY, null),
-                reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
-    }
-
-    private void beltPrompt(Player player, Hand hand, boolean fresh) {
-        IslandHost host = IslandHost.personal(hand.owner);
-        PlacedStructure mill = lineMachine(host, StructureType.MILL);
-        PlacedStructure hut = firstHut(host);
+        PlacedStructure splitter = firstOf(host, StructureType.SPLITTER);
         placement.startBelts(player, host);
-        String free = freeNote(host);
-        speak(player, hand, fresh
-                        ? List.of("Last belt: the Mill's orange chute into the hut's green pad. Then watch your first block come in." + free)
-                        : List.of("Belt: the Mill's orange chute, then the hut's green pad." + free),
+        speak(player, hand, List.of("Belt the Splitter's side into the Mill. It shares the stone evenly." + freeNote(host)),
                 List.of(reply("Place the belt", NamedTextColor.GREEN, () -> placement.startBelts(player, host)),
-                        reply("Show me", NamedTextColor.GOLD, () -> {
-                            outline(player, mill, hut, 4);
-                            speak(player, hand, List.of("Start at the orange glow, end on the hut. It snaps in."), List.of());
-                        }),
+                        reply("Show me", NamedTextColor.GOLD, () -> outline(player, splitter,
+                                lineMachine(host, StructureType.MILL), 4)),
                         reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
     }
 
-    /** " The first 32 tiles are on me." while the kit's free tiles last. */
+    private void outputPrompt(Player player, Hand hand, boolean fresh) {
+        IslandHost host = IslandHost.personal(hand.owner);
+        placement.startBelts(player, host);
+        speak(player, hand, List.of("Last belt: the Mill's chute into your hut. Any free side takes one." + freeNote(host)),
+                List.of(reply("Place the belt", NamedTextColor.GREEN, () -> placement.startBelts(player, host)),
+                        reply("Show me", NamedTextColor.GOLD, () -> outline(player, lineMachine(host, StructureType.MILL),
+                                firstHut(host), 4)),
+                        reply("Skip tour", NamedTextColor.DARK_GRAY, () -> skip(player, hand))));
+    }
+
+    private PlacedStructure firstOf(IslandHost host, StructureType type) {
+        for (PlacedStructure structure : structures.of(host)) {
+            if (structure.type() == type) {
+                return structure;
+            }
+        }
+        return null;
+    }
+
+    /** " The next 32 tiles are on me." while the kit's free tiles last. */
     private String freeNote(IslandHost host) {
         int freeNow = logistics.freeTiles(host);
         return freeNow > 0 ? " The next " + freeNow + " tiles are on me." : "";
+    }
+
+    /**
+     * A chapter starts (he has its parts): right away when the owner stands by him, else he calls them over once
+     * and hands it over when they come (clicking him does it too).
+     */
+    private void chapter(Player owner, Hand hand, Step step, Runnable give) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!owner.isOnline() || state(hand.owner).step != step || chats.containsKey(owner.getUniqueId())) {
+                return;
+            }
+            give.run(); // speak() calls the owner over when they're too far for the bubble
+        }, Math.max(0L, plugin.getConfig().getLong("guide.step-pause-ticks", 40L)));
     }
 
     /**
@@ -1204,14 +1244,15 @@ public final class IslandGuide implements Listener {
         dirty = true;
         boolean card = IslandUi.big(player, "Island milestone", "First chain running", List.of(
                         "§fQuarry §7digs the stone",
+                        "§fSplitter §7shares it: raw into the hut, the rest to the Mill",
                         "§fMill §7presses 128 into one block",
-                        "§fStorage Hut §7keeps it"),
-                Arrays.asList(new ItemStack(Material.COBBLESTONE), new ItemStack(Material.GRINDSTONE),
-                        new ItemStack(Material.BARREL)),
+                        "§7Wrong spot? §fPick up §7gives back everything"),
+                Arrays.asList(new ItemStack(Material.COBBLESTONE), new ItemStack(Material.WAXED_COPPER_GRATE),
+                        new ItemStack(Material.GRINDSTONE), new ItemStack(Material.BARREL)),
                 "§7Next: the Dock, from your Hub", "§b",
-                "§b✦ §fFirst chain running §8· §7quarry → Mill → hut");
+                "§b✦ §fFirst chain running §8· §7quarry → Splitter → Mill → hut");
         if (!card) {
-            player.sendTitle("§b✦ First Chain Running ✦", "§7quarry §8→ §7Mill §8→ §7hut", 10, 70, 20);
+            player.sendTitle("§b✦ First Chain Running ✦", "§7quarry §8→ §7Splitter §8→ §7Mill §8→ §7hut", 10, 70, 20);
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -1228,15 +1269,12 @@ public final class IslandGuide implements Listener {
             de.aetherion.core.api.Vfx.puff(top, Particle.END_ROD, 20, Math.max(0.6, 0.6), null);
         }
         boolean compressed = compressedInStorage(host) > 0L;
-        hand.waiting = () -> prompt(player, hand, true);
-        hand.waitingUntil = System.currentTimeMillis() + 900_000L;
         speak(player, hand, List.of(
-                compressed ? "There it is: your first Compressed Cobble. 128 stones in one block."
-                        : "There. The whole line runs: quarry, Mill, hut.",
-                "That's the whole game, just bigger. Quarries dig, machines refine, belts carry, huts keep.",
-                "Come over to the Hub. I'll show you where new parts come from."),
-                List.of(reply("On my way", NamedTextColor.GREEN, null),
-                        reply("Tell me here", NamedTextColor.GOLD, () -> prompt(player, hand, true))));
+                compressed ? "There it is: your first Compressed Cobble, 128 stones in one block."
+                        : "There. The whole line runs.",
+                "Raw stone builds, pressed stone ships. Next up: the Dock, at your Hub's lectern."),
+                List.of(reply("Show me", NamedTextColor.GREEN, () -> prompt(player, hand, true)),
+                        reply("Later", NamedTextColor.GRAY, null)));
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -1256,9 +1294,9 @@ public final class IslandGuide implements Listener {
             long price = Math.max(1L, dockPrice(host));
             String cost = price == 1L ? "one Compressed Cobble" : price + " Compressed Cobble";
             List<String> lines = fresh
-                    ? List.of("This lectern is where new parts come from. Each one costs goods from your huts or your pack, and every stage opens more.",
-                    "Next is the Dock: contracts come in there, and an airship takes your goods to the mainland.",
-                    "It costs " + cost + (have >= price ? ", and you've just made it. Unlock it." : ". Your Mill's on it: you've got " + have + "."))
+                    ? List.of("New parts unlock at the Hub's lectern. They cost goods from your hut.",
+                    "The Dock ships your goods off: it costs " + cost
+                            + (have >= price ? ", and you've just made it." : ". Your Mill's on it, you've got " + have + "."))
                     : List.of("Dock: unlock it at the Hub lectern for " + cost + ". You've got " + have + ".");
             speak(player, hand, lines, List.of(
                     reply("Open the lectern", NamedTextColor.GREEN, () -> openLectern.accept(player, host)),
@@ -1269,7 +1307,7 @@ public final class IslandGuide implements Listener {
         if (sub == 1) {
             placement.openTool(player, host, PlacementService.Part.DOCK);
             speak(player, hand, fresh
-                            ? List.of("Unlocked. Building it is on me.", "Put it anywhere. Near the island's edge looks the part.")
+                            ? List.of("Unlocked, and building it is on me. Near the island's edge looks best.")
                             : List.of("Still the Dock. Pick a spot and right-click."),
                     List.of(reply("Place the Dock", NamedTextColor.GREEN, () ->
                                     placement.openTool(player, host, PlacementService.Part.DOCK)),
@@ -1284,26 +1322,63 @@ public final class IslandGuide implements Listener {
     private void shipPrompt(Player player, Hand hand, boolean fresh) {
         IslandHost host = IslandHost.personal(hand.owner);
         DockService.Contract first = dock == null ? null : dock.phase(host);
-        long need = first == null || first.needs().isEmpty() ? 2L : first.needs().get(0).amount();
+        String order = orderText(first);
+        if (fresh) {
+            goalCard(player, hand);
+        }
         List<String> lines = fresh
-                ? List.of("Your first contract is on the Dock board: " + need + " Compressed Cobble for the broker in Southwood.",
-                "Open the Dock and load it from your hut, or belt the Mill straight in. When it's full, the airship comes.",
-                "Ship it and your island climbs to stage 1. The broker pays with a second quarry.")
-                : List.of("First Shipment: " + need + " Compressed Cobble at the Dock. Load it from your hut or belt it in.");
+                ? List.of("Your first order is on the Dock board: " + order + ".",
+                "Load it from your hut. When it's full, the airship comes, and you reach the Werkhof.")
+                : List.of("First Shipment: " + order + " at the Dock. Load it from your hut.");
         speak(player, hand, lines, List.of(
                 reply("Open the Dock", NamedTextColor.GREEN, () -> openDock.accept(player, host)),
                 reply("What comes later?", NamedTextColor.GOLD, () -> later(player, hand)),
                 reply("Later", NamedTextColor.GRAY, null)));
     }
 
+    /** "1 Compressed Cobble and 64 Cobble" from the contract's needs. */
+    private static String orderText(DockService.Contract contract) {
+        if (contract == null || contract.needs().isEmpty()) {
+            return "1 Compressed Cobble and 64 Cobble";
+        }
+        StringBuilder text = new StringBuilder();
+        List<DockService.Need> needs = contract.needs();
+        for (int i = 0; i < needs.size(); i++) {
+            DockService.Need need = needs.get(i);
+            text.append(i == 0 ? "" : i == needs.size() - 1 ? " and " : ", ").append(need.amount()).append(" ")
+                    .append(need.res().form() == Res.Form.RAW ? "Cobble" : need.res().display());
+        }
+        return text.toString();
+    }
+
+    /** The goal you can see: once, when the first order opens, what shipping it brings (the Werkhof's parts). */
+    private void goalCard(Player player, Hand hand) {
+        State state = state(hand.owner);
+        if ((state.kits & GOAL_CARD) != 0) {
+            return;
+        }
+        state.kits |= GOAL_CARD;
+        dirty = true;
+        boolean card = IslandUi.big(player, "Your next stage", "Ship it, get the Werkhof", List.of(
+                        "§fA second quarry §7of your trade",
+                        "§fOverflow Gate §7feeds the Mill first",
+                        "§7Quarries up to §fLv3§7, a bigger hut"),
+                Arrays.asList(new ItemStack(Material.IRON_PICKAXE), new ItemStack(Material.WAXED_WEATHERED_COPPER_GRATE),
+                        new ItemStack(Material.EXPERIENCE_BOTTLE)),
+                "§7Later: the Forge, the Sorter, land of your own", "§6",
+                "§6✦ §eShip the First Shipment §8→ §7Werkhof: a second quarry, the Overflow Gate");
+        if (!card) {
+            player.sendMessage("§6✦ §eShip it, get the Werkhof§7: a second quarry, the Overflow Gate, quarries up to Lv3.");
+        }
+    }
+
     /** The road ahead, while the first shipment fills: what each stage opens and how you get there. */
     private void later(Player player, Hand hand) {
         IslandHost host = IslandHost.personal(hand.owner);
         speak(player, hand, List.of(
-                "Each stage, the broker sends a bigger order. Ship it at the Dock and the Hub opens the next parts.",
-                "Stage 1, the Werkhof: a second quarry, the Splitter, quarries up to level 3.",
-                "Stage 2, the Foreman's Hall: the Forge, 128 Compressed into one Compacted, plus the Sorter and the Overflow Gate.",
-                "Stage 3, the Grand Hub: every Mill and Forge runs twice as fast, and you can buy land."),
+                "Each stage, the broker sends a bigger order. Ship it and the Hub opens the next parts.",
+                "Werkhof: a second quarry and the Overflow Gate. Foreman's Hall: the Forge and the Sorter.",
+                "Grand Hub: every machine twice as fast, and land of your own."),
                 List.of(reply("Open the Dock", NamedTextColor.GREEN, () -> openDock.accept(player, host)),
                         reply("Got it", NamedTextColor.GRAY, null)));
     }
@@ -1337,12 +1412,9 @@ public final class IslandGuide implements Listener {
         IslandHost host = IslandHost.personal(hand.owner);
         fresh = fresh && landOffered.add(player.getUniqueId());
         List<String> lines = fresh
-                ? List.of("One more thing, and it's the best bit: your island grows.",
-                "Every stage widens your border on its own. Past it, you buy land: a 16 by 16 piece next to yours, "
-                        + "and new ground rises there in your island's look.",
-                "Land opens for good at the Grand Hub. The first piece is on me: open your Hub, pick Land, "
-                        + "click a green square.")
-                : List.of("Your first land is waiting, free: Hub → Land, then a green square next to yours.");
+                ? List.of("Last thing, and it's the best bit: your island can grow. The first piece of land is on me.",
+                "Open your Hub, pick Land, click a green square.")
+                : List.of("Your free land: Hub → Land, a green square next to yours.");
         speak(player, hand, lines, List.of(
                 reply("Show me the land", NamedTextColor.GREEN, () -> openLand.accept(player, host)),
                 reply("Later", NamedTextColor.GRAY, null)));
@@ -1354,9 +1426,8 @@ public final class IslandGuide implements Listener {
             if (!player.isOnline() || chats.containsKey(player.getUniqueId())) {
                 return;
             }
-            speak(player, hand, List.of("There it rises. That's yours now, and your border moved out with it.",
-                    "More land opens at the Grand Hub, always at your Hub under Land. That's the tour. The bar up top "
-                            + "shows what's next."),
+            speak(player, hand, List.of("There it rises, and your border moved out with it. More land opens at the Grand Hub.",
+                    "That's the tour! The bar up top always shows what's next."),
                     List.of(reply("What's next?", NamedTextColor.GREEN, () -> tip(player, hand)),
                             reply("Thanks, " + name(), NamedTextColor.GRAY, null)));
         }, 50L);
@@ -1388,30 +1459,6 @@ public final class IslandGuide implements Listener {
             }
         }
         return first;
-    }
-
-    /** Old hut-first islands: the quarry still belts straight past the Mill-to-be (that belt can go). */
-    private PlacedStructure pullable(IslandHost host) {
-        PlacedStructure mill = lineMachine(host, StructureType.MILL);
-        if (mill == null || logistics.feeding(mill) > 0) {
-            return null;
-        }
-        PlacedStructure from = firstHousing(host);
-        LogisticsService.Route out = from == null ? null : logistics.routeFrom(from);
-        if (out == null || out.to() == null || out.to() == mill || out.length() == 0) {
-            return null;
-        }
-        return from;
-    }
-
-    private void pullUp(Player player, Hand hand, PlacedStructure from) {
-        IslandHost host = IslandHost.personal(hand.owner);
-        int tiles = logistics.pullUp(player, host, from);
-        placement.startBelts(player, host);
-        speak(player, hand, List.of((tiles > 0 ? "Up. " : "") + "Now the quarry's chute into the Mill." + freeNote(host)),
-                List.of(reply("Place the belt", NamedTextColor.GREEN, () -> placement.startBelts(player, host)),
-                        reply("Show me", NamedTextColor.GOLD, () -> outline(player, firstHousing(host),
-                                lineMachine(host, StructureType.MILL), 4))));
     }
 
     /** Orange on {@code from}'s chute, gold round {@code to} (either may be null), a few pulses, only on request. */
@@ -1569,12 +1616,18 @@ public final class IslandGuide implements Listener {
 
     /** Queue lines (paced) and then reply chips. Bubble first; chat when the player has no bubble. */
     private void speak(Player player, Hand hand, List<String> lines, List<TalkAccess.Reply> replies) {
-        if (player.getUniqueId().equals(hand.owner)) {
+        boolean owner = player.getUniqueId().equals(hand.owner);
+        if (owner) {
             hand.metOwner = true;
         }
         TalkAccess talk = AetherServices.talk();
         if (talk == null || !talk.bubbles(player)) {
             chatFallback(player, lines, replies);
+            return;
+        }
+        if (owner && !lines.isEmpty() && tooFar(player, hand, talk)) {
+            // never a speech into chat: he calls the owner over once and says it when they stand by him
+            callOver(player, hand, () -> speak(player, hand, lines, replies));
             return;
         }
         registerSpeaker(talk, hand);
@@ -1586,6 +1639,33 @@ public final class IslandGuide implements Listener {
         chats.put(player.getUniqueId(), chat);
         hideHolo(player, hand);
         pump(player, chat, talk);
+    }
+
+    /** Too far for his speech bubble (or not on his island at all). */
+    private boolean tooFar(Player player, Hand hand, TalkAccess talk) {
+        if (hand.at == null || !player.getWorld().equals(hand.at.getWorld())) {
+            return true;
+        }
+        double reach = Math.max(4.0, talk.reach() - 1.5);
+        return player.getLocation().distanceSquared(hand.at) > reach * reach;
+    }
+
+    /** When he last called each owner over (one line in chat at most every two minutes). */
+    private final Map<UUID, Long> called = new HashMap<>();
+
+    /** One line: come over. What he has to say waits until the owner stands by him (or clicks him). */
+    private void callOver(Player player, Hand hand, Runnable then) {
+        hand.waiting = then;
+        hand.waitingUntil = System.currentTimeMillis() + 180_000L; // after that it's old news: the card said it
+        long now = System.currentTimeMillis();
+        Long last = called.get(player.getUniqueId());
+        if (last != null && now - last < 120_000L) {
+            return;
+        }
+        called.put(player.getUniqueId(), now);
+        player.sendMessage(LegacyComponentSerializer.legacySection().deserialize("§e§l" + name()
+                + " §8» §fCome over to me when you can, I've got something for you."));
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.6f, 1.5f);
     }
 
     private void registerSpeaker(TalkAccess talk, Hand hand) {
@@ -1603,11 +1683,15 @@ public final class IslandGuide implements Listener {
             chats.remove(player.getUniqueId());
             return;
         }
-        double reach = Math.max(4.0, talk.reach() - 1.5);
-        if (player.getLocation().distanceSquared(hand.at) > reach * reach) {
-            // he never walks over: from further away the rest comes as chat lines (with the choices as buttons)
+        if (tooFar(player, hand, talk)) {
+            // walked off mid-talk: the rest waits until they're back by him (nothing goes to chat)
             chats.remove(player.getUniqueId());
-            chatFallback(player, new ArrayList<>(chat.lines), chat.replies);
+            List<String> rest = new ArrayList<>(chat.lines);
+            List<TalkAccess.Reply> replies = chat.replies;
+            if (player.getUniqueId().equals(hand.owner) && (!rest.isEmpty() || !replies.isEmpty())) {
+                hand.waiting = () -> speak(player, hand, rest.isEmpty() ? List.of("Where were we?") : rest, replies);
+                hand.waitingUntil = System.currentTimeMillis() + 900_000L;
+            }
             return;
         }
         String line = chat.lines.poll();
@@ -1716,27 +1800,38 @@ public final class IslandGuide implements Listener {
     private boolean advance(IslandHost host, State state) {
         Step before = state.step;
         if (state.step.legacy()) {
-            state.step = Step.QUARRY; // the hut-first tour's press / Forge steps: the island itself says where we are
+            state.step = Step.HUB; // an old tour's press / Forge steps: the island itself says where we are
         }
         if (state.step.touring() && state.step != Step.HUB && structures.hub(host) == null) {
             state.step = Step.HUB; // the Hub came down (or never stood): Hub first again
         }
         if (state.step == Step.HUB && stands(structures.hub(host))) {
-            state.step = Step.QUARRY;
-        }
-        if (state.step == Step.QUARRY && (stands(firstHousing(host)) || !hosts.minions(host).isEmpty())) {
-            state.step = Step.MILL;
-        }
-        if (state.step == Step.MILL && stands(lineMachine(host, StructureType.MILL))) {
-            state.step = Step.FEED;
-        }
-        if (state.step == Step.FEED && millFed(host)) {
             state.step = Step.HUT;
         }
         if (state.step == Step.HUT && stands(firstHut(host))) {
+            state.step = Step.QUARRY;
+        }
+        if (state.step == Step.QUARRY && (stands(firstHousing(host)) || !hosts.minions(host).isEmpty())) {
             state.step = Step.BELT;
         }
-        if (state.step == Step.BELT && inLine(host, StructureType.MILL)) {
+        boolean chained = inLine(host, StructureType.MILL);
+        if (state.step.ordinal() >= Step.BELT.ordinal() && state.step.ordinal() <= Step.OUTPUT.ordinal() && chained) {
+            // the whole chain already runs (an island from an older tour, or built ahead): straight to the Dock
+            state.step = Step.DOCK;
+        }
+        if (state.step == Step.BELT && quarryBelted(host)) {
+            state.step = Step.MILL;
+        }
+        if (state.step == Step.MILL && stands(lineMachine(host, StructureType.MILL))) {
+            state.step = Step.SPLIT;
+        }
+        if (state.step == Step.SPLIT && structures.count(host, StructureType.SPLITTER) > 0) {
+            state.step = Step.FEED;
+        }
+        if (state.step == Step.FEED && millFed(host)) {
+            state.step = Step.OUTPUT;
+        }
+        if (state.step == Step.OUTPUT && chained) {
             state.step = Step.DOCK;
         }
         if (state.step == Step.DOCK && (dock == null || dock.stage(host) >= 1 || builtDock(host))) {
@@ -1748,12 +1843,26 @@ public final class IslandGuide implements Listener {
         if (state.step == Step.LAND && (land == null || (state.kits & LAND_GIFT) != 0)) {
             state.step = Step.DONE;
         }
+        if (state.step.touring() && state.step.ordinal() >= Step.SPLIT.ordinal() && (state.kits & REFINE_KIT) == 0) {
+            // an island that got past the Mill some other way (an older tour): the Splitter is theirs too
+            state.kits |= REFINE_KIT;
+            unlocker.accept(host, StructureType.MILL);
+            unlocker.accept(host, StructureType.SPLITTER);
+            dirty = true;
+        }
         if (state.step != before) {
             state.lastSub = -1;
             dirty = true;
             return true;
         }
         return false;
+    }
+
+    /** The first quarry's chute is belted into something (the hut, or already a Splitter on the way to it). */
+    private boolean quarryBelted(IslandHost host) {
+        PlacedStructure housing = firstHousing(host);
+        LogisticsService.Route out = housing == null ? null : logistics.routeFrom(housing);
+        return out != null && out.to() != null;
     }
 
     private static boolean stands(PlacedStructure structure) {
@@ -1896,8 +2005,8 @@ public final class IslandGuide implements Listener {
         boolean busy = chats.containsKey(owner.getUniqueId()) || (talk != null && talk.talkingWith(owner, hand.speakerId));
         if (lessonPending(state)) {
             // the Build Tool lesson: on the Quarry by any road counts; else the tool's bar keeps saying how
-            if (placement.holdingTool(owner) && placement.part(owner) == PlacementService.Part.QUARRY) {
-                switched(owner, PlacementService.Part.QUARRY);
+            if (placement.holdingTool(owner) && placement.part(owner) == PlacementService.Part.STORAGE_HUT) {
+                switched(owner, PlacementService.Part.STORAGE_HUT);
                 return;
             }
             placement.coach(owner, COACH);
@@ -1933,46 +2042,39 @@ public final class IslandGuide implements Listener {
             if (talk != null) {
                 talk.end(owner);
             }
-            if (!stepToast(owner, before)) {
+            boolean primedNow = before.ordinal() <= Step.FEED.ordinal() && primeOnce(host, state);
+            if (!stepToast(owner, before, primedNow)) {
                 owner.playSound(owner.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 1.4f);
             }
-            boolean primedNow = before.ordinal() <= Step.FEED.ordinal() && primeOnce(host, state);
             Step reached = state.step;
-            if (reached == Step.MILL || reached == Step.FEED || reached == Step.HUT || reached == Step.BELT) {
-                // a breath between steps: the "done" card and the new part settle first, then he says what's next
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (owner.isOnline() && state(island.ownerId()).step == reached
-                            && !chats.containsKey(owner.getUniqueId())) {
-                        switch (reached) {
-                            case MILL -> millPrompt(owner, hand, true);
-                            case FEED -> feedPrompt(owner, hand, true);
-                            case HUT -> hutPrompt(owner, hand, true, primedNow);
-                            default -> beltPrompt(owner, hand, true);
-                        }
-                    }
-                }, Math.max(0L, plugin.getConfig().getLong("guide.step-pause-ticks", 40L)));
-                return;
-            }
-            switch (state.step) {
+            long pause = Math.max(0L, plugin.getConfig().getLong("guide.step-pause-ticks", 40L));
+            // between chapters he stays quiet: the card up top says the step, the Build Tool takes the next part
+            Runnable tool = switch (reached) {
+                case HUT -> () -> placement.openTool(owner, host, PlacementService.Part.STORAGE_HUT);
+                case BELT, FEED, OUTPUT -> () -> placement.startBelts(owner, host);
+                case SPLIT -> () -> placement.openTool(owner, host, PlacementService.Part.SPLITTER);
+                default -> null;
+            };
+            switch (reached) {
                 case HUB -> hubPrompt(owner, hand, false);
-                case QUARRY -> {
+                case HUT -> {
                     if (before == Step.HUB) {
-                        // the Hub ritual plays first (bells, beam, title); he takes his post by the Hub, then the kit
+                        // the Hub ritual plays first (bells, beam, title); he takes his post by the Hub, then the
+                        // one Build Tool lesson: switch to the hut yourself
                         settle(hand);
                         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                            if (owner.isOnline() && state(island.ownerId()).step == Step.QUARRY
-                                    && !chats.containsKey(owner.getUniqueId())) {
-                                handKit(owner, hand);
+                            if (owner.isOnline() && state(island.ownerId()).step == Step.HUT
+                                    && !chats.containsKey(owner.getUniqueId()) && !toolLesson(owner, hand, true)) {
+                                placement.openTool(owner, host, PlacementService.Part.STORAGE_HUT);
                             }
                         }, 110L);
                     } else {
-                        quarryPrompt(owner, hand, true);
+                        later(pause, owner, Step.HUT, tool);
                     }
                 }
-                case MILL -> millPrompt(owner, hand, true);
-                case FEED -> feedPrompt(owner, hand, true);
-                case HUT -> hutPrompt(owner, hand, true, primedNow);
-                case BELT -> beltPrompt(owner, hand, true);
+                case QUARRY -> chapter(owner, hand, Step.QUARRY, () -> handKit(owner, hand));
+                case MILL -> chapter(owner, hand, Step.MILL, () -> refineKit(owner, hand));
+                case BELT, SPLIT, FEED, OUTPUT -> later(pause, owner, reached, tool);
                 case DOCK, SHIP -> {
                     if ((state.kits & CHAIN_BEAT) == 0) {
                         state.beatSince = System.currentTimeMillis(); // the beat comes with the first block
@@ -2014,8 +2116,8 @@ public final class IslandGuide implements Listener {
                 state.lastSub = sub;
             }
         }
-        // the owner is home mid-tour and he hasn't spoken to them since he showed up: the current step, once
-        if (!hand.metOwner && hand.waiting == null) {
+        // the owner comes by him mid-tour and he hasn't spoken to them since he showed up: the current step, once
+        if (!hand.metOwner && hand.waiting == null && talk != null && !tooFar(owner, hand, talk)) {
             hand.metOwner = true;
             prompt(owner, hand, false);
         }
@@ -2402,7 +2504,10 @@ public final class IslandGuide implements Listener {
         }
         State state = states.get(hand.owner);
         Step step = state == null ? Step.WELCOME : state.step;
+        boolean gift = hand.waiting != null || (state != null && ((step == Step.QUARRY && (state.kits & KIT) == 0)
+                || (step == Step.MILL && (state.kits & REFINE_KIT) == 0)));
         String status = step == Step.WELCOME ? "§6✦ §eRight-click me"
+                : gift ? "§6✦ §eI've got something for you"
                 : step.touring() ? "§6✦ §eTour · step " + (progress(hand.owner) + 1) + "/" + total()
                 : "§7Right-click for tips";
         String text = "§e§l" + name() + "\n§7" + title() + "\n" + status;
@@ -2470,9 +2575,9 @@ public final class IslandGuide implements Listener {
                 state.kits = section.getInt("kits", 0);
                 state.primed = section.getBoolean("primed", false);
                 if (old) {
-                    // the hut-first tour: its steps meant other things. Past the first chain stays past it; the rest
+                    // an older tour: its steps meant other things. Past the first chain stays past it; the rest
                     // starts again at the Hub and advance() skips whatever the island already shows
-                    if (state.step == Step.DOCK || state.step == Step.SHIP) {
+                    if (state.step == Step.DOCK || state.step == Step.SHIP || state.step == Step.LAND) {
                         state.kits |= CHAIN_BEAT;
                     } else if (state.step.touring()) {
                         state.step = Step.HUB;

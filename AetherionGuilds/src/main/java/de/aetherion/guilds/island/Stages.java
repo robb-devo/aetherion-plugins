@@ -11,9 +11,9 @@ import java.util.List;
  * own (no coin upgrade for either on a personal island).
  *
  * <ul>
- *   <li><b>0 First Shift</b>: Mill, Dock. Quarries Lv1 (but the first quarry digs ten times as fast while you learn).</li>
- *   <li><b>1 Werkhof</b>: Splitter, a second quarry of your starter's trade, quarries up to Lv3, the Storage Loft.</li>
- *   <li><b>2 Foreman's Hall</b>: Forge, Sorter, Overflow Gate, quarries up to Lv5, the Warehouse.</li>
+ *   <li><b>0 First Shift</b>: Mill, Splitter, Dock. Quarries Lv1 (but the first quarry digs ten times as fast while you learn).</li>
+ *   <li><b>1 Werkhof</b>: Overflow Gate, a second quarry of your starter's trade, quarries up to Lv3, the Storage Loft.</li>
+ *   <li><b>2 Foreman's Hall</b>: Forge, Sorter, quarries up to Lv5, the Warehouse.</li>
  *   <li><b>3 Grand Hub</b>: every Mill and Forge twice as fast, quarries up to Lv7, buying land.</li>
  * </ul>
  */
@@ -84,13 +84,13 @@ public final class Stages {
     /** What reaching this stage opens, for the Hub board and the stage-up beat. */
     public static List<String> perks(int stage) {
         return switch (clamp(stage)) {
-            case 1 -> List.of("§7Unlocks the §fSplitter", "§7A second quarry of your trade",
+            case 1 -> List.of("§7Unlocks the §fOverflow Gate", "§7A second quarry of your trade",
                     "§7Quarries up to §fLv3§7, the §fStorage Loft", "§7Island Tier §f2 §8(more belts, +1 machine)");
-            case 2 -> List.of("§7Unlocks §fForge§7, §fSorter§7, §fOverflow Gate", "§7Quarries up to §fLv5§7, the §fWarehouse",
+            case 2 -> List.of("§7Unlocks the §fForge §7and the §fSorter", "§7Quarries up to §fLv5§7, the §fWarehouse",
                     "§7Island Tier §f3");
             case 3 -> List.of("§7Every Mill and Forge runs §f2× §7as fast", "§7Quarries up to §fLv7§7, the §fBellows Forge",
                     "§7Buy land next to your island", "§7Island Tier §f5");
-            default -> List.of("§7Mill and Dock", "§7Your first quarry digs §f10× §7as fast");
+            default -> List.of("§7Mill, Splitter and Dock", "§7Your first quarry digs §f10× §7as fast");
         };
     }
 }

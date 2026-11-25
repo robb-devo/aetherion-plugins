@@ -545,8 +545,10 @@ public final class DockService implements Listener, LogisticsService.Export {
     private Contract phaseContract(IslandHost host, int stage) {
         QuarryType trade = trade(host);
         return switch (Stages.clamp(stage)) {
+            // pressed stone and raw stone, because that's what the tour's Splitter shares the quarry into
             case 0 -> new Contract(Kind.PHASE, "First Shipment", "Quarry Broker, Southwood",
-                    List.of(new Need(BuildCosts.COMPRESSED, 2L)), 2_000L, 5, "quarry:" + trade.name());
+                    List.of(new Need(BuildCosts.COMPRESSED, 1L), new Need(Res.of(QuarryType.COBBLESTONE, Res.Form.RAW), 64L)),
+                    2_000L, 5, "quarry:" + trade.name());
             case 1 -> new Contract(Kind.PHASE, "Werkhof Order", "Quarry Broker, Southwood",
                     List.of(new Need(BuildCosts.COMPRESSED, 32L), new Need(Res.of(trade, Res.Form.RAW), 128L)),
                     10_000L, 15, "core:1");
@@ -910,11 +912,11 @@ public final class DockService implements Listener, LogisticsService.Export {
             de.aetherion.core.api.Vfx.puff(top.clone().add(0, 1.5, 0), Particle.END_ROD, 24, Math.max(0.8, 0.8), null);
         }
         List<String> lines = switch (stage) {
-            case 1 -> List.of("There she goes. Your first shipment's on its way to the mainland.",
-                    "Your quarry has settled in. It keeps digging while you're away.",
-                    "And the broker sent you a second quarry. Belt it in next to the first.");
-            case 2 -> List.of("The Foreman's Hall! The Forge, the Sorter and the Overflow Gate are yours to unlock.");
-            case 3 -> List.of("The Grand Hub. Every Mill and Forge runs twice as fast now, and you can buy land.");
+            case 1 -> List.of("There she goes! Your quarry calms down now, but it keeps digging while you're away.",
+                    "New: a second quarry, and the Overflow Gate. It feeds the Mill first, only the rest goes on.");
+            case 2 -> List.of("The Foreman's Hall! The Forge presses 128 Compressed into one Compacted. Put it behind a Mill.",
+                    "And the Sorter: it picks one good off a belt and sends it its own way.");
+            case 3 -> List.of("The Grand Hub. Every Mill and Forge runs twice as fast, and your island can grow: Hub, Land.");
             default -> List.of();
         };
         if (stage == 1 && guildLink != null && !guildLink.member(host.id())) {
