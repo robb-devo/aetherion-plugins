@@ -942,6 +942,14 @@ public class DevMenu {
             player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.7f, 0.8f);
             return;
         }
+        if (action.equals("island:wipe")) {
+            player.closeInventory();
+            // private islands live in AetherionGuilds (the island server); its own admin wipe does the work
+            if (Bukkit.getPluginManager().getPlugin("AetherionGuilds") == null || !player.performCommand("island admin wipe")) {
+                player.sendMessage("§cIslands live on the island server. Reset it there.");
+            }
+            return;
+        }
         if (action.equals("quests:reset-all")) {
             player.closeInventory();
             if (!player.performCommand("aquest reset all")) {
@@ -3824,7 +3832,7 @@ public class DevMenu {
     /** Destructive actions. Wherever their buttons live, a click lands in the confirm modal first. */
     static boolean requiresConfirm(String action) {
         return switch (action) {
-            case "skills:wipe", "quests:reset-all", "testbot:stopall", "farmportal:rebuild",
+            case "skills:wipe", "quests:reset-all", "island:wipe", "testbot:stopall", "farmportal:rebuild",
                  "farmisle:profile:reset", "farmisle:npcall:remove",
                  "fishisle:profile:reset", "fishisle:npcall:remove",
                  "mineisle:profile:reset", "mineisle:npcall:remove" -> true;

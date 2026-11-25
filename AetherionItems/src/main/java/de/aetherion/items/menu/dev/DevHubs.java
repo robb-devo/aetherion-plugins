@@ -432,6 +432,8 @@ final class DevHubs {
                 "§7Despawns all six Mining Eldervale NPCs.", "§8Asks to confirm."));
         inventory.setItem(29, tile(Material.END_PORTAL_FRAME, "§cRebuild Legacy Farm Island", "confirm:farmportal:rebuild",
                 "§7Re-pastes the old void-world schematic.", "§8Asks to confirm."));
+        inventory.setItem(30, tile(Material.GRASS_BLOCK, "§cReset MY Island", "confirm:island:wipe",
+                "§7Your private island → gone, tour fresh.", "§7Island server only. §8Asks to confirm."));
         inventory.setItem(31, tile(Material.BARRIER, "§cStop ALL Testbots", "confirm:testbot:stopall",
                 "§7Every QA / stress bot this runner owns.", "§8Asks to confirm."));
         inventory.setItem(33, tile(Material.WITHER_SKELETON_SKULL, "§eClear Arena Bosses §8(sandbox)", "test:clear-bosses",
@@ -602,6 +604,7 @@ final class DevHubs {
         return switch (action) {
             case "skills:wipe" -> "Wipe MY skills";
             case "quests:reset-all" -> "Reset MY quests";
+            case "island:wipe" -> "Reset MY island";
             case "testbot:stopall" -> "Stop ALL testbots";
             case "farmportal:rebuild" -> "Rebuild legacy farm island";
             case "farmisle:profile:reset" -> "Wipe my Farm Eldervale profile";
@@ -621,6 +624,7 @@ final class DevHubs {
         return switch (action) {
             case "skills:wipe" -> List.of("§7All your skill levels → 1.", "§7Skill loadout cleared.");
             case "quests:reset-all" -> List.of("§7Every quest you started resets.", "§7Harbour onboarding starts fresh.");
+            case "island:wipe" -> List.of("§7Your private island, its land and tour.", "§7Claim a fresh one with §f/island§7.");
             case "testbot:stopall" -> List.of("§7Every QA / stress bot this runner owns quits.");
             case "farmportal:rebuild" -> List.of("§7Re-pastes aether_farm_island from the schematic.");
             case "farmisle:profile:reset" -> List.of("§7Your plots, mastery, prizes, orders, food.");
