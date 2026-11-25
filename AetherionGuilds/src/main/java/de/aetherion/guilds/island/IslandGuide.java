@@ -1238,7 +1238,7 @@ public final class IslandGuide implements Listener {
             long price = Math.max(1L, dockPrice(host));
             String cost = price == 1L ? "one Compressed Cobble" : price + " Compressed Cobble";
             List<String> lines = fresh
-                    ? List.of("This lectern is where new parts come from. Each one costs goods from your huts, and every stage opens more.",
+                    ? List.of("This lectern is where new parts come from. Each one costs goods from your huts or your pack, and every stage opens more.",
                     "Next is the Dock: contracts come in there, and an airship takes your goods to the mainland.",
                     "It costs " + cost + (have >= price ? ", and you've just made it. Unlock it." : ". Your Mill's on it: you've got " + have + "."))
                     : List.of("Dock: unlock it at the Hub lectern for " + cost + ". You've got " + have + ".");

@@ -118,7 +118,7 @@ public final class PieceMenu implements MenuKit.Menu {
             }
         }
         inventory.setItem(DECONSTRUCT, MenuKit.pickUpTile("§7It comes up, everything it cost comes back.",
-                "§7The belts around it stay.", "§8Only when empty."));
+                "§7The belts around it stay.", "§8Nothing it holds is lost."));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);

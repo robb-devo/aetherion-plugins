@@ -37,9 +37,11 @@ import java.util.function.BiConsumer;
 /**
  * The island choice you can't miss: on the Isle Dock (where everyone without an island lands) three gates stand
  * in a row right in front of you, one per starter, each in its own colours with its icon turning in the arch and
- * its name above. Walk through one and its claim screen opens (a second "yes" there, the choice is for good).
- * A banner over them says what to do, and a newcomer gets it as a title once. Display entities only (nothing is
- * built into the dock), never saved, rebuilt when they go missing. Config {@code starter-gates.*}.
+ * its name in it at eye height. Walk through one and its claim screen opens (a second "yes" there, the choice is
+ * for good). A banner behind them says what to do, and a newcomer gets it as a title once. Walking through is
+ * caught as a crossing of the gate's plane (a sprint can't skip it), and whoever steps off the dock's edge is
+ * set back on it instead of falling. Display entities only (nothing is built into the dock), never saved,
+ * rebuilt when they go missing. Config {@code starter-gates.*}.
  */
 public final class StarterGates {
 
@@ -68,7 +70,10 @@ public final class StarterGates {
     private final BiConsumer<Player, StarterLayout> open;
     private final List<Entity> entities = new ArrayList<>();
     private final List<ItemDisplay> icons = new ArrayList<>();
-    private final Map<UUID, Integer> inside = new HashMap<>();
+    /** Where each player stood on the last check (x, z, y), for the crossing. */
+    private final Map<UUID, double[]> last = new HashMap<>();
+    /** No second screen for a moment after one opened (standing in the plane, a step back and forth). */
+    private final Map<UUID, Long> cool = new HashMap<>();
     private final Set<UUID> greeted = new HashSet<>();
     private final List<double[]> gates = new ArrayList<>(); // {cx, y, cz} per gate, same order as the starters
     private Location dock;
@@ -111,6 +116,8 @@ public final class StarterGates {
         }
         if (dock == null || ticks % 75 == 0) {
             greeted.removeIf(id -> Bukkit.getPlayer(id) == null); // back another day: greeted again
+            last.keySet().removeIf(id -> Bukkit.getPlayer(id) == null);
+            cool.keySet().removeIf(id -> Bukkit.getPlayer(id) == null);
             Location spot = lobby();
             if (spot == null || spot.getWorld() == null) {
                 return;
@@ -137,27 +144,41 @@ public final class StarterGates {
         }
         List<StarterLayout> starters = StarterLayout.personalChoices();
         boolean shimmer = ticks % 3 == 0;
+        long now = System.currentTimeMillis();
         for (Player player : world.getPlayers()) {
             Location at = player.getLocation();
-            if (at.distanceSquared(dock) > 30 * 30) {
-                inside.remove(player.getUniqueId());
+            UUID id = player.getUniqueId();
+            double flat = (at.getX() - dock.getX()) * (at.getX() - dock.getX()) + (at.getZ() - dock.getZ()) * (at.getZ() - dock.getZ());
+            if (flat > 48 * 48) {
+                last.remove(id);
                 continue;
             }
-            boolean owner = personal.byOwner(player.getUniqueId()) != null;
-            if (!owner && greeted.add(player.getUniqueId())) {
+            if (at.getY() < dock.getY() - 6.0 && !player.isFlying()
+                    && player.getGameMode() != org.bukkit.GameMode.SPECTATOR) {
+                // off the dock's edge: back on it, facing the gates, before the void gets a say
+                last.remove(id);
+                player.setFallDistance(0f);
+                player.teleport(dock);
+                player.playSound(dock, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5f, 1.4f);
+                player.sendActionBar(LegacyComponentSerializer.legacySection()
+                        .deserialize("§7The dock ends there §8· §fwalk through a gate §7to choose your island"));
+                continue;
+            }
+            if (flat > 30 * 30) {
+                last.remove(id);
+                continue;
+            }
+            boolean owner = personal.byOwner(id) != null;
+            if (!owner && greeted.add(id)) {
                 player.sendTitle("§6✦ Choose your island ✦", "§7Walk through one of the three gates", 10, 70, 20);
                 player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.1f);
             }
-            int gate = gateAt(at);
-            Integer was = inside.get(player.getUniqueId());
-            if (gate < 0) {
-                inside.remove(player.getUniqueId());
+            double[] prev = last.put(id, new double[]{at.getX(), at.getZ(), at.getY()});
+            int gate = crossed(prev, at);
+            if (gate < 0 || now < cool.getOrDefault(id, 0L)) {
                 continue;
             }
-            if (was != null && was == gate) {
-                continue; // still standing in it: one screen per walk-through
-            }
-            inside.put(player.getUniqueId(), gate);
+            cool.put(id, now + 1500L);
             if (gate >= starters.size()) {
                 continue;
             }
@@ -188,15 +209,31 @@ public final class StarterGates {
         }
     }
 
-    /** Which gate (0..2) this spot is walking through, or -1. */
-    private int gateAt(Location at) {
+    /**
+     * Which gate (0..2) the step from {@code prev} to {@code at} went through (its plane crossed inside the
+     * opening, either way), or -1. A jump of more than 3 blocks is a teleport, not a step.
+     */
+    private int crossed(double[] prev, Location at) {
+        if (prev == null) {
+            return -1;
+        }
+        double mx = at.getX() - prev[0];
+        double mz = at.getZ() - prev[1];
+        if (mx * mx + mz * mz > 9.0 || mx * mx + mz * mz < 1.0E-6) {
+            return -1;
+        }
         for (int i = 0; i < gates.size(); i++) {
             double[] c = gates.get(i);
-            double dx = at.getX() - c[0];
-            double dz = at.getZ() - c[2];
-            double u = dx * right[0] + dz * right[1];
-            double w = dx * forward[0] + dz * forward[1];
-            if (Math.abs(u) <= HALF && Math.abs(w) <= 0.55 && at.getY() >= c[1] - 1.0 && at.getY() <= c[1] + HEIGHT) {
+            double u0 = (prev[0] - c[0]) * right[0] + (prev[1] - c[2]) * right[1];
+            double w0 = (prev[0] - c[0]) * forward[0] + (prev[1] - c[2]) * forward[1];
+            double u1 = (at.getX() - c[0]) * right[0] + (at.getZ() - c[2]) * right[1];
+            double w1 = (at.getX() - c[0]) * forward[0] + (at.getZ() - c[2]) * forward[1];
+            if ((w0 < 0.0) == (w1 < 0.0)) {
+                continue;
+            }
+            double t = w0 / (w0 - w1);
+            double u = u0 + t * (u1 - u0);
+            if (Math.abs(u) <= HALF && at.getY() >= c[1] - 1.0 && at.getY() <= c[1] + HEIGHT) {
                 return i;
             }
         }
@@ -241,11 +278,11 @@ public final class StarterGates {
             gates.add(new double[]{cx, y, cz});
             gate(world, starters.get(i), cx, y, cz, yaw);
         }
-        // one banner over all three
-        double bx = spot.getX() + ahead * forward[0];
-        double bz = spot.getZ() + ahead * forward[1];
-        text(world, new Location(world, bx, y + HEIGHT + 1.75, bz),
-                "§6✦ §f§lChoose your island §6✦\n§7Walk through a gate. §8It's yours for good.", 1.35f, true);
+        // one banner behind the middle gate, high enough to clear the arches, low enough to be seen on arrival
+        double bx = spot.getX() + (ahead + 1.2) * forward[0];
+        double bz = spot.getZ() + (ahead + 1.2) * forward[1];
+        text(world, new Location(world, bx, y + HEIGHT + 0.9, bz),
+                "§6✦ §f§lChoose your island §6✦\n§7Walk through a gate. §8It's yours for good.", 1.25f, true);
     }
 
     private void gate(World world, StarterLayout starter, double cx, double y, double cz, float yaw) {
@@ -260,13 +297,15 @@ public final class StarterGates {
         BlockData glass = look.glass().createBlockData();
         box(world, glass, cx, y, cz, -HALF, HALF, 0.02f, HEIGHT, -0.02f, 0.02f, true);
         box(world, glass, cx, y, cz, -HALF, HALF, 0.0f, 0.03f, -0.5f, 0.5f, true);
-        // its icon turning in the arch
+        // its icon turning in the arch, a hand's breadth in front of the glass
         ItemStack icon = new ItemStack(starter.icon());
-        Location mid = new Location(world, cx, y + 1.5, cz, yaw + 180f, 0f);
+        double fx = -0.15 * forward[0];
+        double fz = -0.15 * forward[1];
+        Location mid = new Location(world, cx + fx, y + 1.2, cz + fz, yaw + 180f, 0f);
         ItemDisplay item = world.spawn(mid, ItemDisplay.class, d -> {
             d.setItemStack(icon);
             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(1.15f, 1.15f, 1.15f),
+            d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(1.0f, 1.0f, 1.0f),
                     new AxisAngle4f()));
             d.setBrightness(new Display.Brightness(15, 15));
             d.setPersistent(false);
@@ -274,9 +313,9 @@ public final class StarterGates {
         });
         icons.add(item);
         entities.add(item);
-        // the name over the lintel, its line under it
-        text(world, new Location(world, cx, y + HEIGHT + 0.95, cz), look.color() + "§l" + starter.display()
-                + "\n" + look.tagline(), 0.9f, false);
+        // its name and line in the arch's top, at eye height from the dock spawn
+        text(world, new Location(world, cx + fx, y + 1.95, cz + fz), look.color() + "§l" + starter.display()
+                + "\n" + look.tagline(), 0.62f, false);
     }
 
     /** An axis-aligned box in the gate's frame (u right, v up, w forward) as one block display. */
@@ -321,7 +360,8 @@ public final class StarterGates {
     }
 
     public void forgetPlayer(UUID id) {
-        inside.remove(id);
+        last.remove(id);
+        cool.remove(id);
         greeted.remove(id);
     }
 

@@ -109,8 +109,10 @@ public final class QuarryMenu {
                 "§7Raw: §e" + view.raw() + " " + type.productName(),
                 view.compressed() > 0 ? "§7Compressed: §a" + view.compressed() : "§8No compressed stored",
                 view.compacted() > 0 ? "§7Compacted: §b" + view.compacted() : "§8No compacted stored",
-                "§7Digs: §f" + de.aetherion.guilds.util.GuildFormat.compact(perMinute) + " §7" + type.productName() + " / min"
-                        + (minion.bonusPct() > 0 ? " §8(§bBeacon +" + minion.bonusPct() + "%§8)" : ""),
+                minion.rawEquivalent() >= minion.cap()
+                        ? "§cFull §7· digs nothing until it's collected or belted"
+                        : "§7Digs: §f" + de.aetherion.guilds.util.GuildFormat.compact(perMinute) + " §7" + type.productName()
+                        + " / min" + (minion.bonusPct() > 0 ? " §8(§bBeacon +" + minion.bonusPct() + "%§8)" : ""),
                 "§7Holds up to: §f" + minion.cap() + " goods",
                 mill,
                 type.blurb(),

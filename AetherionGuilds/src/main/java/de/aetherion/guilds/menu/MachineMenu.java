@@ -90,7 +90,7 @@ public final class MachineMenu implements MenuKit.Menu {
         inventory.setItem(OUTPUT, MenuKit.named(Material.CHEST, "§eReady to leave",
                 bufferLore(structure.output(), "§8Goes onto the belt from the chute.")));
         inventory.setItem(DECONSTRUCT, MenuKit.pickUpTile("§7It comes down, everything it cost comes back",
-                "§7and it keeps its tier for the next one you build.", "§8Empty it first."));
+                "§7and it keeps its tier for the next one you build.", "§8What it holds goes to your huts."));
         inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§eProduction"));
         inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);

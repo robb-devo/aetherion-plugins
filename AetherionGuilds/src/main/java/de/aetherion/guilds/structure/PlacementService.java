@@ -1094,7 +1094,7 @@ public final class PlacementService {
         return structure != null && structure.host().equals(host) ? structure : null;
     }
 
-    /** Why this can't be taken down with the tool (null when it can). */
+    /** Why this can't be picked up with the tool (null when it can). What it holds never stops it. */
     private static String keepReason(PlacedStructure structure) {
         if (structure.building()) {
             return "Still going up";
@@ -1102,8 +1102,7 @@ public final class PlacementService {
         return switch (structure.type()) {
             case QUARRY_HOUSING -> null; // picked up whole: level, mill and storage go with it
             case PROJECT -> "Guild projects stay";
-            default -> PlacedStructure.total(structure.store()) > 0L || PlacedStructure.total(structure.input()) > 0L
-                    || PlacedStructure.total(structure.output()) > 0L ? "Empty it first, so nothing is lost" : null;
+            default -> null; // its goods go to the other huts, or come back with the next one
         };
     }
 
@@ -1125,7 +1124,7 @@ public final class PlacementService {
         Belt belt = beltAt(world, target);
         if (belt != null) {
             if (logistics.remove(player, session.host, belt.x(), belt.y(), belt.z())) {
-                actionBar(player, "§7Belt taken up §8(" + logistics.lastRemoveLine() + ")");
+                actionBar(player, "§7Belt picked up §8(" + logistics.lastRemoveLine() + ")");
                 session.quietUntil = System.currentTimeMillis() + 800L;
             }
             return;
@@ -1171,7 +1170,7 @@ public final class PlacementService {
         Belt belt = beltAt(world, target);
         if (belt != null) {
             session.ghost.mark(world, belt.x(), belt.y(), belt.z(), belt.x(), belt.y(), belt.z());
-            bar(player, session, "§c✖ Belt §8· §fright-click §7takes it up §8(refunded)");
+            bar(player, session, "§c✖ Belt §8· §fright-click §7picks it up §8(refunded)");
             return;
         }
         PlacedStructure structure = buildingAt(session.host, target);

@@ -118,9 +118,10 @@ public final class StorageMenu implements MenuKit.Menu, MenuKit.PackClick {
                 carried > 0 ? "§7Every good from your inventory §8(§f" + String.format("%,d", carried) + "§8)"
                         : "§8Nothing of the island's goods in your inventory.",
                 "§7Or §fclick §7a stack in your inventory §8(shift: all of it)§7.",
-                "§8What's in storage pays for building and upgrades."));
+                "§8Storage and your pack pay for building and upgrades."));
         inventory.setItem(DECONSTRUCT, MenuKit.pickUpTile("§7It comes down, everything it cost comes back",
-                "§7and it keeps its tier for the next one you build.", "§8Only when empty."));
+                "§7and it keeps its tier for the next one you build.",
+                "§8Its goods move to your other huts, or come", "§8back with the next hut you set down."));
         org.bukkit.inventory.ItemStack upgrade = UpgradeTile.of(player, structures, structure);
         if (upgrade != null) {
             inventory.setItem(UPGRADE, upgrade);

@@ -424,15 +424,15 @@ public final class HubMenu implements MenuKit.Menu {
     }
 
     private ItemStack pressTile(Player player, IslandHost host) {
-        long cobble = structures.stock(host, BuildCosts.COBBLE);
+        long cobble = structures.available(player, host, BuildCosts.COBBLE);
         boolean can = cobble >= de.aetherion.guilds.island.DockService.PRESS_RAW;
         List<String> lore = new ArrayList<>();
-        lore.add("§7Press §f128 Cobblestone §7from storage");
+        lore.add("§7Press §f128 Cobblestone §7(storage or pack)");
         lore.add("§7into §a1 Compressed Cobblestone§7,");
         lore.add("§7by hand, right now. Your Mill");
         lore.add("§7does the same all day long.");
         lore.add("");
-        lore.add("§7In storage: " + (can ? "§a" : "§c") + GuildFormat.compact(cobble) + " §7Cobblestone");
+        lore.add("§7You have: " + (can ? "§a" : "§c") + GuildFormat.compact(cobble) + " §7Cobblestone");
         lore.add("");
         lore.add(can ? "§e▶ Press one" : "§c✖ needs " + GuildFormat.compact(de.aetherion.guilds.island.DockService.PRESS_RAW - cobble)
                 + " more Cobblestone");

@@ -2467,7 +2467,8 @@ public final class LogisticsService {
         }
         Route route = routeFrom(housing);
         if (route == null) {
-            return " §8· §f" + perMinute(digPerMinute(minion)) + " §6○ belt its chute";
+            return minion.rawEquivalent() >= minion.cap() ? " §8· §c■ full §6○ belt its chute"
+                    : " §8· §f" + perMinute(digPerMinute(minion)) + " §6○ belt its chute";
         }
         if (route.deadEnd()) {
             return " §c✖ belt leads nowhere";
