@@ -6,8 +6,11 @@ import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.ui.QuestProgressDisplay;
 
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.banner.Pattern;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,7 +20,9 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
@@ -27,13 +32,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * First-join / command language picker. Tiny inventory — no game systems touched.
+ * The explanation sits in the middle in both languages; the languages stand left and right as small flags
+ * (banners): Deutsch left, English right.
  */
 public final class LangMenu implements Listener {
 
     public static final String TITLE = "§8Language / Sprache";
 
-    private static final int SLOT_EN = 11;
-    private static final int SLOT_DE = 15;
+    private static final int SLOT_DE = 11;
+    private static final int SLOT_EN = 15;
     private static final int SLOT_INFO = 13;
 
     private static final Set<UUID> REOPEN = ConcurrentHashMap.newKeySet();
@@ -61,26 +68,31 @@ public final class LangMenu implements Listener {
 
         inventory.setItem(SLOT_INFO, item(
                 Material.BOOK,
-                "§fChoose your language",
-                "§7Quests & hints only for now.",
-                "§8Items / pets stay English.",
+                "§fSprache §8· §fLanguage",
+                "§7Wähle deine Sprache für Quests und Hinweise.",
+                "§7Choose your language for quests and hints.",
                 "",
-                "§7Später: /language  ·  /sprache"
-        ));
-        inventory.setItem(SLOT_EN, item(
-                Material.MAP,
-                "§a§lEnglish",
-                "§7Fully supported",
+                "§6◀ Deutsch   §8·   §aEnglish ▶",
                 "",
-                "§eClick to select"
+                "§8Später ändern: §7/sprache",
+                "§8Change it later: §7/language"
         ));
-        inventory.setItem(SLOT_DE, item(
-                Material.WRITABLE_BOOK,
+        inventory.setItem(SLOT_DE, flag(Material.RED_BANNER,
+                List.of(new Pattern(DyeColor.BLACK, PatternType.STRIPE_TOP),
+                        new Pattern(DyeColor.YELLOW, PatternType.STRIPE_BOTTOM)),
                 "§6§lDeutsch",
-                "§eExperimental / nicht vollständig",
-                "§eIn Arbeit — fehlende Zeilen bleiben EN",
+                "§7Quests und Hinweise auf Deutsch.",
+                "§8Was noch fehlt, steht auf Englisch.",
                 "",
                 "§eKlicken zum Auswählen"
+        ));
+        inventory.setItem(SLOT_EN, flag(Material.BLUE_BANNER,
+                List.of(new Pattern(DyeColor.WHITE, PatternType.CROSS),
+                        new Pattern(DyeColor.RED, PatternType.STRAIGHT_CROSS)),
+                "§a§lEnglish",
+                "§7Quests and hints in English.",
+                "",
+                "§eClick to select"
         ));
 
         ChromePage.open(player, inventory, ChromePage.Theme.AETHER);
@@ -109,6 +121,17 @@ public final class LangMenu implements Listener {
             if (lore != null && lore.length > 0 && !(lore.length == 1 && lore[0].isEmpty())) {
                 meta.setLore(List.of(lore));
             }
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
+
+    /** A small flag: a banner with its stripes, the banner's own pattern list hidden from the tooltip. */
+    private static ItemStack flag(Material banner, List<Pattern> patterns, String name, String... lore) {
+        ItemStack stack = item(banner, name, lore);
+        if (stack.getItemMeta() instanceof BannerMeta meta) {
+            meta.setPatterns(patterns);
+            meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             stack.setItemMeta(meta);
         }
         return stack;
