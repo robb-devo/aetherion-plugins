@@ -598,6 +598,15 @@ reflecting pool and four colonnades, the big Aetherion star gate on the west ter
 - AetherionHub on the hub: `join-at-selected-spawn` and `respawn-at-selected-spawn` off, island pads off.
 - Generator, preview renderer and config patch: `AetherionPit/tools/skyisle/` (README there).
 
+### Round 2 (same night, 02:46 CET, after Robb's feedback)
+
+The hub world is now a smaller elven island built around three free-to-use SkyblockSquad builds (Elven Shrine,
+Elven Tower, Elven House, Planet Minecraft, "free to use anywhere"). Only two portals, both normal size:
+Aetherion at the end of the shrine bridge under the big tree, The Pit at the east edge. Discord = the bell on the
+plaza, Modpack = the spell book at the tower, Pit-Shop = workshop blocks inside the elven house (AetherionPit
+`props.*`). Animated floaters (crystals, sword, book, lanterns) via AetherionPit `floaters`. Round-1 world kept as
+`world-skyisle-r1-<ts>`; `rollback.sh` in `staging/hub-round2-<ts>`. Generator: `tools/skyisle/gen_hub2.py`.
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
