@@ -41,28 +41,196 @@ public final class HubGuide {
 
     private final AetherionPit plugin;
     private final HubHolograms holograms;
+    private final HubScrolls scrolls;
     private List<PitDataStore.Ranked> top = List.of();
 
     public HubGuide(AetherionPit plugin) {
         this.plugin = plugin;
         this.holograms = new HubHolograms(plugin);
+        this.scrolls = new HubScrolls(plugin);
     }
 
     public void start() {
-        Location board = location("welcome-board");
-        if (board != null) {
-            holograms.put("welcome", board, gates() ? 0.8f : 1.15f, 280, BOARD_BG, welcomeBoard(false), welcomeBoard(true));
-        }
         top = plugin.data().top(5);
+        Location board = location("welcome-board");
         Location pitBoard = location("pit-board");
-        if (pitBoard != null) {
-            holograms.put("pit_board", pitBoard, 1.0f, 240, BOARD_BG, pitBoard(false), pitBoard(true));
+        if (gates()) {
+            if (board != null) {
+                scrolls.put("welcome", board, HubScrolls.Style.LIGHT, scroll("welcome", false), scroll("welcome", true));
+            }
+            if (pitBoard != null) {
+                scrolls.put("pit_board", pitBoard, HubScrolls.Style.DARK, scroll("pit_board", false),
+                        scroll("pit_board", true));
+            }
+            Location parkourBoard = plugin.parkour() == null ? null : plugin.parkour().board();
+            if (parkourBoard != null) {
+                scrolls.put("parkour", parkourBoard, HubScrolls.Style.LIGHT, scroll("parkour", false), scroll("parkour", true));
+            }
+        } else {
+            if (board != null) {
+                holograms.put("welcome", board, 1.15f, 280, BOARD_BG, welcomeBoard(false), welcomeBoard(true));
+            }
+            if (pitBoard != null) {
+                holograms.put("pit_board", pitBoard, 1.0f, 240, BOARD_BG, pitBoard(false), pitBoard(true));
+            }
         }
         Bukkit.getScheduler().runTaskTimer(plugin, this::refreshTop, 1200L, 1200L);
     }
 
     public void stop() {
         holograms.removeAll();
+        scrolls.removeAll();
+    }
+
+    public HubScrolls scrolls() {
+        return scrolls;
+    }
+
+    // ------------------------------------------------------------------ scrolls (gate mode)
+
+    private static final TextColor INK = TextColor.color(0x3A2715);
+    private static final TextColor INK_SOFT = TextColor.color(0x6B5236);
+    private static final TextColor RUNE = TextColor.color(0xA08A6A);
+    private static final TextColor DARK_INK = TextColor.color(0xF2E2C0);
+    private static final TextColor DARK_SOFT = TextColor.color(0xC9B48E);
+    private static final TextColor DARK_RUNE = TextColor.color(0x8C76A8);
+    private static final net.kyori.adventure.key.Key RUNES = net.kyori.adventure.key.Key.key("minecraft", "alt");
+
+    private static Component runes(String word, TextColor color) {
+        return Component.text(word.replace(" ", "")).font(RUNES).color(color);
+    }
+
+    private static Component line(String text, TextColor color) {
+        return Component.text(text, color);
+    }
+
+    private static Component action(String text, TextColor color) {
+        return Component.text("▸ " + text, color);
+    }
+
+    private static Component key(String name, TextColor color, String rest, TextColor soft) {
+        return Component.text(name, color).append(Component.text(" · " + rest, soft));
+    }
+
+    /** Everything written on the hub's scrolls, per id and language. */
+    public HubScrolls.Text scroll(String id, boolean de) {
+        switch (id) {
+            case "aetherion" -> {
+                TextColor c = TextColor.color(0x5E2B97);
+                int online = plugin.hubNpcs().aetherionOnline();
+                List<Component> l = new java.util.ArrayList<>();
+                l.add(runes("aetherion", RUNE));
+                l.add(line(de ? "Das MMO: Inseln, Quests, Bosse" : "The MMO: isles, quests, bosses", INK_SOFT));
+                if (online >= 0) {
+                    l.add(line(online + (de ? " Abenteurer unterwegs" : " adventurers out there"), INK_SOFT));
+                }
+                l.add(action(de ? "Durch das Sternentor gehen" : "Walk through the star gate", c));
+                return new HubScrolls.Text(Component.text("Aetherion", c, TextDecoration.BOLD), l);
+            }
+            case "pit" -> {
+                TextColor c = TextColor.color(0xFF6B5B);
+                List<Component> l = new java.util.ArrayList<>();
+                l.add(runes("the pit", DARK_RUNE));
+                l.add(line(de ? "PvP-Insel mit Vanilla-Gear" : "PvP island, vanilla gear", DARK_SOFT));
+                if (!top.isEmpty()) {
+                    l.add(line("#1 " + top.getFirst().name() + " · Lv " + top.getFirst().level(), DARK_INK));
+                }
+                l.add(action(de ? "Durch das rote Tor" : "Through the red gate", c));
+                return new HubScrolls.Text(Component.text("The Pit", c, TextDecoration.BOLD), l);
+            }
+            case "home" -> {
+                TextColor c = TextColor.color(0xF2B8FF);
+                return new HubScrolls.Text(Component.text(de ? "Zurück zum Hub" : "Back to the Hub", c, TextDecoration.BOLD),
+                        List.of(line(de ? "Raus aus der Arena" : "Leave the arena", DARK_SOFT),
+                                action(de ? "Durch das Tor" : "Through the gate", c)));
+            }
+            case "discord" -> {
+                TextColor c = TextColor.color(0x3949AB);
+                return new HubScrolls.Text(Component.text("Discord", c, TextDecoration.BOLD),
+                        List.of(runes("discord", RUNE),
+                                line(de ? "News, Hilfe und Freunde" : "News, help and friends", INK_SOFT),
+                                action(de ? "Läute die Glocke" : "Ring the bell", c)));
+            }
+            case "modpack" -> {
+                TextColor c = TextColor.color(0x2E7D32);
+                return new HubScrolls.Text(Component.text(de ? "Das Zauberbuch" : "The Spell Book", c, TextDecoration.BOLD),
+                        List.of(runes("modpack", RUNE),
+                                line(de ? "Modpack, Launcher und Shader" : "Modpack, launcher and shader", INK_SOFT),
+                                action(de ? "Klick das Buch an" : "Click the book", c)));
+            }
+            case "shop" -> {
+                TextColor c = TextColor.color(0x9A6200);
+                return new HubScrolls.Text(Component.text(de ? "Pit-Shop" : "Pit Shop", c, TextDecoration.BOLD),
+                        List.of(runes("shop", RUNE),
+                                line(de ? "Ausrüstung für Kill-Gold" : "Gear for kill gold", INK_SOFT),
+                                action(de ? "Klick ein Fass im Laden" : "Click a barrel inside", c)));
+            }
+            case "duck" -> {
+                TextColor c = TextColor.color(0xC77700);
+                long n = plugin.portals() == null ? 0 : plugin.portals().quacks();
+                return new HubScrolls.Text(Component.text(de ? "Die Ente" : "The Duck", c, TextDecoration.BOLD),
+                        List.of(line(String.format(java.util.Locale.ROOT, de ? "%,d-mal gedrückt" : "squeezed %,d times", n),
+                                        INK_SOFT),
+                                line(de ? "Hat jemand meine Küken gesehen?" : "Has anyone seen my ducklings?", INK),
+                                action(de ? "Drück sie" : "Squeeze it", c)));
+            }
+            case "pit_board" -> {
+                TextColor c = TextColor.color(0xFF6B5B);
+                int killXp = plugin.getConfig().getInt("levels.kill-xp", 12);
+                int killGold = plugin.getConfig().getInt("economy.kill-gold", 8);
+                List<Component> l = new java.util.ArrayList<>();
+                l.add(runes("arena", DARK_RUNE));
+                l.add(line(de ? "Kill: +" + killXp + " XP, +" + killGold + " Gold" : "Kill: +" + killXp + " XP, +" + killGold + " gold",
+                        DARK_SOFT));
+                l.add(line(de ? "Ohne Rüstung gibt's ein Starter-Kit" : "No gear? You get a starter kit", DARK_SOFT));
+                l.add(line(de ? "Beste Kämpfer" : "Top fighters", TextColor.color(0xFFC857)));
+                if (top.isEmpty()) {
+                    l.add(line(de ? "Noch frei. Sei der Erste!" : "Still empty. Be the first!", DARK_INK));
+                }
+                for (int i = 0; i < top.size(); i++) {
+                    PitDataStore.Ranked r = top.get(i);
+                    l.add(line((i + 1) + ". " + r.name() + "  Lv " + r.level(), i == 0 ? TextColor.color(0xFFC857) : DARK_INK));
+                }
+                return new HubScrolls.Text(Component.text("The Pit", c, TextDecoration.BOLD), l);
+            }
+            case "parkour" -> {
+                TextColor c = TextColor.color(0x00838F);
+                List<Component> l = new java.util.ArrayList<>();
+                l.add(runes("himmelspfad", RUNE));
+                l.add(line(de ? "Spring um den Turm nach oben" : "Jump your way up around the tower", INK_SOFT));
+                l.add(line(de ? "Start: die goldene Platte" : "Start: the golden plate", INK_SOFT));
+                List<HubParkour.Best> best = plugin.parkour() == null ? List.of() : plugin.parkour().top(5);
+                l.add(line(de ? "Bestzeiten" : "Best times", c));
+                if (best.isEmpty()) {
+                    l.add(line(de ? "Noch frei. Sei der Erste!" : "Still empty. Be the first!", INK));
+                }
+                for (int i = 0; i < best.size(); i++) {
+                    HubParkour.Best b = best.get(i);
+                    l.add(line((i + 1) + ". " + b.name() + "  " + HubParkour.format(b.millis()), i == 0 ? c : INK));
+                }
+                return new HubScrolls.Text(Component.text(de ? "Himmelspfad" : "Sky Path", c, TextDecoration.BOLD), l);
+            }
+            default -> {
+                TextColor c = TextColor.color(0x5E2B97);
+                return new HubScrolls.Text(Component.text(de ? "Willkommen im Hub" : "Welcome to the Hub", c, TextDecoration.BOLD),
+                        List.of(runes("willkommen", RUNE),
+                                key("Aetherion", c, de ? "durch den großen Bogen" : "through the great arch", INK_SOFT),
+                                key("The Pit", TextColor.color(0xB3261E), de ? "rotes Tor hinter dir" : "red gate behind you", INK_SOFT),
+                                key("Discord", TextColor.color(0x3949AB), de ? "die Glocke" : "the bell", INK_SOFT),
+                                key("Modpack", TextColor.color(0x2E7D32), de ? "das Zauberbuch am Turm" : "the spell book by the tower",
+                                        INK_SOFT),
+                                key(de ? "Pit-Shop" : "Pit Shop", TextColor.color(0x9A6200), de ? "das Elfenhaus" : "the elven house",
+                                        INK_SOFT),
+                                key(de ? "Himmelspfad" : "Sky Path", TextColor.color(0x00838F),
+                                        de ? "Jump and Run am Turm" : "jump and run at the tower", INK_SOFT),
+                                line(de ? "Sieben Entenküken haben sich verlaufen ..." : "Seven ducklings got lost ...",
+                                        TextColor.color(0xC77700))));
+            }
+        }
+    }
+
+    private HubScrolls.Style scrollStyle(String id) {
+        return id.equals("pit") || id.equals("home") || id.equals("pit_board") ? HubScrolls.Style.DARK : HubScrolls.Style.LIGHT;
     }
 
     // ------------------------------------------------------------------ signs
@@ -111,22 +279,20 @@ public final class HubGuide {
     public void placePlates() {
         if (gates()) {
             for (HubPortals.Gate gate : plugin.portals().gates()) {
-                if (gate.label() == null) {
-                    continue;
+                if (gate.label() != null) {
+                    scrolls.put("plate_" + gate.key(), gate.label(), scrollStyle(gate.key()),
+                            scroll(gate.key(), false), scroll(gate.key(), true));
                 }
-                holograms.put("plate_" + gate.key(), gate.label(), gate.key().equals("aetherion") ? 1.0f : 0.85f,
-                        220, PLATE_BG, plate(gate.key(), false), plate(gate.key(), true));
             }
             for (HubPortals.Gate prop : plugin.portals().props()) {
-                if (prop.label() == null) {
-                    continue;
+                if (prop.label() != null) {
+                    scrolls.put("plate_" + prop.key(), prop.label(), scrollStyle(prop.key()),
+                            scroll(prop.key(), false), scroll(prop.key(), true));
                 }
-                holograms.put("plate_" + prop.key(), prop.label(), 0.75f, 220, PLATE_BG,
-                        propPlate(prop.key(), false), propPlate(prop.key(), true));
             }
             HubPortals.Gate duck = plugin.portals().duck();
             if (duck != null && duck.label() != null) {
-                holograms.put("duck", duck.label(), 0.9f, 200, PLATE_BG, duckPlate(false), duckPlate(true));
+                scrolls.put("duck", duck.label(), HubScrolls.Style.LIGHT, scroll("duck", false), scroll("duck", true));
             }
             return;
         }
@@ -159,7 +325,66 @@ public final class HubGuide {
         };
     }
 
+    public void refreshParkour() {
+        scrolls.text("parkour", scroll("parkour", false), scroll("parkour", true));
+    }
+
+    // ------------------------------------------------------------------ books (bell and spell book)
+
+    public void discordBook(Player player) {
+        boolean de = HubHolograms.german(player);
+        String url = plugin.hubNpcs().resolveDiscordInvite();
+        TextColor c = TextColor.color(0x3949AB);
+        Component link = url == null || url.isBlank()
+                ? Component.text(de ? "Die Einladung kommt bald." : "The invite is coming soon.", NamedTextColor.DARK_GRAY)
+                : Component.text(de ? "▸ Beitreten" : "▸ Join now", c, TextDecoration.BOLD, TextDecoration.UNDERLINED)
+                        .clickEvent(ClickEvent.openUrl(url))
+                        .hoverEvent(HoverEvent.showText(Component.text(url, NamedTextColor.GRAY)));
+        Component page = Component.text()
+                .append(Component.text("   ✦ DISCORD ✦", c, TextDecoration.BOLD)).append(nl())
+                .append(Component.text("  ─────────", NamedTextColor.GRAY))
+                .append(nl()).append(nl())
+                .append(Component.text(de
+                        ? "Neuigkeiten, Hilfe,\nBug-Reports und\nLeute zum Zocken:\nalles in unserem\nDiscord.\n\n"
+                        : "News, help, bug\nreports and people\nto play with: it is\nall in our Discord.\n\n", NamedTextColor.BLACK))
+                .append(Component.text("    ")).append(link).append(nl()).append(nl())
+                .append(Component.text(de ? "Läute die Glocke\njederzeit wieder." : "Ring the bell\nany time you like.",
+                        NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))
+                .build();
+        player.openBook(net.kyori.adventure.inventory.Book.book(Component.text("Discord"), Component.text("Aetherion"), page));
+    }
+
+    public void modpackBook(Player player) {
+        boolean de = HubHolograms.german(player);
+        ConfigurationSection links = plugin.getConfig().getConfigurationSection("modpack");
+        TextColor c = TextColor.color(0x2E7D32);
+        TextComponent.Builder b = Component.text()
+                .append(Component.text(de ? " ✦ ZAUBERBUCH ✦" : " ✦ SPELL BOOK ✦", c, TextDecoration.BOLD)).append(nl())
+                .append(Component.text("  ─────────", NamedTextColor.GRAY))
+                .append(nl()).append(nl())
+                .append(Component.text(de
+                        ? "Spiel mit normalem\nMinecraft 1.21.1 oder\nnimm unseren Launcher\nmit Mods und Shader.\n\n"
+                        : "Play on plain\nMinecraft 1.21.1, or\ntake our launcher with\nmods and shader.\n\n", NamedTextColor.BLACK));
+        String[][] keys = {{"github", "Launcher (GitHub)"}, {"modrinth", "Modrinth"}, {"curseforge", "CurseForge"},
+                {"shader", de ? "Shader AetherionLight" : "AetherionLight shader"}};
+        for (String[] k : keys) {
+            String url = links == null ? "" : links.getString(k[0], "");
+            if (url == null || url.isBlank()) {
+                continue;
+            }
+            b.append(Component.text(" ▸ ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(k[1], c, TextDecoration.UNDERLINED).clickEvent(ClickEvent.openUrl(url))
+                            .hoverEvent(HoverEvent.showText(Component.text(url, NamedTextColor.GRAY))))
+                    .append(nl());
+        }
+        player.openBook(net.kyori.adventure.inventory.Book.book(Component.text("Modpack"), Component.text("Aetherion"), b.build()));
+    }
+
     public void refreshDuck() {
+        if (gates()) {
+            scrolls.text("duck", scroll("duck", false), scroll("duck", true));
+            return;
+        }
         holograms.text("duck", duckPlate(false), duckPlate(true));
     }
 
@@ -176,6 +401,10 @@ public final class HubGuide {
     }
 
     public void refreshAetherionPlate() {
+        if (gates()) {
+            scrolls.text("plate_aetherion", scroll("aetherion", false), scroll("aetherion", true));
+            return;
+        }
         holograms.text("plate_aetherion", plate("aetherion", false), plate("aetherion", true));
     }
 
@@ -245,6 +474,11 @@ public final class HubGuide {
 
     private void refreshTop() {
         top = plugin.data().top(5);
+        if (gates()) {
+            scrolls.text("plate_pit", scroll("pit", false), scroll("pit", true));
+            scrolls.text("pit_board", scroll("pit_board", false), scroll("pit_board", true));
+            return;
+        }
         holograms.text("plate_pit", plate("pit", false), plate("pit", true));
         holograms.text("pit_board", pitBoard(false), pitBoard(true));
     }
@@ -290,6 +524,10 @@ public final class HubGuide {
                 Component.text(de ? "Willkommen im Hub" : "Welcome to the Hub", NamedTextColor.WHITE),
                 Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(2600), Duration.ofMillis(800))));
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 1.1f);
+        if (gates()) {
+            // a soft swirl of cherry petals around the newcomer
+            player.spawnParticle(org.bukkit.Particle.CHERRY_LEAVES, player.getLocation().add(0, 1.6, 0), 45, 1.4, 1.0, 1.4, 0);
+        }
         player.sendMessage(Component.empty());
         player.sendMessage(Component.text(" ").append(HubGlyphs.glyph(HubGlyphs.EMBLEM)).append(Component.space())
                 .append(gradient("Aetherion Hub", PURPLE, PINK).decorate(TextDecoration.BOLD))

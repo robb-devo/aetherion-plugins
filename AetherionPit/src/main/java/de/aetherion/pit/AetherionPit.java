@@ -29,6 +29,9 @@ public final class AetherionPit extends JavaPlugin {
     private HubGuide guide;
     private PitXpBarHud xpHud;
     private de.aetherion.pit.hub.HubPortals portals;
+    private de.aetherion.pit.hub.HubDecor decor;
+    private de.aetherion.pit.hub.HubParkour parkour;
+    private de.aetherion.pit.hub.HubSecrets secrets;
 
     @Override
     public void onEnable() {
@@ -42,6 +45,9 @@ public final class AetherionPit extends JavaPlugin {
         hubNpcs = new HubNpcService(this);
         guide = new HubGuide(this);
         portals = new de.aetherion.pit.hub.HubPortals(this);
+        decor = new de.aetherion.pit.hub.HubDecor(this);
+        parkour = new de.aetherion.pit.hub.HubParkour(this);
+        secrets = new de.aetherion.pit.hub.HubSecrets(this);
         xpHud = new PitXpBarHud(this);
         new de.aetherion.pit.hud.PitHealthHud(this);
         getServer().getPluginManager().registerEvents(new PitZoneListener(this), this);
@@ -228,6 +234,15 @@ public final class AetherionPit extends JavaPlugin {
             portals.saveFun();
             portals.removeFloaters();
         }
+        if (decor != null) {
+            decor.removeAll();
+        }
+        if (parkour != null) {
+            parkour.shutdown();
+        }
+        if (secrets != null) {
+            secrets.removeAll();
+        }
         if (data != null) {
             data.saveAll();
         }
@@ -268,5 +283,13 @@ public final class AetherionPit extends JavaPlugin {
 
     public de.aetherion.pit.hub.HubPortals portals() {
         return portals;
+    }
+
+    public de.aetherion.pit.hub.HubParkour parkour() {
+        return parkour;
+    }
+
+    public de.aetherion.pit.hub.HubSecrets secrets() {
+        return secrets;
     }
 }

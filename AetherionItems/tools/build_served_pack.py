@@ -62,6 +62,9 @@ COPY = (
     # Hub lobby glyphs (gen_hub_glyphs.py): emblem, station icons, drawn by AetherionPit on the hub.
     'assets/aetherion/font/hub.json',
     'assets/aetherion/textures/font/hub',
+    # Hub props (gen_hub_props.py): scrolls, lamps, signposts, ducklings, crystals; item displays on the hub.
+    'assets/aetherion/models/item/hub',
+    'assets/aetherion/textures/item/hub',
     # Vanilla screens in Aetherion stone and our recipe-book button (gen_vanilla_gui.py).
     'assets/minecraft/textures/gui/container',
     'assets/minecraft/textures/gui/recipe_book.png',
