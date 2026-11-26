@@ -75,10 +75,12 @@ public final class HubGuide {
                         NamedTextColor.WHITE)).append(nl())
                 .append(Component.text("- - - - - - -", NamedTextColor.DARK_GRAY)).append(nl())
                 .append(HubGlyphs.glyph(HubGlyphs.ISLAND)).append(Component.text(" Aetherion", PURPLE))
-                .append(Component.text(de ? ": das MMO, lila NPC geradeaus" : ": the MMO, purple NPC ahead", SOFT))
+                .append(Component.text(gates() ? (de ? ": das MMO, das große Sternentor" : ": the MMO, the big star gate")
+                        : (de ? ": das MMO, lila NPC geradeaus" : ": the MMO, purple NPC ahead"), SOFT))
                 .append(nl())
                 .append(HubGlyphs.glyph(HubGlyphs.SWORD)).append(Component.text(" The Pit", RED))
-                .append(Component.text(de ? ": PvP hinter der roten Linie" : ": PvP past the red line", SOFT))
+                .append(Component.text(gates() ? (de ? ": PvP-Insel, rotes Tor hinter dir" : ": PvP island, red gate behind you")
+                        : (de ? ": PvP hinter der roten Linie" : ": PvP past the red line"), SOFT))
                 .append(nl())
                 .append(HubGlyphs.glyph(HubGlyphs.CRAFT)).append(Component.text(" Modpack & Shader", GREEN))
                 .append(Component.text("  ", SOFT))
@@ -90,6 +92,20 @@ public final class HubGuide {
 
     /** One plate per station, just above the body (FancyNpcs shows no name tag). */
     public void placePlates() {
+        if (gates()) {
+            for (HubPortals.Gate gate : plugin.portals().gates()) {
+                if (gate.label() == null) {
+                    continue;
+                }
+                holograms.put("plate_" + gate.key(), gate.label(), gate.key().equals("aetherion") ? 1.6f : 0.95f,
+                        220, PLATE_BG, plate(gate.key(), false), plate(gate.key(), true));
+            }
+            HubPortals.Gate duck = plugin.portals().duck();
+            if (duck != null && duck.label() != null) {
+                holograms.put("duck", duck.label(), 0.9f, 200, PLATE_BG, duckPlate(false), duckPlate(true));
+            }
+            return;
+        }
         for (HubNpcService.Station station : HubNpcService.STATIONS) {
             Location at = plugin.hubNpcs().locationOf(station.key());
             if (at == null) {
@@ -101,11 +117,57 @@ public final class HubGuide {
         }
     }
 
+    private boolean gates() {
+        return plugin.portals() != null && plugin.portals().enabled();
+    }
+
+    public void refreshDuck() {
+        holograms.text("duck", duckPlate(false), duckPlate(true));
+    }
+
+    private Component duckPlate(boolean de) {
+        long n = plugin.portals() == null ? 0 : plugin.portals().quacks();
+        return Component.text()
+                .append(Component.text(de ? "Die Ente" : "The Duck", TextColor.color(0xFFD83B), TextDecoration.BOLD))
+                .append(nl())
+                .append(Component.text(String.format(java.util.Locale.ROOT, de ? "%,d-mal gedrückt" : "squeezed %,d times", n),
+                        SOFT)).append(nl())
+                .append(Component.text("> ", NamedTextColor.DARK_GRAY))
+                .append(Component.text(de ? "Klick sie an" : "Give it a click", TextColor.color(0xFFD83B)))
+                .build();
+    }
+
     public void refreshAetherionPlate() {
         holograms.text("plate_aetherion", plate("aetherion", false), plate("aetherion", true));
     }
 
     private Component plate(String key, boolean de) {
+        if (gates()) {
+            String walk = de ? "Durchgehen" : "Walk through";
+            return switch (key) {
+                case "aetherion" -> {
+                    int online = plugin.hubNpcs().aetherionOnline();
+                    String sub = online >= 0
+                            ? (de ? "Das MMO - " : "The MMO - ") + online + " online"
+                            : (de ? "Das MMO - Inseln, Quests, Bosse" : "The MMO - isles, quests, bosses");
+                    yield plate(HubGlyphs.ISLAND, gradient("AETHERION", PURPLE, PINK), sub, walk, PURPLE);
+                }
+                case "modpack" -> plate(HubGlyphs.CRAFT, Component.text("Modpack & Shader", GREEN),
+                        de ? "Launcher, Mods & AetherionLight" : "Launcher, mods & AetherionLight", walk, GREEN);
+                case "pit" -> {
+                    String sub = top.isEmpty()
+                            ? (de ? "PvP-Insel - Vanilla-Gear" : "PvP island - vanilla gear")
+                            : "#1 " + top.getFirst().name() + " - Lv " + top.getFirst().level();
+                    yield plate(HubGlyphs.SWORD, Component.text("THE PIT", RED), sub, walk, RED);
+                }
+                case "discord" -> plate(HubGlyphs.DISCORD, Component.text("Discord", BLUE),
+                        de ? "News, Hilfe & Bug-Reports" : "News, help & bug reports", walk, BLUE);
+                case "home" -> plate(HubGlyphs.EMBLEM, Component.text(de ? "Zurück zum Hub" : "Back to the Hub", PINK),
+                        de ? "Raus aus der Arena" : "Leave the arena", walk, PINK);
+                default -> plate(HubGlyphs.SHOP, Component.text(de ? "Pit-Shop" : "Pit Shop", GOLD),
+                        de ? "Ausrüstung für Kill-Gold" : "Gear for kill gold", walk, GOLD);
+            };
+        }
         return switch (key) {
             case "aetherion" -> {
                 int online = plugin.hubNpcs().aetherionOnline();
@@ -156,7 +218,8 @@ public final class HubGuide {
         TextComponent.Builder b = Component.text()
                 .append(HubGlyphs.glyph(HubGlyphs.SWORD)).append(Component.space())
                 .append(Component.text("THE PIT", RED, TextDecoration.BOLD)).append(nl())
-                .append(Component.text(de ? "PvP hinter der roten Linie - Vanilla-Gear"
+                .append(Component.text(gates() ? (de ? "PvP auf der ganzen Insel - Vanilla-Gear" : "PvP on the whole island - vanilla gear")
+                        : de ? "PvP hinter der roten Linie - Vanilla-Gear"
                         : "PvP past the red line - vanilla gear", NamedTextColor.WHITE)).append(nl())
                 .append(Component.text(de
                         ? "Kill: +" + killXp + " XP, +" + killGold + " Gold - Tod: -" + deathXp + " XP"
@@ -198,7 +261,8 @@ public final class HubGuide {
                         de ? "Zum MMO: Inseln, Quests, Bosse" : "To the MMO: isles, quests, bosses"))
                 .append(Component.space())
                 .append(button("The Pit", RED, "/pit enter",
-                        de ? "PvP-Arena hinter der roten Linie" : "PvP arena past the red line"))
+                        gates() ? (de ? "PvP-Insel hinter dem roten Tor" : "PvP island behind the red gate")
+                        : (de ? "PvP-Arena hinter der roten Linie" : "PvP arena past the red line")))
                 .append(Component.space())
                 .append(button("Modpack & Shader", GREEN, "/modpack",
                         de ? "Launcher, Mods und AetherionLight" : "Launcher, mods and AetherionLight"))
@@ -207,8 +271,10 @@ public final class HubGuide {
                         de ? "News, Hilfe und Bug-Reports" : "News, help and bug reports")));
         if (firstJoin) {
             player.sendMessage(Component.text(de
-                    ? " Neu hier? Geh zum lila NPC geradeaus, dort beginnt dein Abenteuer."
-                    : " New here? Walk to the purple NPC straight ahead, your adventure starts there.", SOFT));
+                    ? (gates() ? " Neu hier? Geh durch das große Sternentor geradeaus, dort beginnt dein Abenteuer."
+                            : " Neu hier? Geh zum lila NPC geradeaus, dort beginnt dein Abenteuer.")
+                    : (gates() ? " New here? Walk through the big star gate straight ahead, your adventure starts there."
+                            : " New here? Walk to the purple NPC straight ahead, your adventure starts there."), SOFT));
         }
         player.sendMessage(Component.empty());
     }
@@ -243,7 +309,8 @@ public final class HubGuide {
         player.playSound(at, Sound.ITEM_TRIDENT_RETURN, 0.8f, 0.8f);
         player.showTitle(Title.title(
                 Component.text("THE PIT", RED, TextDecoration.BOLD),
-                Component.text(de ? "Hinter der roten Linie ist PvP an" : "PvP is live past the red line", SOFT),
+                Component.text(gates() ? (de ? "Auf dieser Insel ist PvP an" : "PvP is live on this island")
+                        : (de ? "Hinter der roten Linie ist PvP an" : "PvP is live past the red line"), SOFT),
                 Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1800), Duration.ofMillis(600))));
     }
 

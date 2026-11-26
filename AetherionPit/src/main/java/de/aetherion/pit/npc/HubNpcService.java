@@ -76,6 +76,11 @@ public final class HubNpcService implements PluginMessageListener {
     }
 
     public void ensureAll() {
+        if (!plugin.getConfig().getBoolean("npcs-enabled", true)) {
+            // sky-isle hub: the star gates replace the station NPCs, only the plates stay
+            plugin.guide().placePlates();
+            return;
+        }
         int vis = plugin.getConfig().getInt("npc-visibility-distance", 64);
         for (Station station : STATIONS) {
             Location loc = locationOf(station.key());
