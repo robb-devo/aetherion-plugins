@@ -97,7 +97,7 @@ public final class HubDecor {
             Quaternionf q = yawQ(yaw);
             ItemDisplay post = itemDisplay(w, at, HubModels.LAMP_POST);
             post.setTransformation(new Transformation(new Vector3f(0, 0.5f * S, 0), q,
-                    new Vector3f(S, S, S), new Quaternionf()));
+                    new Vector3f(S, S, S), HubModels.flip()));
             parts.add(post);
             lantern = w.spawn(at, BlockDisplay.class, d -> {
                 d.setPersistent(false);
@@ -151,7 +151,7 @@ public final class HubDecor {
             float s = 1.3f;
             ItemDisplay post = itemDisplay(w, at, HubModels.SIGN_POST);
             post.setTransformation(new Transformation(new Vector3f(0, 0.5f * s, 0), new Quaternionf(),
-                    new Vector3f(s, s, s), new Quaternionf()));
+                    new Vector3f(s, s, s), HubModels.flip()));
             parts.add(post);
             float sb = 1.25f;
             for (Map<?, ?> b : boards) {
@@ -164,7 +164,7 @@ public final class HubDecor {
                 Vector3f pivot = new Vector3f(-0.5f, 2.4f / 16f - 0.5f, 0f).mul(sb).rotate(new Quaternionf(q));
                 Vector3f t = new Vector3f(0, hb, 0).sub(pivot);
                 ItemDisplay board = itemDisplay(w, at, HubModels.SIGN_BOARD);
-                board.setTransformation(new Transformation(t, q, new Vector3f(sb, sb, sb), new Quaternionf()));
+                board.setTransformation(new Transformation(t, q, new Vector3f(sb, sb, sb), HubModels.flip()));
                 parts.add(board);
                 String label = String.valueOf(b.get("text"));
                 Component c = Component.text(label, INK).decorate(TextDecoration.BOLD);

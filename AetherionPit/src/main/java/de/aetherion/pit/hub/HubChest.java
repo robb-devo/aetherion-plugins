@@ -42,7 +42,7 @@ import java.util.UUID;
 public final class HubChest implements Listener {
 
     public static final String TAG = "ae_hub_chest";
-    private static final float S = 1.35f;
+    private static final float S = 1.6f;
     private static final double OPEN_RADIUS = 6.0;
     private static final Material[] ORBIT = {Material.ENCHANTED_BOOK, Material.AMETHYST_SHARD, Material.COMPASS,
             Material.NETHER_STAR};
@@ -111,7 +111,7 @@ public final class HubChest implements Listener {
         World w = foot.getWorld();
         base = display(w, HubModels.item(HubModels.CHEST_BASE), true);
         base.setTransformation(new Transformation(new Vector3f(0, 0.5f * S, 0), face(), new Vector3f(S, S, S),
-                new Quaternionf()));
+                HubModels.flip()));
         lid = display(w, HubModels.item(HubModels.CHEST_LID), true);
         for (int i = 0; i < items.length; i++) {
             items[i] = display(w, new ItemStack(ORBIT[i]), false);
@@ -120,8 +120,8 @@ public final class HubChest implements Listener {
         hit = w.spawn(foot, Interaction.class, d -> {
             d.setPersistent(false);
             d.addScoreboardTag(TAG);
-            d.setInteractionWidth(1.35f);
-            d.setInteractionHeight(1.25f);
+            d.setInteractionWidth(1.6f);
+            d.setInteractionHeight(1.4f);
             d.setResponsive(true);
         });
         open = false;
@@ -167,7 +167,7 @@ public final class HubChest implements Listener {
         Quaternionf q = face().rotateX((float) Math.toRadians(-105f * k));
         lid.setInterpolationDelay(0);
         lid.setInterpolationDuration(duration);
-        lid.setTransformation(new Transformation(hinge, q, new Vector3f(S, S, S), new Quaternionf()));
+        lid.setTransformation(new Transformation(hinge, q, new Vector3f(S, S, S), HubModels.flip()));
     }
 
     /** k: 0 = tucked inside the chest, 1 = circling above it */
@@ -178,10 +178,10 @@ public final class HubChest implements Listener {
                 continue;
             }
             double a = Math.toRadians(tick * 6 + i * 90);
-            float r = 0.62f * k;
-            float y = 0.5f + (0.65f + 0.12f * (float) Math.sin(Math.toRadians(tick * 9 + i * 70))) * k;
+            float r = 0.72f * k;
+            float y = 0.55f + (0.95f + 0.14f * (float) Math.sin(Math.toRadians(tick * 9 + i * 70))) * k;
             Vector3f t = new Vector3f((float) Math.cos(a) * r, y, (float) Math.sin(a) * r);
-            float s = 0.05f + 0.38f * k;
+            float s = 0.05f + 0.5f * k;
             Quaternionf q = new Quaternionf().rotateY((float) Math.toRadians(-tick * 12 - i * 40));
             d.setInterpolationDelay(0);
             d.setInterpolationDuration(duration);

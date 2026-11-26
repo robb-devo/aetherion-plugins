@@ -103,9 +103,10 @@ public final class HubScrolls implements Listener {
             for (Component c : de.lines()) {
                 bodyPx = Math.max(bodyPx, width(c, false));
             }
-            float tw = titlePx * PX * TITLE_SCALE;
-            float bw = bodyPx * PX * bodyScale;
-            width = Math.max(1.5f, Math.max(tw, bw) + 2 * PAD_X);
+            // the width table is an estimate: 8 % more and a little extra keeps every line inside the paper
+            float tw = titlePx * PX * TITLE_SCALE * 1.08f;
+            float bw = bodyPx * PX * bodyScale * 1.08f;
+            width = Math.max(1.5f, Math.max(tw, bw) + 2 * PAD_X + 0.08f);
             titleH = LINE * TITLE_SCALE;
             bodyH = lines * LINE * bodyScale;
             height = PAD_TOP + titleH + (lines > 0 ? GAP + bodyH : 0) + PAD_BOTTOM;

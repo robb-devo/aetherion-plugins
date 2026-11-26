@@ -30,6 +30,14 @@ public final class HubModels {
     private HubModels() {
     }
 
+    /**
+     * Item displays draw their item turned half way round (the renderer adds a 180 degree turn about y). Use this
+     * as the right rotation of a display's transformation and the models stand exactly as they are drawn.
+     */
+    public static org.joml.Quaternionf flip() {
+        return new org.joml.Quaternionf().rotateY((float) Math.PI);
+    }
+
     public static ItemStack item(int code) {
         ItemStack stack = new ItemStack(BASE);
         ItemMeta meta = stack.getItemMeta();

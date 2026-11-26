@@ -26,7 +26,7 @@ GROUND = H.GROUND
 INFO = H.INFO
 EYE = GROUND + 1 + 1.75          # where a scroll's centre hangs: eye height of a standing player
 SPAWN = H3.SPAWN
-TIME = 12350                      # the sun on the horizon: warm light, and the lamps visibly glow
+TIME = 12550                      # the sun on the horizon: warm light, and the lamps visibly glow
 
 FLOWERS = [("poppy", 1), ("dandelion", 0.6), ("allium", 1.4), ("azure_bluet", 1.4), ("oxeye_daisy", 1.6),
            ("cornflower", 1.2), ("lily_of_the_valley", 1.4), ("pink_tulip", 1.2), ("white_tulip", 1.0)]
@@ -117,7 +117,7 @@ def owl_post(x, z):
             V.set(x + dx, GROUND + 1, z + dz, f)
     light(x, GROUND + 4, z, 15)
     INFO["owl"] = {"x": x + 0.5, "y": float(GROUND + 1), "z": z + 0.5, "yaw": 0.0}
-    return {"min": [x - 1, GROUND + 1, z - 1], "max": [x + 1, GROUND + 3, z + 1], "label": [x + 3.2, EYE, z + 1.8]}
+    return {"min": [x - 1, GROUND + 1, z - 1], "max": [x + 1, GROUND + 3, z + 1], "label": [x - 2.2, EYE, z + 1.0]}
 
 
 # ----------------------------------------------------------------------------- modpack: the tinkerer's chest
@@ -142,7 +142,7 @@ def chest_nook(x, z):
                                     "slot_2_occupied=true,slot_3_occupied=true,slot_4_occupied=true,slot_5_occupied=false]")
     light(x, GROUND + 3, z, 15)
     INFO["chest"] = {"x": x + 0.5, "y": float(GROUND + 1), "z": z + 0.5, "yaw": 0.0}
-    return {"min": [x - 2, GROUND + 1, z - 2], "max": [x + 2, GROUND + 2, z + 2], "label": [x + 3.6, EYE, z + 1.6]}
+    return {"min": [x - 2, GROUND + 1, z - 2], "max": [x + 2, GROUND + 2, z + 2], "label": [x + 4.7, EYE, z + 2.4]}
 
 
 # ----------------------------------------------------------------------------- Sky Brawl: gate on the island
@@ -175,11 +175,58 @@ def brawl_gate():
     for z in range(-1, 2):
         V.set(px - 1, fy, z, "waxed_oxidized_cut_copper" if z == 0 else "polished_deepslate")
         V.set(px - 2, fy, z, "polished_deepslate")
-    INFO["gate_brawl"] = {"min": [px - 1, fy + 1, -1], "max": [px, top, 1], "label": [px - 3.0, EYE, -3.6]}
+    INFO["gate_brawl"] = {"min": [px - 1, fy + 1, -1], "max": [px, top, 1], "label": [px - 4.0, EYE, -5.4]}
     return top
 
 
 # ----------------------------------------------------------------------------- Sky Brawl: the storm platform
+
+
+def _rock_column(x, z, top_y, depth, seed):
+    """one column of a floating storm rock, from top_y down; copper ore and calcite streaks, dripstone at the tip"""
+    depth = max(1, int(round(depth)))
+    for k in range(0, depth + 1):
+        y = top_y - k
+        r = float(rnd(x, y, z, seed))
+        if k <= 1:
+            s = "deepslate_tiles" if k == 0 else "deepslate"
+        elif r < 0.05:
+            s = "deepslate_copper_ore"
+        elif r < 0.16:
+            s = "calcite"
+        elif (y + (x + z) // 3) % 5 == 0:
+            s = "polished_tuff"
+        elif r < 0.55:
+            s = "tuff"
+        else:
+            s = "deepslate"
+        V.set(x, y, z, s)
+    if float(rnd(x, 3, z, seed)) < 0.12:
+        for k in range(1, 3):
+            V.set(x, top_y - depth - k, z, "pointed_dripstone[vertical_direction=down,thickness=%s,waterlogged=false]"
+                  % ("tip" if k == 2 else "frustum"))
+    elif float(rnd(x, 4, z, seed)) < 0.08:
+        V.set(x, top_y - depth - 1, z, "glow_lichen[down=false,up=true,north=false,south=false,east=false,west=false,waterlogged=false]")
+
+
+def storm_rock(cx, cz, top_y, r, depth, seed):
+    """a round floating rock that tapers to a point underneath (no straight cliff walls)"""
+    for x, z, d in disc_iter(cx, cz, r + 0.6):
+        edge = r + 0.9 * float(fbm(x, 0, z, 2.5, 2, seed))
+        if d > edge:
+            continue
+        k = max(0.0, 1.0 - d / max(edge, 0.5))
+        dd = 1 + depth * k ** 1.8 + 1.5 * float(fbm(x, 9, z, 4, 2, seed + 1))
+        _rock_column(x, z, top_y, dd, seed)
+
+
+def rect_rock(x0, z0, x1, z1, top_y, depth, seed):
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            de = min(x - x0, x1 - x, z - z0, z1 - z)
+            dd = 1 + (min(de, 7) / 7) ** 1.6 * depth + 1.2 * float(fbm(x, 9, z, 4, 2, seed))
+            _rock_column(x, z, top_y, dd, seed)
+
 
 BRAWL_C = (152, 0)
 BRAWL_Y = 60          # floor block y, players stand at 61
@@ -193,8 +240,7 @@ def brawl_arena():
         return fy + 0 * X
 
     # the disc
-    X, Z, inside, top, bottom = island(cx, cz, 11.6, 11.6, flat, 26, 4242, edge_noise=0.03)
-    underside_decor(X, Z, inside, top, bottom, 4242)
+    storm_rock(cx, cz, fy, 11.4, 20, 4242)
     for x, z, d in disc_iter(cx, cz, 11.4):
         a = math.degrees(math.atan2(z - cz, x - cx)) % 360
         ray = min(a % 45, 45 - a % 45) * math.pi / 180 * d < 0.6 and 1.8 < d < 9.0
@@ -224,15 +270,22 @@ def brawl_arena():
         px = round(cx + math.cos(math.radians(ang)) * dist)
         pz = round(cz + math.sin(math.radians(ang)) * dist)
         py = fy + dy
-        Xs, Zs, ins, tops, bots = island(px, pz, rr, rr, lambda X, Z, py=py: py + 0 * X, 12, 4300 + k, edge_noise=0.08)
-        underside_decor(Xs, Zs, ins, tops, bots, 4300 + k)
-        for x, z, d in disc_iter(px, pz, rr - 0.4):
+        storm_rock(px, pz, py, rr + 0.4, 10, 4300 + k)
+        for x, z, d in disc_iter(px, pz, rr + 0.8):
             if V.get(x, py, z) not in ("air", "cave_air"):
-                V.set(x, py, z, "calcite" if d < rr - 1.3 else "polished_deepslate")
+                V.set(x, py, z, "calcite" if d < rr - 1.2 else "polished_deepslate")
                 for y in range(py + 1, py + 8):
                     V.set(x, y, z, "air")
         V.set(px, py, pz, "waxed_copper_bulb[lit=true,powered=false]")
         V.set(px, py + 1, pz, "lightning_rod[facing=up,powered=false,waterlogged=false]")
+        # a little life on the rim: an amethyst cluster and a tuft of moss
+        ax, az = round(px + math.cos(math.radians(ang + 90)) * (rr - 1)), round(pz + math.sin(math.radians(ang + 90)) * (rr - 1))
+        if V.get(ax, py, az) not in ("air", "cave_air"):
+            V.set(ax, py + 1, az, "amethyst_cluster[facing=up,waterlogged=false]")
+        mx, mz = round(px + math.cos(math.radians(ang - 90)) * (rr - 1)), round(pz + math.sin(math.radians(ang - 90)) * (rr - 1))
+        if V.get(mx, py, mz) not in ("air", "cave_air"):
+            V.set(mx, py, mz, "moss_block")
+            V.set(mx, py + 1, mz, "moss_carpet")
         stones.append([px, py + 1, pz])
     # bridge from the lobby ledge to the disc
     for x in range(135, cx - 10):
@@ -243,8 +296,7 @@ def brawl_arena():
                 V.set(x, y, z, "air")
     # the lobby ledge: a safe little terrace with low walls, the way home and the board
     lx0, lx1, lz0, lz1 = 122, 134, -7, 7
-    Xl, Zl, insl, topl, botl = island(128, 0, 8.0, 9.5, flat, 14, 4400, edge_noise=0.05)
-    underside_decor(Xl, Zl, insl, topl, botl, 4400)
+    rect_rock(lx0, lz0, lx1, lz1, fy, 12, 4400)
     for x in range(lx0, lx1 + 1):
         for z in range(lz0, lz1 + 1):
             edge = x in (lx0, lx1) or z in (lz0, lz1)
@@ -310,11 +362,11 @@ def main(outdir, srcdir):
     book = chest_nook(8, -18)
     H.pond_and_duck(35, 12)
     INFO["shop_stall"] = H3.shop_stall(27, 18)
-    INFO["shop_stall"]["label"] = [24.6, EYE, 16.2]
+    INFO["shop_stall"]["label"] = [23.2, EYE, 18.6]
     brawl_gate()
     H3.aetherion_portal()
     ga = INFO["gate_aetherion"]
-    ga["label"] = [-16.5, GROUND + 3 + 1 + 1.75, -4.6]
+    ga["label"] = [-11.5, GROUND + 3 + 1 + 1.75, -3.6]
     INFO["prop_discord"] = disc
     INFO["prop_modpack"] = book
     for (x, z, tx, tz) in ((8, -4, 8, 0), (8, 4, 8, 0), (2, -4, 2, 0), (2, 4, 2, 0), (32, -3, 32, 0), (37, 3, 37, 0),
@@ -363,7 +415,7 @@ def main(outdir, srcdir):
     INFO["decor"] = H3.LAMPS + [{"type": "boat", "x": 31.5, "y": 64.6, "z": 15.5, "yaw": 30.0},
                                 {"type": "signpost", "x": 22.5, "y": float(GROUND + 1), "z": 4.5, "boards": signs}]
     INFO["welcome"] = [19.5, EYE + 0.25, -5.5]
-    INFO["duck"]["label"] = [29.4, EYE, 7.6]
+    INFO["duck"]["label"] = [34.0, EYE, 4.4]
     cp2 = INFO["parkour"]["checkpoints"][1]
     fin = INFO["parkour"]["finish"]
     st = INFO["brawl"]["stones"]

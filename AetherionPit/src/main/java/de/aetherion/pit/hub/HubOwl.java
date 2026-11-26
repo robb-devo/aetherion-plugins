@@ -42,8 +42,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class HubOwl implements Listener {
 
     public static final String TAG = "ae_hub_owl";
-    private static final float S = 1.0f;
-    private static final float O = 1.0f;
+    private static final float S = 0.85f;
+    private static final float O = 1.45f;
     private static final float BAR_TOP = 27.8f / 16f * S;
     private static final Color BLURPLE = Color.fromRGB(0x5865F2);
 
@@ -129,7 +129,7 @@ public final class HubOwl implements Listener {
             d.setPersistent(false);
             d.addScoreboardTag(TAG);
             d.setInteractionWidth(1.3f);
-            d.setInteractionHeight(2.75f);
+            d.setInteractionHeight(2.85f);
             d.setResponsive(true);
         });
     }
@@ -161,7 +161,7 @@ public final class HubOwl implements Listener {
         }
         d.setInterpolationDelay(0);
         d.setInterpolationDuration(duration);
-        d.setTransformation(new Transformation(t, q, new Vector3f(s, s, s), new Quaternionf()));
+        d.setTransformation(new Transformation(t, q, new Vector3f(s, s, s), HubModels.flip()));
     }
 
     /** head yaw/tilt relative to the body (degrees), wing spread (degrees outward), how fast */
@@ -311,7 +311,7 @@ public final class HubOwl implements Listener {
             d.setBrightness(new Display.Brightness(15, 15));
             d.setTeleportDuration(3);
             d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(0.6f, 0.6f, 0.6f),
-                    new Quaternionf()));
+                    HubModels.flip()));
         });
         int steps = 14;
         for (int i = 1; i <= steps; i++) {

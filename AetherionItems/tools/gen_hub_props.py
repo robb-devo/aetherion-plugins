@@ -493,19 +493,26 @@ def owl_perch():
 
 
 def chest_base():
-    """chest body, open top, centred on x/z, standing on y=0 (shown at the block centre)"""
+    """chest body, open at the top: the treasure inside glows (gold, a gem or two) and shows when the lid lifts"""
     W, T = '#w', '#t'
+    body = box([1, 0, 3], [15, 9, 13], W, uv=[0, 3, 16, 16])
+    del body['faces']['up']
     els = [
-        box([1, 0, 3], [15, 9, 13], W, uv=[0, 3, 16, 16]),
+        body,
         box([0.6, 0, 2.6], [1.6, 9.2, 3.6], T),
         box([14.4, 0, 2.6], [15.4, 9.2, 3.6], T),
         box([0.6, 0, 12.4], [1.6, 9.2, 13.4], T),
         box([14.4, 0, 12.4], [15.4, 9.2, 13.4], T),
-        # inner glow: the treasure inside
-        box([2, 7.6, 4], [14, 8.4, 12], '#i'),
+        box([1.6, 9, 3], [14.4, 9.4, 3.6], T),
+        box([1.6, 9, 12.4], [14.4, 9.4, 13], T),
+        box([1.2, 7.6, 3.4], [14.8, 8.5, 12.6], '#i'),
+        box([3.5, 8.5, 5], [5.3, 10.2, 6.8], '#a', rot={'angle': 22.5, 'axis': 'y', 'origin': [4.4, 9, 5.9]}),
+        box([10.2, 8.5, 8.6], [11.8, 9.8, 10.2], '#e', rot={'angle': -22.5, 'axis': 'y', 'origin': [11, 9, 9.4]}),
+        box([7, 8.5, 6], [9.4, 9.1, 8.4], T),
     ]
     return model({'w': 'aetherion:item/hub/chest_wood', 't': 'minecraft:block/gold_block',
-                  'i': 'minecraft:block/glowstone'}, els, particle='aetherion:item/hub/chest_wood')
+                  'i': 'minecraft:block/glowstone', 'a': 'minecraft:block/amethyst_block',
+                  'e': 'minecraft:block/emerald_block'}, els, particle='aetherion:item/hub/chest_wood')
 
 
 def chest_lid():

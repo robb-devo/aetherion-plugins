@@ -80,19 +80,19 @@ public enum BrawlEffect {
                     d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
                     d.setBrightness(new Display.Brightness(15, 15));
                     d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(0.05f, 0.05f, 0.05f),
-                            new Quaternionf()));
+                            HubModels.flip()));
                 });
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     duck.setInterpolationDelay(0);
                     duck.setInterpolationDuration(8);
                     duck.setTransformation(new Transformation(new Vector3f(0, 0.5f, 0),
-                            new Quaternionf().rotateY((float) Math.PI), new Vector3f(1.1f, 1.1f, 1.1f), new Quaternionf()));
+                            new Quaternionf().rotateY((float) Math.PI), new Vector3f(1.1f, 1.1f, 1.1f), HubModels.flip()));
                 }, 2L);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     duck.setInterpolationDelay(0);
                     duck.setInterpolationDuration(10);
                     duck.setTransformation(new Transformation(new Vector3f(0, 1.6f, 0),
-                            new Quaternionf().rotateY((float) Math.PI * 3), new Vector3f(0.05f, 0.05f, 0.05f), new Quaternionf()));
+                            new Quaternionf().rotateY((float) Math.PI * 3), new Vector3f(0.05f, 0.05f, 0.05f), HubModels.flip()));
                 }, 30L);
                 Bukkit.getScheduler().runTaskLater(plugin, duck::remove, 42L);
             }
