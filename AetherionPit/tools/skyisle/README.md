@@ -14,3 +14,17 @@ Building the world: a Paper 1.21.1 server with the hub's void generator settings
 `world/generated/minecraft/structures/`, `forceload add -103 -90 180 91`, `place template minecraft:skyisle -103 -7 -90`,
 gamerules (no daylight cycle, time 11500, randomTickSpeed 0, no mob spawning, no fire tick), a few minutes for the
 waterfalls and lava falls, then stop and pack the world folder.
+
+## Round 2 (same night, after Robb's feedback)
+
+Smaller island around three free-to-use builds by SkyblockSquad from Planet Minecraft ("free to use anywhere"):
+Elven Shrine, Elven Tower, Elven House (downloaded from the authors' Google Drive mirrors linked on the PMC pages).
+Only two portals (Aetherion at the end of the shrine bridge, The Pit at the east edge, both normal size).
+Discord = the bell, Modpack = the spell book at the tower, Pit-Shop = barrels etc. in the elven house.
+Floating displays (crystals, sword, book, lanterns) are animated by AetherionPit (`floaters`).
+
+- `gen_hub2.py <outdir> <dir with shrine.bin tower.bin house.bin>` builds `hub_base`, one template per build
+  (kept at the schematic's DataVersion so vanilla upgrades states and block entities), `hub_overlay`, and
+  `hub2.json` with the `place template` commands (tower `counterclockwise_90`, house `180`).
+- `patch_hub2.py <hub dir> <hub2.json>` patches AetherionPit (spawn, safe zone, boards, portals, props, duck,
+  floaters) and the WorldGuard `hub_safe` box.

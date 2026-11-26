@@ -226,6 +226,7 @@ public final class AetherionPit extends JavaPlugin {
         }
         if (portals != null) {
             portals.saveFun();
+            portals.removeFloaters();
         }
         if (data != null) {
             data.saveAll();

@@ -101,8 +101,10 @@ public final class HubPortals implements Listener {
         this.fun = YamlConfiguration.loadConfiguration(funFile);
         this.quacks = fun.getLong("duck.quacks", 0L);
         load();
+        loadFloaters();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         Bukkit.getScheduler().runTaskTimer(plugin, this::sparkle, 40L, 6L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::animateFloaters, 60L, 40L);
         Bukkit.getScheduler().runTaskTimer(plugin, this::saveFun, 6000L, 6000L);
     }
 
@@ -147,6 +149,164 @@ public final class HubPortals implements Listener {
                 ? read("duck", plugin.getConfig().getConfigurationSection("duck")) : null;
         voidCatch = plugin.getConfig().getBoolean("void-catch.enabled", false);
         voidY = plugin.getConfig().getDouble("void-catch.y", 0.0);
+        props.clear();
+        propBlocks.clear();
+        ConfigurationSection ps = plugin.getConfig().getConfigurationSection("props");
+        if (ps != null) {
+            for (String key : ps.getKeys(false)) {
+                ConfigurationSection p = ps.getConfigurationSection(key);
+                Gate prop = read(key.toLowerCase(Locale.ROOT), p);
+                if (prop == null) {
+                    continue;
+                }
+                props.add(prop);
+                java.util.Set<Material> mats = new java.util.HashSet<>();
+                for (String m : p.getStringList("blocks")) {
+                    Material mat = Material.matchMaterial(m);
+                    if (mat != null) {
+                        mats.add(mat);
+                    }
+                }
+                propBlocks.put(prop.key(), mats);
+            }
+        }
+    }
+
+    private final List<Gate> props = new ArrayList<>();
+    private final Map<String, java.util.Set<Material>> propBlocks = new HashMap<>();
+
+    public List<Gate> props() {
+        return props;
+    }
+
+    // ------------------------------------------------------------------ props: bell, spell book, shop
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPropClick(PlayerInteractEvent event) {
+        if (props.isEmpty() || event.getClickedBlock() == null || event.getHand() == EquipmentSlot.OFF_HAND
+                || event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK) {
+            return;
+        }
+        Block b = event.getClickedBlock();
+        for (Gate prop : props) {
+            if (!prop.contains(b.getLocation())) {
+                continue;
+            }
+            java.util.Set<Material> mats = propBlocks.get(prop.key());
+            if (mats != null && !mats.isEmpty() && !mats.contains(b.getType())) {
+                return;
+            }
+            Player player = event.getPlayer();
+            if (prop.key().equals("discord")) {
+                // the bell may ring by itself; the sound makes sure it does even when the hub blocks interaction
+                if (event.isCancelled() || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                    b.getWorld().playSound(b.getLocation().add(0.5, 0.5, 0.5), Sound.BLOCK_BELL_USE, 1.2f, 1.0f);
+                }
+            } else {
+                event.setCancelled(true);
+            }
+            if (onCooldown(player, "prop:" + prop.key(), 1500L)) {
+                return;
+            }
+            switch (prop.key()) {
+                case "discord" -> plugin.hubNpcs().openDiscord(player);
+                case "modpack" -> {
+                    player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
+                    b.getWorld().spawnParticle(Particle.ENCHANT, b.getLocation().add(0.5, 1.4, 0.5), 40, 0.6, 0.5, 0.6, 0.6);
+                    plugin.guide().modpackCard(player);
+                }
+                case "shop" -> {
+                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 0.8f, 1.0f);
+                    Bukkit.getScheduler().runTask(plugin, () -> PitShopGUI.open(player));
+                }
+                default -> {
+                }
+            }
+            return;
+        }
+    }
+
+    // ------------------------------------------------------------------ floaters: slow animated displays
+
+    private record Floater(boolean item, Material material, Location at, float scale, float bob, float spin, float tilt) {
+    }
+
+    private final List<Floater> floaters = new ArrayList<>();
+    private final Map<Integer, org.bukkit.entity.Display> floaterEntities = new HashMap<>();
+    private int floaterStep;
+
+    private void loadFloaters() {
+        floaters.clear();
+        for (Map<?, ?> m : plugin.getConfig().getMapList("floaters")) {
+            try {
+                World w = Bukkit.getWorld(String.valueOf(m.containsKey("world") ? m.get("world") : "world"));
+                Material mat = Material.matchMaterial(String.valueOf(m.get("material")));
+                if (w == null || mat == null) {
+                    continue;
+                }
+                Location at = new Location(w, num(m, "x", 0), num(m, "y", 64), num(m, "z", 0));
+                floaters.add(new Floater("item".equals(String.valueOf(m.get("type"))), mat, at,
+                        (float) num(m, "scale", 1), (float) num(m, "bob", 0.25), (float) num(m, "spin", 90),
+                        (float) num(m, "tilt", 0)));
+            } catch (RuntimeException ex) {
+                plugin.getLogger().warning("Bad floater " + m + ": " + ex.getMessage());
+            }
+        }
+    }
+
+    private static double num(Map<?, ?> m, String k, double def) {
+        Object v = m.get(k);
+        return v instanceof Number n ? n.doubleValue() : def;
+    }
+
+    private void animateFloaters() {
+        floaterStep++;
+        for (int i = 0; i < floaters.size(); i++) {
+            Floater f = floaters.get(i);
+            World w = f.at().getWorld();
+            if (!w.isChunkLoaded(f.at().getBlockX() >> 4, f.at().getBlockZ() >> 4)) {
+                continue;
+            }
+            org.bukkit.entity.Display d = floaterEntities.get(i);
+            if (d == null || !d.isValid()) {
+                d = f.item()
+                        ? w.spawn(f.at(), org.bukkit.entity.ItemDisplay.class, e -> {
+                            e.setItemStack(new org.bukkit.inventory.ItemStack(f.material()));
+                            e.setPersistent(false);
+                        })
+                        : w.spawn(f.at(), org.bukkit.entity.BlockDisplay.class, e -> {
+                            e.setBlock(f.material().createBlockData());
+                            e.setPersistent(false);
+                        });
+                d.setBrightness(new org.bukkit.entity.Display.Brightness(15, 15));
+                d.setViewRange(1.5f);
+                floaterEntities.put(i, d);
+            }
+            float angle = (float) Math.toRadians(f.spin() * floaterStep + i * 37);
+            float y = (floaterStep % 2 == 0 ? 1 : -1) * f.bob();
+            org.joml.Quaternionf q = new org.joml.Quaternionf().rotateY(angle).rotateX((float) Math.toRadians(f.tilt()))
+                    .rotateZ((float) Math.toRadians(f.tilt()));
+            org.joml.Vector3f t;
+            if (f.item()) {
+                t = new org.joml.Vector3f(0, y, 0);
+            } else {
+                float h = f.scale() * 0.5f;
+                t = new org.joml.Vector3f(h, h, h).rotate(q).negate().add(0, y, 0);
+            }
+            d.setInterpolationDelay(0);
+            d.setInterpolationDuration(40);
+            d.setTransformation(new org.bukkit.util.Transformation(t, q,
+                    new org.joml.Vector3f(f.scale(), f.scale(), f.scale()), new org.joml.Quaternionf()));
+        }
+    }
+
+    public void removeFloaters() {
+        floaterEntities.values().forEach(e -> {
+            if (e.isValid()) {
+                e.remove();
+            }
+        });
+        floaterEntities.clear();
     }
 
     private Gate read(String key, ConfigurationSection g) {
