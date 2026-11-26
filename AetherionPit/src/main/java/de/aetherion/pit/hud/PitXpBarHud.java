@@ -13,7 +13,7 @@ public final class PitXpBarHud {
 
     public PitXpBarHud(AetherionPit plugin) {
         this.plugin = plugin;
-        Bukkit.getScheduler().runTaskTimer(plugin, this::tickAll, 40L, 40L);
+        // 2026-11-27: the Pit is gone (Sky Brawl); the XP bar is left alone on the hub.
     }
 
     public void sync(Player player) {

@@ -32,6 +32,16 @@ CODES = {
     'sign_post': 8107,
     'rune_ring': 8108,
     'scroll_paper_dark': 8109,
+    # round 4 (2026-11-27): the Discord owl post, the tinkerer's chest (modpack), the storm orb (Sky Brawl)
+    'owl_body': 8110,
+    'owl_head': 8111,
+    'owl_head_blink': 8112,
+    'owl_wing': 8113,
+    'envelope': 8114,
+    'owl_perch': 8115,
+    'chest_base': 8116,
+    'chest_lid': 8117,
+    'storm_orb': 8118,
 }
 
 
@@ -230,11 +240,310 @@ def rune_ring():
     return model({'g': g, 's': s}, els, particle=g)
 
 
+# ----------------------------------------------------------------------------- round 4 textures (painted, 16 px)
+
+BLURPLE = (88, 101, 242)
+BLURPLE_D = (61, 70, 178)
+BLURPLE_DD = (42, 47, 128)
+BLURPLE_L = (138, 148, 250)
+LAVENDER = (206, 210, 252)
+
+
+def _img(size=16, fill=(0, 0, 0, 0)):
+    img = Image.new('RGBA', (size, size), fill)
+    return img, img.load()
+
+
+def _save(img, name):
+    os.makedirs(TEX, exist_ok=True)
+    img.save(os.path.join(TEX, name + '.png'))
+
+
+def owl_feather(seed=21):
+    """blurple plumage: scalloped feather rows, darker tips, a few light flecks"""
+    rng = random.Random(seed)
+    img, px = _img()
+    for y in range(16):
+        row = y // 3
+        for x in range(16):
+            off = (row % 2) * 2
+            u = (x + off) % 4
+            tip = (y % 3 == 2) and u in (1, 2)
+            edge = (y % 3 == 2)
+            c = BLURPLE_D if edge else BLURPLE
+            if tip:
+                c = BLURPLE_DD
+            if (y % 3 == 0) and u == 1:
+                c = BLURPLE_L
+            n = rng.randint(-6, 6)
+            px[x, y] = tuple(max(0, min(255, v + n)) for v in c) + (255,)
+    for _ in range(5):
+        x, y = rng.randrange(16), rng.randrange(16)
+        px[x, y] = LAVENDER + (255,)
+    _save(img, 'owl_feather')
+
+
+def owl_belly(seed=22):
+    """pale chest with small dark chevrons"""
+    rng = random.Random(seed)
+    img, px = _img()
+    for y in range(16):
+        for x in range(16):
+            n = rng.randint(-5, 5)
+            px[x, y] = tuple(max(0, min(255, v + n)) for v in LAVENDER) + (255,)
+    for cy in range(2, 16, 4):
+        for cx in range((cy // 4) % 2 * 2 + 1, 16, 4):
+            for dx, dy in ((-1, 0), (0, 1), (1, 0)):
+                x, y = cx + dx, cy + dy
+                if 0 <= x < 16 and 0 <= y < 16:
+                    px[x, y] = BLURPLE_D + (255,)
+    _save(img, 'owl_belly')
+
+
+def owl_face(blink=False):
+    """facial disk with two big golden eyes (or closed lids), a dark rim, beak space in the middle"""
+    img, px = _img()
+    for y in range(16):
+        for x in range(16):
+            # heart-shaped disk: two circles side by side
+            d = min(((x - 4.5) ** 2 + (y - 7.5) ** 2) ** 0.5, ((x - 11.5) ** 2 + (y - 7.5) ** 2) ** 0.5)
+            if d < 4.4:
+                c = (244, 244, 255)
+            elif d < 5.6:
+                c = (190, 196, 248)
+            else:
+                c = BLURPLE
+            px[x, y] = c + (255,)
+    for ex in (4.5, 11.5):
+        xs = range(int(ex - 3.5), int(ex + 4.5))
+        if blink:
+            for x in range(int(ex - 2), int(ex + 3)):
+                px[x, 8] = (40, 34, 60, 255)
+            px[int(ex - 2.5), 7] = (40, 34, 60, 255)
+            px[int(ex + 2.5), 7] = (40, 34, 60, 255)
+            continue
+        for y in range(4, 12):
+            for x in xs:
+                if not 0 <= x < 16:
+                    continue
+                d = ((x + 0.5 - (ex + 0.5)) ** 2 + (y + 0.5 - 8.0) ** 2) ** 0.5
+                if d < 1.2:
+                    px[x, y] = (18, 14, 26, 255)
+                elif d < 2.5:
+                    px[x, y] = (255, 190, 44, 255)
+                elif d < 3.2:
+                    px[x, y] = (150, 84, 18, 255)
+        px[int(ex) - 1, 6] = (255, 255, 255, 255)
+    _save(img, 'owl_face_blink' if blink else 'owl_face')
+
+
+def owl_misc():
+    """left half beak/claw horn, right half the blurple wax and a darker feather for tufts"""
+    img, px = _img()
+    for y in range(16):
+        for x in range(16):
+            if x < 8:
+                c = (232, 168, 58) if y < 8 else (64, 54, 70)
+            else:
+                c = BLURPLE_DD if y < 8 else (120, 130, 248)
+            px[x, y] = c + (255,)
+    _save(img, 'owl_misc')
+
+
+def envelope_tex():
+    img, px = _img()
+    for y in range(16):
+        for x in range(16):
+            c = (246, 236, 212)
+            if y in (0, 15) or x in (0, 15):
+                c = (214, 196, 158)
+            # flap lines from the top corners to the middle
+            if abs((y - 1) - abs(x - 7.5) * 0.9) < 0.6 and y < 9:
+                c = (200, 180, 140)
+            px[x, y] = c + (255,)
+    for y in range(7, 12):
+        for x in range(6, 10):
+            d = ((x - 7.5) ** 2 + (y - 9) ** 2) ** 0.5
+            if d < 2.3:
+                px[x, y] = (BLURPLE if d < 1.5 else BLURPLE_D) + (255,)
+    _save(img, 'envelope')
+
+
+def chest_tex():
+    """warm planks with dark seams, gold bands and corner studs; the lid gets a lock plate"""
+    rng = random.Random(31)
+    for name, lock in (('chest_wood', False), ('chest_lid', True)):
+        img, px = _img()
+        for y in range(16):
+            for x in range(16):
+                plank = y // 4
+                base = (150, 96, 52) if plank % 2 == 0 else (138, 86, 46)
+                n = rng.randint(-8, 8)
+                c = tuple(max(0, min(255, v + n)) for v in base)
+                if y % 4 == 3:
+                    c = (84, 50, 26)
+                if x in (0, 15) or y in (0, 15):
+                    c = (212, 164, 64)
+                if (x in (1, 14)) and (y in (1, 14)):
+                    c = (255, 226, 130)
+                px[x, y] = c + (255,)
+        if lock:
+            for y in range(10, 16):
+                for x in range(6, 10):
+                    px[x, y] = (226, 182, 80, 255) if (x in (6, 9) or y in (10, 15)) else (196, 150, 58, 255)
+            px[7, 12] = px[8, 12] = (40, 26, 16, 255)
+            px[7, 13] = (40, 26, 16, 255)
+        _save(img, name)
+
+
+def storm_tex():
+    rng = random.Random(41)
+    img, px = _img()
+    for y in range(16):
+        for x in range(16):
+            d = ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5
+            swirl = (x * 3 + y * 5 + int(d * 4)) % 7
+            c = (120, 236, 255) if swirl < 2 else ((60, 160, 220) if swirl < 5 else (210, 252, 255))
+            n = rng.randint(-10, 10)
+            px[x, y] = tuple(max(0, min(255, v + n)) for v in c) + (255,)
+    _save(img, 'storm')
+
+
+# ----------------------------------------------------------------------------- round 4 models
+
+def face_box(frm, to, tex_all, faces_override=None, rot=None):
+    """box with per-face textures: faces_override maps face -> (texture, uv or None)"""
+    e = box(frm, to, tex_all, rot=rot)
+    for face, (tex, uv) in (faces_override or {}).items():
+        e['faces'][face] = {'texture': tex, 'uv': list(uv) if uv else _uv(frm, to, face)}
+    return e
+
+
+def owl_body():
+    """the body around the model centre; front = south (+z). Feet grip at y=0."""
+    F, B, M = '#f', '#b', '#m'
+    els = [
+        face_box([4, 1, 5], [12, 10, 11], F, {'south': (B, [2, 1, 14, 15])}),
+        face_box([4.6, 9.5, 5.4], [11.4, 11.5, 10.6], F),
+        # tail fan behind
+        face_box([5.5, 0, 3.6], [10.5, 4.5, 5], F, rot={'angle': -22.5, 'axis': 'x', 'origin': [8, 4, 5]}),
+        # talons gripping the perch
+        face_box([5, 0, 8.6], [7, 1, 11.4], M, {f: (M, [1, 9, 7, 15]) for f in ('north', 'south', 'east', 'west', 'up', 'down')}),
+        face_box([9, 0, 8.6], [11, 1, 11.4], M, {f: (M, [1, 9, 7, 15]) for f in ('north', 'south', 'east', 'west', 'up', 'down')}),
+    ]
+    return model({'f': 'aetherion:item/hub/owl_feather', 'b': 'aetherion:item/hub/owl_belly',
+                  'm': 'aetherion:item/hub/owl_misc'}, els, particle='aetherion:item/hub/owl_feather')
+
+
+def owl_head(blink=False):
+    """pivot at the neck = model centre (8, 8, 8); the face looks south (+z)"""
+    F, K, M = '#f', '#k', '#m'
+    els = [
+        face_box([3.5, 8, 4.5], [12.5, 15, 11.5], F, {'south': (K, [0, 1, 16, 15])}),
+        # ear tufts
+        face_box([3.6, 14.5, 7], [5.6, 17.5, 9], F, {f: ('#m', [9, 1, 15, 7]) for f in ('north', 'south', 'east', 'west', 'up')},
+                 rot={'angle': 22.5, 'axis': 'z', 'origin': [4.6, 15, 8]}),
+        face_box([10.4, 14.5, 7], [12.4, 17.5, 9], F, {f: ('#m', [9, 1, 15, 7]) for f in ('north', 'south', 'east', 'west', 'up')},
+                 rot={'angle': -22.5, 'axis': 'z', 'origin': [11.4, 15, 8]}),
+        # beak
+        face_box([7.3, 9.6, 11.4], [8.7, 11.4, 12.4], M, {f: (M, [1, 1, 7, 7]) for f in ('north', 'south', 'east', 'west', 'up', 'down')}),
+    ]
+    face = 'aetherion:item/hub/owl_face_blink' if blink else 'aetherion:item/hub/owl_face'
+    return model({'f': 'aetherion:item/hub/owl_feather', 'k': face, 'm': 'aetherion:item/hub/owl_misc'}, els,
+                 particle='aetherion:item/hub/owl_feather')
+
+
+def owl_wing():
+    """one wing hanging from the shoulder at the model centre; flapping rotates it about z"""
+    els = [
+        face_box([7.4, 1.5, 5.4], [8.6, 8.4, 10.6], '#f', {'east': ('#b', [3, 2, 13, 14])}),
+        face_box([7.5, 0, 6.2], [8.5, 1.6, 9.6], '#f'),
+    ]
+    return model({'f': 'aetherion:item/hub/owl_feather', 'b': 'aetherion:item/hub/owl_belly'}, els,
+                 particle='aetherion:item/hub/owl_feather')
+
+
+def envelope():
+    e = box([3, 4.5, 7.8], [13, 11.5, 8.2], '#e', uv=[0, 0, 16, 16], shade=False)
+    return model({'e': 'aetherion:item/hub/envelope'}, [e])
+
+
+def owl_perch():
+    """falconer's perch: stone foot, dark post, birch cross bar wrapped in rope, a little letter box"""
+    st, po, bar, rope, gold = '#s', '#p', '#c', '#r', '#g'
+    els = [
+        box([3, 0, 3], [13, 2, 13], st),
+        box([4.5, 2, 4.5], [11.5, 3, 11.5], st),
+        box([7, 3, 7], [9, 26, 9], po, uv=[6, 0, 8, 16]),
+        box([6.6, 12, 6.6], [9.4, 13, 9.4], gold),
+        box([0, 26, 7.1], [16, 27.8, 8.9], bar, uv=[0, 6, 16, 8]),
+        box([3.6, 25.8, 6.9], [5.0, 28.0, 9.1], rope),
+        box([11.0, 25.8, 6.9], [12.4, 28.0, 9.1], rope),
+        box([6.8, 25.6, 6.8], [9.2, 28.2, 9.2], gold),
+        # letter box hanging on the post, letters peeking out
+        box([5.2, 15, 9], [10.8, 20, 12.4], po),
+        box([5.0, 19.8, 8.8], [11.0, 20.6, 12.6], gold),
+        face_box([6.2, 20.6, 10.0], [7.8, 22.6, 10.4], '#e', {f: ('#e', [2, 2, 14, 14]) for f in ('north', 'south')}),
+        face_box([8.4, 20.6, 10.6], [9.8, 22.0, 11.0], '#e', {f: ('#e', [2, 2, 14, 14]) for f in ('north', 'south')}),
+    ]
+    return model({'s': 'minecraft:block/polished_deepslate', 'p': 'minecraft:block/stripped_dark_oak_log',
+                  'c': 'minecraft:block/stripped_birch_log', 'r': 'minecraft:block/stripped_bamboo_block',
+                  'g': 'minecraft:block/gold_block', 'e': 'aetherion:item/hub/envelope'}, els,
+                 particle='minecraft:block/stripped_dark_oak_log')
+
+
+def chest_base():
+    """chest body, open top, centred on x/z, standing on y=0 (shown at the block centre)"""
+    W, T = '#w', '#t'
+    els = [
+        box([1, 0, 3], [15, 9, 13], W, uv=[0, 3, 16, 16]),
+        box([0.6, 0, 2.6], [1.6, 9.2, 3.6], T),
+        box([14.4, 0, 2.6], [15.4, 9.2, 3.6], T),
+        box([0.6, 0, 12.4], [1.6, 9.2, 13.4], T),
+        box([14.4, 0, 12.4], [15.4, 9.2, 13.4], T),
+        # inner glow: the treasure inside
+        box([2, 7.6, 4], [14, 8.4, 12], '#i'),
+    ]
+    return model({'w': 'aetherion:item/hub/chest_wood', 't': 'minecraft:block/gold_block',
+                  'i': 'minecraft:block/glowstone'}, els, particle='aetherion:item/hub/chest_wood')
+
+
+def chest_lid():
+    """the lid hinged at the back edge = model centre (8, 8, 8); closed it covers z 3..13 towards +z"""
+    L = '#l'
+    els = [
+        face_box([1, 8, 8], [15, 12, 18], L, {'south': (L, [0, 4, 16, 16]), 'up': (L, [0, 0, 16, 16])}),
+        box([0.6, 7.8, 7.6], [1.6, 12.4, 18.4], '#t'),
+        box([14.4, 7.8, 7.6], [15.4, 12.4, 18.4], '#t'),
+    ]
+    return model({'l': 'aetherion:item/hub/chest_lid', 't': 'minecraft:block/gold_block'}, els,
+                 particle='aetherion:item/hub/chest_lid')
+
+
+def storm_orb():
+    s = '#s'
+    els = [
+        box([4, 4, 4], [12, 12, 12], s, rot={'angle': 45, 'axis': 'y', 'origin': [8, 8, 8]}),
+        box([5, 5, 5], [11, 11, 11], s, rot={'angle': 45, 'axis': 'x', 'origin': [8, 8, 8]}),
+        box([6.5, 1, 6.5], [9.5, 15, 9.5], '#c', rot={'angle': 45, 'axis': 'y', 'origin': [8, 8, 8]}),
+    ]
+    return model({'s': 'aetherion:item/hub/storm', 'c': 'minecraft:block/sea_lantern'}, els,
+                 particle='aetherion:item/hub/storm')
+
+
 def main():
     os.makedirs(MODELS, exist_ok=True)
     os.makedirs(TEX, exist_ok=True)
     parchment(os.path.join(TEX, 'parchment.png'))
     parchment(os.path.join(TEX, 'parchment_dark.png'), dark=True, seed=11)
+    owl_feather()
+    owl_belly()
+    owl_face()
+    owl_face(blink=True)
+    owl_misc()
+    envelope_tex()
+    chest_tex()
+    storm_tex()
     models = {
         'scroll_paper': scroll_paper(),
         'scroll_paper_dark': scroll_paper(dark=True),
@@ -245,6 +554,15 @@ def main():
         'duckling': duckling(),
         'crystal': crystal(),
         'rune_ring': rune_ring(),
+        'owl_body': owl_body(),
+        'owl_head': owl_head(),
+        'owl_head_blink': owl_head(blink=True),
+        'owl_wing': owl_wing(),
+        'envelope': envelope(),
+        'owl_perch': owl_perch(),
+        'chest_base': chest_base(),
+        'chest_lid': chest_lid(),
+        'storm_orb': storm_orb(),
     }
     for name, m in models.items():
         with open(os.path.join(MODELS, name + '.json'), 'w', encoding='utf-8', newline='\n') as f:

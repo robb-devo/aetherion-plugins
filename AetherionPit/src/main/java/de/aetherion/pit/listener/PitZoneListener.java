@@ -54,7 +54,9 @@ public final class PitZoneListener implements Listener {
             if (!player.isOnline()) {
                 return;
             }
-            plugin.xpHud().sync(player);
+            player.setLevel(0);
+            player.setExp(0f);
+            stripPitStarter(player);
             player.removePotionEffect(PotionEffectType.SPEED);
             plugin.guide().welcome(player, firstJoin);
         }, 40L);
@@ -69,31 +71,19 @@ public final class PitZoneListener implements Listener {
         wasSafe.put(event.getPlayer().getUniqueId(), true);
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onMove(PlayerMoveEvent event) {
-        if (event.getTo() == null) {
-            return;
-        }
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
-                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
-            return;
-        }
-        Player player = event.getPlayer();
-        if (!plugin.safeZone().isPitWorld(player.getWorld())) {
-            return;
-        }
-        boolean safe = plugin.safeZone().isSafe(event.getTo());
-        Boolean previous = wasSafe.put(player.getUniqueId(), safe);
-        if (previous != null && previous == safe) {
-            return;
-        }
-        if (safe) {
-            de.aetherion.pit.util.Msg.send(player, plugin.getConfig().getString("messages.enter-safe",
-                    "&aSafe spawn &7- no PvP inside the red line."));
-        } else {
-            de.aetherion.pit.util.Msg.send(player, plugin.getConfig().getString("messages.enter-pit",
-                    "&cPit &7- PvP is live out here."));
-            giveCombatStarterIfNaked(player);
+    /** The old Pit's unbreakable starter kit (wood sword, leather) has no use on the hub any more (11-27). */
+    private static void stripPitStarter(Player player) {
+        PlayerInventory inv = player.getInventory();
+        ItemStack[] all = inv.getContents();
+        for (int i = 0; i < all.length; i++) {
+            ItemStack it = all[i];
+            if (it == null || !it.hasItemMeta() || !it.getItemMeta().isUnbreakable() || it.getItemMeta().hasDisplayName()) {
+                continue;
+            }
+            Material m = it.getType();
+            if (m == Material.WOODEN_SWORD || m == Material.LEATHER_CHESTPLATE || m == Material.LEATHER_BOOTS) {
+                inv.setItem(i, null);
+            }
         }
     }
 

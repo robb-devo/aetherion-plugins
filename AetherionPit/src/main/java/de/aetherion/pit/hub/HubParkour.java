@@ -2,6 +2,7 @@ package de.aetherion.pit.hub;
 
 import de.aetherion.pit.AetherionPit;
 
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -71,6 +72,7 @@ public final class HubParkour implements Listener {
         int checkpoint = -1;
         Location respawn;
         boolean teleporting;
+        BossBar bar;
     }
 
     public record Best(String name, long millis) {
@@ -84,6 +86,24 @@ public final class HubParkour implements Listener {
         load();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         Bukkit.getScheduler().runTaskTimer(plugin, this::hud, 20L, 2L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::markers, 40L, 20L);
+    }
+
+    /** a soft ring of sparkles on the start plate and the finish, so you find them */
+    private void markers() {
+        if (!enabled() || world.getPlayers().isEmpty()) {
+            return;
+        }
+        for (int[] p : new int[][]{start, finish}) {
+            Location c = new Location(world, p[0] + 0.5, p[1] + 0.15, p[2] + 0.5);
+            if (!world.isChunkLoaded(c.getBlockX() >> 4, c.getBlockZ() >> 4)) {
+                continue;
+            }
+            for (int i = 0; i < 10; i++) {
+                double a = i * Math.PI / 5;
+                world.spawnParticle(Particle.WAX_ON, c.clone().add(Math.cos(a) * 0.7, 0, Math.sin(a) * 0.7), 1, 0, 0.05, 0, 0);
+            }
+        }
     }
 
     public boolean enabled() {
@@ -207,6 +227,11 @@ public final class HubParkour implements Listener {
         run.checkpoint = -1;
         run.respawn = center(start, player.getLocation().getYaw());
         boolean de = HubHolograms.german(player);
+        if (run.bar == null) {
+            run.bar = BossBar.bossBar(Component.text("⏱ 0.00 s", NamedTextColor.WHITE), 0f, BossBar.Color.YELLOW,
+                    BossBar.Overlay.NOTCHED_6);
+            player.showBossBar(run.bar);
+        }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, restart ? 1.4f : 1.0f);
         if (!restart) {
             player.showTitle(Title.title(Component.text(de ? "Himmelspfad" : "Sky Path", TEAL, TextDecoration.BOLD),
@@ -276,9 +301,12 @@ public final class HubParkour implements Listener {
     }
 
     public void stop(Player player) {
-        if (runs.remove(player.getUniqueId()) != null) {
+        Run run = runs.remove(player.getUniqueId());
+        if (run != null) {
             takeItems(player);
-            player.sendActionBar(Component.empty());
+            if (run.bar != null) {
+                player.hideBossBar(run.bar);
+            }
         }
     }
 
@@ -297,8 +325,15 @@ public final class HubParkour implements Listener {
                 Bukkit.getScheduler().runTask(plugin, () -> stop(p));
                 continue;
             }
-            p.sendActionBar(Component.text("⏱ ", TEAL).append(Component.text(format(now - run.started), NamedTextColor.WHITE))
-                    .append(Component.text("   ⚑ " + (run.checkpoint + 1) + "/" + checkpoints.size(), SOFT)));
+            if (run.bar != null) {
+                boolean de = HubHolograms.german(p);
+                long best = data.getLong("best." + p.getUniqueId() + ".ms", Long.MAX_VALUE);
+                run.bar.name(Component.text((de ? "Himmelspfad  " : "Sky Path  "), TEAL, TextDecoration.BOLD)
+                        .append(Component.text("⏱ " + format(now - run.started), NamedTextColor.WHITE))
+                        .append(Component.text("   ⚑ " + (run.checkpoint + 1) + "/" + checkpoints.size(), SOFT))
+                        .append(Component.text(best == Long.MAX_VALUE ? "" : (de ? "   Bestzeit " : "   best ") + format(best), SOFT)));
+                run.bar.progress(Math.min(1f, (run.checkpoint + 1) / (float) (checkpoints.size() + 1)));
+            }
         }
     }
 
@@ -377,6 +412,15 @@ public final class HubParkour implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         stop(event.getPlayer());
+    }
+
+    /** /hub, a gate, any teleport that is not ours ends the run (ours set run.teleporting). */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTeleport(PlayerTeleportEvent event) {
+        Run run = runs.get(event.getPlayer().getUniqueId());
+        if (run != null && !run.teleporting) {
+            Bukkit.getScheduler().runTask(plugin, () -> stop(event.getPlayer()));
+        }
     }
 
     /** Left-over course items (crash mid-run) never stay in an inventory. */

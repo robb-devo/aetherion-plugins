@@ -3,7 +3,6 @@ package de.aetherion.pit.npc;
 import de.aetherion.core.npc.FancyNpcFacade;
 import de.aetherion.pit.AetherionPit;
 import de.aetherion.pit.hub.HubHolograms;
-import de.aetherion.pit.menu.PitShopGUI;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -138,7 +137,7 @@ public final class HubNpcService implements PluginMessageListener {
             openDiscord(player);
         } else if (FANCY_SHOP.equalsIgnoreCase(fancyName)) {
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 0.7f, 1.0f);
-            PitShopGUI.open(player);
+            plugin.brawlShop().open(player);
         } else if (FANCY_MODPACK.equalsIgnoreCase(fancyName)) {
             player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.9f, 1.0f);
             plugin.guide().modpackCard(player);

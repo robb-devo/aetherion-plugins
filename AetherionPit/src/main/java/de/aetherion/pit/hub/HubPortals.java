@@ -1,7 +1,6 @@
 package de.aetherion.pit.hub;
 
 import de.aetherion.pit.AetherionPit;
-import de.aetherion.pit.menu.PitShopGUI;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -199,27 +198,27 @@ public final class HubPortals implements Listener {
             Player player = event.getPlayer();
             // handled here, before WorldGuard and DeluxeHub would deny it with a chat message
             event.setCancelled(true);
-            if (prop.key().equals("discord")) {
-                if (!(b.getState() instanceof org.bukkit.block.Bell bell) || !bell.ring(player)) {
-                    b.getWorld().playSound(b.getLocation().add(0.5, 0.5, 0.5), Sound.BLOCK_BELL_USE, 1.2f, 1.0f);
-                }
-            }
             if (onCooldown(player, "prop:" + prop.key(), 1500L)) {
                 return;
             }
             switch (prop.key()) {
                 case "discord" -> {
-                    b.getWorld().spawnParticle(Particle.NOTE, b.getLocation().add(0.5, 1.2, 0.5), 6, 0.5, 0.3, 0.5, 1);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> plugin.guide().discordBook(player), 6L);
+                    if (plugin.owl() != null && plugin.owl().enabled()) {
+                        plugin.owl().greet(player);
+                    } else {
+                        Bukkit.getScheduler().runTask(plugin, () -> plugin.guide().discordBook(player));
+                    }
                 }
                 case "modpack" -> {
-                    player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
-                    b.getWorld().spawnParticle(Particle.ENCHANT, b.getLocation().add(0.5, 1.4, 0.5), 40, 0.6, 0.5, 0.6, 0.6);
-                    Bukkit.getScheduler().runTask(plugin, () -> plugin.guide().modpackBook(player));
+                    if (plugin.chest() != null && plugin.chest().enabled()) {
+                        plugin.chest().use(player);
+                    } else {
+                        Bukkit.getScheduler().runTask(plugin, () -> plugin.guide().modpackBook(player));
+                    }
                 }
                 case "shop" -> {
                     player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 0.8f, 1.0f);
-                    Bukkit.getScheduler().runTask(plugin, () -> PitShopGUI.open(player));
+                    Bukkit.getScheduler().runTask(plugin, () -> plugin.brawlShop().open(player));
                 }
                 default -> {
                 }
@@ -353,7 +352,8 @@ public final class HubPortals implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        if (voidCatch && plugin.safeZone().isPitWorld(to.getWorld())) {
+        if (voidCatch && plugin.safeZone().isPitWorld(to.getWorld())
+                && (plugin.brawl() == null || !plugin.brawl().inRegion(to))) {
             Material under = to.clone().subtract(0, 0.2, 0).getBlock().getType();
             if (to.getY() < voidY || under == Material.WHITE_WOOL || under == Material.SNOW_BLOCK) {
                 catchFromVoid(player, to);
@@ -413,9 +413,9 @@ public final class HubPortals implements Listener {
                     }
                 }, 60L);
             }
-            case "pit" -> {
-                burst(gate, Color.fromRGB(0xFF3B3B));
-                player.playSound(c, Sound.ENTITY_BLAZE_SHOOT, 0.6f, 0.6f);
+            case "brawl", "pit" -> {
+                burst(gate, Color.fromRGB(0x4FC3F7));
+                player.playSound(c, Sound.ENTITY_BREEZE_CHARGE, 0.8f, 1.0f);
                 plugin.guide().enterPit(player);
             }
             case "home" -> {
@@ -438,7 +438,7 @@ public final class HubPortals implements Listener {
             case "shop" -> {
                 pushOut(player, gate, from);
                 player.playSound(c, Sound.ENTITY_VILLAGER_TRADE, 0.8f, 1.0f);
-                Bukkit.getScheduler().runTask(plugin, () -> PitShopGUI.open(player));
+                Bukkit.getScheduler().runTask(plugin, () -> plugin.brawlShop().open(player));
             }
             default -> {
             }
@@ -466,11 +466,8 @@ public final class HubPortals implements Listener {
         if (plugin.parkour() != null && plugin.parkour().catchFall(player)) {
             return;
         }
+        // Sky Brawl catches its own fallers; everywhere else the clouds throw you back to the spawn
         Location target = plugin.safeZone().spawn();
-        Location pitEntrance = location("pit-entrance");
-        if (pitEntrance != null && !plugin.safeZone().isSafe(at)) {
-            target = pitEntrance;
-        }
         if (target == null) {
             return;
         }
@@ -606,7 +603,7 @@ public final class HubPortals implements Listener {
     // ------------------------------------------------------------------ ambience
 
     private static final Map<String, Color> TINT = Map.of(
-            "aetherion", Color.fromRGB(0xC77DFF), "pit", Color.fromRGB(0xFF3B3B), "home", Color.fromRGB(0xE8F6FF),
+            "aetherion", Color.fromRGB(0xC77DFF), "brawl", Color.fromRGB(0x4FC3F7), "home", Color.fromRGB(0xE8F6FF),
             "discord", Color.fromRGB(0x5865F2), "modpack", Color.fromRGB(0x57F287), "shop", Color.fromRGB(0xFFC94A));
 
     private void sparkle() {
