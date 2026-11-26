@@ -67,6 +67,29 @@ def faces_for(state, tex):
     if name == "air":
         return None
     base = name.replace("waxed_", "")
+    WOODS = ("oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "crimson", "warped",
+             "bamboo")
+    if base.endswith("_carpet") and base != "moss_carpet":
+        base = base.replace("_carpet", "_wool")
+    if base.endswith(("_wall_banner", "_banner")):
+        base = base.replace("_wall_banner", "_wool").replace("_banner", "_wool")
+    if base.startswith("smooth_sandstone"):
+        base = "sandstone_top"
+    if base.startswith("potted_"):
+        base = "flower_pot"
+    if base.endswith(("_wall_sign", "_wall_hanging_sign", "_hanging_sign", "_sign", "_fence_gate", "_door",
+                      "_pressure_plate", "_button")):
+        for w in WOODS:
+            if base.startswith(w + "_"):
+                base = w + "_planks"
+                break
+    if base.endswith("_wood") and not base.endswith("petrified_wood"):
+        base = base[:-5] + "_log"
+    if base.endswith("_hyphae"):
+        base = base[:-7] + "_stem"
+    for w in WOODS:
+        if base in (w + "_stairs", w + "_slab", w + "_fence"):
+            base = w + "_planks"
     if base.endswith("_lit") or "copper_bulb" in base:
         base = base if base.endswith("bulb") else base
     for suf in ("_stairs", "_slab", "_wall", "_fence"):

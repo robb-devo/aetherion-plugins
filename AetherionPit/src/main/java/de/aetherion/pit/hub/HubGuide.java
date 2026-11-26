@@ -51,7 +51,7 @@ public final class HubGuide {
     public void start() {
         Location board = location("welcome-board");
         if (board != null) {
-            holograms.put("welcome", board, 1.15f, 280, BOARD_BG, welcomeBoard(false), welcomeBoard(true));
+            holograms.put("welcome", board, gates() ? 0.8f : 1.15f, 280, BOARD_BG, welcomeBoard(false), welcomeBoard(true));
         }
         top = plugin.data().top(5);
         Location pitBoard = location("pit-board");
@@ -68,6 +68,23 @@ public final class HubGuide {
     // ------------------------------------------------------------------ signs
 
     private Component welcomeBoard(boolean de) {
+        if (gates()) {
+            return Component.text()
+                    .append(gradient("AETHERION", PURPLE, PINK).decorate(TextDecoration.BOLD)).append(nl())
+                    .append(Component.text(de ? "Willkommen im Hub" : "Welcome to the Hub", NamedTextColor.WHITE))
+                    .append(nl()).append(Component.text("- - - - - - -", NamedTextColor.DARK_GRAY)).append(nl())
+                    .append(Component.text("Aetherion", PURPLE))
+                    .append(Component.text(de ? ": durch den großen Bogen" : ": through the great arch", SOFT)).append(nl())
+                    .append(Component.text("The Pit", RED))
+                    .append(Component.text(de ? ": rotes Tor hinter dir" : ": red gate behind you", SOFT)).append(nl())
+                    .append(Component.text("Discord", BLUE))
+                    .append(Component.text(de ? ": die Glocke" : ": the bell", SOFT)).append(nl())
+                    .append(Component.text("Modpack", GREEN))
+                    .append(Component.text(de ? ": das Zauberbuch am Turm" : ": the spell book by the tower", SOFT)).append(nl())
+                    .append(Component.text(de ? "Pit-Shop" : "Pit Shop", GOLD))
+                    .append(Component.text(de ? ": das Elfenhaus" : ": the elven house", SOFT))
+                    .build();
+        }
         return Component.text()
                 .append(HubGlyphs.glyph(HubGlyphs.EMBLEM_BIG)).append(Component.text("\n\n\n\n"))
                 .append(gradient("AETHERION", PURPLE, PINK).decorate(TextDecoration.BOLD)).append(nl())
@@ -97,8 +114,15 @@ public final class HubGuide {
                 if (gate.label() == null) {
                     continue;
                 }
-                holograms.put("plate_" + gate.key(), gate.label(), gate.key().equals("aetherion") ? 1.6f : 0.95f,
+                holograms.put("plate_" + gate.key(), gate.label(), gate.key().equals("aetherion") ? 1.0f : 0.85f,
                         220, PLATE_BG, plate(gate.key(), false), plate(gate.key(), true));
+            }
+            for (HubPortals.Gate prop : plugin.portals().props()) {
+                if (prop.label() == null) {
+                    continue;
+                }
+                holograms.put("plate_" + prop.key(), prop.label(), 0.75f, 220, PLATE_BG,
+                        propPlate(prop.key(), false), propPlate(prop.key(), true));
             }
             HubPortals.Gate duck = plugin.portals().duck();
             if (duck != null && duck.label() != null) {
@@ -119,6 +143,20 @@ public final class HubGuide {
 
     private boolean gates() {
         return plugin.portals() != null && plugin.portals().enabled();
+    }
+
+    private Component propPlate(String key, boolean de) {
+        return switch (key) {
+            case "discord" -> plate(HubGlyphs.DISCORD, Component.text("Discord", BLUE),
+                    de ? "News, Hilfe & Bug-Reports" : "News, help & bug reports",
+                    de ? "Läute die Glocke" : "Ring the bell", BLUE);
+            case "modpack" -> plate(HubGlyphs.CRAFT, Component.text(de ? "Das Zauberbuch" : "The Spell Book", GREEN),
+                    de ? "Modpack, Launcher & Shader" : "Modpack, launcher & shader",
+                    de ? "Klick das Buch an" : "Click the book", GREEN);
+            default -> plate(HubGlyphs.SHOP, Component.text(de ? "Pit-Shop" : "Pit Shop", GOLD),
+                    de ? "Ausrüstung für Kill-Gold" : "Gear for kill gold",
+                    de ? "Klick ein Fass im Laden" : "Click a barrel inside", GOLD);
+        };
     }
 
     public void refreshDuck() {
@@ -271,9 +309,9 @@ public final class HubGuide {
                         de ? "News, Hilfe und Bug-Reports" : "News, help and bug reports")));
         if (firstJoin) {
             player.sendMessage(Component.text(de
-                    ? (gates() ? " Neu hier? Geh durch das große Sternentor geradeaus, dort beginnt dein Abenteuer."
+                    ? (gates() ? " Neu hier? Geh durch den großen Bogen zum Sternentor, dort beginnt dein Abenteuer."
                             : " Neu hier? Geh zum lila NPC geradeaus, dort beginnt dein Abenteuer.")
-                    : (gates() ? " New here? Walk through the big star gate straight ahead, your adventure starts there."
+                    : (gates() ? " New here? Walk through the great arch to the star gate, your adventure starts there."
                             : " New here? Walk to the purple NPC straight ahead, your adventure starts there."), SOFT));
         }
         player.sendMessage(Component.empty());
