@@ -83,7 +83,7 @@ mmo-i). **`main` equals live** on every backend; the hub server keeps its own Hu
 | Guilds | `0dac6d3e` | mmo-i only, #200 (parked on mmo-r and mmo-d, untouched) |
 | Hub | `6c4fe397` | mmo-r (#197, ship-all); **hub keeps `d1a097e7` (10-05)** |
 | SamuraiBoss | `16210290` | mmo-r (`arena.bell-challenge: true` patched live; no dojo is built there right now, see below) |
-| Pit | `a1460325` | hub (main `99cfda2d`, hub polish pass 2026-11-26 16:29 CET) |
+| Pit | `b03a46d6` | hub (main `b5e828d9`, hub final run 2026-11-27 00:20 CET: Sky Brawl replaces the Pit) |
 | Dungeons, Beta, Gnomon | `main` of 11-16 (unchanged since) | as below |
 
 mmo-i has run newer island jars since: `main` `1e7c08f` (#199, #200) from 2026-11-25 21:08 CET, so its rows above are
@@ -130,7 +130,8 @@ Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Resource pack (2026-10-21)
 
-**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `f88c204d` (2026-11-26 16:29 CET, hub props
+**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `03d839d7` (2026-11-27 00:20 CET, owl,
+chest and storm orb models CMD 8110-8118 added; before: `f88c204d` of 2026-11-26 16:29 CET, hub props
 added: `minecraft:disc_fragment_5` CMD 8101-8109 from `gen_hub_props.py`, 13 new files, nothing else changed; before: `f6ad1a14`
 of 2026-11-24 23:02 CET, the three journal covers added: book CMD 7900-7902, the Aether one animated; before: `d7d99510`, the 50 journal icons `j_*` and paper
 CMD 7800-7824 / 7850-7874, then `2f055c74`, journal art, and `03ab6779`).
@@ -623,6 +624,21 @@ flag (checked with a bot). All hub props were tested in survival; in adventure t
 so test them again before switching. The "You have changed gamemode" lines in test screenshots come from DeluxeHub's
 `/gamemode` (camera moves by RCON), not from joining.
 
+
+### Round 4: final run (2026-11-27 00:20 CET)
+
+The Pit is gone: **Sky Brawl** (`AetherionPit/.../brawl/`) is a knockback arena on a storm platform east of the island
+(storm gate at x=43, lobby ledge with the way home, the disc at 152/0, four stepping stones, clouds below). Stepping off
+the ledge gives a gust rod and three wind charges that refill; nobody takes damage, a push over the edge scores a
+knock-off (+5 shards, streaks), a storm orb in the middle charges the next hit. Stats and cosmetics in
+`plugins/AetherionPit/brawl.yml`; the outfitter (elven house barrels, `/pit shop`) sells six knock-off effects. Pit
+combat, shop, HP bar and XP bar classes were removed (`players.yml` and the placeholders stay). Discord is a blurple
+owl on a perch (`HubOwl`: head follows players, blinks, flies a letter over), the modpack a chest whose lid opens
+(`HubChest`). Scrolls hang centred at eye height on light parchment; the Sky Path time is a YELLOW boss bar; benches
+seat players (`HubSeats`). **Item displays draw custom models turned 180 degrees**: every custom model uses
+`HubModels.flip()` as right rotation (this fixed the round-3 lamps whose lanterns floated beside the arms). World from
+`tools/skyisle/gen_hub4.py` (sun 12550, sparse meadow patches), config `patch_hub4.py`. Round-3 world kept as
+`world-skyisle-r3-20261127-0019`; backups and `rollback.sh` in `backups|staging/hub-final-20261127-0019`.
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
