@@ -582,6 +582,22 @@ prefer non-persistent displays that are put up on chunk load. Fixed in the same 
 - Ore trolls (Items) and fishing encounter mobs (Fishing): untracked ones coming back with a chunk are removed.
 Known, left as is: Dungeon Keeper / Guide villager fallback can add one villager per restart if FancyNpcs is not ready.
 
+## Sky-isle hub world (2026-11-26, PC session)
+
+The hub world is a new map since 2026-11-26 (old world kept on the server as `world-pre-skyisle-<ts>` next to
+`world`). Floating cherry-blossom island in the void, golden hour (time 11500, no daylight cycle), plaza with a
+reflecting pool and four colonnades, the big Aetherion star gate on the west terrace, smaller gates for Discord
+(north), Modpack (south), Pit-Shop (north-east) and The Pit (east). The Pit is its own island further east
+(x 125..180) with a return gate; the safe box and WorldGuard `hub_safe` cover the main island only.
+
+- Gate surfaces are end gateway blocks; vanilla portal events are cancelled in the hub world. Walking in runs the
+  old NPC action (AetherionPit `portals.*` boxes). `npcs-enabled: false` keeps the FancyNpcs stations off.
+- Falling into the void or onto a cloud throws players back to spawn (or the Pit entrance) with a joke title.
+- The giant rubber duck in the lagoon squeaks on click or when stood on; the count lives in
+  `plugins/AetherionPit/fun.yml`.
+- AetherionHub on the hub: `join-at-selected-spawn` and `respawn-at-selected-spawn` off, island pads off.
+- Generator, preview renderer and config patch: `AetherionPit/tools/skyisle/` (README there).
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
