@@ -83,7 +83,8 @@ mmo-i). **`main` equals live** on every backend; the hub server keeps its own Hu
 | Guilds | `0dac6d3e` | mmo-i only, #200 (parked on mmo-r and mmo-d, untouched) |
 | Hub | `6c4fe397` | mmo-r (#197, ship-all); **hub keeps `d1a097e7` (10-05)** |
 | SamuraiBoss | `16210290` | mmo-r (`arena.bell-challenge: true` patched live; no dojo is built there right now, see below) |
-| Dungeons, Beta, Gnomon, Pit | `main` of 11-16 (unchanged since) | as below |
+| Pit | `a1460325` | hub (main `99cfda2d`, hub polish pass 2026-11-26 16:29 CET) |
+| Dungeons, Beta, Gnomon | `main` of 11-16 (unchanged since) | as below |
 
 mmo-i has run newer island jars since: `main` `1e7c08f` (#199, #200) from 2026-11-25 21:08 CET, so its rows above are
 older; the hashes are in LIVE_STATE.
@@ -129,8 +130,9 @@ Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Resource pack (2026-10-21)
 
-**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `f6ad1a14` (2026-11-24 23:02 CET, the three journal
-covers added: book CMD 7900-7902, the Aether one animated; before: `d7d99510`, the 50 journal icons `j_*` and paper
+**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `f88c204d` (2026-11-26 16:29 CET, hub props
+added: `minecraft:disc_fragment_5` CMD 8101-8109 from `gen_hub_props.py`, 13 new files, nothing else changed; before: `f6ad1a14`
+of 2026-11-24 23:02 CET, the three journal covers added: book CMD 7900-7902, the Aether one animated; before: `d7d99510`, the 50 journal icons `j_*` and paper
 CMD 7800-7824 / 7850-7874, then `2f055c74`, journal art, and `03ab6779`).
 The Velocity plugin `AetherionProxy` offers it when a player first reaches a backend (required, hash read
 from the served zip); no backend advertises a pack any more (`resource-pack=` empty everywhere), so moving
@@ -606,6 +608,16 @@ Aetherion at the end of the shrine bridge under the big tree, The Pit at the eas
 plaza, Modpack = the spell book at the tower, Pit-Shop = workshop blocks inside the elven house (AetherionPit
 `props.*`). Animated floaters (crystals, sword, book, lanterns) via AetherionPit `floaters`. Round-1 world kept as
 `world-skyisle-r1-<ts>`; `rollback.sh` in `staging/hub-round2-<ts>`. Generator: `tools/skyisle/gen_hub2.py`.
+
+### Round 3: polish pass (2026-11-26 16:29 CET)
+
+Same island and builds, redone after a newcomer walkthrough with a real client on a local hub copy. Text boxes are
+now parchment scrolls that unroll (custom models, `HubScrolls`), slim lamp posts replace the lanterns on walls,
+moon gate for Aetherion, pointed Pit gate with soul-fire braziers, bell arch (Discord), spell book (Modpack), signpost,
+rowing boat, the Sky Path jump and run around the tower (timer, checkpoints, best times in `parkour.yml`), seven hidden
+ducklings (`ducklings.yml`), vanilla cherry/azalea trees, a cleaner Pit arena. Pack: hub props on `disc_fragment_5`
+CMD 8101-8109. Round-2 world kept as `world-skyisle-r2-20261126-1628`; backups and `rollback.sh` in
+`backups|staging/hub-polish-20261126-1628`. Generator: `tools/skyisle/gen_hub3.py` + `patch_hub3.py` (README there).
 
 ## Content state (verified against live 2026-10-19)
 
