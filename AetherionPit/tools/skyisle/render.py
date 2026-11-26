@@ -26,7 +26,7 @@ ALIAS = {
     "campfire": "campfire_log_lit", "big_dripleaf_stem": "big_dripleaf_stem", "cave_vines_plant": "cave_vines_plant",
     "tall_grass": "tall_grass_top", "large_fern": "large_fern_top", "lilac": "lilac_top", "peony": "peony_top",
     "rose_bush": "rose_bush_top", "pink_petals": "pink_petals", "moss_carpet": "moss_block",
-    "cherry_fence": "cherry_planks", "polished_tuff": "polished_tuff", "copper_bulb": "copper_bulb_lit",
+    "cherry_fence": "cherry_planks", "pointed_dripstone": "pointed_dripstone_down_tip", "magma_block": "magma", "polished_tuff": "polished_tuff", "copper_bulb": "copper_bulb_lit",
 }
 TINT_GRASS = {"grass_block", "short_grass", "tall_grass", "fern", "large_fern"}
 TINT_FOLIAGE = {"vine", "oak_leaves"}
@@ -275,7 +275,7 @@ def render(npz, jar, out, cam, yaw, pitch, W=1280, H=720, fov=70.0):
             c[g] = np.array([0.03, 0.07, 0.10]) + star[:, None] * np.array([0.6, 0.9, 0.8]) + \
                    (((idx * 7) % 97) / 97.0 > 0.9)[:, None] * np.array([0.10, 0.25, 0.22])
         dist = thit[hi]
-        fog = np.clip((dist - 90) / 110, 0, 1)[:, None]
+        fog = np.clip((dist - 150) / 160, 0, 1)[:, None] * 0.8
         c = c * (1 - fog) + col[hi] * fog
         col[hi] = c
     img = np.clip(col.reshape(H, W, 3), 0, 1) ** (1 / 1.1)
