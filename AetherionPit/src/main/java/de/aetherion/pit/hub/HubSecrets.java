@@ -113,7 +113,7 @@ public final class HubSecrets implements Listener {
             d.setInterpolationDelay(0);
             d.setInterpolationDuration(30);
             d.setTransformation(new Transformation(new Vector3f(0, 0.28f + bob, 0), q, new Vector3f(0.55f, 0.55f, 0.55f),
-                    new Quaternionf()));
+                    HubModels.flip()));
         }
     }
 

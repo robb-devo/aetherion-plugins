@@ -104,7 +104,7 @@ public final class HubRulesListener implements Listener {
         }
         // Allow our own GUIs (custom chest inventories).
         InventoryHolder holder = event.getInventory().getHolder();
-        if (holder instanceof de.aetherion.pit.menu.PitShopGUI.Holder
+        if (holder instanceof de.aetherion.pit.brawl.BrawlShop.Holder
                 || holder instanceof de.aetherion.pit.menu.HubDevMenu.Holder) {
             return;
         }

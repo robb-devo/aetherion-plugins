@@ -32,6 +32,7 @@ import java.util.Map;
  * Floating elven scrolls instead of plain text boxes (2026-11-26). A scroll is two wooden rollers, a sheet of
  * parchment (item displays with the hub models) and the text in front of it, one copy per language. It hangs rolled
  * up and unrolls when somebody comes close, sways a little, and rolls up again when nobody is around.
+ * Round 4: the anchor is the middle of the sheet, at eye height, and every scroll uses the light parchment.
  */
 public final class HubScrolls implements Listener {
 
@@ -102,9 +103,10 @@ public final class HubScrolls implements Listener {
             for (Component c : de.lines()) {
                 bodyPx = Math.max(bodyPx, width(c, false));
             }
-            float tw = titlePx * PX * TITLE_SCALE;
-            float bw = bodyPx * PX * bodyScale;
-            width = Math.max(1.5f, Math.max(tw, bw) + 2 * PAD_X);
+            // the width table is an estimate: 8 % more and a little extra keeps every line inside the paper
+            float tw = titlePx * PX * TITLE_SCALE * 1.08f;
+            float bw = bodyPx * PX * bodyScale * 1.08f;
+            width = Math.max(1.5f, Math.max(tw, bw) + 2 * PAD_X + 0.08f);
             titleH = LINE * TITLE_SCALE;
             bodyH = lines * LINE * bodyScale;
             height = PAD_TOP + titleH + (lines > 0 ? GAP + bodyH : 0) + PAD_BOTTOM;
@@ -140,16 +142,19 @@ public final class HubScrolls implements Listener {
             apply(0.02f, 0, 0f);
         }
 
-        /** k = how far unrolled (0..1), sway in degrees around the anchor. */
+        /**
+         * k = how far unrolled (0..1), sway in degrees around the anchor. The anchor is the middle of the sheet (eye
+         * height on the hub): unrolling pushes both rollers apart from there.
+         */
         void apply(float k, int duration, float swayDeg) {
             Quaternionf q = new Quaternionf().rotateZ((float) Math.toRadians(swayDeg));
             float rs = 1.25f;
-            float paperTop = -ROLL;
             float h = Math.max(0.02f, height * k);
-            set(top, new Vector3f(0, 0, 0), q, new Vector3f(width, rs, rs), duration);
-            set(paper, new Vector3f(0, paperTop - h / 2f, 0), q, new Vector3f(width, h, 1), duration);
-            set(bottom, new Vector3f(0, paperTop - h - ROLL, 0), q, new Vector3f(width, rs, rs), duration);
-            float titleBottom = paperTop - (PAD_TOP + titleH) * k;
+            float half = h / 2f;
+            set(top, new Vector3f(0, half + ROLL, 0), q, new Vector3f(width, rs, rs), duration);
+            set(paper, new Vector3f(0, 0, 0), q, new Vector3f(width, h, 1), duration);
+            set(bottom, new Vector3f(0, -half - ROLL, 0), q, new Vector3f(width, rs, rs), duration);
+            float titleBottom = half - (PAD_TOP + titleH) * k;
             float bodyBottom = titleBottom - (GAP + bodyH) * k;
             float tk = Math.max(0.001f, k);
             Vector3f ts = new Vector3f(TITLE_SCALE, TITLE_SCALE * tk, TITLE_SCALE);
@@ -273,7 +278,7 @@ public final class HubScrolls implements Listener {
                 s.busyUntil = tick + OPEN_TICKS + 2;
                 s.apply(1f, OPEN_TICKS, 0f);
                 w.playSound(s.at, Sound.ITEM_BOOK_PAGE_TURN, 0.55f, 0.85f);
-                w.spawnParticle(Particle.WAX_OFF, s.at.clone().add(0, -s.height / 2, 0), 6,
+                w.spawnParticle(Particle.WAX_OFF, s.at, 6,
                         s.width / 3, s.height / 3, 0.05, 0.6);
             } else if (s.open && near > CLOSE_RADIUS * CLOSE_RADIUS) {
                 s.open = false;

@@ -2,7 +2,6 @@ package de.aetherion.pit.command;
 
 import de.aetherion.pit.AetherionPit;
 import de.aetherion.pit.data.PitDataStore;
-import de.aetherion.pit.menu.PitShopGUI;
 import de.aetherion.pit.npc.HubNpcService;
 
 import org.bukkit.Location;
@@ -64,9 +63,9 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
                 player.teleport(spawn);
                 player.sendMessage("§aBack to safe spawn.");
             }
-            case "shop" -> PitShopGUI.open(player);
+            case "shop", "outfitter" -> plugin.brawlShop().open(player);
             case "play", "aetherion", "mmor" -> plugin.transfer().toAetherion(player);
-            case "enter", "arena" -> plugin.guide().enterPit(player);
+            case "enter", "arena", "brawl" -> plugin.guide().enterPit(player);
             case "top" -> plugin.guide().topCard(player);
             case "discord" -> plugin.guide().discordBook(player);
             case "modpack", "shader" -> plugin.guide().modpackBook(player);

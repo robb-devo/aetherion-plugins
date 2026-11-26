@@ -5,10 +5,8 @@ import de.aetherion.pit.data.PitDataStore;
 import de.aetherion.pit.hub.HubGuide;
 import de.aetherion.pit.hud.PitXpBarHud;
 import de.aetherion.pit.listener.HubRulesListener;
-import de.aetherion.pit.listener.PitCombatListener;
 import de.aetherion.pit.listener.PitZoneListener;
 import de.aetherion.pit.menu.HubDevMenu;
-import de.aetherion.pit.menu.PitShopGUI;
 import de.aetherion.pit.npc.HubNpcFancyListener;
 import de.aetherion.pit.npc.HubNpcService;
 import de.aetherion.pit.placeholder.PitPlaceholders;
@@ -32,6 +30,11 @@ public final class AetherionPit extends JavaPlugin {
     private de.aetherion.pit.hub.HubDecor decor;
     private de.aetherion.pit.hub.HubParkour parkour;
     private de.aetherion.pit.hub.HubSecrets secrets;
+    private de.aetherion.pit.hub.HubOwl owl;
+    private de.aetherion.pit.hub.HubChest chest;
+    private de.aetherion.pit.hub.HubSeats seats;
+    private de.aetherion.pit.brawl.SkyBrawl brawl;
+    private de.aetherion.pit.brawl.BrawlShop brawlShop;
 
     @Override
     public void onEnable() {
@@ -48,12 +51,14 @@ public final class AetherionPit extends JavaPlugin {
         decor = new de.aetherion.pit.hub.HubDecor(this);
         parkour = new de.aetherion.pit.hub.HubParkour(this);
         secrets = new de.aetherion.pit.hub.HubSecrets(this);
+        owl = new de.aetherion.pit.hub.HubOwl(this);
+        chest = new de.aetherion.pit.hub.HubChest(this);
+        seats = new de.aetherion.pit.hub.HubSeats(this);
+        brawl = new de.aetherion.pit.brawl.SkyBrawl(this);
+        brawlShop = new de.aetherion.pit.brawl.BrawlShop(this);
         xpHud = new PitXpBarHud(this);
-        new de.aetherion.pit.hud.PitHealthHud(this);
         getServer().getPluginManager().registerEvents(new PitZoneListener(this), this);
         getServer().getPluginManager().registerEvents(new HubRulesListener(this), this);
-        getServer().getPluginManager().registerEvents(new PitCombatListener(this), this);
-        new PitShopGUI(this);
         new HubDevMenu(this);
         HubNpcFancyListener.register(this, hubNpcs);
         hubNpcs.start();
@@ -243,6 +248,18 @@ public final class AetherionPit extends JavaPlugin {
         if (secrets != null) {
             secrets.removeAll();
         }
+        if (owl != null) {
+            owl.remove();
+        }
+        if (chest != null) {
+            chest.remove();
+        }
+        if (seats != null) {
+            seats.removeAll();
+        }
+        if (brawl != null) {
+            brawl.shutdown();
+        }
         if (data != null) {
             data.saveAll();
         }
@@ -291,5 +308,21 @@ public final class AetherionPit extends JavaPlugin {
 
     public de.aetherion.pit.hub.HubSecrets secrets() {
         return secrets;
+    }
+
+    public de.aetherion.pit.brawl.SkyBrawl brawl() {
+        return brawl;
+    }
+
+    public de.aetherion.pit.brawl.BrawlShop brawlShop() {
+        return brawlShop;
+    }
+
+    public de.aetherion.pit.hub.HubOwl owl() {
+        return owl;
+    }
+
+    public de.aetherion.pit.hub.HubChest chest() {
+        return chest;
     }
 }

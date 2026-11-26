@@ -59,7 +59,7 @@ public final class HubGuide {
                 scrolls.put("welcome", board, HubScrolls.Style.LIGHT, scroll("welcome", false), scroll("welcome", true));
             }
             if (pitBoard != null) {
-                scrolls.put("pit_board", pitBoard, HubScrolls.Style.DARK, scroll("pit_board", false),
+                scrolls.put("pit_board", pitBoard, HubScrolls.Style.LIGHT, scroll("pit_board", false),
                         scroll("pit_board", true));
             }
             Location parkourBoard = plugin.parkour() == null ? null : plugin.parkour().board();
@@ -75,6 +75,11 @@ public final class HubGuide {
             }
         }
         Bukkit.getScheduler().runTaskTimer(plugin, this::refreshTop, 1200L, 1200L);
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (plugin.brawl() != null && plugin.brawl().boardDirty()) {
+                refreshTop();
+            }
+        }, 100L, 100L);
     }
 
     public void stop() {
@@ -124,46 +129,52 @@ public final class HubGuide {
                 if (online >= 0) {
                     l.add(line(online + (de ? " Abenteurer unterwegs" : " adventurers out there"), INK_SOFT));
                 }
-                l.add(action(de ? "Durch das Sternentor gehen" : "Walk through the star gate", c));
+                l.add(action(de ? "Durch das Mondtor gehen" : "Walk through the moon gate", c));
                 return new HubScrolls.Text(Component.text("Aetherion", c, TextDecoration.BOLD), l);
             }
-            case "pit" -> {
-                TextColor c = TextColor.color(0xFF6B5B);
+            case "brawl", "pit" -> {
+                TextColor c = TextColor.color(0x0277BD);
                 List<Component> l = new java.util.ArrayList<>();
-                l.add(runes("the pit", DARK_RUNE));
-                l.add(line(de ? "PvP-Insel mit Vanilla-Gear" : "PvP island, vanilla gear", DARK_SOFT));
-                if (!top.isEmpty()) {
-                    l.add(line("#1 " + top.getFirst().name() + " · Lv " + top.getFirst().level(), DARK_INK));
+                l.add(runes("sky brawl", RUNE));
+                l.add(line(de ? "Schubs die anderen in die Wolken" : "Push the others into the clouds", INK_SOFT));
+                l.add(line(de ? "Kein Gear, kein Schaden, nur Wind" : "No gear, no damage, just wind", INK_SOFT));
+                List<de.aetherion.pit.brawl.BrawlStore.Ranked> best = brawlTop(1);
+                if (!best.isEmpty()) {
+                    l.add(line("#1 " + best.getFirst().name() + " · " + best.getFirst().knockoffs()
+                            + (de ? " Schubser" : " knock-offs"), INK));
                 }
-                l.add(action(de ? "Durch das rote Tor" : "Through the red gate", c));
-                return new HubScrolls.Text(Component.text("The Pit", c, TextDecoration.BOLD), l);
+                l.add(action(de ? "Durch das Sturmtor" : "Through the storm gate", c));
+                return new HubScrolls.Text(Component.text("Sky Brawl", c, TextDecoration.BOLD), l);
             }
             case "home" -> {
-                TextColor c = TextColor.color(0xF2B8FF);
+                TextColor c = TextColor.color(0x5E2B97);
                 return new HubScrolls.Text(Component.text(de ? "Zurück zum Hub" : "Back to the Hub", c, TextDecoration.BOLD),
-                        List.of(line(de ? "Raus aus der Arena" : "Leave the arena", DARK_SOFT),
+                        List.of(line(de ? "Genug geschubst für heute?" : "Pushed enough for today?", INK_SOFT),
                                 action(de ? "Durch das Tor" : "Through the gate", c)));
             }
             case "discord" -> {
                 TextColor c = TextColor.color(0x3949AB);
                 return new HubScrolls.Text(Component.text("Discord", c, TextDecoration.BOLD),
                         List.of(runes("discord", RUNE),
-                                line(de ? "News, Hilfe und Freunde" : "News, help and friends", INK_SOFT),
-                                action(de ? "Läute die Glocke" : "Ring the bell", c)));
+                                line(de ? "News, Hilfe und Leute zum Zocken" : "News, help and people to play with", INK_SOFT),
+                                line(de ? "Die Posteule bringt dir die Einladung" : "The owl brings you the invite", INK_SOFT),
+                                action(de ? "Klick die Eule an" : "Click the owl", c)));
             }
             case "modpack" -> {
                 TextColor c = TextColor.color(0x2E7D32);
-                return new HubScrolls.Text(Component.text(de ? "Das Zauberbuch" : "The Spell Book", c, TextDecoration.BOLD),
+                return new HubScrolls.Text(Component.text("Modpack & Shader", c, TextDecoration.BOLD),
                         List.of(runes("modpack", RUNE),
-                                line(de ? "Modpack, Launcher und Shader" : "Modpack, launcher and shader", INK_SOFT),
-                                action(de ? "Klick das Buch an" : "Click the book", c)));
+                                line(de ? "Launcher, Mods und Shader" : "Launcher, mods and shader", INK_SOFT),
+                                line(de ? "alles in der Tüftlertruhe" : "all in the tinkerer's chest", INK_SOFT),
+                                action(de ? "Klick die Truhe an" : "Click the chest", c)));
             }
             case "shop" -> {
                 TextColor c = TextColor.color(0x9A6200);
-                return new HubScrolls.Text(Component.text(de ? "Pit-Shop" : "Pit Shop", c, TextDecoration.BOLD),
+                return new HubScrolls.Text(Component.text(de ? "Ausstatter" : "Outfitter", c, TextDecoration.BOLD),
                         List.of(runes("shop", RUNE),
-                                line(de ? "Ausrüstung für Kill-Gold" : "Gear for kill gold", INK_SOFT),
-                                action(de ? "Klick ein Fass im Laden" : "Click a barrel inside", c)));
+                                line(de ? "Schubs-Effekte für Sky Brawl" : "Knock-off effects for Sky Brawl", INK_SOFT),
+                                line(de ? "bezahlt mit Splittern" : "paid with shards", INK_SOFT),
+                                action(de ? "Klick ein Fass an" : "Click a barrel", c)));
             }
             case "duck" -> {
                 TextColor c = TextColor.color(0xC77700);
@@ -174,31 +185,32 @@ public final class HubGuide {
                                 line(de ? "Hat jemand meine Küken gesehen?" : "Has anyone seen my ducklings?", INK),
                                 action(de ? "Drück sie" : "Squeeze it", c)));
             }
-            case "pit_board" -> {
-                TextColor c = TextColor.color(0xFF6B5B);
-                int killXp = plugin.getConfig().getInt("levels.kill-xp", 12);
-                int killGold = plugin.getConfig().getInt("economy.kill-gold", 8);
+            case "pit_board", "brawl_board" -> {
+                TextColor c = TextColor.color(0x0277BD);
                 List<Component> l = new java.util.ArrayList<>();
-                l.add(runes("arena", DARK_RUNE));
-                l.add(line(de ? "Kill: +" + killXp + " XP, +" + killGold + " Gold" : "Kill: +" + killXp + " XP, +" + killGold + " gold",
-                        DARK_SOFT));
-                l.add(line(de ? "Ohne Rüstung gibt's ein Starter-Kit" : "No gear? You get a starter kit", DARK_SOFT));
-                l.add(line(de ? "Beste Kämpfer" : "Top fighters", TextColor.color(0xFFC857)));
-                if (top.isEmpty()) {
-                    l.add(line(de ? "Noch frei. Sei der Erste!" : "Still empty. Be the first!", DARK_INK));
+                l.add(runes("arena", RUNE));
+                l.add(line(de ? "Böenstab schubst, keiner nimmt Schaden" : "The gust rod pushes, nobody gets hurt", INK_SOFT));
+                l.add(line(de ? "Windkugel unter dir: hoher Sprung" : "Wind charge below you: a high jump", INK_SOFT));
+                l.add(line(de ? "Sturmkugel in der Mitte: doppelt schubsen" : "Storm orb in the middle: push twice as hard",
+                        INK_SOFT));
+                l.add(line(de ? "Beste Schubser" : "Top pushers", c));
+                List<de.aetherion.pit.brawl.BrawlStore.Ranked> best = brawlTop(5);
+                if (best.isEmpty()) {
+                    l.add(line(de ? "Noch frei. Sei der Erste!" : "Still empty. Be the first!", INK));
                 }
-                for (int i = 0; i < top.size(); i++) {
-                    PitDataStore.Ranked r = top.get(i);
-                    l.add(line((i + 1) + ". " + r.name() + "  Lv " + r.level(), i == 0 ? TextColor.color(0xFFC857) : DARK_INK));
+                for (int i = 0; i < best.size(); i++) {
+                    de.aetherion.pit.brawl.BrawlStore.Ranked r = best.get(i);
+                    l.add(line((i + 1) + ". " + r.name() + "  " + r.knockoffs(), i == 0 ? c : INK));
                 }
-                return new HubScrolls.Text(Component.text("The Pit", c, TextDecoration.BOLD), l);
+                return new HubScrolls.Text(Component.text("Sky Brawl", c, TextDecoration.BOLD), l);
             }
             case "parkour" -> {
                 TextColor c = TextColor.color(0x00838F);
                 List<Component> l = new java.util.ArrayList<>();
                 l.add(runes("himmelspfad", RUNE));
                 l.add(line(de ? "Spring um den Turm nach oben" : "Jump your way up around the tower", INK_SOFT));
-                l.add(line(de ? "Start: die goldene Platte" : "Start: the golden plate", INK_SOFT));
+                l.add(line(de ? "Start: die goldene Platte hier" : "Start: the golden plate here", INK_SOFT));
+                l.add(line(de ? "Die Zeit läuft oben am Bildschirm" : "Your time runs at the top of the screen", INK_SOFT));
                 List<HubParkour.Best> best = plugin.parkour() == null ? List.of() : plugin.parkour().top(5);
                 l.add(line(de ? "Bestzeiten" : "Best times", c));
                 if (best.isEmpty()) {
@@ -214,23 +226,29 @@ public final class HubGuide {
                 TextColor c = TextColor.color(0x5E2B97);
                 return new HubScrolls.Text(Component.text(de ? "Willkommen im Hub" : "Welcome to the Hub", c, TextDecoration.BOLD),
                         List.of(runes("willkommen", RUNE),
-                                key("Aetherion", c, de ? "durch den großen Bogen" : "through the great arch", INK_SOFT),
-                                key("The Pit", TextColor.color(0xB3261E), de ? "rotes Tor hinter dir" : "red gate behind you", INK_SOFT),
-                                key("Discord", TextColor.color(0x3949AB), de ? "die Glocke" : "the bell", INK_SOFT),
-                                key("Modpack", TextColor.color(0x2E7D32), de ? "das Zauberbuch am Turm" : "the spell book by the tower",
+                                key("Aetherion", c, de ? "das Mondtor am Ende der Brücke" : "the moon gate at the end of the bridge",
                                         INK_SOFT),
-                                key(de ? "Pit-Shop" : "Pit Shop", TextColor.color(0x9A6200), de ? "das Elfenhaus" : "the elven house",
+                                key("Sky Brawl", TextColor.color(0x0277BD), de ? "das Sturmtor hinter dir" : "the storm gate behind you",
+                                        INK_SOFT),
+                                key("Discord", TextColor.color(0x3949AB), de ? "die Posteule" : "the owl", INK_SOFT),
+                                key("Modpack", TextColor.color(0x2E7D32), de ? "die Truhe am Turm" : "the chest by the tower",
                                         INK_SOFT),
                                 key(de ? "Himmelspfad" : "Sky Path", TextColor.color(0x00838F),
                                         de ? "Jump and Run am Turm" : "jump and run at the tower", INK_SOFT),
+                                key(de ? "Ausstatter" : "Outfitter", TextColor.color(0x9A6200), de ? "das Elfenhaus" : "the elven house",
+                                        INK_SOFT),
                                 line(de ? "Sieben Entenküken haben sich verlaufen ..." : "Seven ducklings got lost ...",
                                         TextColor.color(0xC77700))));
             }
         }
     }
 
+    private List<de.aetherion.pit.brawl.BrawlStore.Ranked> brawlTop(int n) {
+        return plugin.brawl() == null ? List.of() : plugin.brawl().store().top(n);
+    }
+
     private HubScrolls.Style scrollStyle(String id) {
-        return id.equals("pit") || id.equals("home") || id.equals("pit_board") ? HubScrolls.Style.DARK : HubScrolls.Style.LIGHT;
+        return HubScrolls.Style.LIGHT;     // round 4: the dark parchment was hard to read
     }
 
     // ------------------------------------------------------------------ signs
@@ -475,7 +493,7 @@ public final class HubGuide {
     private void refreshTop() {
         top = plugin.data().top(5);
         if (gates()) {
-            scrolls.text("plate_pit", scroll("pit", false), scroll("pit", true));
+            scrolls.text("plate_brawl", scroll("brawl", false), scroll("brawl", true));
             scrolls.text("pit_board", scroll("pit_board", false), scroll("pit_board", true));
             return;
         }
@@ -536,9 +554,8 @@ public final class HubGuide {
                 .append(button(de ? "Aetherion spielen" : "Play Aetherion", PURPLE, "/aetherion",
                         de ? "Zum MMO: Inseln, Quests, Bosse" : "To the MMO: isles, quests, bosses"))
                 .append(Component.space())
-                .append(button("The Pit", RED, "/pit enter",
-                        gates() ? (de ? "PvP-Insel hinter dem roten Tor" : "PvP island behind the red gate")
-                        : (de ? "PvP-Arena hinter der roten Linie" : "PvP arena past the red line")))
+                .append(button("Sky Brawl", TextColor.color(0x4FC3F7), "/pit enter",
+                        de ? "Rückstoß-Arena in den Wolken" : "Knockback arena in the clouds"))
                 .append(Component.space())
                 .append(button("Modpack & Shader", GREEN, "/modpack",
                         de ? "Launcher, Mods und AetherionLight" : "Launcher, mods and AetherionLight"))
@@ -547,9 +564,9 @@ public final class HubGuide {
                         de ? "News, Hilfe und Bug-Reports" : "News, help and bug reports")));
         if (firstJoin) {
             player.sendMessage(Component.text(de
-                    ? (gates() ? " Neu hier? Geh durch den großen Bogen zum Sternentor, dort beginnt dein Abenteuer."
+                    ? (gates() ? " Neu hier? Das Mondtor am Ende der Brücke bringt dich nach Aetherion."
                             : " Neu hier? Geh zum lila NPC geradeaus, dort beginnt dein Abenteuer.")
-                    : (gates() ? " New here? Walk through the great arch to the star gate, your adventure starts there."
+                    : (gates() ? " New here? The moon gate at the end of the bridge takes you to Aetherion."
                             : " New here? Walk to the purple NPC straight ahead, your adventure starts there."), SOFT));
         }
         player.sendMessage(Component.empty());
@@ -576,6 +593,10 @@ public final class HubGuide {
 
     /** The Pit NPC and {@code /pit enter}: stand at the red line, facing out. */
     public void enterPit(Player player) {
+        if (plugin.brawl() != null && plugin.brawl().enabled()) {
+            plugin.brawl().enter(player);
+            return;
+        }
         Location at = location("pit-entrance");
         if (at == null) {
             return;
@@ -592,16 +613,17 @@ public final class HubGuide {
 
     public void topCard(Player player) {
         boolean de = HubHolograms.german(player);
-        player.sendMessage(Component.text(de ? "Beste Kämpfer in The Pit" : "Top fighters in The Pit", GOLD,
+        List<de.aetherion.pit.brawl.BrawlStore.Ranked> best = brawlTop(5);
+        player.sendMessage(Component.text(de ? "Beste Schubser in Sky Brawl" : "Top pushers in Sky Brawl", TextColor.color(0x4FC3F7),
                 TextDecoration.BOLD));
-        if (top.isEmpty()) {
+        if (best.isEmpty()) {
             player.sendMessage(Component.text(de ? " Noch niemand." : " Nobody yet.", NamedTextColor.GRAY));
         }
-        for (int i = 0; i < top.size(); i++) {
-            PitDataStore.Ranked r = top.get(i);
+        for (int i = 0; i < best.size(); i++) {
+            de.aetherion.pit.brawl.BrawlStore.Ranked r = best.get(i);
             player.sendMessage(Component.text(" " + (i + 1) + ". ", NamedTextColor.GRAY)
                     .append(Component.text(r.name(), NamedTextColor.WHITE))
-                    .append(Component.text("  Lv " + r.level(), RED)));
+                    .append(Component.text("  " + r.knockoffs(), TextColor.color(0x4FC3F7))));
         }
     }
 

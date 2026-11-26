@@ -153,6 +153,42 @@
     [
       8109,
       "aetherion:item/hub/scroll_paper_dark"
+    ],
+    [
+      8110,
+      "aetherion:item/hub/owl_body"
+    ],
+    [
+      8111,
+      "aetherion:item/hub/owl_head"
+    ],
+    [
+      8112,
+      "aetherion:item/hub/owl_head_blink"
+    ],
+    [
+      8113,
+      "aetherion:item/hub/owl_wing"
+    ],
+    [
+      8114,
+      "aetherion:item/hub/envelope"
+    ],
+    [
+      8115,
+      "aetherion:item/hub/owl_perch"
+    ],
+    [
+      8116,
+      "aetherion:item/hub/chest_base"
+    ],
+    [
+      8117,
+      "aetherion:item/hub/chest_lid"
+    ],
+    [
+      8118,
+      "aetherion:item/hub/storm_orb"
     ]
   ],
   "ender_chest": [
