@@ -618,6 +618,8 @@ rowing boat, the Sky Path jump and run around the tower (timer, checkpoints, bes
 ducklings (`ducklings.yml`), vanilla cherry/azalea trees, a cleaner Pit arena. Pack: hub props on `disc_fragment_5`
 CMD 8101-8109. Round-2 world kept as `world-skyisle-r2-20261126-1628`; backups and `rollback.sh` in
 `backups|staging/hub-polish-20261126-1628`. Generator: `tools/skyisle/gen_hub3.py` + `patch_hub3.py` (README there).
+After the deploy, DeluxeHub's join action `[GAMEMODE] survival` was removed on the hub (it printed "You have changed
+gamemode to ADVENTURE" on every join; the WorldGuard `hub` region keeps everyone in adventure), `/deluxehub reload`.
 
 ## Content state (verified against live 2026-10-19)
 
