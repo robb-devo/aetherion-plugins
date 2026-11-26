@@ -28,3 +28,20 @@ Floating displays (crystals, sword, book, lanterns) are animated by AetherionPit
   `hub2.json` with the `place template` commands (tower `counterclockwise_90`, house `180`).
 - `patch_hub2.py <hub dir> <hub2.json>` patches AetherionPit (spawn, safe zone, boards, portals, props, duck,
   floaters) and the WorldGuard `hub_safe` box.
+
+## Round 3: the polish pass (2026-11-26 afternoon)
+
+Same island and builds, everything around them redone after a real in-game walkthrough (local hub clone + client).
+Builds: "Elven Shrine", "Elven Tower" and "Elven House" by SkyblockSquad (Planet Minecraft, "free to use anywhere").
+
+- `gen_hub3.py <outdir> <dir with the three .bin schematics>` (writes `hub3.json`): plaza with benches, bell arch
+  (Discord), moon gate for Aetherion on the shrine bridge, pointed Pit gate with soul-fire braziers, shop counter,
+  the Sky Path jump and run around the tower, seven duckling spots, the Pit arena with its entrance tunnel, light
+  blocks for every lamp. Trees are vanilla features: the builder runs the `features` commands after the templates.
+- `patch_hub3.py <hub dir> <hub3.json>`: AetherionPit keys (spawn, safe zone, boards, portals, props, duck, floaters,
+  decor, parkour, ducklings) and the WorldGuard `hub_safe` box.
+- Props in the served pack: `AetherionItems/tools/gen_hub_props.py` (scroll parts, lamp post, signpost, duckling,
+  crystal) on `minecraft:disc_fragment_5` CustomModelData 8101-8109, mirrored in `HubModels`.
+- AetherionPit: `HubScrolls` (unrolling scrolls instead of text boxes), `HubDecor` (lamps, signpost, rowing boat),
+  `HubParkour` (Sky Path: timer, checkpoints, best times in parkour.yml), `HubSecrets` (ducklings, ducklings.yml),
+  books for the bell and the spell book, `/pit hubtest <player> <discord|modpack>` for console tests.

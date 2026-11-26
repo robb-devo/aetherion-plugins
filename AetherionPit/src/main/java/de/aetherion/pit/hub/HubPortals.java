@@ -181,7 +181,7 @@ public final class HubPortals implements Listener {
 
     // ------------------------------------------------------------------ props: bell, spell book, shop
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPropClick(PlayerInteractEvent event) {
         if (props.isEmpty() || event.getClickedBlock() == null || event.getHand() == EquipmentSlot.OFF_HAND
                 || event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK) {
@@ -197,23 +197,25 @@ public final class HubPortals implements Listener {
                 return;
             }
             Player player = event.getPlayer();
+            // handled here, before WorldGuard and DeluxeHub would deny it with a chat message
+            event.setCancelled(true);
             if (prop.key().equals("discord")) {
-                // the bell may ring by itself; the sound makes sure it does even when the hub blocks interaction
-                if (event.isCancelled() || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                if (!(b.getState() instanceof org.bukkit.block.Bell bell) || !bell.ring(player)) {
                     b.getWorld().playSound(b.getLocation().add(0.5, 0.5, 0.5), Sound.BLOCK_BELL_USE, 1.2f, 1.0f);
                 }
-            } else {
-                event.setCancelled(true);
             }
             if (onCooldown(player, "prop:" + prop.key(), 1500L)) {
                 return;
             }
             switch (prop.key()) {
-                case "discord" -> plugin.hubNpcs().openDiscord(player);
+                case "discord" -> {
+                    b.getWorld().spawnParticle(Particle.NOTE, b.getLocation().add(0.5, 1.2, 0.5), 6, 0.5, 0.3, 0.5, 1);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> plugin.guide().discordBook(player), 6L);
+                }
                 case "modpack" -> {
                     player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
                     b.getWorld().spawnParticle(Particle.ENCHANT, b.getLocation().add(0.5, 1.4, 0.5), 40, 0.6, 0.5, 0.6, 0.6);
-                    plugin.guide().modpackCard(player);
+                    Bukkit.getScheduler().runTask(plugin, () -> plugin.guide().modpackBook(player));
                 }
                 case "shop" -> {
                     player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 0.8f, 1.0f);
@@ -228,7 +230,8 @@ public final class HubPortals implements Listener {
 
     // ------------------------------------------------------------------ floaters: slow animated displays
 
-    private record Floater(boolean item, Material material, Location at, float scale, float bob, float spin, float tilt) {
+    private record Floater(boolean item, Material material, Location at, float scale, float bob, float spin, float tilt,
+                           int code) {
     }
 
     private final List<Floater> floaters = new ArrayList<>();
@@ -240,14 +243,16 @@ public final class HubPortals implements Listener {
         for (Map<?, ?> m : plugin.getConfig().getMapList("floaters")) {
             try {
                 World w = Bukkit.getWorld(String.valueOf(m.containsKey("world") ? m.get("world") : "world"));
-                Material mat = Material.matchMaterial(String.valueOf(m.get("material")));
+                String type = String.valueOf(m.get("type"));
+                int code = (int) num(m, "code", 0);
+                Material mat = "model".equals(type) ? HubModels.BASE : Material.matchMaterial(String.valueOf(m.get("material")));
                 if (w == null || mat == null) {
                     continue;
                 }
                 Location at = new Location(w, num(m, "x", 0), num(m, "y", 64), num(m, "z", 0));
-                floaters.add(new Floater("item".equals(String.valueOf(m.get("type"))), mat, at,
+                floaters.add(new Floater("item".equals(type) || "model".equals(type), mat, at,
                         (float) num(m, "scale", 1), (float) num(m, "bob", 0.25), (float) num(m, "spin", 90),
-                        (float) num(m, "tilt", 0)));
+                        (float) num(m, "tilt", 0), code));
             } catch (RuntimeException ex) {
                 plugin.getLogger().warning("Bad floater " + m + ": " + ex.getMessage());
             }
@@ -271,7 +276,11 @@ public final class HubPortals implements Listener {
             if (d == null || !d.isValid()) {
                 d = f.item()
                         ? w.spawn(f.at(), org.bukkit.entity.ItemDisplay.class, e -> {
-                            e.setItemStack(new org.bukkit.inventory.ItemStack(f.material()));
+                            e.setItemStack(f.code() > 0 ? HubModels.item(f.code())
+                                    : new org.bukkit.inventory.ItemStack(f.material()));
+                            if (f.code() > 0) {
+                                e.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.NONE);
+                            }
                             e.setPersistent(false);
                         })
                         : w.spawn(f.at(), org.bukkit.entity.BlockDisplay.class, e -> {
@@ -454,6 +463,9 @@ public final class HubPortals implements Listener {
         if (onCooldown(player, "void", 1500L)) {
             return;
         }
+        if (plugin.parkour() != null && plugin.parkour().catchFall(player)) {
+            return;
+        }
         Location target = plugin.safeZone().spawn();
         Location pitEntrance = location("pit-entrance");
         if (pitEntrance != null && !plugin.safeZone().isSafe(at)) {
@@ -609,8 +621,8 @@ public final class HubPortals implements Listener {
                 continue;
             }
             Color color = TINT.getOrDefault(gate.key(), Color.WHITE);
-            Particle.DustOptions dust = new Particle.DustOptions(color, gate.key().equals("aetherion") ? 1.6f : 1.1f);
-            int n = gate.key().equals("aetherion") ? 10 : 4;
+            Particle.DustOptions dust = new Particle.DustOptions(color, gate.key().equals("aetherion") ? 0.9f : 0.8f);
+            int n = gate.key().equals("aetherion") ? 6 : 3;
             for (int i = 0; i < n; i++) {
                 double x = gate.min()[0] + r.nextDouble() * (gate.max()[0] - gate.min()[0] + 1);
                 double y = gate.min()[1] + r.nextDouble() * (gate.max()[1] - gate.min()[1] + 1);

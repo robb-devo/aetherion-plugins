@@ -117,6 +117,44 @@
       "aetherion:item/gui/empty"
     ]
   ],
+  "disc_fragment_5": [
+    [
+      8101,
+      "aetherion:item/hub/scroll_paper"
+    ],
+    [
+      8102,
+      "aetherion:item/hub/scroll_roller"
+    ],
+    [
+      8103,
+      "aetherion:item/hub/lamp_post"
+    ],
+    [
+      8104,
+      "aetherion:item/hub/sign_board"
+    ],
+    [
+      8105,
+      "aetherion:item/hub/duckling"
+    ],
+    [
+      8106,
+      "aetherion:item/hub/crystal"
+    ],
+    [
+      8107,
+      "aetherion:item/hub/sign_post"
+    ],
+    [
+      8108,
+      "aetherion:item/hub/rune_ring"
+    ],
+    [
+      8109,
+      "aetherion:item/hub/scroll_paper_dark"
+    ]
+  ],
   "ender_chest": [
     [
       7714,

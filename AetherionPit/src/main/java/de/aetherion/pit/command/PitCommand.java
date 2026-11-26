@@ -26,6 +26,19 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length >= 3 && args[0].equalsIgnoreCase("hubtest") && sender.hasPermission("aetherion.pit.admin")) {
+            Player target = org.bukkit.Bukkit.getPlayerExact(args[1]);
+            if (target == null) {
+                sender.sendMessage("No such player.");
+                return true;
+            }
+            switch (args[2].toLowerCase(Locale.ROOT)) {
+                case "discord" -> plugin.guide().discordBook(target);
+                case "modpack" -> plugin.guide().modpackBook(target);
+                default -> sender.sendMessage("hubtest <player> <discord|modpack>");
+            }
+            return true;
+        }
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Players only.");
             return true;
@@ -55,8 +68,8 @@ public final class PitCommand implements CommandExecutor, TabCompleter {
             case "play", "aetherion", "mmor" -> plugin.transfer().toAetherion(player);
             case "enter", "arena" -> plugin.guide().enterPit(player);
             case "top" -> plugin.guide().topCard(player);
-            case "discord" -> plugin.hubNpcs().openDiscord(player);
-            case "modpack", "shader" -> plugin.guide().modpackCard(player);
+            case "discord" -> plugin.guide().discordBook(player);
+            case "modpack", "shader" -> plugin.guide().modpackBook(player);
             case "stats" -> {
                 PitDataStore.Stats stats = plugin.data().of(player);
                 int need = plugin.levels().xpForNext(stats.level());
