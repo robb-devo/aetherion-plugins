@@ -28,6 +28,7 @@ public final class AetherionPit extends JavaPlugin {
     private HubNpcService hubNpcs;
     private HubGuide guide;
     private PitXpBarHud xpHud;
+    private de.aetherion.pit.hub.HubPortals portals;
 
     @Override
     public void onEnable() {
@@ -40,6 +41,7 @@ public final class AetherionPit extends JavaPlugin {
         transfer = new TransferBridge(this);
         hubNpcs = new HubNpcService(this);
         guide = new HubGuide(this);
+        portals = new de.aetherion.pit.hub.HubPortals(this);
         xpHud = new PitXpBarHud(this);
         new de.aetherion.pit.hud.PitHealthHud(this);
         getServer().getPluginManager().registerEvents(new PitZoneListener(this), this);
@@ -167,11 +169,14 @@ public final class AetherionPit extends JavaPlugin {
             getConfig().set("messages.enter-safe", enterSafe);
             dirty = true;
         }
-        getConfig().set("spawn.x", 0.0);
-        getConfig().set("spawn.y", 64.0);
-        getConfig().set("spawn.z", 0.0);
-        getConfig().set("spawn.yaw", 90.0);
-        getConfig().set("spawn.pitch", 0.0);
+        if (!getConfig().contains("spawn.x", true)) {
+            getConfig().set("spawn.x", 0.0);
+            getConfig().set("spawn.y", 64.0);
+            getConfig().set("spawn.z", 0.0);
+            getConfig().set("spawn.yaw", 90.0);
+            getConfig().set("spawn.pitch", 0.0);
+            dirty = true;
+        }
         if (dirty) {
             saveConfig();
         }
@@ -219,6 +224,9 @@ public final class AetherionPit extends JavaPlugin {
         if (guide != null) {
             guide.stop();
         }
+        if (portals != null) {
+            portals.saveFun();
+        }
         if (data != null) {
             data.saveAll();
         }
@@ -255,5 +263,9 @@ public final class AetherionPit extends JavaPlugin {
 
     public PitXpBarHud xpHud() {
         return xpHud;
+    }
+
+    public de.aetherion.pit.hub.HubPortals portals() {
+        return portals;
     }
 }
