@@ -19,6 +19,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -64,10 +65,14 @@ public final class AnimalPens implements Listener, Runnable, CommandExecutor {
     public void run() {
         for (Pen pen : pens.values()) {
             World world = Bukkit.getWorld(pen.world());
-            if (world == null || !world.isChunkLoaded(((int) Math.floor(pen.x())) >> 4, ((int) Math.floor(pen.z())) >> 4)) {
+            if (world == null) {
                 continue;
             }
             Location centre = new Location(world, pen.x(), pen.y(), pen.z());
+            // Chunk and its entities both loaded, or a fresh chunk would count zero and spawn doubles.
+            if (!ZoneMarkers.ready(centre)) {
+                continue;
+            }
             List<Entity> mine = new ArrayList<>();
             double reach = Math.max(16.0d, pen.radius() * 4.0d);
             for (Entity entity : world.getNearbyEntities(centre, reach, 12.0d, reach)) {
@@ -107,6 +112,17 @@ public final class AnimalPens implements Listener, Runnable, CommandExecutor {
             }
             entity.setPersistent(true);
         });
+    }
+
+    /** Animals of a pen that was removed from the file go when their chunk loads. */
+    @EventHandler
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        for (Entity entity : event.getEntities()) {
+            String id = entity.getPersistentDataContainer().get(tag, PersistentDataType.STRING);
+            if (id != null && !pens.containsKey(id)) {
+                entity.remove();
+            }
+        }
     }
 
     /** Pen animals never breed: the count stays what the pen says. */
@@ -159,7 +175,7 @@ public final class AnimalPens implements Listener, Runnable, CommandExecutor {
                     return true;
                 }
                 save();
-                sender.sendMessage("§7Pen removed (its animals go at the next check).");
+                sender.sendMessage("§7Pen removed (its animals go when their chunk loads again).");
             }
             default -> {
                 sender.sendMessage("§7Pens: §f" + pens.size());
@@ -173,7 +189,7 @@ public final class AnimalPens implements Listener, Runnable, CommandExecutor {
         return true;
     }
 
-    /** Animals of a removed pen still carry its tag: they go at the next check of any pen near them. */
+    /** True for animals a pen keeps (they carry the pen's id). */
     public boolean isPenAnimal(Entity entity) {
         return entity != null && entity.getPersistentDataContainer().has(tag, PersistentDataType.STRING);
     }

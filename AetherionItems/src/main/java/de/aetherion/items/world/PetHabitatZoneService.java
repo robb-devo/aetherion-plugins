@@ -12,6 +12,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -29,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * DEV paint disks for wild pet biotopes. AetherMobs reads {@code pet-habitats.yml}.
  */
-public final class PetHabitatZoneService implements Runnable {
+public final class PetHabitatZoneService implements Runnable, Listener {
 
     public static final int DEFAULT_RADIUS = 50;
     public static final int[] RADII = {30, 50, 80, 120};
@@ -43,6 +46,32 @@ public final class PetHabitatZoneService implements Runnable {
         this.file = new File(plugin.getDataFolder(), "pet-habitats.yml");
         load();
         plugin.getServer().getScheduler().runTaskTimer(this.plugin, this, 80L, 200L);
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+
+    /**
+     * Label stands whose zone is gone (zones repainted in the file, or removed while the chunk slept, which
+     * {@link #removeNearest} cannot reach) go when their chunk loads. Live zones get theirs back from {@link #run}.
+     */
+    @EventHandler
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        for (Entity entity : event.getEntities()) {
+            if (!(entity instanceof ArmorStand)) {
+                continue;
+            }
+            String id = entity.getPersistentDataContainer().get(ItemKeys.petHabitatZone(), PersistentDataType.STRING);
+            if (id != null && !knownZone(id)) {
+                entity.remove();
+            }
+        }
+    }
+
+    private boolean knownZone(String id) {
+        try {
+            return zones.containsKey(UUID.fromString(id));
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     public ItemStack createAnchor(PetHabitatKind habitat) {
