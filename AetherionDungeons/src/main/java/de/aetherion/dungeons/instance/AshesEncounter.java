@@ -115,7 +115,8 @@ public final class AshesEncounter {
         private final Location spawn;
         private final Location bossAt;
         private final int mobsTotal;
-        private final int killsNeeded;
+        /** Lowered once spawning ends if fewer mobs made it in than planned. */
+        private int killsNeeded;
         private BossBar bar;
         private boolean doorOpen;
         private boolean bossSpawned;
@@ -161,6 +162,9 @@ public final class AshesEncounter {
             return;
         }
         clear(world);
+        // Bosses first, while their bodies are still there: an encounter whose body is removed first kept its
+        // spawn slot (dungeon_aetherion allows one), and the next Floor 3 got the fallback enderman.
+        BossEngineBridge.despawnInWorld(world);
         for (org.bukkit.entity.Entity entity : new ArrayList<>(world.getEntities())) {
             if (entity instanceof Player) {
                 continue;
@@ -170,7 +174,6 @@ public final class AshesEncounter {
         for (int[] xyz : prep.doorBlocks()) {
             world.getBlockAt(xyz[0], xyz[1], xyz[2]).setType(DOOR, false);
         }
-        BossEngineBridge.despawnInWorld(world);
         plugin.getLogger().info("Ashes base recycled (" + world.getName() + ").");
     }
 
@@ -271,6 +274,14 @@ public final class AshesEncounter {
             }
             live.kills++;
             live.mobsLeft = Math.max(0, live.mobsLeft - 1);
+            if (live.spawnTask == null) {
+                // Never strand a party: if mobs were lost (lava, void), everything left is enough.
+                live.mobsLeft = countTrash(plugin, world);
+                int killable = live.kills + live.mobsLeft;
+                if (killable < live.killsNeeded) {
+                    live.killsNeeded = Math.max(1, killable);
+                }
+            }
             refreshBar(live);
             if (live.kills >= live.killsNeeded) {
                 openBossDoor(plugin, world, live);
@@ -453,7 +464,19 @@ public final class AshesEncounter {
             pick = new ArrayList<>(pick.subList(0, want));
         }
         final List<int[]> queue = pick;
+        List<int[]> pinned = new ArrayList<>(queue);
+        pinned.add(new int[]{BOSS_X, BOSS_Y, BOSS_Z});
+        pinned.add(new int[]{HERALD_X, GATE_Y_MIN, HERALD_Z});
+        // The world never saves: a mob in a chunk that unloads is gone, so every spot's chunk stays loaded.
+        DungeonChunks.pinColumns(plugin, world, pinned, () -> startSpawning(plugin, world, state, queue));
+    }
+
+    private static void startSpawning(Plugin plugin, World world, AshesState state, List<int[]> queue) {
+        if (BY_WORLD.get(world.getName()) != state) {
+            return;
+        }
         final int[] cursor = {0};
+        final int[] failed = {0};
         BukkitTask[] holder = new BukkitTask[1];
         holder[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             if (BY_WORLD.get(world.getName()) != state) {
@@ -466,10 +489,17 @@ public final class AshesEncounter {
             for (int n = 0; n < 4 && cursor[0] < queue.size(); n++) {
                 int[] xyz = queue.get(cursor[0]++);
                 Location at = new Location(world, xyz[0] + 0.5, xyz[1] + 1, xyz[2] + 0.5);
-                if (cursor[0] % 3 == 0) {
-                    spawnBrute(plugin, world, at);
-                } else {
-                    spawnSkeleton(plugin, world, at);
+                try {
+                    if (cursor[0] % 3 == 0) {
+                        spawnBrute(plugin, world, at);
+                    } else {
+                        spawnSkeleton(plugin, world, at);
+                    }
+                } catch (RuntimeException exception) {
+                    if (failed[0]++ == 0) {
+                        plugin.getLogger().warning("Ashes spawn failed at " + xyz[0] + "," + xyz[1] + "," + xyz[2]
+                                + ": " + exception);
+                    }
                 }
             }
             if (cursor[0] >= queue.size()) {
@@ -478,6 +508,14 @@ public final class AshesEncounter {
                 if (holder[0] != null) {
                     holder[0].cancel();
                 }
+                int killable = state.kills + state.mobsLeft;
+                int reachable = Math.max(1, (int) Math.ceil(Math.max(1, killable) * CLEAR_RATIO));
+                if (reachable < state.killsNeeded) {
+                    state.killsNeeded = reachable;
+                    refreshBar(state);
+                }
+                plugin.getLogger().info("Ashes trash finished spawning: " + state.mobsLeft + " alive, "
+                        + failed[0] + " failed, need " + state.killsNeeded + " kills");
             }
         }, 5L, 2L);
         state.spawnTask = holder[0];

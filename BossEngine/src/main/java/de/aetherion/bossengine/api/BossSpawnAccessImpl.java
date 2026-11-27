@@ -56,7 +56,13 @@ public final class BossSpawnAccessImpl implements BossSpawnAccess {
         if (api == null || world == null) {
             return;
         }
-        for (BossInstance instance : new ArrayList<>(api.getActiveBosses())) {
+        // Active fights plus encounters that still hold their spawn slot without a body (body removed or
+        // unloaded): a dungeon recycle used to miss those, so the next run's boss hit max-instances.
+        java.util.Set<BossInstance> all = new java.util.LinkedHashSet<>(api.getActiveBosses());
+        if (plugin.getBossManager() != null) {
+            all.addAll(plugin.getBossManager().getOccupying());
+        }
+        for (BossInstance instance : new ArrayList<>(all)) {
             if (instance == null) {
                 continue;
             }

@@ -280,9 +280,9 @@ public final class DungeonBench {
             String head = "Bench F" + floor + " " + why + " after " + seconds + " s, " + stops + " stop(s).";
             plugin.getLogger().info("[DungeonBench] " + head);
             sender.sendMessage("§5" + head);
-            List<String> report = instances.metrics().report();
-            if (!report.isEmpty()) {
-                sender.sendMessage("§7" + report.get(0));
+            String last = instances.metrics().lastRun();
+            if (last != null) {
+                sender.sendMessage("§7" + last);
             }
         }
     }

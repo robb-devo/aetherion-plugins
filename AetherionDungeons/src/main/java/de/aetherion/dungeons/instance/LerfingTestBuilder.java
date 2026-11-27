@@ -11,6 +11,8 @@ import org.bukkit.structure.StructureManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
@@ -194,12 +196,25 @@ public final class LerfingTestBuilder {
      * corridors between them, unused door holes sealed, link mouths gated, exit alcove behind the boss.
      */
     public static Location buildPooled(Plugin plugin, World world, FloorOnePool.Plan plan) {
+        Location[] spawn = new Location[1];
+        for (Runnable step : pooledSteps(plugin, world, plan, spawn)) {
+            step.run();
+        }
+        return spawn[0];
+    }
+
+    /**
+     * The pooled Floor 1 build as separate steps, in build order: one per room template, then the corridors,
+     * then seals, mouths, lights, exit, portal and the Gate Warden. Run together they are {@link #buildPooled};
+     * the warm pool runs one per tick so a pre-build never holds the server for long. The last step puts the
+     * party spawn into {@code spawnOut[0]}.
+     */
+    public static List<Runnable> pooledSteps(Plugin plugin, World world, FloorOnePool.Plan plan, Location[] spawnOut) {
         DungeonLayout layout = plan.layout();
-        STYLE.set(TemplateStyle.PRISON);
-        try {
-            PrototypeDungeonBuilder.applyPartyScale(1, 1);
-            int y = DungeonLayout.FLOOR_Y;
-            for (FloorOnePool.Placed placed : plan.all()) {
+        int y = DungeonLayout.FLOOR_Y;
+        List<Runnable> steps = new ArrayList<>();
+        for (FloorOnePool.Placed placed : plan.all()) {
+            steps.add(prison(() -> {
                 boolean ok;
                 try {
                     ok = FloorOnePool.paste(plugin, world, placed, y);
@@ -211,15 +226,17 @@ public final class LerfingTestBuilder {
                     plugin.getLogger().warning("[Floor1] Template " + placed.template().file() + " missing — plain chamber instead.");
                     fillFallbackRoom(world, y, placed.bounds());
                 }
-            }
-
+            }));
+        }
+        steps.add(prison(() -> {
             for (DungeonLayout.Link link : layout.links()) {
                 if (link.toIndex() == DungeonLayout.EXIT) {
                     continue;
                 }
                 buildCorridor(world, y, link);
             }
-
+        }));
+        steps.add(prison(() -> {
             sealGaps(world, y, layout.lobby());
             for (DungeonLayout.CombatRoom room : layout.combatRooms()) {
                 sealGaps(world, y, room.bounds());
@@ -249,10 +266,22 @@ public final class LerfingTestBuilder {
                     world,
                     new Location(world, spawnX + 2.0, y + 1, spawnZ, -90f, 0f)
             );
-            return new Location(world, spawnX, y + 1, spawnZ, 0f, 0f);
-        } finally {
-            STYLE.remove();
-        }
+            spawnOut[0] = new Location(world, spawnX, y + 1, spawnZ, 0f, 0f);
+        }));
+        return steps;
+    }
+
+    /** One build step in the prison style, as the single-pass build always ran. */
+    private static Runnable prison(Runnable work) {
+        return () -> {
+            STYLE.set(TemplateStyle.PRISON);
+            try {
+                PrototypeDungeonBuilder.applyPartyScale(1, 1);
+                work.run();
+            } finally {
+                STYLE.remove();
+            }
+        };
     }
 
     /** Only fills holes (unused door openings, void gaps) — keeps the template's own wall mix. */

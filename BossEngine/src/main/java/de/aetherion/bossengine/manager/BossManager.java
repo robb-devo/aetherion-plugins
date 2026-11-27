@@ -314,6 +314,10 @@ public class BossManager {
                 if (!keys.isBoss(entity) || keys.isMinion(entity) || !entity.isValid() || entity.isDead()) {
                     continue;
                 }
+                if (staleDungeonBody(entity)) {
+                    removed++;
+                    continue;
+                }
                 keys.templateId(entity).ifPresent(id ->
                         byTemplate.computeIfAbsent(id.toLowerCase(java.util.Locale.ROOT), ignored -> new ArrayList<>()).add(entity)
                 );
@@ -421,6 +425,26 @@ public class BossManager {
         return reclaimed;
     }
 
+    /**
+     * Dungeon instance worlds ({@code aedun_}) never save while a run is open, so a boss body that comes off
+     * their disk is left over from an old run (saved when the base world was parked at a restart). Adopting
+     * it made a bodiless "live" encounter that blocked the real boss (Floor 3 got the fallback enderman).
+     * Such bodies are removed, never adopted. Bodies this engine spawned are in {@code instances}.
+     */
+    private boolean staleDungeonBody(LivingEntity entity) {
+        if (entity == null || instances.containsKey(entity.getUniqueId())) {
+            return false;
+        }
+        World world = entity.getWorld();
+        if (world == null || !world.getName().startsWith("aedun_")) {
+            return false;
+        }
+        plugin.getLogger().info("Boss '" + keys.templateId(entity).orElse("?") + "' left-over body in "
+                + world.getName() + " removed (dungeon worlds never keep bosses).");
+        entity.remove();
+        return true;
+    }
+
     public void absorbChunk(Entity[] entities, SpawnerManager spawners) {
         if (entities == null || entities.length == 0) {
             return;
@@ -433,6 +457,9 @@ public class BossManager {
                     || !living.isValid()
                     || living.isDead()
                     || instances.containsKey(living.getUniqueId())) {
+                continue;
+            }
+            if (staleDungeonBody(living)) {
                 continue;
             }
             String templateId = keys.templateId(living).orElse(null);
