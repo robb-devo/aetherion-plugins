@@ -1288,7 +1288,7 @@ public class NpcListener implements Listener {
         de.aetherion.quests.ui.QuestHint.clearPending(player);
 
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.fused_short",
-                "Fused. It stays on, upgrades too. More boosters drop as you play."));
+                "Socketed. It stays in, upgrades too. More boosters drop as you play."));
         if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "pocket_zoo")) {
             npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_vex",
                     "Next: §cSergeant Vex§f, Borderlands gate, east of here. Mines teleport's yours too."));
@@ -1314,7 +1314,7 @@ public class NpcListener implements Listener {
 
         if (plugin == null) {
             npcSay(player, npc,
-                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_fallback", "Far end of the barn — Harlow. He knows the way down to the Farm Isle."));
+                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_fallback", "Far end of the barn — Harlow. He knows the way down to the Farming Isle."));
             de.aetherion.quests.ui.QuestHint.show(player, "lark", "Lark");
             return;
         }
@@ -1324,7 +1324,7 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_peek", "Far end of the barn — that's §eHarlow§f. He knows the way down to the Farm Isle. Later."));
+                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_peek", "Far end of the barn — that's §eHarlow§f. He knows the way down to the Farming Isle. Later."));
             // The arrow and the tip name the same next stop (Lark); Harlow stays a spoken "later".
             player.sendActionBar(net.kyori.adventure.text.Component.text(
                     de.aetherion.quests.lang.LangPack.ui(player, "tip.to_lark", "→ Lark · Fields fence · one pet catch"),
@@ -1605,12 +1605,12 @@ public class NpcListener implements Listener {
                     de.aetherion.quests.lang.LangPack.say(player, "fisher.rod_tip", "Peek at your rod sometime — certain tools level up around here."));
             if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
                 npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fisher.eldervale_pitch",
-                        "Want bigger fish? §bFishing Eldervale§f, out west. Arrow's on the pad."));
+                        "Want bigger fish? §bFishing Isle§f, out west. Arrow's on the pad."));
                 afterSpeech(player, () -> pointFishPad(player));
             } else {
                 // Mid-orientation: name the place, keep the tutorial arrow where it is.
                 npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fisher.eldervale_later",
-                        "Bigger water out west — §bFishing Eldervale§f. Finish your rounds with Ledger first."));
+                        "Bigger water out west — §bFishing Isle§f. Finish your rounds with Ledger first."));
             }
             return;
         }
@@ -2591,33 +2591,33 @@ public class NpcListener implements Listener {
             return;
         }
         de.aetherion.quests.ui.QuestHint.show(player, "farm_isle_guide",
-                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.harlow", "Harlow · Farm Isle"));
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.harlow", "Harlow · Farming Isle"));
     }
 
     private static void pointFarmPad(Player player) {
         de.aetherion.quests.ui.QuestHint.clearPending(player);
         de.aetherion.quests.ui.QuestHint.showSpot(player, "farm_pad",
-                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.farm_pad", "Farm Isle Pad"));
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.farm_pad", "Farming Isle Pad"));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.quests.lang.LangPack.ui(player, "tip.farm_pad", "→ Farm Isle pad · down the road from the barn"),
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.farm_pad", "→ Farming Isle pad · down the road from the barn"),
                 net.kyori.adventure.text.format.NamedTextColor.YELLOW));
     }
 
     private static void pointForagePad(Player player) {
         de.aetherion.quests.ui.QuestHint.clearPending(player);
         de.aetherion.quests.ui.QuestHint.showSpot(player, "forage_pad",
-                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.forage_pad", "Forage Isle Pad"));
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.forage_pad", "Foraging Isle Pad"));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.quests.lang.LangPack.ui(player, "tip.forage_pad", "→ Forage Isle pad · jump · Miss Canopy teaches the isle"),
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.forage_pad", "→ Foraging Isle pad · jump · Miss Canopy teaches the isle"),
                 net.kyori.adventure.text.format.NamedTextColor.GREEN));
     }
 
     private static void pointFishPad(Player player) {
         de.aetherion.quests.ui.QuestHint.clearPending(player);
         de.aetherion.quests.ui.QuestHint.showSpot(player, "fish_pad",
-                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.fish_pad", "Fishing Eldervale Pad"));
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.fish_pad", "Fishing Isle Pad"));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.quests.lang.LangPack.ui(player, "tip.fish_pad", "→ Fishing Eldervale pad · out west"),
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.fish_pad", "→ Fishing Isle pad · out west"),
                 net.kyori.adventure.text.format.NamedTextColor.AQUA));
     }
 
@@ -2632,13 +2632,13 @@ public class NpcListener implements Listener {
         }
         pointFarmPad(player);
         String opener = de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.open_isle",
-                "Farm Isle's down the road, {player}. Pad at the bottom — Elsie teaches the rest. Arrow's on it.");
+                "The Farming Isle is down the road, {player}. Pad at the bottom — Elsie teaches the rest. Arrow's on it.");
         de.aetherion.quests.talk.NpcDesk desk = de.aetherion.quests.talk.NpcDesk.of(npc)
                 .topic(de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.isle.label", "What's out there?"),
                         net.kyori.adventure.text.format.NamedTextColor.GREEN,
                         de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.isle.echo", "What's on the isle?"),
                         de.aetherion.quests.lang.LangPack.sayLines(player, "farm_isle_guide.desk.isle.lesson", new String[] {
-                                "Eldervale fields. Rows that replant themselves, an Oven House that never cools.",
+                                "Rows that replant themselves, an Oven House that never cools.",
                                 "§aElsie§f at the Harvest Hall shows you the shining crops. Catch them and the field pays more."
                         }))
                 .topic(de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.back.label", "Coming back?"),
@@ -2757,7 +2757,7 @@ public class NpcListener implements Listener {
                                 "Bells across the lake mean a run. Drop everything."
                         }));
         String opener = de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.open",
-                "Harbour's for practice, {player}. Real water's on §bFishing Eldervale§f — arrow's on the pad.");
+                "Harbour's for practice, {player}. Real water's on the §bFishing Isle§f — arrow's on the pad.");
         if (!desk.open(player, opener)) {
             dialogManager.startCompletedDialog(player, npc);
         }
@@ -2809,7 +2809,7 @@ public class NpcListener implements Listener {
                 }
                 : new String[] {
                         de.aetherion.quests.lang.LangPack.say(player, "vex.check_boost", "Gear check. Armour: fine. Blade: plain."),
-                        de.aetherion.quests.lang.LangPack.say(player, "vex.check_boost_fix", "§eTemper§f fuses boosters, on the road to Capital. The ten go faster.")
+                        de.aetherion.quests.lang.LangPack.say(player, "vex.check_boost_fix", "§eTemper§f teaches boosters at his forge on the Mines road. The ten go faster.")
                 };
         for (String line : lines) {
             npcSay(player, npc, line);

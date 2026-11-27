@@ -375,7 +375,7 @@ public final class QuestStoryGate {
         } else if (stop == LEDGER) {
             tips.add(guide(player, "ledger_capital", "Next: §dMiss Ledger §7at the Capital — Journal → Spawns → Capital, or §f/capital§7."));
         } else if (stop == TEMPER) {
-            tips.add(guide(player, "temper_south", "Next: §eTemper §7on the south road toward the Mines — fuse one booster."));
+            tips.add(guide(player, "temper_south", "Next: §eTemper §7on the south road toward the Mines — socket one booster."));
         } else if (stop == LARK) {
             tips.add(guide(player, "lark", "Next: §dLark §7at the Fields fence — catch a pet."));
         } else if (stop == VEX) {

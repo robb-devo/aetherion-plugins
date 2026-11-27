@@ -122,9 +122,9 @@ ui:
     quest_done_summary: "Quest abgeschlossen:"
   # Action-bar hints spoken around talk
   tip:
-    isle_forage: "→ Forage-Isle-Pad · Miss Canopy bringt dir die Insel bei"
-    isle_farm: "→ Farm-Isle-Pad · Elsie bringt dir die Insel bei"
-    isle_fish: "→ Fishing-Eldervale-Pad · Maren bringt dir die Insel bei"
+    isle_forage: "→ Pad zur Foraging-Insel · Miss Canopy bringt dir die Insel bei"
+    isle_farm: "→ Pad zur Farming-Insel · Elsie bringt dir die Insel bei"
+    isle_fish: "→ Pad zur Fishing-Insel · Maren bringt dir die Insel bei"
     isle_mine: "→ Mining-Eldervale-Pad · Old Wick bringt dir die Insel bei"
     kit_to_capital: "Kit an · Journal (Platz 9) → Spawns → Capital · oder /capital"
     tutorial_stamp: "Akt III · Miss Ledgers Stempel · /capital"
@@ -155,7 +155,7 @@ ui:
     egon_wood_first: "Hinweis · Egon · erst Holz"
     mines_foreman: "Hinweis · Minen · Shaft Foreman"
     skills_blink: "Journal öffnen (Platz 9) → Skills blinkt"
-    throw_sphere: "Catch Sphere auf ein wildes Pet werfen — dann mit Lark reden"
+    throw_sphere: "Fangkugel auf ein wildes Pet werfen — dann mit Lark reden"
     recipe_pickaxe: "Journal → Rezepte — Mining Pickaxe suchen (2. Rezept)"
     lark_equip: "→ Journal → Pets → Fang ausrüsten"
     chop_demo: "→ Chop-Demo anschauen, dann Eiche für Egon fällen"
@@ -164,7 +164,7 @@ ui:
     fields: "Hinweis · Felder · Farmer + Lark → dann Ledger"
     vex_next: "Tipp · Gear aufrüsten · dann Rite Warden"
     vex_soft: "Tipp · Sergeant Vex"
-    farm_isle: "Farm Isle · Harlow · hinteres Scheunenende · später"
+    farm_isle: "Farming-Insel · Harlow · hinteres Scheunenende · später"
     to_ledger: "→ Miss Ledger · oder /capital"
     tutorial_egon: "Tutorial · Egon · Holz"
     tutorial_quartermaster: "Tutorial · Quartermaster · Kohle"
@@ -175,17 +175,17 @@ ui:
     tutorial_lark: "Akt II · Lark · Feldzaun · ein Pet fangen"
     tutorial_graduation: "Tutorial · Miss Ledger · Abschluss"
     # Red thread — Ledger's roads, harbour crumb, Twig, Vex gear check
-    road_forage: "→ Twig · Schleim-Pad · Forage Isle"
-    road_farm: "→ Harlow · hinteres Scheunenende · Farm Isle"
-    farm_pad: "→ Farm-Isle-Pad · den Weg runter von der Scheune"
-    forage_pad: "→ Forage-Isle-Pad · springen · Miss Canopy bringt dir die Insel bei"
-    fish_pad: "→ Fishing-Eldervale-Pad · weit im Westen"
+    road_forage: "→ Twig · Schleim-Pad · Foraging-Insel"
+    road_farm: "→ Harlow · hinteres Scheunenende · Farming-Insel"
+    farm_pad: "→ Pad zur Farming-Insel · den Weg runter von der Scheune"
+    forage_pad: "→ Pad zur Foraging-Insel · springen · Miss Canopy bringt dir die Insel bei"
+    fish_pad: "→ Pad zur Fishing-Insel · weit im Westen"
     temper: "→ Temper · Booster Tutor · auf dem Weg zur Capital"
     road_fish: "→ Tackle · Hafenpier · Angeln"
     road_steel: "→ Sergeant Vex · erst Gear anlegen"
     road_rite: "→ Rite Warden · Borderlands"
-    canopy_clerk: "Hinweis · Canopy Clerk · Forage Isle"
-    harbour_pad: "→ Schleim-Pad · Forage Isle (Twig)"
+    canopy_clerk: "Hinweis · Canopy Clerk · Foraging-Insel"
+    harbour_pad: "→ Schleim-Pad · Foraging-Insel (Twig)"
     vex_armour: "Tipp · Inventar → Rüstungsslots · Egons Kit"
     vex_temper: "Tipp · Temper · erst ein Booster"
     temper_to_ledger: "→ Miss Ledger · Skills · die Straße hoch zur Capital"
@@ -273,7 +273,7 @@ msg:
   language_saved_en: "Language saved · English"
   done_fallback: "Wir sind hier fertig. Nerv ein anderes Klemmbrett."
   chests_unlocked: "§aKisten frei. §7Probekiste beim Merchant + Welt-Kisten sind aktiv."
-  harbour_pad: "§a✦ §7Hafen-Pad: §aTwig§7 zeigt dir den Schleimsprung → §aForage Isle§7."
+  harbour_pad: "§a✦ §7Hafen-Pad: §aTwig§7 zeigt dir den Schleimsprung → §aForaging-Insel§7."
   quest_switch:
     warn: "§e⚠ §7Mit §f{0}§7 fällt §f{1}§7 weg, samt Fortschritt."
     confirm: "§7Nimm sie innerhalb einer Minute noch einmal an, dann wechselst du. Fertige Quests bleiben immer."
@@ -426,7 +426,7 @@ quests:
     description: "Larder will drei Compressed Wheat. Farm-Weizen komprimieren, dann abliefern."
   pig_in_a_poke:
     title: "Die Sau im Sack"
-    description: "Pet Scout will Beweise, dass du fangen kannst. Fang ein wildes Schwein mit einer Catch Sphere."
+    description: "Pet Scout will Beweise, dass du fangen kannst. Fang ein wildes Schwein mit einer Fangkugel."
   coal_audit:
     title: "Kohleprüfung"
     description: "Ore Ledger will fünf Compressed Coal. Bring Belege, keine Ausreden."
@@ -441,7 +441,7 @@ quests:
     description: "Dock Scaler will drei Compressed Cod. Das Klemmbrett ist schon nass."
   bovine_brief:
     title: "Rinderakte"
-    description: "Sphere Proctor will eine Kuh in einer Sphere. Keine Milch. Kein Steak. Gewahrsam."
+    description: "Sphere Proctor will eine Kuh in einer Fangkugel. Keine Milch. Kein Steak. Gewahrsam."
   guild_brick:
     title: "Gildenziegel"
     description: "Quarry Broker tauscht einen Compacted Cobblestone gegen Club-nahen Respekt."
@@ -535,7 +535,7 @@ dialogs:
     lark_done:
       - "Farmer. Bau Weizen ab, bis du §e48§f hast. Landen Vögel? §eKlick§f sie weg."
   lark_intro:
-    - "Lark. Halt eine §eCatch Sphere§f, schau ein wildes Tier an, §eRechtsklick§f zum Werfen. Nicht mein Papagei!"
+    - "Lark. Halt eine §eFangkugel§f, schau ein wildes Tier an, §eRechtsklick§f zum Werfen. Nicht mein Papagei!"
     - "Fang §eeins§f, dann komm zurück zu mir."
   fisher_intro:
     - "Tackle. Ich bring hier am Pier das Angeln bei, {player}."
@@ -572,7 +572,7 @@ dialogs:
 
   # ---------------------------------------------------------------- Hub / Capital / isles
   farm_isle_guide_intro:
-    - "Die Farm Isle liegt den Weg runter — Eldervale-Felder, lange Reihen, besserer Boden."
+    - "Die Farming-Insel liegt den Weg runter: lange Reihen, besserer Boden."
     - "Pad unten. §aElsie§f bringt dir den Rest bei. Der Pfeil zeigt drauf."
     - "Der Farmer nebenan hält sich für den echten Farmer. Süß."
   forage_pad_guide_intro:
@@ -1167,7 +1167,7 @@ completed:
       - "Zurück zu §eMiss Ledger§f für den Stempel — oder §e/capital§f, wenn du den Weg kennst."
     graduate:
       - "Die Vögel sind zurück. Du auch. Gut, {player}."
-      - "Farm Isle? §eHarlow§f, hinteres Ende der Scheune. Der kennt den Weg runter."
+      - "Farming-Insel? §eHarlow§f, hinteres Ende der Scheune. Der kennt den Weg runter."
   lark:
     default:
       - "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
@@ -1305,7 +1305,7 @@ talk:
     send: "Bereit? Ich setz dich am violetten Hub ab. §e/amethyst§f macht dasselbe."
   booster_tutor:
     next_vex: "Als Nächstes: §cSergeant Vex§f, Tor zu den Borderlands, östlich von hier. Der Minen-Teleport gehört dir auch."
-    next_lark: "Als Nächstes: §dLark§f am Feldzaun. Er gibt dir Catch Spheres, du bringst ein Pet zurück."
+    next_lark: "Als Nächstes: §dLark§f am Feldzaun. Er gibt dir Fangkugeln, du bringst ein Pet zurück."
     mining_line: "Mining Power öffnet härteres Erz, Fortune vervielfacht es. Crystal Finds und Dungeon-Core-Picken kommen später."
     upgrade_warning: "Sitzt ein Booster einmal drin, bleibt er — bis du ihn hier rausholst. Upgrades werfen ihn nicht raus."
     fused: "Booster sitzt! Riechst du das? Fortschritt. Und leicht verbrannt."
@@ -1342,13 +1342,13 @@ talk:
     roads:
       intro: "Skills wachsen da draußen, {player}. Nicht an meinem Schalter."
       menu: "Holz, Weizen, Fisch — oder Stahl. Such dir was aus. Der Pfeil folgt."
-      list: "§aTwigs§f Pad: Forage Isle. §eHarlow§f, hinter der Scheune: Farm Isle. §bTackle§f: Angeln."
+      list: "§aTwigs§f Pad: Foraging-Insel. §eHarlow§f, hinter der Scheune: Farming-Insel. §bTackle§f: Angeln."
       forage:
-        label: "Forage Isle · Twig"
+        label: "Foraging-Insel · Twig"
         echo: "Bäume, bitte."
         line: "§aTwigs§f Schleim-Pad, beim Forager. Inselbäume, dickere Stämme."
       farm:
-        label: "Farm Isle · Harlow"
+        label: "Farming-Insel · Harlow"
         echo: "Felder für mich."
         line: "§eHarlow§f, hinteres Ende der Scheune. Der kennt den Weg runter — ab Farming §e10§f kommst du rein."
       fish:
@@ -1439,13 +1439,13 @@ talk:
           - "Es gibt ein Cap. Frag nicht mich. Frag jemanden mit Klemmbrett."
   farmer:
     wheat_done: "Weizen erledigt. Die Vögel toben. Perfekt."
-    isle_fallback: "Hinteres Ende der Scheune — Harlow. Der kennt den Weg runter zur Farm Isle."
-    isle_peek: "Hinteres Ende der Scheune — das ist §eHarlow§f. Der kennt den Weg runter zur Farm Isle. Später."
+    isle_fallback: "Hinteres Ende der Scheune — Harlow. Der kennt den Weg runter zur Farming-Insel."
+    isle_peek: "Hinteres Ende der Scheune — das ist §eHarlow§f. Der kennt den Weg runter zur Farming-Insel. Später."
   lark:
     nice_catch: "Schöner Fang, {player}. Die Tasche quiekt."
     equip_now: "Jetzt ausrüsten: §eJournal → Pets§f — blinkt. Deinen Fang auswählen."
     catch_done: "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
-    pets_explained: "Es folgt dir, kämpft mit dir und levelt mit dir. Mehr Spheres im Shop, seltenere bei mir."
+    pets_explained: "Es folgt dir, kämpft mit dir und levelt mit dir. Mehr Fangkugeln im Shop, seltenere bei mir."
     next_vex: "Als Nächstes: §cSergeant Vex§f am Tor zu den Borderlands. Nimm das Pet mit, es mag Kämpfe."
     farmer_left: "§eFarmer§f will noch Weizen, falls du ihn ausgelassen hast — gleiche Ecke."
   fields:
@@ -1457,11 +1457,11 @@ talk:
     pass_next: "Gib ihm den Zettel. Kauf dort 'ne Rute, falls nötig, dann komm zur Angelstunde zurück."
     catch_done: "Fang gezählt. Leine frei. Meer noch voll."
     rod_tip: "Guck dir mal deine Rute an — manche Tools leveln hier."
-    eldervale_pitch: "Lust auf größere Fische? §bFishing Eldervale§f, weit im Westen. Der Pfeil zeigt aufs Pad."
-    eldervale_later: "Größeres Wasser im Westen — §bFishing Eldervale§f. Erst deine Runde bei Ledger fertig machen."
+    eldervale_pitch: "Lust auf größere Fische? §bFishing-Insel§f, weit im Westen. Der Pfeil zeigt aufs Pad."
+    eldervale_later: "Größeres Wasser im Westen — §bFishing-Insel§f. Erst deine Runde bei Ledger fertig machen."
     # P-F desk — after the lesson (Fishing Eldervale pitch + pad arrow)
     desk:
-      open: "Der Hafen ist zum Üben, {player}. Echtes Wasser gibt's auf §bFishing Eldervale§f — der Pfeil zeigt aufs Pad."
+      open: "Der Hafen ist zum Üben, {player}. Echtes Wasser gibt's auf der §bFishing-Insel§f — der Pfeil zeigt aufs Pad."
       isle:
         label: "Was gibt's da draußen?"
         echo: "Was ist auf Eldervale?"
@@ -1482,18 +1482,18 @@ talk:
           - "Glocken über dem See heißen: ein Run. Lass alles stehen."
   # Harlow — hub Farm Isle guide (P-B / P-F desk)
   farm_isle_guide:
-    open: "Die Farm Isle liegt den Weg runter, {player}. Das Pad unten bringt dich hin, ab Farming §e10§f."
-    open_ready: "Die Farm Isle liegt den Weg runter, {player}. Pad unten — du darfst rüber. Der Pfeil zeigt drauf."
-    open_isle: "Die Farm Isle liegt den Weg runter, {player}. Pad unten — Elsie bringt dir den Rest bei. Der Pfeil zeigt drauf."
+    open: "Die Farming-Insel liegt den Weg runter, {player}. Das Pad unten bringt dich hin, ab Farming §e10§f."
+    open_ready: "Die Farming-Insel liegt den Weg runter, {player}. Pad unten — du darfst rüber. Der Pfeil zeigt drauf."
+    open_isle: "Die Farming-Insel liegt den Weg runter, {player}. Pad unten — Elsie bringt dir den Rest bei. Der Pfeil zeigt drauf."
     desk:
       isle:
         label: "Was gibt's da draußen?"
         echo: "Was ist auf der Insel?"
         lines:
-          - "Eldervale-Felder. Lange Reihen, eine Harvest Hall, ein Ofenhaus, das nie kalt wird."
+          - "Lange Reihen, eine Harvest Hall, ein Ofenhaus, das nie kalt wird."
           - "§aElsie§f, die Field Warden, wartet am Landeplatz. Die kennt jede Ecke."
         lesson:
-          - "Eldervale-Felder. Reihen, die sich selbst nachpflanzen, ein Ofenhaus, das nie kalt wird."
+          - "Reihen, die sich selbst nachpflanzen, ein Ofenhaus, das nie kalt wird."
           - "§aElsie§f in der Erntehalle zeigt dir die glänzenden Pflanzen. Schnapp sie dir, und das Feld zahlt mehr."
       level:
         label: "Farming 10?"
@@ -2170,7 +2170,7 @@ cast:
     greet_new: ["{player}! Hast du was, das ich anzünden kann? Upgraden. Ich meinte upgraden."]
     greet: ["Riechst du das, {player}? Fortschritt. Und leicht verbrannt."]
     greet_grad: ["{player}! In letzter Zeit was Scharfes eingesetzt?"]
-    idle: ["Der Funke? Völlig Absicht. Größtenteils Absicht.", "Immer mit Schutzbrille. Das hab ich auf die helle Tour gelernt.", "Ein Booster auf dem Anvil ist Kraft. Ein Booster in der Tasche ist nur ein hübscher Stein.", "Ich hab drei Werkbänke in die Luft gejagt. Der vierten geht's prima."]
+    idle: ["Der Funke? Völlig Absicht. Größtenteils Absicht.", "Immer mit Schutzbrille. Das hab ich auf die helle Tour gelernt.", "Ein Booster auf dem Amboss ist Kraft. Ein Booster in der Tasche ist nur ein hübscher Stein.", "Ich hab drei Werkbänke in die Luft gejagt. Der vierten geht's prima."]
     farewell: ["Bleib entflammbar. Moment. Nein. Lieber nicht."]
     topics:
       - label: "Gibt's ein Limit?"
@@ -2212,15 +2212,15 @@ cast:
     topics:
       - label: "Warum die Vögel?"
         lines: ["Die wissen, was sie getan haben.", "Jede Saison. Dieselben Vögel. Den da kenn ich."]
-      - label: "Farm Isle?"
+      - label: "Farming-Insel?"
         lines: ["Harlow, hinteres Ende der Scheune. Der kennt den Weg runter.", "Farming zehn. Größere Felder. Weniger Vögel."]
   lark:
-    accept: "Zeig mir die Spheres."
+    accept: "Zeig mir die Fangkugeln."
     decline: "Später."
     on_accept: ["Tief zielen, {player}. Schweine sind klein."]
     on_decline: ["Die Tiere werden erleichtert sein."]
     returning:
-      - "Sphere in die Hand, Tier anschauen, §eRechtsklick§f. Ein Fang, {player}."
+      - "Fangkugel in die Hand, Tier anschauen, §eRechtsklick§f. Ein Fang, {player}."
       - "Dann komm zurück. Pistachio will es kennenlernen."
     greet_new: ["{player}! Vorsicht, Papagei. Sie bewertet deine Schuhe."]
     greet: ["{player}! Pistachio erinnert sich an dich. Das ist kein Kompliment."]
@@ -2272,9 +2272,9 @@ cast:
       - label: "Die Narbe?"
         lines: ["Trainingsunfall.", "Das Training hat gewonnen."]
   farm_isle_guide:
-    greet_new: ["Harlow. Das Farm-Isle-Pad ist den Weg runter, {player}. Elsie bringt dir den Rest bei."]
+    greet_new: ["Harlow. Das Pad zur Farming-Insel ist den Weg runter, {player}. Elsie bringt dir den Rest bei."]
     greet: ["Guter Boden heute, {player}."]
-    idle: ["Der Boden drüben auf der Farm Isle ist besser als hier. Sag dem Bauern nicht, dass ich das gesagt hab.", "Das Pad wummert den ganzen Tag. Ich hör's seit Jahren nicht mehr.", "Auf einem Halm kauen hilft mir beim Denken. Hilft nicht wirklich, aber ich probier's weiter."]
+    idle: ["Der Boden drüben auf der Farming-Insel ist besser als hier. Sag dem Bauern nicht, dass ich das gesagt hab.", "Das Pad wummert den ganzen Tag. Ich hör's seit Jahren nicht mehr.", "Auf einem Halm kauen hilft mir beim Denken. Hilft nicht wirklich, aber ich probier's weiter."]
     farewell: ["Knie beugen auf dem Pad. Keine Experimente."]
     topics:
       - label: "Was gibt's auf der Insel?"

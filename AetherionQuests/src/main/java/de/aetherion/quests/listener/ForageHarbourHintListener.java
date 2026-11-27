@@ -60,7 +60,7 @@ public final class ForageHarbourHintListener implements Listener, Runnable {
             return; // already met Twig — nothing to discover
         }
         player.sendMessage(de.aetherion.quests.lang.LangPack.msg(player, "harbour_pad",
-                "§a✦ §7Harbour pad: §aTwig§7 points to the slime jump → §aForage Isle§7."));
+                "§a✦ §7Harbour pad: §aTwig§7 points to the slime jump → §aForaging Isle§7."));
         boolean busy = plugin.getQuestManager().findActiveOrReadyQuest(player) != null;
         String thread = QuestHint.pendingNpc(player);
         if (busy || (thread != null && !"ledger".equals(thread))) {
@@ -69,7 +69,7 @@ public final class ForageHarbourHintListener implements Listener, Runnable {
         QuestHint.clearPending(player);
         QuestHint.show(player, "forage_pad_guide", "Twig · Forage Pad");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.quests.lang.LangPack.ui(player, "tip.harbour_pad", "→ Slime pad · Forage Isle (Twig)"),
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.harbour_pad", "→ Slime pad · Foraging Isle (Twig)"),
                 net.kyori.adventure.text.format.NamedTextColor.GREEN
         ));
     }

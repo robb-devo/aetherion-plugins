@@ -194,7 +194,7 @@ public final class LivingNpcProfile {
                 .slim().skinFile("alex_slim.png"));
 
         // Harlow — hub Farm Isle guide, far end of the barn (FancyNpc)
-        put(p("farm_isle_guide", "Farm Isle Road", NamedTextColor.GREEN, "§a")
+        put(p("farm_isle_guide", "Farming Isle Road", NamedTextColor.GREEN, "§a")
                 .hand(Material.WHEAT).leather(Color.fromRGB(110, 130, 55)).chest().boots()
                 .skinFile("farmer.png"));
 

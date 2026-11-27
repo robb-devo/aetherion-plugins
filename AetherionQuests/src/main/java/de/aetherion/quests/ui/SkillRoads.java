@@ -364,10 +364,10 @@ public final class SkillRoads {
 
     private static String tip(Player player, Road road) {
         return switch (road) {
-            case FORAGE -> LangPack.ui(player, "tip.isle_forage", "→ Forage Isle pad · Miss Canopy teaches the isle");
-            case FARM -> LangPack.ui(player, "tip.isle_farm", "→ Farm Isle pad · Elsie teaches the isle");
-            case FISH -> LangPack.ui(player, "tip.isle_fish", "→ Fishing Eldervale pad · Maren teaches the isle");
-            case MINE -> LangPack.ui(player, "tip.isle_mine", "→ Mining Eldervale pad · Old Wick teaches the isle");
+            case FORAGE -> LangPack.ui(player, "tip.isle_forage", "→ Foraging Isle pad · Miss Canopy teaches the isle");
+            case FARM -> LangPack.ui(player, "tip.isle_farm", "→ Farming Isle pad · Elsie teaches the isle");
+            case FISH -> LangPack.ui(player, "tip.isle_fish", "→ Fishing Isle pad · Maren teaches the isle");
+            case MINE -> LangPack.ui(player, "tip.isle_mine", "→ Mining Isle pad · Old Wick teaches the isle");
         };
     }
 

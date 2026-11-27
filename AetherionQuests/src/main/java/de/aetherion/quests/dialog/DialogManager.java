@@ -2103,7 +2103,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("farm_isle_guide_intro")) {
             return new String[] {
-                    "Farm Isle's down the road — Eldervale fields, long rows, better soil.",
+                    "The Farming Isle is down the road: long rows, better soil.",
                     "Pad at the bottom. §aElsie§f teaches the rest. Arrow's on it.",
                     "The Farmer next door thinks he's the real farmer. Cute."
             };
@@ -2616,7 +2616,7 @@ public class DialogManager implements Listener {
         if (player != null && QuestStoryGate.tutorialDone(player, questManager)) {
             return de.aetherion.quests.lang.LangPack.completed(player, "farmer.graduate", new String[] {
                     "Birds are back. So are you. Good, {player}.",
-                    "Farm Isle? §eHarlow§f, far end of the barn. He knows the way down."
+                    "Farming Isle? §eHarlow§f, far end of the barn. He knows the way down."
             });
         }
         if (larkDone) {
