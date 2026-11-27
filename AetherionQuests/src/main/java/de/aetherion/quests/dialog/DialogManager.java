@@ -1807,7 +1807,10 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("lark_intro")) {
             return new String[] {
-                    "Lark. Hold a §eCatch Sphere§f, look at a wild animal, §eright-click§f to throw. Not my parrot!",
+                    "Lark. Pets are my thing. And that one's my parrot, not yours.",
+                    "Wild pets live in their own habitats around the island. Some roam right here on the fields.",
+                    "Hold a §eCatch Sphere§f, look at a wild pet and §eright-click§f to throw it.",
+                    "Equip your catch in your Journal under Pets. It follows you, fights with you and levels with you.",
                     "Catch §eone§f, then come back to me."
             };
         }
@@ -1917,8 +1920,12 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("booster_tutor_intro")) {
             return new String[] {
-                    "Temper. Boosters make your gear stronger. You socket them at the §eAnvil§f.",
-                    "Say yes and pick your first one. Each says what it does."
+                    "Ah, a new face! I'm Temper. In my forge, good gear becomes great gear.",
+                    "Boosters make an item better at one thing: more damage, more health, more wood per tree.",
+                    "You socket them at the §eAnvil§f. There's one right here, and you carry one in your Journal.",
+                    "Item on top, booster into a free slot below. Taking it out is one click. Nothing breaks.",
+                    "For a start I'll give you one of every kind. Try what suits you!",
+                    "New boosters are made in the §eRecipe Book§f. And your Journal remembers the rest."
             };
         }
 

@@ -518,8 +518,12 @@ dialogs:
       - "Shaft Foreman. Bau hier §e32 Erz§f ab: Kohle, Kupfer, Eisen. Dann komm zurück, {player}."
       - "Rüstung an, der Fels beißt. Kohle und deine Spitzhacke ergeben eine §fMining Pickaxe§f: §aRezeptbuch§f im Journal."
   booster_tutor_intro:
-    - "Temper. Booster machen deine Ausrüstung stärker. Du steckst sie am §eAmboss§f ein."
-    - "Sag ja und such dir deinen ersten aus. Auf jedem steht, was er macht."
+    - "Ah, ein neues Gesicht! Ich bin Temper. In meiner Schmiede wird gute Ausrüstung großartig."
+    - "Booster machen einen Gegenstand in einer Sache besser: mehr Schaden, mehr Leben, mehr Holz."
+    - "Du setzt sie am §eAmboss§f ein. Einer steht hier neben mir, einen hast du im Journal dabei."
+    - "Gegenstand oben drauf, Booster in einen freien Platz darunter. Raus geht's mit einem Klick."
+    - "Für den Anfang schenk ich dir von jeder Sorte einen. Probier aus, was zu dir passt!"
+    - "Neue Booster stellst du im §eRezeptbuch§f her. Und im Journal steht alles noch mal."
   ledger_intro:
     - "Miss Ledger, Archiv der Capital. Ich zeig dir, wie du hier stärker wirst."
     - "Alles, was du tust, trainiert einen Skill: Hacken Foraging, Graben Mining, Kämpfen Combat."
@@ -535,8 +539,11 @@ dialogs:
     lark_done:
       - "Farmer. Bau Weizen ab, bis du §e48§f hast. Landen Vögel? §eKlick§f sie weg."
   lark_intro:
-    - "Lark. Halt eine §eFangkugel§f, schau ein wildes Tier an, §eRechtsklick§f zum Werfen. Nicht mein Papagei!"
-    - "Fang §eeins§f, dann komm zurück zu mir."
+    - "Lark. Pets sind mein Ding. Und der da ist mein Papagei, nicht deiner."
+    - "Wilde Pets leben in ihren Lebensräumen auf der Insel. Ein paar laufen direkt hier über die Felder."
+    - "Halt eine §eFangkugel§f, schau ein wildes Pet an und §eRechtsklick§f zum Werfen."
+    - "Rüste deinen Fang im Journal unter Pets aus. Er folgt dir, kämpft mit dir und levelt mit dir."
+    - "Fang §eeins§f, dann komm zu mir zurück."
   fisher_intro:
     - "Tackle. Ich bring hier am Pier das Angeln bei, {player}."
     - "Wirf die Rute ins Wasser und warte. Beißt ein Fisch an, erscheint eine Leiste."
