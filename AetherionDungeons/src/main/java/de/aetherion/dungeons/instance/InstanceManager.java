@@ -91,18 +91,11 @@ public final class InstanceManager {
         if (player == null || !player.isOnline()) {
             return;
         }
-        // Provisional: only one dungeon instance on the server at a time.
-        if (!byOwner.isEmpty() || !byWorld.isEmpty()) {
-            String who = "another party";
-            for (DungeonSession live : byOwner.values()) {
-                Player owner = Bukkit.getPlayer(live.ownerId());
-                if (owner != null && owner.isOnline()) {
-                    who = owner.getName();
-                    break;
-                }
-            }
-            player.sendMessage("§cA dungeon is already running §7(" + who + "§7).");
-            player.sendMessage("§8Only one dungeon run at a time for now — try again when it finishes.");
+        // Several parties at once (A-12), capped by instances.max-runs.
+        int maxRuns = Math.max(1, plugin.getConfig().getInt("instances.max-runs", 3));
+        if (byOwner.size() >= maxRuns) {
+            player.sendMessage("§cAll " + maxRuns + " dungeon instances are in use right now.");
+            player.sendMessage("§8Try again when a run finishes.");
             return;
         }
         int enterCode = Math.max(1, floor);
@@ -162,6 +155,11 @@ public final class InstanceManager {
             if (warmEndless != null) {
                 world = warmEndless.world();
                 worldName = world.getName();
+            } else if (warmPool.endlessBusy()) {
+                // Every copy is in a run: never paste a new XL floor on the server thread for a second party.
+                player.sendMessage("§bFloor 2 is full right now. §7A fresh copy is on its way — try again in a few seconds.");
+                warmPool.ensureAll();
+                return;
             } else {
                 worldName = WORLD_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
             }
@@ -170,6 +168,11 @@ public final class InstanceManager {
             if (warmAshes != null) {
                 world = warmAshes.world();
                 worldName = world.getName();
+            } else if (warmPool.ashesBusy()) {
+                // The base is in a run: a second party must never share its world.
+                player.sendMessage("§5Floor 3 is full right now. §7A fresh copy is on its way — try again in a few seconds.");
+                warmPool.ensureAll();
+                return;
             } else {
                 worldName = DungeonWarmPool.ASHES_BASE;
             }

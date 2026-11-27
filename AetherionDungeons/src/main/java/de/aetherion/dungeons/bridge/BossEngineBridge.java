@@ -60,10 +60,32 @@ public final class BossEngineBridge {
         } else {
             ok = spawnReflect(location, initiator, id, compactHearths);
         }
+        if (!ok && liveInWorld(id, location.getWorld())) {
+            // The boss is already standing in this arena (e.g. a stationary spawner got there first): use it
+            // instead of adding a fallback mob next to it.
+            Plugin owner = Bukkit.getPluginManager().getPlugin("AetherionDungeons");
+            if (owner != null) {
+                owner.getLogger().info("[Boss] '" + id + "' is already in " + location.getWorld().getName() + "; using that one.");
+            }
+            return true;
+        }
         if (!ok) {
             explainRefusal(id, location);
         }
         return ok;
+    }
+
+    private static boolean liveInWorld(String id, World world) {
+        if (world == null) {
+            return false;
+        }
+        for (org.bukkit.entity.LivingEntity entity : world.getLivingEntities()) {
+            String tid = templateId(entity);
+            if (tid != null && tid.equalsIgnoreCase(id) && entity.isValid() && !entity.isDead()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

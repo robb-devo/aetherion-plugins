@@ -74,6 +74,11 @@ return-portal:
     yaw: 0.0
     pitch: 0.0
 
+# Parallel runs (A-12): how many dungeon instances may run on this server at once. Floor 1 builds a
+# world per run; Floors 2 and 3 use their base world and, for the next party, a copy made off-thread.
+instances:
+  max-runs: 3
+
 # Per-run measurement (A-06): one summary line per run in the log and in run-metrics.csv, plus a
 # [SlowTick] warning whenever the server thread stalls stall-ms or longer (gap between two tick starts,
 # normally 50 ms), with what ran in it. /dungeon metrics shows the runs.
