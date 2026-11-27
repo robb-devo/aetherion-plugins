@@ -12,12 +12,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 import de.aetherion.core.world.VoidChunkGenerator;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * Reuses one persistent Endless XL base world so WorldEdit paste happens at most once
@@ -42,6 +48,12 @@ final class DungeonWarmPool {
     private volatile WarmAshes warmAshes;
     private volatile World warmVoid;
     private volatile WarmFloorOne warmFloorOne;
+    /** Parallel runs (A-12): one ready copy of each base for the next party while the base is in use. */
+    private volatile WarmEndless spareEndless;
+    private volatile WarmAshes spareAshes;
+    private final AtomicBoolean endlessCopying = new AtomicBoolean(false);
+    private final AtomicBoolean ashesCopying = new AtomicBoolean(false);
+    private final Set<String> copying = ConcurrentHashMap.newKeySet();
     /** World name of the Floor 1 being pre-built, so the orphan sweep leaves it alone. */
     private volatile String floorOneInProgress;
 
@@ -80,6 +92,8 @@ final class DungeonWarmPool {
         ensureWarmEndless();
         ensureWarmAshes();
         ensureWarmFloorOne();
+        ensureSpareEndless();
+        ensureSpareAshes();
     }
 
     void shutdown() {
@@ -90,12 +104,22 @@ final class DungeonWarmPool {
             Bukkit.unloadWorld(endless.world(), true);
         }
         for (WarmEndless claimed : List.copyOf(claimedEndless.values())) {
-            if (claimed.world() != null) {
+            if (claimed.world() == null) {
+                continue;
+            }
+            if (ENDLESS_BASE.equals(claimed.world().getName())) {
                 parkWorld(claimed.world());
                 Bukkit.unloadWorld(claimed.world(), true);
+            } else {
+                unloadDiscard(claimed.world());
             }
         }
         claimedEndless.clear();
+        WarmEndless spare = spareEndless;
+        spareEndless = null;
+        if (spare != null && spare.world() != null) {
+            unloadDiscard(spare.world());
+        }
         WarmAshes ashes = warmAshes;
         warmAshes = null;
         if (ashes != null && ashes.world() != null) {
@@ -103,12 +127,22 @@ final class DungeonWarmPool {
             Bukkit.unloadWorld(ashes.world(), true);
         }
         for (WarmAshes claimed : List.copyOf(claimedAshes.values())) {
-            if (claimed.world() != null) {
+            if (claimed.world() == null) {
+                continue;
+            }
+            if (ASHES_BASE.equals(claimed.world().getName())) {
                 parkWorld(claimed.world());
                 Bukkit.unloadWorld(claimed.world(), true);
+            } else {
+                unloadDiscard(claimed.world());
             }
         }
         claimedAshes.clear();
+        WarmAshes spareThrone = spareAshes;
+        spareAshes = null;
+        if (spareThrone != null && spareThrone.world() != null) {
+            unloadDiscard(spareThrone.world());
+        }
         World voidWorld = warmVoid;
         warmVoid = null;
         if (voidWorld != null) {
@@ -149,6 +183,17 @@ final class DungeonWarmPool {
             return true;
         }
         if (worldName.equals(floorOneInProgress)) {
+            return true;
+        }
+        if (copying.contains(worldName) || claimedEndless.containsKey(worldName) || claimedAshes.containsKey(worldName)) {
+            return true;
+        }
+        WarmEndless spare = spareEndless;
+        if (spare != null && spare.world() != null && worldName.equals(spare.world().getName())) {
+            return true;
+        }
+        WarmAshes spareThrone = spareAshes;
+        if (spareThrone != null && spareThrone.world() != null && worldName.equals(spareThrone.world().getName())) {
             return true;
         }
         World voidWorld = warmVoid;
@@ -232,6 +277,126 @@ final class DungeonWarmPool {
         });
     }
 
+    private int maxRuns() {
+        return Math.max(1, plugin.getConfig().getInt("instances.max-runs", 3));
+    }
+
+    /** A second party for Floor 2 gets a copy of the base: copied off the server thread, loaded, reset. */
+    private void ensureSpareEndless() {
+        // Only while the base itself is in a run.
+        if (warmEndless != null || spareEndless != null || maxRuns() <= 1 || claimedEndless.size() >= maxRuns()
+                || !claimedEndless.containsKey(ENDLESS_BASE) || !endlessCopying.compareAndSet(false, true)) {
+            return;
+        }
+        EndlessSchemBuilder.PasteResult paste = loadPasteMeta();
+        EndlessEncounter.Prep prep = loadPrep();
+        File source = new File(Bukkit.getWorldContainer(), ENDLESS_BASE);
+        if (paste == null || prep == null || !source.isDirectory()) {
+            endlessCopying.set(false);
+            return;
+        }
+        copyBase(source, InstanceManager.WORLD_PREFIX + "xl_" + shortId(), true, world -> {
+            EndlessEncounter.resetForReuse(plugin, world, prep);
+            parkWorld(world);
+            spareEndless = new WarmEndless(world, paste, prep);
+        }, endlessCopying);
+    }
+
+    /** A second party for Floor 3 gets a copy of the Throne base. */
+    private void ensureSpareAshes() {
+        if (warmAshes != null || spareAshes != null || maxRuns() <= 1 || claimedAshes.size() >= maxRuns()
+                || !claimedAshes.containsKey(ASHES_BASE) || !ashesCopying.compareAndSet(false, true)) {
+            return;
+        }
+        AshesEncounter.Prep prep = loadAshesPrep();
+        File source = new File(Bukkit.getWorldContainer(), ASHES_BASE);
+        if (prep == null || !source.isDirectory()) {
+            ashesCopying.set(false);
+            return;
+        }
+        copyBase(source, InstanceManager.WORLD_PREFIX + "f3_" + shortId(), false, world -> {
+            AshesEncounter.resetForReuse(plugin, world, prep);
+            parkWorld(world);
+            world.setSpawnLocation(new Location(world, AshesEncounter.SPAWN_X + 0.5, AshesEncounter.SPAWN_Y,
+                    AshesEncounter.SPAWN_Z + 0.5));
+            spareAshes = new WarmAshes(world, prep);
+        }, ashesCopying);
+    }
+
+    /**
+     * Copies a base world folder to {@code name} off the server thread (no lock, no uid: the copy gets its own),
+     * then loads it on the server thread and hands it to {@code ready}. The base never saves during a run, so
+     * its files are stable while it is in use; left-over mobs in the copy are swept when their chunks load.
+     */
+    private void copyBase(File source, String name, boolean voidGenerator, java.util.function.Consumer<World> ready,
+                          AtomicBoolean flag) {
+        copying.add(name);
+        long started = System.currentTimeMillis();
+        File target = new File(Bukkit.getWorldContainer(), name);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            boolean copied = copyFolder(source.toPath(), target.toPath());
+            long copyMs = System.currentTimeMillis() - started;
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                try {
+                    if (!copied || !plugin.isEnabled()) {
+                        deleteRecursively(target);
+                        plugin.getLogger().warning("Could not copy " + source.getName() + " to " + name + ".");
+                        return;
+                    }
+                    World world = DungeonRunMetrics.timed(null, "load base copy", () -> {
+                        WorldCreator creator = new WorldCreator(name);
+                        if (voidGenerator) {
+                            creator.generator(VoidChunkGenerator.forDungeons());
+                        }
+                        creator.generateStructures(false);
+                        creator.environment(World.Environment.NORMAL);
+                        creator.keepSpawnLoaded(net.kyori.adventure.util.TriState.FALSE);
+                        World loaded = creator.createWorld();
+                        if (loaded != null) {
+                            InstanceManager.slimExistingWorld(loaded);
+                        }
+                        return loaded;
+                    });
+                    if (world == null) {
+                        deleteRecursively(target);
+                        plugin.getLogger().warning("Could not load the base copy " + name + ".");
+                        return;
+                    }
+                    ready.accept(world);
+                    plugin.getLogger().info("Base copy ready for a second party: " + name + " (copy " + copyMs
+                            + " ms off-thread, " + (System.currentTimeMillis() - started) + " ms in all).");
+                } finally {
+                    copying.remove(name);
+                    flag.set(false);
+                }
+            });
+        });
+    }
+
+    private static boolean copyFolder(Path from, Path to) {
+        try (Stream<Path> paths = Files.walk(from)) {
+            for (Path path : (Iterable<Path>) paths::iterator) {
+                String file = path.getFileName() == null ? "" : path.getFileName().toString();
+                if (file.equals("session.lock") || file.equals("uid.dat")) {
+                    continue;
+                }
+                Path into = to.resolve(from.relativize(path).toString());
+                if (Files.isDirectory(path)) {
+                    Files.createDirectories(into);
+                } else {
+                    Files.copy(path, into, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            return true;
+        } catch (IOException exception) {
+            return false;
+        }
+    }
+
+    private static String shortId() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
     private void abandonFloorOne(String name, World world) {
         if (name.equals(floorOneInProgress)) {
             floorOneInProgress = null;
@@ -261,12 +426,29 @@ final class DungeonWarmPool {
     WarmEndless takeEndless() {
         WarmEndless ready = warmEndless;
         warmEndless = null;
+        if (ready == null) {
+            ready = spareEndless;
+            spareEndless = null;
+        }
         if (ready != null) {
             claimedEndless.put(ready.world().getName(), ready);
             plugin.getLogger().info("Claimed Endless XL base: " + ready.world().getName());
-            // Do NOT paste again — recycle after the run.
+            // Do NOT paste again — recycle after the run. The next party gets a copy.
+            plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureSpareEndless, 40L);
         }
         return ready;
+    }
+
+    /** True while Floor 2 exists but every copy of it is in a run (the caller says "busy" instead of pasting). */
+    boolean endlessBusy() {
+        return warmEndless == null && spareEndless == null
+                && (claimedEndless.containsKey(ENDLESS_BASE) || new File(Bukkit.getWorldContainer(), ENDLESS_BASE).isDirectory());
+    }
+
+    /** True while Floor 3 exists but every copy of it is in a run. */
+    boolean ashesBusy() {
+        return warmAshes == null && spareAshes == null
+                && (claimedAshes.containsKey(ASHES_BASE) || Bukkit.getWorld(ASHES_BASE) != null);
     }
 
     /** After players leave: wipe mobs, restore gate, put base back in the pool. */
@@ -288,17 +470,30 @@ final class DungeonWarmPool {
         }
         EndlessEncounter.resetForReuse(plugin, world, meta.prep());
         parkWorld(world);
-        warmEndless = new WarmEndless(world, meta.paste(), meta.prep());
-        plugin.getLogger().info("Endless XL base returned to warm pool.");
+        if (ENDLESS_BASE.equals(world.getName())) {
+            warmEndless = new WarmEndless(world, meta.paste(), meta.prep());
+            plugin.getLogger().info("Endless XL base returned to warm pool.");
+        } else if (spareEndless == null) {
+            spareEndless = new WarmEndless(world, meta.paste(), meta.prep());
+            plugin.getLogger().info("Floor 2 copy " + world.getName() + " kept as the spare.");
+        } else {
+            unloadDiscard(world);
+            plugin.getLogger().info("Floor 2 copy " + world.getName() + " thrown away (a spare is ready).");
+        }
         return true;
     }
 
     WarmAshes takeAshes() {
         WarmAshes ready = warmAshes;
         warmAshes = null;
+        if (ready == null) {
+            ready = spareAshes;
+            spareAshes = null;
+        }
         if (ready != null) {
             claimedAshes.put(ready.world().getName(), ready);
             plugin.getLogger().info("Claimed Ashes Floor 3 base: " + ready.world().getName());
+            plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureSpareAshes, 40L);
         }
         return ready;
     }
@@ -328,8 +523,18 @@ final class DungeonWarmPool {
         }
         AshesEncounter.resetForReuse(plugin, world, meta.prep());
         parkWorld(world);
-        warmAshes = new WarmAshes(world, meta.prep());
-        plugin.getLogger().info("Ashes Floor 3 base returned to warm pool.");
+        world.setSpawnLocation(new Location(world, AshesEncounter.SPAWN_X + 0.5, AshesEncounter.SPAWN_Y,
+                AshesEncounter.SPAWN_Z + 0.5));
+        if (ASHES_BASE.equals(world.getName())) {
+            warmAshes = new WarmAshes(world, meta.prep());
+            plugin.getLogger().info("Ashes Floor 3 base returned to warm pool.");
+        } else if (spareAshes == null) {
+            spareAshes = new WarmAshes(world, meta.prep());
+            plugin.getLogger().info("Floor 3 copy " + world.getName() + " kept as the spare.");
+        } else {
+            unloadDiscard(world);
+            plugin.getLogger().info("Floor 3 copy " + world.getName() + " thrown away (a spare is ready).");
+        }
         return true;
     }
 
@@ -362,13 +567,13 @@ final class DungeonWarmPool {
         if (warmEndless != null || !endlessBuilding.compareAndSet(false, true)) {
             return;
         }
-        if (!claimedEndless.isEmpty()) {
+        if (claimedEndless.containsKey(ENDLESS_BASE)) {
             endlessBuilding.set(false);
             return; // currently in a run
         }
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             try {
-                if (warmEndless != null || !claimedEndless.isEmpty()) {
+                if (warmEndless != null || claimedEndless.containsKey(ENDLESS_BASE)) {
                     return;
                 }
                 long started = System.currentTimeMillis();
@@ -606,13 +811,13 @@ final class DungeonWarmPool {
         if (warmAshes != null || !ashesBuilding.compareAndSet(false, true)) {
             return;
         }
-        if (!claimedAshes.isEmpty()) {
+        if (claimedAshes.containsKey(ASHES_BASE)) {
             ashesBuilding.set(false);
             return;
         }
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             try {
-                if (warmAshes != null || !claimedAshes.isEmpty()) {
+                if (warmAshes != null || claimedAshes.containsKey(ASHES_BASE)) {
                     return;
                 }
                 File folder = new File(Bukkit.getWorldContainer(), ASHES_BASE);
