@@ -111,7 +111,9 @@ public final class OriginCuriosities implements Listener {
         }
         for (String id : cs.getKeys(false)) {
             ConfigurationSection s = cs.getConfigurationSection(id);
-            if (s == null) {
+            // enabled: false switches one off without deleting it (2026-11-27: 66 were far too many; the jar's
+            // defaults would put a deleted one back on the next start).
+            if (s == null || !s.getBoolean("enabled", true)) {
                 continue;
             }
             double[] at = OriginConfig.nums(s.getString("at"));
