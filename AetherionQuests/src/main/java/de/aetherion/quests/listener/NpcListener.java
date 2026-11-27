@@ -2722,7 +2722,7 @@ public class NpcListener implements Listener {
                                 "Ninety percent totally."
                         }))
                 .open(player, de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.open",
-                        "Slime pad → Forage Isle, {player}. Jump. Don't overthink it."));
+                        "Slime pad → Foraging Isle, {player}. Jump. Don't overthink it."));
     }
 
     /**
@@ -2909,7 +2909,7 @@ public class NpcListener implements Listener {
         }
         String[] travel = de.aetherion.quests.lang.LangPack.sayLines(player, "ledger.desk.travel.lines", new String[] {
                 "Journal → §eSpawns§f. Every camp you've walked into is one click.",
-                "The isles are pads: §aTwig§f's slime pad for Forage, §eHarlow§f's road for the Farm, the west pad for Fishing.",
+                "Every isle has a pad: §aTwig§f's slime pad to the Foraging Isle, §eHarlow§f's road to the Farming Isle, the west pad to the Fishing Isle.",
                 "Lost? §e/capital§f puts you back at my desk. I'll pretend not to notice."
         });
         choices.add(new de.aetherion.quests.talk.TalkUx.Choice(

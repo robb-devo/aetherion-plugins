@@ -1840,9 +1840,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("dockhand_intro")) {
             return new String[] {
-                    "The water has been acting strange lately. Fishermen come home covered in ink.",
-                    "There's something under the harbour with too many arms and a bad temper. Ink, poison, the whole show.",
-                    "Tackle says it's just a big squid. Tackle also says the fish like him, so I'm not sure."
+                    "The water has been acting strange lately. Fishermen come home covered in ink."
             };
         }
 
@@ -1987,9 +1985,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("fry_gossip_intro")) {
             return new String[] {
-                    "Hey there! I run the fry stand, and I hear everything that happens in this harbour.",
-                    "Latest news: Clucksworth says his giant chicken McNugget escaped again. It's out on the farmlands somewhere, and it's huge.",
-                    "If you ever beat it, come and tell me first. I promise I'll only tell everybody."
+                    "Hey there! I run the fry stand by the fish market, and I hear everything that happens in this harbour."
             };
         }
 
@@ -2115,8 +2111,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("forage_pad_guide_intro")) {
             return new String[] {
-                    "Slime pad → Forage Isle. Jump. Don't overthink it.",
-                    "Same felling as here — except isle trees keep score.",
+                    "Slime pad → Foraging Isle. Jump. Don't overthink it.",
+                    "Same felling as here — the isle just has bigger trees, and they keep score.",
                     "§aMiss Canopy§f teaches the isle. Follow the arrow, {player}."
             };
         }
@@ -2140,14 +2136,14 @@ public class DialogManager implements Listener {
             // After the old seal (story stage 3+) Deed admits he went looking.
             if (de.aetherion.quests.story.StoryState.stageOf(player) >= 3) {
                 return de.aetherion.quests.lang.LangPack.dialogs(player, "isle_clerk_intro.after_seal", new String[] {
-                        "Island tab's in your Manager, {player}. Slot nine. Same as ever.",
+                        "Your island is in your Journal, {player}. Slot nine. Same as ever.",
                         "Kingdom of Eldervale. I looked it up after you left.",
                         "Then someone from the Registry told me to stop looking. So I stopped."
                 });
             }
             return de.aetherion.quests.lang.LangPack.dialogs(player, "isle_clerk_intro.default", new String[] {
                     "Personal island unlocks at Aetherion Level §e20§f.",
-                    "Nether Star, slot nine → Island tab. Claim it there. I don't do paperwork.",
+                    "Journal, slot nine → Island. Claim it there. I don't do paperwork.",
                     "A clerk who doesn't do paperwork. Yes. I know."
             });
         }
@@ -2169,9 +2165,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("rivet_intro")) {
             return new String[] {
-                    "Hello there! I'm Rivet. I keep the ships in this harbour from falling apart.",
-                    "Bolts, planks, rope, nails. If it holds a ship together, I've hammered it at least once.",
-                    "Careful where you step, the paint on this deck is still wet. And if you find any rivets lying around, they're mine."
+                    "Hello there! I'm Rivet. I keep the ships in this harbour from falling apart."
             };
         }
 
@@ -2207,9 +2201,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("street_sweeper_intro")) {
             return new String[] {
-                    "Mind the pile, {player}. That's a morning's work.",
-                    "Bram. I sweep. Rookies drop cobble. Miners drop gravel. Everyone drops standards.",
-                    "Clean street, clean mind. Mostly clean street."
+                    "Bram. I sweep. Mind the pile, {player}, that's a morning's work."
             };
         }
 

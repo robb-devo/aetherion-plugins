@@ -78,7 +78,7 @@ public final class SkillRoads {
 
         if (!talkReady(player)) {
             say(player, ledger, LangPack.say(player, "ledger.isles.list",
-                    "Four slime pads on Origin: §aForage§f, §eFarm§f, §bFishing§f, §6Mining§f. The yellow arrow takes you to one."));
+                    "Four slime pads on the main island: §aForaging§f, §eFarming§f, §bFishing§f, §6Mining§f. The yellow arrow takes you to one."));
             point(player, ledger, fallback, false);
             return;
         }
@@ -310,17 +310,17 @@ public final class SkillRoads {
 
     private static String hintLabel(Player player, Road road) {
         return switch (road) {
-            case FORAGE -> LangPack.ui(player, "hint_label.forage_pad", "Forage Isle Pad");
-            case FARM -> LangPack.ui(player, "hint_label.farm_pad", "Farm Isle Pad");
-            case FISH -> LangPack.ui(player, "hint_label.fish_pad", "Fishing Eldervale Pad");
-            case MINE -> LangPack.ui(player, "hint_label.mine_pad", "Mining Eldervale Pad");
+            case FORAGE -> LangPack.ui(player, "hint_label.forage_pad", "Foraging Isle Pad");
+            case FARM -> LangPack.ui(player, "hint_label.farm_pad", "Farming Isle Pad");
+            case FISH -> LangPack.ui(player, "hint_label.fish_pad", "Fishing Isle Pad");
+            case MINE -> LangPack.ui(player, "hint_label.mine_pad", "Mining Isle Pad");
         };
     }
 
     private static String label(Player player, Road road) {
         return switch (road) {
-            case FORAGE -> LangPack.say(player, "ledger.isles.forage.label", "Forage Isle");
-            case FARM -> LangPack.say(player, "ledger.isles.farm.label", "Farm Isle");
+            case FORAGE -> LangPack.say(player, "ledger.isles.forage.label", "Foraging Isle");
+            case FARM -> LangPack.say(player, "ledger.isles.farm.label", "Farming Isle");
             case FISH -> LangPack.say(player, "ledger.isles.fish.label", "Fishing Isle");
             case MINE -> LangPack.say(player, "ledger.isles.mine.label", "Mining Isle");
         };
@@ -339,20 +339,20 @@ public final class SkillRoads {
     private static String line(Player player, Road road) {
         return switch (road) {
             case FORAGE -> LangPack.say(player, "ledger.isles.forage.line",
-                    "§aForage Isle§f — you choose where trees fall, and the trees keep score. Pad's north-east; §aMiss Canopy§f meets you.");
+                    "§aForaging Isle§f — thick trunks, Titans and clean cuts. Pad's north-east; §aMiss Canopy§f meets you.");
             case FARM -> LangPack.say(player, "ledger.isles.farm.line",
-                    "§eFarm Isle§f — catch the crops that shine gold and the field pays more. Pad's south-west; §eElsie§f meets you.");
+                    "§eFarming Isle§f — crops that shine gold pay more. Pad's south-west; §eElsie§f meets you.");
             case FISH -> LangPack.say(player, "ledger.isles.fish.line",
-                    "§bFishing Eldervale§f — twelve waters, one honest pull. Pad's north-west; §bMaren§f meets you.");
+                    "§bFishing Isle§f — twelve waters, one honest pull. Pad's north-west; §bMaren§f meets you.");
             case MINE -> LangPack.say(player, "ledger.isles.mine.line",
-                    "§6Mining Eldervale§f — your pick's power against the rock. Pad's south; §6Old Wick§f meets you.");
+                    "§6Mining Isle§f — your pick against the rock. Pad's south; §6Old Wick§f meets you.");
         };
     }
 
     private static String lineDone(Player player, Road road) {
         return switch (road) {
             case FORAGE -> LangPack.say(player, "ledger.isles.forage.line_done",
-                    "Forage again? Pell's board will have fresh orders. Arrow's on the pad.");
+                    "More wood? Pell's board will have fresh orders. Arrow's on the pad.");
             case FARM -> LangPack.say(player, "ledger.isles.farm.line_done",
                     "Back to the rows? Hattie's orders pay double. Arrow's on the pad.");
             case FISH -> LangPack.say(player, "ledger.isles.fish.line_done",

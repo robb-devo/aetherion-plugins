@@ -197,11 +197,11 @@ ui:
     farm_farmer: "→ Farmer · die Felder"
   # Soft-hint bossbar labels (QuestHint)
   hint_label:
-    harlow: "Harlow · Farm Isle"
-    farm_pad: "Farm-Isle-Pad"
-    forage_pad: "Forage-Isle-Pad"
-    fish_pad: "Fishing-Eldervale-Pad"
-    mine_pad: "Mining-Eldervale-Pad"
+    harlow: "Harlow · Farming-Insel"
+    farm_pad: "Pad zur Farming-Insel"
+    forage_pad: "Pad zur Foraging-Insel"
+    fish_pad: "Pad zur Fishing-Insel"
+    mine_pad: "Pad zur Mining-Insel"
     temper: "Temper"
     foreman: "Shaft Foreman"
     farmer: "Farmer"
@@ -576,8 +576,8 @@ dialogs:
     - "Pad unten. §aElsie§f bringt dir den Rest bei. Der Pfeil zeigt drauf."
     - "Der Farmer nebenan hält sich für den echten Farmer. Süß."
   forage_pad_guide_intro:
-    - "Schleim-Pad → Forage Isle. Springen. Nicht nachdenken."
-    - "Dasselbe Fällen wie hier — nur zählen Inselbäume mit."
+    - "Schleim-Pad → Foraging-Insel. Springen. Nicht nachdenken."
+    - "Dasselbe Fällen wie hier — die Insel hat nur größere Bäume, und die zählen mit."
     - "§aMiss Canopy§f bringt dir die Insel bei. Folg dem Pfeil, {player}."
   amethyst_mines_guide_intro:
     - "Kristall-Guide. Die Amethyst-Mine geht nur über mich — Geoden, Resonanz, Heartstones."
@@ -631,9 +631,7 @@ dialogs:
       - "Eine Frau auf dem Markt hat heute früh ihren eigenen Namen vergessen. Stand einfach da."
       - "Hab's trotzdem gerufen. Ist mein Job. Fühlte sich nur nicht wie eine Nachricht an."
   street_sweeper_intro:
-    - "Vorsicht, der Haufen, {player}. Das ist ein ganzer Vormittag Arbeit."
-    - "Bram. Ich fege. Rookies verlieren Bruchstein. Bergleute Kies. Alle verlieren Niveau."
-    - "Saubere Straße, klarer Kopf. Vor allem saubere Straße."
+    - "Bram. Ich fege. Vorsicht, der Haufen, {player}, das ist ein ganzer Vormittag Arbeit."
   lamp_lighter_intro:
     night:
       - "Abend, {player}. Wick. Lampen sind mein Geschäft."
@@ -657,8 +655,6 @@ dialogs:
     - "Gib dem Team Bescheid, wenn der Rest migrieren soll."
   rivet_intro:
     - "Hallo! Ich bin Rivet. Ich sorg dafür, dass die Schiffe in diesem Hafen nicht auseinanderfallen."
-    - "Bolzen, Planken, Seile, Nägel. Was ein Schiff zusammenhält, hab ich mindestens einmal behämmert."
-    - "Pass auf, wo du hintrittst, die Farbe auf dem Deck ist noch nass. Und falls du irgendwo Nieten findest: die gehören mir."
   # ---------------------------------------------------------------- world NPCs / boss hunts
   hunter_intro:
     - "Auf dem Hof wird's laut. Zu viele Kühe unterwegs."
@@ -683,8 +679,6 @@ dialogs:
     - "Heute führ ich nur noch das Buch für die Brücke. Ein sehr kurzes Buch. Vor allem Entschuldigungen an die Leute, die geschnappt wurden."
   dockhand_intro:
     - "Das Wasser benimmt sich in letzter Zeit seltsam. Die Fischer kommen voller Tinte nach Hause."
-    - "Unter dem Hafen lebt was mit zu vielen Armen und schlechter Laune. Tinte, Gift, das ganze Programm."
-    - "Tackle sagt, es ist nur ein großer Tintenfisch. Tackle sagt aber auch, die Fische mögen ihn, also weiß ich nicht."
   ash_scout_intro:
     - "Hallo. Ich beobachte hier draußen die Ödnis und behalte die Bogenschützen im Auge."
     - "Skuldugery schießt brennende Pfeile auf jeden, der zu nahe kommt. Er liebt Publikum."
@@ -735,9 +729,7 @@ dialogs:
     - "Gerade brauch ich dreißig Bruchstein. Straßen wachsen leider nicht von selbst."
     - "Bring mir die Steine, und ich mach was Gutes draus. Wenn du das nächste Mal irgendwo Schönes langläufst, ist es vielleicht dein eigener Stein."
   fry_gossip_intro:
-    - "Hey! Ich hab den Frittierstand, und ich hör alles, was in diesem Hafen passiert."
-    - "Neueste Nachricht: Clucksworth sagt, sein Riesenhuhn McNugget ist schon wieder ausgebüxt. Es ist irgendwo auf den Feldern, und es ist riesig."
-    - "Falls du es mal besiegst, erzähl's zuerst mir. Ich versprech dir, ich sag's nur allen weiter."
+    - "Hey! Ich hab den Frittierstand am Fischmarkt, und ich hör alles, was in diesem Hafen passiert."
   dock_whisper_intro:
     - "Hallo. Die Leute nennen mich Dock Whisper, weil ich mit dem Wasser rede. Manchmal antwortet es."
     - "Tackle am Pier bringt dir das Angeln bei. An seltenen Tagen leuchtet deine Schnur lila. Das ist ein Mythischer Wasserdrache, und nur du kannst ihn fangen."
@@ -1379,29 +1371,29 @@ talk:
     # Acts IV–VII — the four skill isles after the stamp (ui/SkillRoads.java)
     isles:
       intro: "Skills wachsen auf den Inseln, {player}. Jede bringt dir ihr eigenes Handwerk bei — durchs Machen."
-      list: "Vier Schleim-Pads auf Origin: §aForage§f, §eFarm§f, §bAngeln§f, §6Bergbau§f. Der gelbe Pfeil bringt dich zu einem."
+      list: "Vier Schleim-Pads auf der Hauptinsel: §aForaging§f, §eFarming§f, §bFishing§f, §6Mining§f. Der Pfeil bringt dich hin."
       menu: "Vier Inseln, vier Handwerke. Such dir eins aus — der Pfeil bringt dich zu seinem Pad."
       menu_more: "Abgehakt ist, was du schon gelernt hast. Auf den anderen wartet noch ein Lehrer."
       menu_all: "Alle vier Inseln gelernt. Jede abgehakt. Nimm trotzdem ein Pad — die schließen nicht."
       wander:
         line: "Gut. Die Karte gehört dir — Sergeant Vex am Borderlands-Tor, wenn du Streit suchst."
       forage:
-        label: "Forage Isle"
-        line: "§aForage Isle§f — du bestimmst, wohin die Bäume fallen, und sie zählen mit. Pad im Nordosten; §aMiss Canopy§f empfängt dich."
-        line_done: "Wieder Holz? Pells Brett hat neue Aufträge. Der Pfeil zeigt aufs Pad."
+        label: "Foraging-Insel"
+        line: "§aForaging-Insel§f — dicke Stämme, Titanen, saubere Schnitte. Pad im Nordosten; §aMiss Canopy§f empfängt dich."
+        line_done: "Mehr Holz? Pells Brett hat neue Aufträge. Der Pfeil zeigt aufs Pad."
       farm:
-        label: "Farm Isle"
-        line: "§eFarm Isle§f — schnapp dir die Pflanzen, die golden glänzen, und das Feld zahlt mehr. Pad im Südwesten; §eElsie§f empfängt dich."
+        label: "Farming-Insel"
+        line: "§eFarming-Insel§f — goldene Pflanzen zahlen mehr. Pad im Südwesten; §eElsie§f empfängt dich."
         line_done: "Zurück auf die Felder? Hatties Aufträge zahlen doppelt. Der Pfeil zeigt aufs Pad."
         farmer: "§eFarming§f fängt auf den Feldern an: zuerst der §eFarmer§f, dann §eElsie§f auf der Insel."
       fish:
-        label: "Angel-Insel"
-        line: "§bFishing Eldervale§f — zwölf Gewässer, ein ehrlicher Zug. Pad im Nordwesten; §bMaren§f empfängt dich."
+        label: "Fishing-Insel"
+        line: "§bFishing-Insel§f — zwölf Gewässer, ein ehrlicher Zug. Pad im Nordwesten; §bMaren§f empfängt dich."
         line_done: "Wieder an den See? Odiles Buch hat Lücken, hab ich gehört. Der Pfeil zeigt aufs Pad."
       mine:
-        label: "Bergbau-Insel"
+        label: "Mining-Insel"
         echo: "Fels. Tiefer Fels."
-        line: "§6Mining Eldervale§f — die Kraft deiner Spitzhacke gegen den Fels. Pad im Süden; §6Old Wick§f empfängt dich."
+        line: "§6Mining-Insel§f — deine Spitzhacke gegen den Fels. Pad im Süden; §6Old Wick§f empfängt dich."
         line_done: "Wieder in den Fels? Ottos Aufträge erledigen sich nicht selbst. Der Pfeil zeigt aufs Pad."
         foreman: "§6Mining§f fängt in der Shabby Mine an: zuerst der §eShaft Foreman§f. Dein erstes Werkzeug dort öffnet das Pad."
     desk_prompt: "Auffrischung, {player}? Such dir ein Thema aus."
@@ -1429,7 +1421,7 @@ talk:
         echo: "Wie komm ich hier überhaupt rum?"
         lines:
           - "Journal → §eSpawns§f. Jedes Camp, in das du reingelaufen bist, ist ein Klick."
-          - "Die Inseln sind Pads: §aTwigs§f Schleim-Pad für Forage, §eHarlows§f Weg zur Farm, das West-Pad fürs Angeln."
+          - "Jede Insel hat ein Pad: §aTwigs§f zur Foraging-, §eHarlows§f zur Farming-, das West-Pad zur Fishing-Insel."
           - "Verlaufen? §e/capital§f bringt dich an meinen Schalter zurück. Ich tu so, als hätt ich's nicht gesehen."
       pets:
         label: "Pets"
@@ -1551,7 +1543,7 @@ talk:
   # Twig — harbour pad desk (P-F)
   forage_pad_guide:
     desk:
-      open: "Schleim-Pad → Forage Isle, {player}. Springen. Nicht nachdenken."
+      open: "Schleim-Pad → Foraging-Insel, {player}. Springen. Nicht nachdenken."
       isle:
         label: "Was gibt's da draußen?"
         echo: "Was ist auf der Insel?"
@@ -2439,6 +2431,8 @@ cast:
     topics:
       - label: "Was Seltsames gesehen?"
         lines: ["Einen Trollabdruck bei den Minen. So groß wie ein Boot.", "Hab ihn weggefegt. Beweis weg. Hätte ich nicht tun sollen."]
+      - label: "Warum fegen?"
+        lines: ["Rookies verlieren Bruchstein. Bergleute Kies. Alle verlieren Niveau.", "Saubere Straße, klarer Kopf. Vor allem saubere Straße."]
   lamp_lighter:
     greet_new: ["Der Abend kommt, {player}. Ich spür's."]
     greet: ["Bleib im Licht, {player}."]
@@ -2786,6 +2780,8 @@ cast:
     idle: ["Schon gehört? Quill hat schon wieder eine Kiste verloren. Das dritte Mal diesen Monat.", "Frittierter Fisch, frittiertes Brot, frittierte Kartoffeln. Was in die Pfanne passt, wird frittiert.", "Ich verbreite keine Gerüchte. Ich wiederhole sie nur sehr deutlich.", "Die alte Moll vom Leuchtfeuer hat ihre Brille an eine Möwe verloren. Die Arme sieht gar nichts."]
     farewell: ["Komm hungrig wieder!"]
     topics:
+      - label: "Was gibt's Neues?"
+        lines: ["Clucksworth sagt, sein Riesenhuhn McNugget ist wieder ausgebüxt. Irgendwo auf den Feldern, und es ist riesig.", "Falls du es mal besiegst, erzähl's zuerst mir. Ich sag's dann nur allen weiter."]
       - label: "Gibt's Klatsch?"
         lines: ["Hetties Bienen sind heute Morgen ausgeschwärmt, Tobin schreibt ein neues Lied, und Wick hat schon wieder eine Lampe getauft.", "Viel los für so einen kleinen Hafen."]
       - label: "Was ist heute gut?"
@@ -2798,6 +2794,8 @@ cast:
     topics:
       - label: "Wem gehört das Schiff?"
         lines: ["Sie gehört jetzt dem Hafen. Ihr Kapitän ist vor Jahren weg und nie wiedergekommen.", "Also kümmer ich mich um sie. Einer muss es ja machen."]
+      - label: "Was reparierst du?"
+        lines: ["Bolzen, Planken, Seile, Nägel. Was ein Schiff zusammenhält, hab ich mindestens einmal behämmert.", "Pass auf, wo du hintrittst, die Farbe auf dem Deck ist noch nass."]
   stall_crumb:
     greet_new: ["Guten Morgen, {player}! Frisches Brot, noch warm."]
     greet: ["Hallo nochmal, {player}! Hunger?"]
@@ -2829,7 +2827,9 @@ cast:
     farewell: ["Halt deine Füße trocken."]
     topics:
       - label: "Was lebt da unten?"
-        lines: ["Keiner hat es je ganz gesehen. Nur Arme, Tinte und jede Menge wütende Blasen.", "Wenn du eines Tages stark genug bist, findest du es vielleicht heraus."]
+        lines: ["Was mit zu vielen Armen und schlechter Laune. Tinte, Gift, das ganze Programm.", "Wenn du eines Tages stark genug bist, findest du es vielleicht heraus."]
+      - label: "Und Tackle?"
+        lines: ["Tackle sagt, es ist nur ein großer Tintenfisch.", "Tackle sagt aber auch, die Fische mögen ihn, also weiß ich nicht."]
   slag_poet:
     greet_new: ["Ah, Besuch! Willst du ein Gedicht hören, {player}? Es ist ein kurzes."]
     greet: ["{player}! Ich hab eine neue Strophe fertig. Sie handelt von Kies."]
