@@ -93,25 +93,38 @@ public final class IsleCast implements Listener {
                         "Wieder auf den Feldern, {player}? Frag ruhig — oder schnapp dir den Glanz."),
                 List.of(
                         TalkDesk.Topic.of("What is this place?", net.kyori.adventure.text.format.NamedTextColor.GREEN,
-                                "What's on Eldervale?",
+                                "What's on the isle?",
                                 "Fifteen named plots, one big harvest. Find them all — 2,500 coins and a title.",
                                 "Walk into one and it names itself. Arrow's on the nearest you haven't seen.")
+                                .de("Was ist das hier?", "Was gibt's auf der Insel?",
+                                        "Fünfzehn benannte Felder, eine große Ernte. Finde alle — 2.500 Coins und ein Titel.",
+                                        "Lauf in eins hinein, dann sagt es dir seinen Namen. Der Pfeil zeigt aufs nächste neue.")
                                 .then(this::pointAtUnknownPlot),
                         TalkDesk.Topic.of("Shining crops?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
                                 "Why do some crops shine?",
                                 "While you harvest, a ripe crop near you shines gold. Harvest it before it fades: extra crop, extra XP.",
-                                "Catch three, ten, twenty without missing one — every step adds crop Fortune."),
+                                "Catch three, ten, twenty without missing one — every step adds crop Fortune.")
+                                .de("Glänzende Pflanzen?", "Warum glänzen manche Pflanzen?",
+                                        "Beim Ernten glänzt eine reife Pflanze in deiner Nähe golden. Ernte sie, bevor es verblasst.",
+                                        "Das gibt extra Ernte und extra XP. Drei, zehn, zwanzig ohne Fehler: jede Stufe mehr Fortune."),
                         TalkDesk.Topic.of("Shops & pantry?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
                                 "Where do I sell and eat?",
                                 "§6Hattie§f's orders pay better than the trader. §eBram§f bakes crops into farming food.",
-                                "§bGus§f keeps your Crop Mastery ledger. That one pays forever."),
+                                "§bGus§f keeps your Crop Mastery ledger. That one pays forever.")
+                                .de("Läden & Vorrat?", "Wo verkauf ich, wo ess ich?",
+                                        "§6Hattie§fs Aufträge zahlen besser als der Händler. §eBram§f backt aus Ernte Farming-Essen.",
+                                        "§bGus§f führt dein Buch der Ernte-Meisterschaft. Das zahlt für immer."),
                         TalkDesk.Topic.of("How do I leave?", net.kyori.adventure.text.format.NamedTextColor.AQUA,
                                 "How do I get home?",
                                 "§e/capital§f takes you back to town.",
                                 "The fields will keep. They're patient. Unlike the crows.")
+                                .de("Wie komm ich weg?", "Wie komm ich nach Hause?",
+                                        "§e/capital§f bringt dich zurück in die Stadt.",
+                                        "Die Felder laufen nicht weg. Die sind geduldig. Anders als die Krähen.")
                 ),
                 "Board…", player -> isle.menus().openWarden(player),
-                "Mind the crows. They mind you.");
+                "Mind the crows. They mind you.")
+                .german("Brett…", "Pass auf die Krähen auf. Die passen auf dich auf.");
     }
 
     private void pointAtUnknownPlot(Player player) {

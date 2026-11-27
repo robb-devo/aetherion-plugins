@@ -32,13 +32,31 @@ import java.util.function.Supplier;
 final class TalkDesk {
 
     /** One question. {@code after} runs once the answer is queued (e.g. point the isle compass). */
-    record Topic(String label, NamedTextColor color, String echo, List<String> lines, Consumer<Player> after) {
+    record Topic(String label, NamedTextColor color, String echo, List<String> lines, Consumer<Player> after,
+                 String labelDe, String echoDe, List<String> linesDe) {
         static Topic of(String label, NamedTextColor color, String echo, String... lines) {
-            return new Topic(label, color, echo, List.of(lines), null);
+            return new Topic(label, color, echo, List.of(lines), null, null, null, null);
         }
 
         Topic then(Consumer<Player> next) {
-            return new Topic(label, color, echo, lines, next);
+            return new Topic(label, color, echo, lines, next, labelDe, echoDe, linesDe);
+        }
+
+        /** The same question for German readers (label, echo, answer lines). */
+        Topic de(String germanLabel, String germanEcho, String... germanLines) {
+            return new Topic(label, color, echo, lines, after, germanLabel, germanEcho, List.of(germanLines));
+        }
+
+        String label(boolean german) {
+            return german && labelDe != null ? labelDe : label;
+        }
+
+        String echo(boolean german) {
+            return german && echoDe != null ? echoDe : echo;
+        }
+
+        List<String> lines(boolean german) {
+            return german && linesDe != null ? linesDe : lines;
         }
     }
 
@@ -54,6 +72,8 @@ final class TalkDesk {
     private final String boardLabel;
     private final Consumer<Player> board;
     private final String farewell;
+    private String boardLabelDe;
+    private String farewellDe;
     private final Map<UUID, Set<String>> asked = new ConcurrentHashMap<>();
     private final Set<UUID> hidden = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Long> scripted = new ConcurrentHashMap<>();
@@ -69,6 +89,13 @@ final class TalkDesk {
         this.boardLabel = boardLabel;
         this.board = board;
         this.farewell = farewell;
+    }
+
+    /** German board chip and farewell (topics carry their own German). */
+    TalkDesk german(String boardLabel, String farewellLine) {
+        this.boardLabelDe = boardLabel;
+        this.farewellDe = farewellLine;
+        return this;
     }
 
     /** The NPC was clicked. True when the bubble handled it. */
@@ -152,6 +179,7 @@ final class TalkDesk {
             return;
         }
         Set<String> done = asked.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet());
+        boolean de = AetherServices.german(player);
         List<TalkAccess.Reply> replies = new ArrayList<>();
         int room = MAX_CHIPS - (board != null ? 1 : 0);
         for (Topic topic : topics) {
@@ -159,20 +187,23 @@ final class TalkDesk {
                 break;
             }
             if (!done.contains(topic.label())) {
-                replies.add(new TalkAccess.Reply(topic.label(), topic.color(), () -> answer(player, topic), topic.echo()));
+                replies.add(new TalkAccess.Reply(topic.label(de), topic.color(), () -> answer(player, topic), topic.echo(de)));
             }
         }
         if (board != null) {
-            replies.add(new TalkAccess.Reply(boardLabel, NamedTextColor.GRAY, () -> board.accept(player), null));
+            replies.add(new TalkAccess.Reply(de && boardLabelDe != null ? boardLabelDe : boardLabel, NamedTextColor.GRAY,
+                    () -> board.accept(player), null));
         }
         if (replies.size() < MAX_CHIPS && farewell != null) {
-            replies.add(new TalkAccess.Reply("Bye.", NamedTextColor.DARK_GRAY,
+            String bye = de ? "Tschüss." : "Bye.";
+            String last = de && farewellDe != null ? farewellDe : farewell;
+            replies.add(new TalkAccess.Reply(bye, NamedTextColor.DARK_GRAY,
                     () -> {
                         TalkAccess now = AetherServices.talk();
                         if (now != null) {
-                            now.say(player, speaker.id(), farewell);
+                            now.say(player, speaker.id(), last);
                         }
-                    }, "Bye."));
+                    }, bye));
         }
         // The bubble lays the chips out once queued lines have typed out.
         talk.replies(player, speaker.id(), replies);
@@ -184,7 +215,7 @@ final class TalkDesk {
             return;
         }
         asked.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet()).add(topic.label());
-        for (String line : topic.lines()) {
+        for (String line : topic.lines(AetherServices.german(player))) {
             talk.say(player, speaker.id(), line);
         }
         if (topic.after() != null) {

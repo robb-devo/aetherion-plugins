@@ -109,20 +109,35 @@ public final class IsleGuideNpc implements Listener {
                         : "Back again, {player}? Ask away — or go fell something.",
                 List.of(
                         TalkDesk.Topic.of("The chop?", NamedTextColor.DARK_GREEN, "How do I fell trees here?",
-                                "Hit a trunk until the notch is through. Better axes need fewer hits, and the tree falls away from you.",
-                                "A gold spot lights up now and then: hit it and the hit counts double. A last hit on the gold is a clean cut, and clean cuts build your streak. Titans take twice the hits."),
+                                "Hit a trunk until the notch is through. Better axes need fewer hits.",
+                                "The tree falls away from you. Titans take twice the hits.",
+                                "Hit the gold spot while it glows: double hit. A last hit on gold is a clean cut, and it builds your streak.")
+                                .de("Das Fällen?", "Wie fälle ich hier Bäume?",
+                                        "Schlag den Stamm, bis die Kerbe durch ist. Bessere Äxte brauchen weniger Schläge.",
+                                        "Der Baum fällt von dir weg. Titanen brauchen doppelt so viele Schläge.",
+                                        "Triff die goldene Stelle, solange sie leuchtet: doppelter Schlag. Gold als letzter Schlag ist ein sauberer Schnitt."),
                         TalkDesk.Topic.of("Crown Finds?", NamedTextColor.GOLD, "What's a Crown Find?",
                                 "Sometimes the crown lets go of a glowing find as the tree falls. Catch it mid-air for bonus weight.",
-                                "§ePell§f at the Landing buys board orders — wood and Titans. That's the daily money loop."),
+                                "§ePell§f at the Landing buys board orders — wood and Titans. That's the daily money loop.")
+                                .de("Kronenfunde?", "Was ist ein Kronenfund?",
+                                        "Manchmal lässt die Krone beim Fallen einen leuchtenden Fund los. Fang ihn in der Luft.",
+                                        "§ePell§f am Anleger kauft Aufträge vom Brett — Holz und Titanen. Das ist das tägliche Geld."),
                         TalkDesk.Topic.of("Who's who?", NamedTextColor.LIGHT_PURPLE, "Who else is on the isle?",
                                 "§ePell§f — Lumber Board. §6Tamsin§f — Grove Marks and bench gear. §dJuniper§f — Forest Ledger and sales.",
-                                "Walk the Landing tour once: me → Pell → Tamsin → Juniper. Updrafts carry you between pads."),
+                                "Walk the Landing tour once: me → Pell → Tamsin → Juniper. Updrafts carry you between pads.")
+                                .de("Wer ist wer?", "Wer ist noch auf der Insel?",
+                                        "§ePell§f — Holzbrett. §6Tamsin§f — Grove Marks und Ausrüstung. §dJuniper§f — Waldbuch und Verkauf.",
+                                        "Lauf einmal die Anleger-Tour: ich → Pell → Tamsin → Juniper. Aufwinde tragen dich."),
                         TalkDesk.Topic.of("Bark & events?", NamedTextColor.RED, "Elderbark? Bark Blight?",
                                 "§6Elderbark§f and §8Nightbark§f are rare heartwoods from chops. Two different kinds feed the magic table by the dock.",
                                 "§cBark Blight§f is an isle event — beetles nip at your ankles. Squash them for coins and Standing.")
+                                .de("Rinde & Ereignisse?", "Elderbark? Bark Blight?",
+                                        "§6Elderbark§f und §8Nightbark§f sind seltene Kernhölzer. Zwei Sorten füttern den Zaubertisch am Steg.",
+                                        "§cBark Blight§f ist ein Insel-Ereignis — Käfer zwicken dich. Zerquetsch sie für Coins und Ansehen.")
                 ),
                 null, null,
-                "Off you go. The trees won't fell themselves.");
+                "Off you go. The trees won't fell themselves.")
+                .german(null, "Los geht's. Die Bäume fällen sich nicht von selbst.");
     }
 
     /** True when this click is already handled by a bubble beat in flight (see {@link TalkDesk#busy}). */
