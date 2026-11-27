@@ -45,6 +45,8 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Merchant;
@@ -508,6 +510,11 @@ public final class DungeonListener implements Listener {
         if (incoming <= 0.0) {
             return;
         }
+        // The hit goes to the dungeon HP pool and the vanilla hit is zeroed, so Items' damage numbers (which
+        // read the final damage) showed nothing, or a fake number on the kill. Leave the real hit for this
+        // tick the way BossEngine does for its bosses (A-11).
+        entity.setMetadata("aetherion_boss_hit",
+                new FixedMetadataValue(plugin, new double[]{plugin.getServer().getCurrentTick(), incoming}));
         double next = hp - incoming;
         entity.getPersistentDataContainer().set(
                 new NamespacedKey(plugin, "dungeon_hp"),
@@ -545,6 +552,36 @@ public final class DungeonListener implements Listener {
         }
         if (world != null) {
             instances.scanCombatRooms(world);
+        }
+    }
+
+    /**
+     * Dungeon worlds never save while a run is open, so a dungeon mob or boss body read from their disk is
+     * left over from an old run (written when a base was parked at a restart). One such Aetherion body held
+     * the boss's only slot and Floor 3 got the fallback enderman; 45 old Floor 3 mobs padded the count.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onDungeonEntitiesLoad(EntitiesLoadEvent event) {
+        World world = event.getWorld();
+        if (!instances.isDungeonWorld(world)) {
+            return;
+        }
+        int removed = 0;
+        for (Entity entity : event.getEntities()) {
+            if (!(entity instanceof LivingEntity living) || living instanceof Player || !living.isValid()) {
+                continue;
+            }
+            var data = living.getPersistentDataContainer();
+            if (BossEngineBridge.templateId(living) != null
+                    || data.has(AetherKeys.DUNGEON_MOB, PersistentDataType.STRING)
+                    || data.has(AetherKeys.BOSS_MINION, PersistentDataType.STRING)) {
+                living.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            plugin.getLogger().info("Removed " + removed + " left-over dungeon mob(s) read from disk in " + world.getName()
+                    + " (chunk " + event.getChunk().getX() + "," + event.getChunk().getZ() + ").");
         }
     }
 
