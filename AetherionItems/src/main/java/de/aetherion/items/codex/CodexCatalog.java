@@ -236,7 +236,7 @@ public final class CodexCatalog {
                 "NETHER_GOLD_ORE");
         block("ancient_debris", "Ancient Debris", Material.NETHERITE_INGOT, BLOCK_ORES, rare, "Low Nether, hidden in netherrack. Blast-proof.",
                 "ANCIENT_DEBRIS", "NETHERITE_BLOCK");
-        block("amethyst", "Amethyst", Material.AMETHYST_SHARD, BLOCK_ORES, rare, "Geodes, and Crystal Finds on Mining Eldervale.",
+        block("amethyst", "Amethyst", Material.AMETHYST_SHARD, BLOCK_ORES, rare, "Geodes, and Crystal Finds on the Mining Isle.",
                 "AMETHYST_CLUSTER", "BUDDING_AMETHYST", "AMETHYST_BLOCK", "LARGE_AMETHYST_BUD");
 
         block("stone", "Stone", Material.STONE, BLOCK_STONE, bulk, "The world's filler. Counts anyway.", "STONE", "COBBLESTONE");
@@ -254,7 +254,7 @@ public final class CodexCatalog {
         block("obsidian", "Obsidian", Material.OBSIDIAN, BLOCK_STONE, uncommon, "Where water met lava and neither won.", "OBSIDIAN");
         block("end_stone", "End Stone", Material.END_STONE, BLOCK_STONE, common, "The End.", "END_STONE");
 
-        String forest = "Any tree. Foraging Eldervale pays best.";
+        String forest = "Any tree. Foraging Isle pays best.";
         block("oak", "Oak", Material.OAK_LOG, BLOCK_WOOD, common, forest, "OAK_LOG", "OAK_WOOD", "STRIPPED_OAK_LOG", "STRIPPED_OAK_WOOD");
         block("spruce", "Spruce", Material.SPRUCE_LOG, BLOCK_WOOD, common, forest,
                 "SPRUCE_LOG", "SPRUCE_WOOD", "STRIPPED_SPRUCE_LOG", "STRIPPED_SPRUCE_WOOD");
@@ -287,7 +287,7 @@ public final class CodexCatalog {
         block("snow", "Snow", Material.SNOW_BLOCK, BLOCK_DIRT, common, "Peaks and tundra.", "SNOW", "SNOW_BLOCK", "POWDER_SNOW");
         block("moss", "Moss", Material.MOSS_BLOCK, BLOCK_DIRT, common, "Lush caves.", "MOSS_BLOCK", "MOSS_CARPET");
 
-        String farm = "Fully grown only. The Farm Isle pays best.";
+        String farm = "Fully grown only. The Farming Isle pays best.";
         block("wheat", "Wheat", Material.WHEAT, BLOCK_CROPS, bulk, farm, "WHEAT");
         block("carrot", "Carrot", Material.CARROT, BLOCK_CROPS, bulk, farm, "CARROTS");
         block("potato", "Potato", Material.POTATO, BLOCK_CROPS, bulk, farm, "POTATOES");
@@ -314,13 +314,13 @@ public final class CodexCatalog {
         // Progression Signatures (P1): hand-earned isle finds the T4/T5 ladders ask for. No block aliases;
         // counted when a player finds one (ItemFactoryAccess#noteSignature).
         block("sig_crystal_find", "Crystal Finds", Material.AMETHYST_CLUSTER, BLOCK_ORES, precious,
-                "Cracked by hand on Mining Eldervale. Quarries can't make them.");
+                "Cracked by hand on the Mining Isle. Quarries can't make them.");
         block("sig_heartwood", "Isle Heartwood", Material.DARK_OAK_LOG, BLOCK_WOOD, precious,
-                "Paid logs on Foraging Eldervale, now and then. Quarries can't make them.");
+                "Paid logs on the Foraging Isle, now and then. Quarries can't make them.");
         block("sig_prize_crop", "Prize Crops", Material.GOLDEN_CARROT, BLOCK_CROPS, precious,
-                "Hand harvests on the Farm Isle throw one out. Grab it before it wilts.");
+                "Hand harvests on the Farming Isle throw one out. Grab it before it wilts.");
         block("sig_fish_trophy", "Trophy Fish", Material.PLAYER_HEAD, BLOCK_FISHING, precious,
-                "Rare, legendary or record-heavy catches on Fishing Eldervale.");
+                "Rare, legendary or record-heavy catches on the Fishing Isle.");
 
         block("netherrack", "Netherrack", Material.NETHERRACK, BLOCK_NETHER, bulk, "The Nether's filler.", "NETHERRACK");
         block("soul_sand", "Soul Sand", Material.SOUL_SAND, BLOCK_NETHER, common, "Soul sand valleys.", "SOUL_SAND", "SOUL_SOIL");

@@ -499,7 +499,7 @@ public final class ForgeWorks implements Listener {
         List<String> lore = new ArrayList<>(tool.lore);
         lore.add("");
         lore.add("§eRight-click to use.");
-        lore.add("§8The Deep Forge · Mining Eldervale");
+        lore.add("§8The Deep Forge · Mining Isle");
         meta.setLore(lore);
         meta.setEnchantmentGlintOverride(true);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
@@ -573,7 +573,7 @@ public final class ForgeWorks implements Listener {
         Location center = player.getLocation();
         boolean veins = isle.plugin().getVeins() != null && isle.plugin().getVeins().isVeins(center.getWorld());
         if (!veins && !MineWorld.onIsle(isle.plugin(), center)) {
-            MineText.bar(player, "§7The flare fizzles. §8Only works on Mining Eldervale and in the Amethyst Mine.");
+            MineText.bar(player, "§7The flare fizzles. §8Only works on the Mining Isle and in the Amethyst Mine.");
             return false;
         }
         Long cool = flareCool.get(player.getUniqueId());

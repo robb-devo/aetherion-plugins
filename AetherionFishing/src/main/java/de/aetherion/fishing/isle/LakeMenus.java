@@ -69,7 +69,7 @@ public final class LakeMenus implements Listener {
 
     public void openHarbour(Player player) {
         Holder holder = new Holder();
-        Inventory inventory = create(holder, 54, "§8Harbourmaster §7· Fishing Eldervale");
+        Inventory inventory = create(holder, 54, "§8Harbourmaster §7· Fishing Isle");
         AnglerProfiles.Profile profile = isle.profiles().of(player);
         int points = isle.log().points(profile);
         int rank = AnglerLog.rankFor(points);

@@ -98,7 +98,7 @@ public final class MineDev {
             case "profile" -> {
                 isle.profiles().reset(player.getUniqueId());
                 isle.rhythm().clear(player.getUniqueId());
-                yield "§eYour Mining Eldervale profile was wiped §7(districts, mastery, cabinet, contracts, marks, rep, depth).";
+                yield "§eYour Mining Isle profile was wiped §7(districts, mastery, cabinet, contracts, marks, rep, depth).";
             }
             case "props" -> {
                 isle.props().rebuild();
@@ -291,7 +291,7 @@ public final class MineDev {
         plugin().getConfig().set(path + ".z", Math.round(at.getZ() * 10.0) / 10.0);
         plugin().getConfig().set(path + ".yaw", Math.round(at.getYaw()));
         plugin().saveConfig();
-        return "§aMining Eldervale landing set here §7(mine-isle.landing).";
+        return "§aMining Isle landing set here §7(mine-isle.landing).";
     }
 
     private String where(Player player) {

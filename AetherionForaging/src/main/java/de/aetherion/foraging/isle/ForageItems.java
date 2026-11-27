@@ -261,7 +261,7 @@ public final class ForageItems {
         meta.setDisplayName(tonic.display);
         List<String> lore = new ArrayList<>(tonic.lore);
         lore.add("");
-        lore.add("§8Woodwright · Foraging Eldervale");
+        lore.add("§8Woodwright · Foraging Isle");
         meta.setLore(lore);
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);

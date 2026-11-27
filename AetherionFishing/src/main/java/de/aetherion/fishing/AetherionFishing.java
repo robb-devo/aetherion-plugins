@@ -27,12 +27,12 @@ public final class AetherionFishing extends JavaPlugin {
         getServer().getPluginManager().registerEvents(encounters, this);
         getServer().getScheduler().runTaskTimer(this, controller::tick, 1L, 1L);
         startIsle();
-        getLogger().info("AetherionFishing ready. Minigame/lure + Fishing Eldervale here; loot/rod XP stays in AetherionItems.");
+        getLogger().info("AetherionFishing ready. Minigame/lure + Fishing Isle here; loot/rod XP stays in AetherionItems.");
     }
 
     private void startIsle() {
         if (getServer().getPluginManager().getPlugin("AetherionItems") == null) {
-            getLogger().warning("Fishing Eldervale needs AetherionItems — isle loops off, harbour fishing unchanged.");
+            getLogger().warning("Fishing Isle needs AetherionItems — isle loops off, harbour fishing unchanged.");
             return;
         }
         try {
@@ -42,7 +42,7 @@ public final class AetherionFishing extends JavaPlugin {
             access = new FishAccessImpl(isle);
             AetherServices.registerFishing(access);
         } catch (RuntimeException | LinkageError error) {
-            getLogger().severe("Fishing Eldervale failed to start (harbour fishing unaffected): " + error);
+            getLogger().severe("Fishing Isle failed to start (harbour fishing unaffected): " + error);
             if (isle != null) {
                 controller.hooks(null);
                 isle.shutdown();

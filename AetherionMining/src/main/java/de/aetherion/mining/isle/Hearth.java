@@ -247,7 +247,7 @@ public final class Hearth implements Listener {
         lore.add("§7Lasts §f" + ration.minutes + " min§7. One ration at a time.");
         lore.add("");
         lore.add("§eEat to start the buff.");
-        lore.add("§8The Hearth · Mining Eldervale");
+        lore.add("§8The Hearth · Mining Isle");
         meta.setLore(lore);
         if (meta instanceof PotionMeta potion) {
             potion.setColor(Color.fromRGB(92, 58, 30));

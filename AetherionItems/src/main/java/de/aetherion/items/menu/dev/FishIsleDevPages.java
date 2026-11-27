@@ -80,7 +80,7 @@ final class FishIsleDevPages {
     private void drawHub(Inventory inventory) {
         List<String> status = new ArrayList<>(status());
         status.add("");
-        status.add("§8Fishing Eldervale lives in the hub world.");
+        status.add("§8Fishing Isle lives in the hub world.");
         status.add("§8Gear shelf: Fishing Sets (page 1).");
         inventory.setItem(4, button(Material.FISHING_ROD, "§b§lFishing Island", "page:FISH_ISLE", status.toArray(String[]::new)));
 
@@ -115,7 +115,7 @@ final class FishIsleDevPages {
     }
 
     private void drawSpots(Inventory inventory) {
-        inventory.setItem(4, button(Material.COMPASS, "§eFishing Eldervale Teleports", "page:FISH_ISLE_SPOTS",
+        inventory.setItem(4, button(Material.COMPASS, "§eFishing Isle Teleports", "page:FISH_ISLE_SPOTS",
                 "§7NPC spots use the placed NPC, else its preset.", "§7Waters land on the surface at the centre."));
         Map<String, Location> spots = spots();
         int index = 0;
@@ -136,7 +136,7 @@ final class FishIsleDevPages {
     }
 
     private void drawNpcs(Inventory inventory) {
-        inventory.setItem(4, button(Material.VILLAGER_SPAWN_EGG, "§dFishing Eldervale Cast", "page:FISH_ISLE_NPCS",
+        inventory.setItem(4, button(Material.VILLAGER_SPAWN_EGG, "§dFishing Isle Cast", "page:FISH_ISLE_NPCS",
                 "§eLeft §7give anchor  §eRight §7place at preset",
                 "§eShift-left §7teleport there  §eShift-right §7remove",
                 "§8Villagers respawn with their chunk — no dupes."));
@@ -238,7 +238,7 @@ final class FishIsleDevPages {
         inventory.setItem(31, button(Material.FILLED_MAP, "§eDiscover All Waters", PREFIX + "waters:all"));
         inventory.setItem(32, button(Material.MAP, "§7Reset Water Discovery", PREFIX + "waters:reset"));
         inventory.setItem(33, button(Material.GLOW_BERRIES, "§e+16 Every Bait", PREFIX + "bait:give"));
-        inventory.setItem(34, button(Material.TNT, "§cWipe My Fishing Eldervale Profile", PREFIX + "profile:reset",
+        inventory.setItem(34, button(Material.TNT, "§cWipe My Fishing Isle Profile", PREFIX + "profile:reset",
                 "§7Log, waters, trophies, rank, bait.", "§eShift-click §7to confirm."));
         inventory.setItem(37, button(Material.BOOK, "§7Reset Angler's Log", PREFIX + "log:reset"));
         inventory.setItem(38, button(Material.BUCKET, "§7Empty Bait Tin", PREFIX + "bait:clear"));
@@ -336,7 +336,7 @@ final class FishIsleDevPages {
     private static String dev(Player player, String action) {
         FishAccess fish = fish();
         if (fish == null) {
-            return "§cAetherionFishing is not loaded (or Core predates Fishing Eldervale).";
+            return "§cAetherionFishing is not loaded (or Core predates Fishing Isle).";
         }
         try {
             return fish.devAction(player, action);

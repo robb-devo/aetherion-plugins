@@ -133,7 +133,7 @@ public final class IslePlots {
                 }
                 if (circles.isEmpty()) {
                     if (log != null) {
-                        log.warning("Farm Isle plot '" + id + "' has no circles — skipped.");
+                        log.warning("Farming Isle plot '" + id + "' has no circles — skipped.");
                     }
                     continue;
                 }

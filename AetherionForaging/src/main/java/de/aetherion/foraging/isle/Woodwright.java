@@ -315,7 +315,7 @@ public final class Woodwright implements Listener {
                     return;
                 }
                 if (!isle.onIsle(block.getLocation())) {
-                    ForageText.bar(player, "§7Sap Lures only work on Foraging Eldervale.");
+                    ForageText.bar(player, "§7Sap Lures only work on the Foraging Isle.");
                     return;
                 }
                 isle.lure(block.getLocation().add(0.5, 0.5, 0.5), 180_000L);

@@ -106,7 +106,7 @@ public final class GroveCompass {
         int total = isle.config().landmarks().size();
         long found = isle.config().landmarks().keySet().stream().filter(profile.places::contains).count();
         if (found >= total && total > 0 && profile.flags.add("cartographer")) {
-            ForageText.card(player, "§6Cartographer", "§7Every place on Foraging Eldervale", 60);
+            ForageText.card(player, "§6Cartographer", "§7Every place on the Foraging Isle", 60);
             ForageBridge.coins(player, 2500L);
             isle.standing().add(player, profile, 2, "cartographer");
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1.2f);

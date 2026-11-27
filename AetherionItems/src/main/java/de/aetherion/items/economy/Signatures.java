@@ -98,13 +98,13 @@ public final class Signatures {
         return switch (id) {
             case CRYSTAL_FIND -> sample(Material.AMETHYST_CLUSTER, "§d✦ Crystal Find §8(any)", id,
                     "§7Any grade but Heartstone.",
-                    "§7Cracked by hand on §dMining Eldervale§7.");
+                    "§7Cracked by hand on the §dMining Isle§7.");
             case PRIZE_CROP -> sample(Material.WHEAT, "§6✦ Prize Crop §8(any)", id,
                     "§7Any crop, any weight.",
-                    "§7Hand harvests on the §eFarm Isle§7.");
+                    "§7Hand harvests on the §eFarming Isle§7.");
             case FISH_TROPHY -> sample(Material.TROPICAL_FISH, "§6✦ Trophy Fish §8(any)", id,
                     "§7Any species, any weight.",
-                    "§7Landed on §bFishing Eldervale§7.");
+                    "§7Landed on the §bFishing Isle§7.");
             default -> null;
         };
     }

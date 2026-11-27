@@ -70,7 +70,7 @@ public class AetherionMining extends JavaPlugin {
                 }
             } catch (LinkageError error) {
                 isle = null;
-                getLogger().warning("Mining Eldervale off: AetherionItems missing or too old (" + error.getClass().getSimpleName() + ").");
+                getLogger().warning("Mining Isle off: AetherionItems missing or too old (" + error.getClass().getSimpleName() + ").");
             }
         }
 
@@ -108,7 +108,7 @@ public class AetherionMining extends JavaPlugin {
             if (getConfig().getBoolean("eldervale.auto-paste-once", false)) {
                 getConfig().set("eldervale.auto-paste-once", false);
                 saveConfig();
-                getLogger().warning("eldervale.auto-paste-once triggered — pasting Mining Eldervale Island…");
+                getLogger().warning("eldervale.auto-paste-once triggered — pasting Mining Isle Island…");
                 de.aetherion.mining.island.EldervalePaste.paste(this, getServer().getConsoleSender());
             }
         });

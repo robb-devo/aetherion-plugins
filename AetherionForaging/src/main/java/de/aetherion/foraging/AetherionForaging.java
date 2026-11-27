@@ -102,7 +102,7 @@ public class AetherionForaging extends JavaPlugin {
         try {
             isle = new de.aetherion.foraging.isle.ForageIsle(this);
         } catch (RuntimeException | LinkageError ex) {
-            getLogger().log(java.util.logging.Level.SEVERE, "Foraging Eldervale failed to start — the chop loop still runs.", ex);
+            getLogger().log(java.util.logging.Level.SEVERE, "Foraging Isle failed to start — the chop loop still runs.", ex);
             isle = null;
         }
 

@@ -773,7 +773,7 @@ public final class MineCritters implements Listener {
         if (meta != null) {
             meta.setDisplayName("§4Stonejaw's Jaw");
             meta.setLore(List.of("§7Heavier than it looks. Warmer, too.", "", "§eHollis Underhill §7at the Last Lamp",
-                    "§7pays §62,500 coins §7and Forge Reputation.", "§8Mining Eldervale · trophy"));
+                    "§7pays §62,500 coins §7and Forge Reputation.", "§8Mining Isle · trophy"));
             meta.setEnchantmentGlintOverride(true);
             meta.getPersistentDataContainer().set(new NamespacedKey(isle.plugin(), "mine_jaw"), PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);

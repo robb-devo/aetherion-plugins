@@ -72,7 +72,7 @@ public final class MillstoneCabinet implements Listener {
         if (meta != null) {
             meta.setDisplayName("§eMillstone");
             meta.setLore(List.of(
-                    "§7DEV · place the Farm Isle mill.",
+                    "§7DEV · place the Farming Isle mill.",
                     "§7Compacted crops → Pantry (refined).",
                     "",
                     "§eRight-click a block to place.",

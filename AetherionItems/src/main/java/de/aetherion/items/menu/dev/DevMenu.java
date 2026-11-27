@@ -2197,7 +2197,7 @@ public class DevMenu {
                         caneTool != null ? caneTool : new ItemStack(Material.SUGAR_CANE),
                         "§aCane Patch §8(DEV)"
                 ), "farmtool:cane"));
-                items.add(button(Material.SUGAR_CANE, "§aSeed Farm Isle", "farmtool:seed-isle",
+                items.add(button(Material.SUGAR_CANE, "§aSeed Farming Isle", "farmtool:seed-isle",
                         "§7Plants cane banks on sand by water",
                         "§7and fills empty farmland with a",
                         "§7wheat · carrot · potato · beet mix.",

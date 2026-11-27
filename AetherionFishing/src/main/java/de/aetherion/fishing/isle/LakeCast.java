@@ -205,7 +205,7 @@ public final class LakeCast implements Listener {
         if (meta != null) {
             meta.setDisplayName(role.color() + role.display() + " §8(" + role.title() + ")");
             meta.setLore(List.of(
-                    "§7DEV · Fishing Eldervale NPC anchor.",
+                    "§7DEV · Fishing Isle NPC anchor.",
                     "§7" + role.role(),
                     "",
                     "§eRight-click a block §7to place here.",

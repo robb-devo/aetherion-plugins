@@ -29,8 +29,8 @@ import java.util.UUID;
 public final class OriginPads {
 
     private static final Map<String, String> DESTINATIONS = Map.of(
-            "origin_to_mining", "Mining Eldervale",
-            "origin_to_forage", "Forage Isle",
+            "origin_to_mining", "Mining Isle",
+            "origin_to_forage", "Foraging Isle",
             "mining_to_origin", "Origin",
             "forage_to_origin", "Origin"
     );

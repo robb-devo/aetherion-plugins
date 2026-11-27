@@ -54,6 +54,6 @@ public final class FarmIslandService {
 
     /** Always refuses — void farm island is gone. */
     public String ensureIsland(boolean forceRebuild) {
-        return "§cLegacy void farm island deleted. Use Eldervale Farm Isle in §fworld§c.";
+        return "§cLegacy void farm island deleted. Use Eldervale Farming Isle in §fworld§c.";
     }
 }

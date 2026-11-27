@@ -147,7 +147,7 @@ public final class MiningAccessImpl implements MiningAccess {
     @Override
     public String devAction(Player player, String action) {
         MineIsle isle = isle();
-        return isle == null ? "§cMining Eldervale is disabled (mine-isle.enabled)." : isle.dev().action(player, action);
+        return isle == null ? "§cMining Isle is disabled (mine-isle.enabled)." : isle.dev().action(player, action);
     }
 
     @Override
@@ -159,7 +159,7 @@ public final class MiningAccessImpl implements MiningAccess {
     @Override
     public List<String> devStatus() {
         MineIsle isle = isle();
-        return isle == null ? List.of("§cMining Eldervale disabled") : isle.dev().status();
+        return isle == null ? List.of("§cMining Isle disabled") : isle.dev().status();
     }
 
     @Override

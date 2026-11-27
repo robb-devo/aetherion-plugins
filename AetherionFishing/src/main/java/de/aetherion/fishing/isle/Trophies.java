@@ -54,7 +54,7 @@ public final class Trophies implements Listener {
         double rounded = Math.round(kg * 100.0d) / 100.0d;
         meta.setDisplayName("§6✦ " + species.colored() + " §6Trophy");
         List<String> lore = new ArrayList<>();
-        lore.add("§8" + species.rarity().label() + " · Fishing Eldervale");
+        lore.add("§8" + species.rarity().label() + " · Fishing Isle");
         lore.add("§7Weight: §f" + LakeText.kg(rounded) + " §8(" + band(species, rounded) + "§8)");
         lore.add("");
         lore.add("§8\"" + species.line() + "\"");
@@ -87,7 +87,7 @@ public final class Trophies implements Listener {
         }
         meta.setDisplayName("§5✦ Eldermaw Scale");
         meta.setLore(List.of(
-                "§8Hauled out of Fishing Eldervale",
+                "§8Hauled out of the Fishing Isle",
                 "",
                 "§7Big as a door, cold as the deep.",
                 "§7The whole lake pulled — you pulled hardest.",

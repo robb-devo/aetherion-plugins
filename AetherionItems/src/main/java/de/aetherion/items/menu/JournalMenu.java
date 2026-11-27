@@ -540,8 +540,8 @@ public final class JournalMenu {
             new Cmd("Exile", "exile", JournalIcon.EXILE, "Cross to the exile island, or come back."),
             new Cmd("Capital", "capital", JournalIcon.CAPITAL, "Back to the Capital, once you have been there."));
     private static final List<Cmd> ISLE_JOURNALS = List.of(
-            new Cmd("Grove", "grove", JournalIcon.GROVE, "Foraging Eldervale: journal, tour and wayfinder."),
-            new Cmd("Mine Isle", "mineisle", JournalIcon.MINE_ISLE, "Mining Eldervale: journal, compass and crew tour."),
+            new Cmd("Grove", "grove", JournalIcon.GROVE, "Foraging Isle: journal, tour and wayfinder."),
+            new Cmd("Mine Isle", "mineisle", JournalIcon.MINE_ISLE, "Mining Isle: journal, compass and crew tour."),
             new Cmd("Origin", "origin", JournalIcon.ORIGIN, "Origin Journal: districts, glowcaps, bells, skyways."));
 
     private List<Entry> entries(Read read, Chapter chapter) {

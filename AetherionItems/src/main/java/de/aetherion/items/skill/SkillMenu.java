@@ -859,7 +859,7 @@ public final class SkillMenu implements Listener {
             case PACK_RAT -> compactLines(lines, "Mining Compact", "Compacted Upgrade", level, tier, "drops");
             case TIMBER_TAX -> compactLines(lines, "Oak Compact", "Compacted Oak", level, tier, "oak");
             case SEED_LEDGER -> compactLines(lines, "Crop Compact", "Compacted Crops", level, tier, "crops");
-            case SOIL_SENSE -> lines.add(Effect.hint("Stats apply on the Farm Isle only."));
+            case SOIL_SENSE -> lines.add(Effect.hint("Stats apply on the Farming Isle only."));
             case ROW_RHYTHM -> {
                 lines.add(Effect.stat("Glint streak per catch", 1.0 + 0.5 * scale, "+", ""));
                 lines.add(Effect.stat("Shine time", 40.0 * scale, "+", "%"));
@@ -871,9 +871,9 @@ public final class SkillMenu implements Listener {
             }
             case MARKET_DAY -> lines.add(Effect.stat("Order coins", Math.min(60.0, 15.0 * scale), "+", "%"));
             case FISH_LEDGER -> compactLines(lines, "Cod Compact", "Compacted Cod", level, tier, "cod");
-            case LAKE_SENSE -> lines.add(Effect.hint("Stats apply on Fishing Eldervale only."));
+            case LAKE_SENSE -> lines.add(Effect.hint("Stats apply on the Fishing Isle only."));
             case STEADY_LINE -> {
-                lines.add(Effect.hint("Gold cell two wide on Fishing Eldervale."));
+                lines.add(Effect.hint("Gold cell two wide on the Fishing Isle."));
                 lines.add(Effect.stat("Boiling streak save", 25.0 + 25.0 * Math.min(1.0, scale / 3.0), "", "%"));
             }
             case TALL_TALES -> {
@@ -899,7 +899,7 @@ public final class SkillMenu implements Listener {
                 // Speed is gear/pets/Lv.3 pace only — Night Owl no longer grants move speed.
             }
             case CAVE_SENSE -> lines.add(Effect.stat("Mining Power in the dark", 10.0 * scale, "+", ""));
-            case BEDROCK_BORN -> lines.add(Effect.hint("Stats apply on Mining Eldervale only."));
+            case BEDROCK_BORN -> lines.add(Effect.hint("Stats apply on the Mining Isle only."));
             case WORK_SONG -> {
                 lines.add(Effect.stat("Rhythm per strike", 1.0 + 0.5 * scale, "+", ""));
                 lines.add(Effect.stat("Rhythm hold", 40.0 * scale, "+", "%"));
@@ -917,7 +917,7 @@ public final class SkillMenu implements Listener {
             case GROVE_BORN -> {
                 lines.add(Effect.stat("Wood cap per tree", Math.round(Math.min(4.0, 2.0 * scale)), "+", ""));
                 lines.add(Effect.stat("Extra mastery count", Math.min(60.0, 25.0 * scale), "", "% chance"));
-                lines.add(Effect.hint("Applies on Foraging Eldervale only."));
+                lines.add(Effect.hint("Applies on the Foraging Isle only."));
             }
             case SAP_SENSE -> {
                 lines.add(Effect.stat("Crown Find chance", 50.0 * scale, "+", "%"));
@@ -968,9 +968,9 @@ public final class SkillMenu implements Listener {
     /** How the category's stats touch its gathering loop. {@code null} for combat pages. */
     private static String loopHint(AetherSkill.Category category) {
         return switch (category) {
-            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.\nOn Mining Eldervale: Rhythm, Crystal Finds, Contracts.";
+            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.\nOn Mining Isle: Rhythm, Crystal Finds, Contracts.";
             case FORAGING -> "Hit a trunk until it falls; better axes need fewer hits.\nThe glowing spot counts twice; a clean cut pays bonus XP.\nLv. 50 keeps the spot lit longer.\nFortune raises each tree's wood cap.\nOn the Foraging Isle: Mastery, Crown Finds, the Board.";
-            case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Ripe Glint, Prize Crops, Orders.";
+            case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farming Isle: Ripe Glint, Prize Crops, Orders.";
             case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
             default -> null;
         };

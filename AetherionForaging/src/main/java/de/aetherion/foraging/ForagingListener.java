@@ -239,7 +239,7 @@ public class ForagingListener implements Listener {
         }
         if (worldName.equals("aether_farm_island") || worldName.startsWith("aether_farm_")) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§7Foraging is off on the Farm Isle.");
+            event.getPlayer().sendMessage("§7Foraging is off on the Farming Isle.");
             return;
         }
         // Personal/guild islands: handled in onIslandBreak, after the island's own build protection.
@@ -1126,7 +1126,7 @@ public class ForagingListener implements Listener {
             isle.onFell(player, new FellContext(job.baseLocation(), crown == null ? job.crownLocation() : crown,
                     job.logs.size(), Wood.of(job.family), perfect, streak, cleaver, job.notched));
         } catch (RuntimeException ex) {
-            plugin.getLogger().warning("Foraging Eldervale fell hook failed: " + ex);
+            plugin.getLogger().warning("Foraging Isle fell hook failed: " + ex);
         }
     }
 

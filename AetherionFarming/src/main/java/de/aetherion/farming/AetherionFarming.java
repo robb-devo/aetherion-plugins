@@ -101,7 +101,7 @@ public class AetherionFarming extends JavaPlugin {
             birdScare.start();
             scarecrowEvent = new ScarecrowEvent(this);
             scarecrowEvent.start();
-            getLogger().info("Bird scare crop event enabled (hub farm + Farm Isle zones).");
+            getLogger().info("Bird scare crop event enabled (hub farm + Farming Isle zones).");
             // Eldervale loops need Items (skills, coins, stats) — same gate as the bird scare.
             farmIsle = new FarmIsle(this);
             farmIsle.start();

@@ -66,7 +66,7 @@ public final class LakeDev {
             case "profile" -> {
                 isle.profiles().reset(player.getUniqueId());
                 isle.line().forget(player.getUniqueId());
-                yield "§eYour Fishing Eldervale profile was wiped §7(Log, waters, trophies, rank, bait).";
+                yield "§eYour Fishing Isle profile was wiped §7(Log, waters, trophies, rank, bait).";
             }
             case "landing" -> setLanding(player);
             case "lesson" -> {
@@ -115,7 +115,7 @@ public final class LakeDev {
             for (LakeRole role : LakeRole.values()) {
                 isle.cast().remove(role);
             }
-            return "§eWhole Fishing Eldervale cast removed.";
+            return "§eWhole Fishing Isle cast removed.";
         }
         LakeRole role = LakeRole.byId(arg);
         if (role == null) {
@@ -257,7 +257,7 @@ public final class LakeDev {
                 boolean onIsle = LakeWorld.onIsle(player);
                 yield water == null
                         ? (onIsle ? "§7On the isle, not at a named water §8(y " + player.getLocation().getBlockY() + ")."
-                        : "§7Not on the Fishing Eldervale footprint.")
+                        : "§7Not on the Fishing Isle footprint.")
                         : "§7You are at " + water.colored() + " §8(" + water.kind().label() + ", id " + water.id() + ")";
             }
             case "show" -> showOutlines(player);

@@ -147,7 +147,7 @@ public final class Waters {
                 }
                 if (circles.isEmpty()) {
                     if (log != null) {
-                        log.warning("Fishing Eldervale water '" + id + "' has no circles — skipped.");
+                        log.warning("Fishing Isle water '" + id + "' has no circles — skipped.");
                     }
                     continue;
                 }

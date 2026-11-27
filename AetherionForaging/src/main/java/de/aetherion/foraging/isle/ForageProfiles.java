@@ -73,7 +73,7 @@ public final class ForageProfiles {
                 records.put(key, new Record(r.getString("name", "?"), holder, r.getInt("value"), r.getString("note", "")));
             }
         }
-        plugin.getLogger().info("Foraging Eldervale: " + profiles.size() + " forager profiles, " + records.size() + " records.");
+        plugin.getLogger().info("Foraging Isle: " + profiles.size() + " forager profiles, " + records.size() + " records.");
     }
 
     public ForageProfile get(Player player) {
