@@ -186,8 +186,8 @@ public final class GroveLesson {
 
     private void stakes(Player player) {
         List<String> lines = List.of(
-                t(player, "Every clean fell in a row pays bonus XP. Land one on the gold ring for a Perfect. At five, the ring gets wider.",
-                        "Jeder saubere Fall in Folge bringt Bonus-XP. Lande einen im goldenen Ring für einen perfekten Fall. Ab fünf wird der Ring breiter."),
+                t(player, "Every clean fell in a row pays bonus XP. Finish a tree on the glowing spot for a clean cut. At five, the spot stays lit longer.",
+                        "Jeder saubere Fall in Folge bringt Bonus-XP. Beende einen Baum auf der leuchtenden Stelle für einen sauberen Schnitt. Ab fünf leuchtet sie länger."),
                 t(player, "A tree that hangs up costs the streak. It still comes down, and other trees stay free.",
                         "Ein Baum, der hängen bleibt, kostet die Serie. Er fällt trotzdem, und andere Bäume bleiben frei."));
         List<TalkAccess.Reply> chips = List.of(new TalkAccess.Reply(t(player, "Show me.", "Zeig her."),
@@ -250,8 +250,8 @@ public final class GroveLesson {
             quests.noteUsed(player, DONE_NOTE);
         }
         List<String> lines = List.of(
-                t(player, "That's foraging here, {player}: you choose where it falls. Clear lane, gold ring, and the forest pays the streak.",
-                        "So geht Holzsammeln hier, {player}: du bestimmst, wohin er fällt. Freie Bahn, goldener Ring, und der Wald zahlt die Serie."),
+                t(player, "That's foraging here, {player}: hit, notch, timber. Catch the glowing spot, and the forest pays the streak.",
+                        "So geht Holzsammeln hier, {player}: schlagen, Kerbe, Baum fällt. Triff die leuchtende Stelle, und der Wald zahlt die Serie."),
                 t(player, "Pell at the Landing buys wood by order — that's the daily money. The pad you landed on takes you home.",
                         "Pell am Anleger kauft Holz auf Bestellung — das ist das tägliche Geld. Das Sprungpad, auf dem du gelandet bist, bringt dich heim."));
         List<TalkAccess.Reply> chips = new ArrayList<>();

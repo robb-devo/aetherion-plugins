@@ -74,22 +74,27 @@ public final class ForagerChopDemo {
         final World world = fellAt.getWorld();
         final Location foragerAt = nearForager.clone();
 
-        // --- Beat timeline (ticks) — A-51: no bar, the Forager aims the fall ---
+        // --- Beat timeline (ticks), 2026-11-27: a fell is hits on the trunk ---
         //  0    soft glow only (no speech)
-        // 55    "hit it, then look where it should fall"
-        //100    first swing
-        //130    the lane (green line) and the gold ring show, the Fell bar reads "on the gold ring"
-        //195    second swing: the tree tips over onto the ring
+        // 55    "hit the trunk again and again"
+        //100    first swing (notch bar 1/3)
+        //130    "a glowing spot counts twice", swings 2 and 3 every 21 ticks
+        // last  the tree falls away from the Forager
         // +40   "your turn" (+ unlock)
 
         glowTrunk(world, fellAt);
 
         later(plugin, viewer, 55L, () ->
                 foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
-                        "Watch: hit the trunk once. Then look where it should fall, and hit again.",
-                        "Schau: einmal gegen den Stamm. Dann hinschauen, wohin er fallen soll, und nochmal schlagen.")));
+                        "Watch: keep hitting the trunk. Every hit cuts the notch deeper, then down it comes.",
+                        "Schau: immer wieder gegen den Stamm. Jeder Schlag macht die Kerbe tiefer, dann fällt er.")));
 
-        later(plugin, viewer, 100L, () -> swingFx(world, foragerAt, fellAt));
+        later(plugin, viewer, 100L, () -> {
+            swingFx(world, foragerAt, fellAt);
+            if (plugin.hud() != null) {
+                plugin.hud().demo(viewer, 1, 3);
+            }
+        });
 
         later(plugin, viewer, 130L, () -> {
             if (listener.chopping(viewer)) {
@@ -104,8 +109,8 @@ public final class ForagerChopDemo {
             }
             final int reach = job.reach();
             foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer,
-                    "See the line on the ground? §aGreen§f means nothing's in the way. Land it on the §6gold ring§f.",
-                    "Siehst du die Linie am Boden? §aGrün§f heißt, nichts im Weg. Lande ihn im §6goldenen Ring§f."));
+                    "When a spot on the trunk glows §6gold§f, hit it: that hit counts twice. Better axes need fewer hits.",
+                    "Leuchtet eine Stelle am Stamm §6golden§f, triff sie: der Schlag zählt doppelt. Bessere Äxte brauchen weniger Schläge."));
             new org.bukkit.scheduler.BukkitRunnable() {
                 int ticks;
 
@@ -123,11 +128,14 @@ public final class ForagerChopDemo {
                         return;
                     }
                     ticks += 3;
-                    drawLane(viewer, base, dir, reach, ticks);
-                    plugin.hud().demo(viewer, true);
+                    if (ticks == 21) {
+                        swingFx(world, foragerAt, fellAt);
+                        plugin.hud().demo(viewer, 2, 3);
+                    }
                     if (ticks < 63) {
                         return;
                     }
+                    plugin.hud().demo(viewer, 3, 3);
                     cancel();
                     swingFx(world, foragerAt, fellAt);
                     if (world != null) {

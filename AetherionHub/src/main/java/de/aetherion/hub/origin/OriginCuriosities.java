@@ -438,11 +438,18 @@ public final class OriginCuriosities implements Listener {
         int found = found(profile);
         OriginConfig.District district = isle.config().district(c.district());
         String color = district == null ? "§d" : district.color();
-        player.sendMessage("§d✧ Curiosity §8· " + color + c.name() + (paid > 0 ? " §8· §6+" + paid : "") + " §8· §7" + found + "/" + total);
+        java.util.List<String> rows = new java.util.ArrayList<>();
         if (!c.note().isBlank()) {
-            player.sendMessage("§8   “§7" + c.note() + "§8”");
+            rows.add("§7“" + c.note() + "”");
         }
-        OriginText.bar(player, "§d✧ " + color + c.name() + " §8· §7" + found + "/" + total);
+        rows.add("§7" + found + "/" + total + (paid > 0 ? " §8· §6+" + OriginText.coins(paid) + " Coins" : ""));
+        if (!OriginText.toast(player, "✧", OriginText.t(player, "§dCuriosity §8· ", "§dKuriosität §8· ") + color + c.name(), rows)) {
+            player.sendMessage("§d✧ Curiosity §8· " + color + c.name() + (paid > 0 ? " §8· §6+" + paid : "") + " §8· §7" + found + "/" + total);
+            if (!c.note().isBlank()) {
+                player.sendMessage("§8   “§7" + c.note() + "§8”");
+            }
+            OriginText.bar(player, "§d✧ " + color + c.name() + " §8· §7" + found + "/" + total);
+        }
         double[] f = c.focus();
         Location at = new Location(player.getWorld(), f[0], f[1], f[2]);
         player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, quiet ? 0.4f : 0.7f, 1.6f);
@@ -458,18 +465,27 @@ public final class OriginCuriosities implements Listener {
             long inD = inDistrict(c.district());
             if (inD > 1 && foundInDistrict(profile, c.district()) >= inD && profile.mark("curio_" + c.district())) {
                 long bonus = isle.pay(player, "curio-district", 150L);
-                player.sendMessage("§d✧ §7Every curiosity of " + (district == null ? OriginText.pretty(c.district()) : district.colored())
-                        + " §7found" + (bonus > 0 ? " §8· §6+" + OriginText.coins(bonus) : "") + "§7.");
+                String where = district == null ? OriginText.pretty(c.district()) : district.colored();
+                if (!OriginText.toast(player, "✦", OriginText.t(player, "§dEvery curiosity of ", "§dAlle Kuriositäten von ") + where,
+                        java.util.List.of(bonus > 0 ? "§6+" + OriginText.coins(bonus) + " Coins" : "§7"))) {
+                    player.sendMessage("§d✧ §7Every curiosity of " + where
+                            + " §7found" + (bonus > 0 ? " §8· §6+" + OriginText.coins(bonus) : "") + "§7.");
+                }
             }
         }
         for (Milestone m : milestones) {
             int need = m.count() <= 0 ? total : Math.min(m.count(), total);
             if (found >= need && profile.mark(m.flag())) {
                 long bonus = isle.pay(player, m.rewardKey(), m.fallback());
-                if (!quiet) {
-                    OriginText.card(player, m.title(), "§7" + found + " curiosities of Origin", 70);
+                boolean shown = OriginText.bigCard(player, OriginText.t(player, "Milestone", "Meilenstein"), m.title(),
+                        java.util.List.of("§7" + found + OriginText.t(player, " curiosities found", " Kuriositäten gefunden"),
+                                bonus > 0 ? "§6+" + OriginText.coins(bonus) + " Coins" : "§7"), "§d");
+                if (!shown) {
+                    if (!quiet) {
+                        OriginText.card(player, m.title(), "§7" + found + " curiosities of Origin", 70);
+                    }
+                    player.sendMessage("§d✦ " + m.title() + " §8· §7" + found + " curiosities" + (bonus > 0 ? " §8· §6+" + OriginText.coins(bonus) + " coins" : ""));
                 }
-                player.sendMessage("§d✦ " + m.title() + " §8· §7" + found + " curiosities" + (bonus > 0 ? " §8· §6+" + OriginText.coins(bonus) + " coins" : ""));
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.25f);
                 if (m.count() <= 0) {
                     for (Player other : isle.onIsle()) {

@@ -120,12 +120,20 @@ public final class OriginCompass {
                 OriginText.bar(player, district.color() + "✦ " + district.name() + " §8· §7" + district.tagline());
                 player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.4f, 1.3f);
             }
-            player.sendMessage(district.color() + "✦ Discovered §8· " + district.colored()
-                    + (paid > 0 ? " §8· §6+" + OriginText.coins(paid) + " coins" : "") + " §8· §7" + found + "/" + total + " districts");
+            if (!OriginText.toast(player, "✦", OriginText.t(player, "§fDiscovered §8· ", "§fEntdeckt §8· ") + district.colored(),
+                    java.util.List.of("§7" + found + "/" + total + OriginText.t(player, " districts", " Bezirke")
+                            + (paid > 0 ? " §8· §6+" + OriginText.coins(paid) + " Coins" : "")))) {
+                player.sendMessage(district.color() + "✦ Discovered §8· " + district.colored()
+                        + (paid > 0 ? " §8· §6+" + OriginText.coins(paid) + " coins" : "") + " §8· §7" + found + "/" + total + " districts");
+            }
             if (found >= total && profile.mark("wayfarer")) {
-                OriginText.card(player, "§6§lWayfarer", "§7You have walked every district of Origin", 70);
                 long bonus = isle.pay(player, "wayfarer", 2000L);
-                player.sendMessage("§6✦ Wayfarer §8· §7every district of Origin §8· §6+" + OriginText.coins(bonus) + " coins");
+                if (!OriginText.bigCard(player, OriginText.t(player, "Milestone", "Meilenstein"), "§6§lWayfarer",
+                        java.util.List.of(OriginText.t(player, "§7You have walked every district of Origin", "§7Du warst in jedem Bezirk von Origin"),
+                                "§6+" + OriginText.coins(bonus) + " Coins"), "§6")) {
+                    OriginText.card(player, "§6§lWayfarer", "§7You have walked every district of Origin", 70);
+                    player.sendMessage("§6✦ Wayfarer §8· §7every district of Origin §8· §6+" + OriginText.coins(bonus) + " coins");
+                }
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.1f);
             }
             if ("capital".equals(district.id()) && !quiet) {
@@ -155,16 +163,29 @@ public final class OriginCompass {
         long paid = isle.pay(player, "landmark", 60L);
         OriginConfig.District district = isle.config().district(landmark.district());
         String color = district == null ? "§e" : district.color();
-        player.sendMessage("§e✧ Found §8· " + color + landmark.name() + (landmark.blurb().isBlank() ? "" : " §8· §7" + landmark.blurb())
-                + (paid > 0 ? " §8· §6+" + paid : ""));
+        java.util.List<String> rows = new java.util.ArrayList<>();
+        if (!landmark.blurb().isBlank()) {
+            rows.add("§7" + landmark.blurb());
+        }
+        if (paid > 0) {
+            rows.add("§6+" + OriginText.coins(paid) + " Coins");
+        }
+        if (!OriginText.toast(player, "✧", OriginText.t(player, "§eFound §8· ", "§eGefunden §8· ") + color + landmark.name(), rows)) {
+            player.sendMessage("§e✧ Found §8· " + color + landmark.name() + (landmark.blurb().isBlank() ? "" : " §8· §7" + landmark.blurb())
+                    + (paid > 0 ? " §8· §6+" + paid : ""));
+            OriginText.bar(player, "§e✧ " + color + landmark.name());
+        }
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, quiet ? 0.4f : 0.7f, 1.5f);
-        OriginText.bar(player, "§e✧ " + color + landmark.name());
         int total = isle.config().landmarks().size();
         long found = isle.config().landmarks().keySet().stream().filter(profile.landmarks::contains).count();
         if (found >= total && total > 0 && profile.mark("cartographer")) {
-            OriginText.card(player, "§6§lOrigin Cartographer", "§7Every landmark on the island", 70);
             long bonus = isle.pay(player, "cartographer", 3000L);
-            player.sendMessage("§6✦ Origin Cartographer §8· §6+" + OriginText.coins(bonus) + " coins");
+            if (!OriginText.bigCard(player, OriginText.t(player, "Milestone", "Meilenstein"), "§6§lOrigin Cartographer",
+                    java.util.List.of(OriginText.t(player, "§7Every landmark on the island", "§7Jede Landmarke der Insel"),
+                            "§6+" + OriginText.coins(bonus) + " Coins"), "§6")) {
+                OriginText.card(player, "§6§lOrigin Cartographer", "§7Every landmark on the island", 70);
+                player.sendMessage("§6✦ Origin Cartographer §8· §6+" + OriginText.coins(bonus) + " coins");
+            }
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.2f);
         }
     }
