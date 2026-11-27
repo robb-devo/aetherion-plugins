@@ -30,7 +30,7 @@ public final class CodexRewards {
             return 0;
         }
         if (key.startsWith("s:")) {
-            AetherSkill skill = AetherSkill.byId(key.substring(2));
+            AetherSkill.Category skill = SkillSeals.forKey(key);
             return skill == null ? 0 : SkillSeals.claim(player, skill, announce);
         }
         CodexBook.Card card = CodexBook.card(key);
@@ -94,7 +94,7 @@ public final class CodexRewards {
                 }
             }
             if (skills != null) {
-                for (AetherSkill skill : SkillSeals.ready(skills, service, player)) {
+                for (AetherSkill.Category skill : SkillSeals.ready(skills, service, player)) {
                     CodexTiers.Reward reward = SkillSeals.pending(skills, service, player, skill);
                     int paid = SkillSeals.claim(player, skill, false);
                     if (paid > 0) {
@@ -174,9 +174,9 @@ public final class CodexRewards {
         }
         var skills = skills();
         if (skills != null) {
-            for (AetherSkill skill : SkillSeals.ready(skills, service, player)) {
+            for (AetherSkill.Category skill : SkillSeals.ready(skills, service, player)) {
                 if (shown < limit) {
-                    lines.add("§8• §d" + skill.displayName() + " §7rarity seal");
+                    lines.add("§8• §d" + skill.plain() + " §7rarity seal");
                     shown++;
                 } else {
                     more++;

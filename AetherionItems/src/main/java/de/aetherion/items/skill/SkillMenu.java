@@ -116,7 +116,7 @@ public final class SkillMenu implements Listener {
         inventory.setItem(READOUT_SLOT, readoutIcon(player));
         inventory.setItem(INFO_SLOT, profileIcon(player));
         inventory.setItem(NEXT_SLOT_SLOT, nextSlotIcon(player, unlocked));
-        inventory.setItem(GUIDE_SLOT, guideIcon());
+        inventory.setItem(GUIDE_SLOT, guideIcon(player));
         inventory.setItem(CODEX_SLOT, codexIcon(player));
         inventory.setItem(OVERVIEW_SLOT, overviewIcon(player));
         inventory.setItem(PRESETS_SLOT, presetsIcon(player));
@@ -198,7 +198,7 @@ public final class SkillMenu implements Listener {
         if (slot >= FIRST_LOADOUT && slot < FIRST_LOADOUT + SkillService.SLOT_COUNT) {
             int index = slot - FIRST_LOADOUT;
             if (index >= skills.unlockedSlots(player)) {
-                player.sendMessage(skills.unlockHint(index));
+                bar(player, skills.unlockHint(player, index));
                 click(player, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.7f);
                 return;
             }
@@ -214,7 +214,7 @@ public final class SkillMenu implements Listener {
         if (categoryIndex >= 0) {
             AetherSkill.Category category = CATEGORIES[categoryIndex];
             if (!categoryUnlocked(player, category)) {
-                player.sendMessage("§cDungeon skills unlock after clearing Floor 1.");
+                bar(player, t(player, "§cDungeon opens after you clear Floor 1.", "§cDungeon öffnet, wenn du Ebene 1 geschafft hast."));
                 click(player, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.7f);
                 return;
             }
@@ -234,9 +234,15 @@ public final class SkillMenu implements Listener {
             return;
         }
         AetherSkill skill = pool.get(poolIndex);
-        if (event.isShiftClick() && SkillSeals.ready(skills, codex(), player, skill) > 0) {
-            SkillSeals.claim(player, skill, true);
+        if (event.isShiftClick() && skill.category().leveled()
+                && SkillSeals.ready(skills, codex(), player, skill.category()) > 0) {
+            SkillSeals.claim(player, skill.category(), true);
             render(top, player, holder.category);
+            return;
+        }
+        if (!skills.talentUnlocked(player, skill)) {
+            bar(player, lockedLine(player, skill));
+            click(player, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.7f);
             return;
         }
         int equippedSlot = skills.slotOf(player, skill);
@@ -250,8 +256,8 @@ public final class SkillMenu implements Listener {
         if (skills.equip(player, skill)) {
             announceEquip(player, skill);
         } else {
-            player.sendMessage("§cNo free slot. §7Click an equipped skill up top to free one"
-                    + (skills.unlockedSlots(player) < SkillService.SLOT_COUNT ? ", or earn the next slot." : "."));
+            bar(player, t(player, "§cNo free slot. §7Click a talent up top to take it out.",
+                    "§cKein Platz frei. §7Klick oben auf ein Talent, um es rauszunehmen."));
             click(player, Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f);
         }
         render(top, player, holder.category);
@@ -270,8 +276,8 @@ public final class SkillMenu implements Listener {
         int slot = skills.slotOf(player, skill);
         int level = skills.level(player, skill);
         int tier = SkillProgression.rarityTier(level);
-        player.sendMessage("§a✚ Slot " + (slot + 1) + " §8· " + skills.coloredName(player, skill)
-                + " §7Lv. " + level + " §8— §7" + SkillFlavor.tagline(skill, level));
+        bar(player, "§a✚ " + t(player, "Slot ", "Platz ") + (slot + 1) + " §8· " + skills.coloredName(player, skill)
+                + " §8· §7" + SkillService.effectLine(skill));
         player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_CHAIN, 0.8f, 0.9f + tier * 0.1f);
         if (tier >= 4) {
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.6f, 1.1f + (tier - 4) * 0.2f);
@@ -279,13 +285,33 @@ public final class SkillMenu implements Listener {
     }
 
     private void announceUnequip(Player player, AetherSkill skill, int slot) {
-        player.sendMessage("§7− Slot " + (slot + 1) + " §8· " + skills.coloredName(player, skill)
-                + " §8(progress kept)");
+        bar(player, "§7− " + t(player, "Slot ", "Platz ") + (slot + 1) + " §8· " + skills.coloredName(player, skill));
         player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_LEATHER, 0.7f, 0.8f);
     }
 
     private static void click(Player player, Sound sound, float pitch) {
         player.playSound(player.getLocation(), sound, 0.6f, pitch);
+    }
+
+    /** Menu feedback goes to the action bar, not the chat (chat rule, 2026-11-27). */
+    private static void bar(Player player, String legacy) {
+        if (player != null && legacy != null && !legacy.isBlank()) {
+            player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                    .deserialize(legacy));
+        }
+    }
+
+    private static String t(Player player, String en, String german) {
+        return de.aetherion.core.exile.Say.t(player, en, german);
+    }
+
+    /** "Opens at Mining 20" for a talent still closed. */
+    private String lockedLine(Player player, AetherSkill skill) {
+        String which = skill.category().leveled()
+                ? skill.category().plain()
+                : t(player, "your best skill", "deinem besten Skill");
+        return t(player, "§8✕ §7Opens at §f" + which + " " + TalentUnlocks.level(skill),
+                "§8✕ §7Öffnet bei §f" + which + " " + TalentUnlocks.level(skill));
     }
 
     // ------------------------------------------------------------------ header row
@@ -314,8 +340,8 @@ public final class SkillMenu implements Listener {
                     + " §8· §f" + boost.formatted(player));
         }
         lore.add("");
-        lore.add("§8Every skill level feeds this bar.");
-        lore.add("§8Pets and quests top it up.");
+        lore.add(t(player, "§8Everything you do fills this bar:", "§8Alles, was du tust, füllt diesen Balken:"));
+        lore.add(t(player, "§8skills, quests, Codex, pets.", "§8Skills, Quests, Codex, Pets."));
         return named(Material.NETHER_STAR, "§6Your Standing  " + AetherionLevel.coloredLevel(account), lore);
     }
 
@@ -365,58 +391,54 @@ public final class SkillMenu implements Listener {
     }
 
     private ItemStack nextSlotIcon(Player player, int unlocked) {
-        long cost = skills.nextSlotCost(player);
-        if (cost < 0L) {
+        int at = skills.nextSlotLevel(player);
+        if (at < 0) {
             return named(
                     Material.ENDER_CHEST,
-                    "§aAll seven slots open",
-                    "§7The whole locker is yours.",
-                    "§8Don't get greedy."
+                    t(player, "§aAll seven slots open", "§aAlle sieben Plätze offen"),
+                    t(player, "§7Every talent slot is yours.", "§7Jeder Talent-Platz gehört dir.")
             );
         }
-        long have = skills.lifetimeCoins(player);
-        double fill = cost <= 0L ? 1.0d : Math.min(1.0d, have / (double) cost);
+        int level = skills.accountLevel(player);
+        double fill = Math.min(1.0d, level / (double) at);
         return named(
                 Material.TRIPWIRE_HOOK,
-                "§eNext: Slot " + (unlocked + 1),
-                "§7Opens at §f" + coins(cost) + " §7lifetime coins.",
-                SkillProgression.miniBar(fill, "§e") + " §7" + (int) Math.floor(fill * 100.0d) + "%",
-                "§7You: §f" + coins(have) + " §8(" + coins(Math.max(0L, cost - have)) + " to go)",
+                t(player, "§eNext: Slot ", "§eAls Nächstes: Platz ") + (unlocked + 1),
+                t(player, "§7Opens at §fAetherion Level " + at + "§7.", "§7Öffnet bei §fAetherion-Level " + at + "§7."),
+                SkillProgression.miniBar(fill, "§e") + " §7" + level + "§8/§7" + at,
                 "",
-                "§8Lifetime counts what you earned —",
-                "§8spending never sets you back."
+                t(player, "§8Every skill, quest and find counts.", "§8Jeder Skill, jede Quest, jeder Fund zählt.")
         );
     }
 
-    private static ItemStack guideIcon() {
+    private static ItemStack guideIcon(Player player) {
+        StringBuilder slots = new StringBuilder();
+        for (int i = 1; i < SkillService.SLOT_LEVELS.length; i++) {
+            slots.append(i == 1 ? "§f " : " §8· §f").append(SkillService.SLOT_LEVELS[i]);
+        }
         return named(
                 Material.BOOK,
-                "§eField Guide",
-                "§7Seven slots. §fSlot 1 §7is free.",
-                "§7The rest open with lifetime Legacy coins:",
-                "§f 5k §8· §f25k §8· §f80k §8· §f200k §8· §f500k §8· §f1.25M",
+                t(player, "§eHow skills work", "§eSo funktionieren Skills"),
+                t(player, "§7Six skills: §fCombat, Mining, Foraging,", "§7Sechs Skills: §fCombat, Mining, Foraging,"),
+                t(player, "§fFarming, Fishing, Dungeon§7. They level", "§fFarming, Fishing, Dungeon§7. Sie steigen,"),
+                t(player, "§7whenever you do the thing. Always.", "§7sobald du das Passende tust. Immer."),
                 "",
-                "§7Skills only level while equipped.",
-                "§7Swap freely — progress stays with the skill.",
-                "§7Utility skills learn from everything, at half rate.",
+                t(player, "§7Talents are the cards below. Put up to", "§7Talente sind die Karten unten. Bis zu"),
+                t(player, "§7seven in your slots; each is as strong", "§7sieben passen in deine Plätze; jedes ist so"),
+                t(player, "§7as your level in its skill.", "§7stark wie dein Level im passenden Skill."),
+                t(player, "§7New talents open as a skill levels up.", "§7Neue Talente öffnen sich mit dem Skill-Level."),
+                t(player, "§7Utility talents follow your best skill.", "§7Utility-Talente folgen deinem besten Skill."),
                 "",
-                "§7New rarity every §f" + SkillProgression.RARITY_EVERY + " §7levels:",
+                t(player, "§7Slots open at Aetherion Level:", "§7Plätze öffnen bei Aetherion-Level:"),
+                slots.toString(),
+                "",
+                t(player, "§7New rarity every §f" + SkillProgression.RARITY_EVERY + " §7skill levels:",
+                        "§7Neue Seltenheit alle §f" + SkillProgression.RARITY_EVERY + " §7Skill-Level:"),
                 "§f Common §aUncommon §bRare §5Epic §6Legendary §dMythic",
                 "",
-                "§7The road (every level adds the same step):",
-                " " + SkillProgression.Stage.APPRENTICE.colored() + " §8"
-                        + SkillProgression.stageRange(SkillProgression.Stage.APPRENTICE),
-                " " + SkillProgression.Stage.JOURNEYMAN.colored() + " §8"
-                        + SkillProgression.stageRange(SkillProgression.Stage.JOURNEYMAN),
-                " " + SkillProgression.Stage.MASTER.colored() + " §8"
-                        + SkillProgression.stageRange(SkillProgression.Stage.MASTER),
-                " " + SkillProgression.Stage.MASTERED.colored() + " §8"
-                        + SkillProgression.stageRange(SkillProgression.Stage.MASTERED),
-                "",
-                "§7Aetherion Level: §f" + AetherionLevel.BASE_XP + " XP §7a level, §f+1 §7every "
-                        + AetherionLevel.RAMP_EVERY + " levels §8(max " + AetherionLevel.TOP_XP + ")§7.",
-                "§7Every §f" + AetherionLevel.STAT_EVERY + " §7levels: §a+1 Damage §7& §c+1 Health§7.",
-                "§7Auto pickup at Aetherion §f"
+                t(player, "§7Every §f" + AetherionLevel.STAT_EVERY + " §7Aetherion Levels: §a+1 Damage §7& §c+1 Health§7.",
+                        "§7Alle §f" + AetherionLevel.STAT_EVERY + " §7Aetherion-Level: §a+1 Schaden §7& §c+1 Leben§7."),
+                t(player, "§7Auto pickup at Aetherion Level §f", "§7Auto-Pickup ab Aetherion-Level §f")
                         + de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL + "§7."
         );
     }
@@ -443,21 +465,24 @@ public final class SkillMenu implements Listener {
     private ItemStack overviewIcon(Player player) {
         int total = 0;
         int mastered = 0;
-        for (AetherSkill skill : AetherSkill.values()) {
-            int level = skills.level(player, skill);
+        int count = AetherSkill.Category.LEVELED.length;
+        List<String> lore = new ArrayList<>();
+        lore.add(t(player, "§8Your six skills and every talent.", "§8Deine sechs Skills und alle Talente."));
+        lore.add("");
+        for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
+            int level = skills.skillLevel(player, skill);
             total += level;
             if (SkillProgression.isMax(level)) {
                 mastered++;
             }
+            lore.add("§7" + skill.plain() + " " + SkillProgression.rarity(level).getChatColor() + level);
         }
-        int count = AetherSkill.values().length;
-        return named(Material.KNOWLEDGE_BOOK, "§bSkill Overview",
-                "§8All " + count + " skills on one page.",
-                "",
-                "§7Skill average §f" + String.format(Locale.US, "%.1f", total / (double) count),
-                "§7Mastered §d" + mastered + "§8/§7" + count,
-                "",
-                "§eClick to open");
+        lore.add("");
+        lore.add(t(player, "§7Average §f", "§7Durchschnitt §f") + String.format(Locale.US, "%.1f", total / (double) count)
+                + t(player, " §8· §7Mastered §d", " §8· §7Gemeistert §d") + mastered + "§8/§7" + count);
+        lore.add("");
+        lore.add(t(player, "§eClick to open", "§eKlick zum Öffnen"));
+        return named(Material.KNOWLEDGE_BOOK, t(player, "§bSkill Overview", "§bSkill-Übersicht"), lore);
     }
 
     private ItemStack presetsIcon(Player player) {
@@ -513,7 +538,7 @@ public final class SkillMenu implements Listener {
             lore.add("§7Pace §f" + String.format(Locale.US, "%,d", snap.perHour()) + " XP/h");
         }
         if (snap.top() != null) {
-            lore.add("§7Top §f" + skills.coloredName(player, snap.top()) + " §8+"
+            lore.add("§7Top §f" + snap.top().plain() + " §8+"
                     + String.format(Locale.US, "%,d", snap.topXp()));
         }
         return named(Material.CLOCK, "§eThis Session", lore);
@@ -527,7 +552,7 @@ public final class SkillMenu implements Listener {
         int paid = 0;
         boolean batch = skills.beginRewardBatch(player);
         try {
-            for (AetherSkill skill : SkillSeals.ready(skills, codex, player)) {
+            for (AetherSkill.Category skill : SkillSeals.ready(skills, codex, player)) {
                 paid += SkillSeals.claim(player, skill, true);
             }
         } finally {
@@ -536,7 +561,8 @@ public final class SkillMenu implements Listener {
             }
         }
         if (paid <= 0) {
-            player.sendMessage("§7No seals ready. §8Level a skill to its next rarity.");
+            bar(player, t(player, "§7No seals ready. §8Level a skill to its next rarity.",
+                    "§7Keine Siegel bereit. §8Bring einen Skill zur nächsten Seltenheit."));
             click(player, Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f);
         }
     }
@@ -550,23 +576,21 @@ public final class SkillMenu implements Listener {
 
     private ItemStack slotIcon(Player player, int index, int unlocked) {
         if (index >= unlocked) {
-            long cost = SkillService.COIN_UNLOCK[Math.min(index, SkillService.COIN_UNLOCK.length - 1)];
+            int at = SkillService.SLOT_LEVELS[Math.min(index, SkillService.SLOT_LEVELS.length - 1)];
             if (index == unlocked) {
-                long have = skills.lifetimeCoins(player);
-                double fill = cost <= 0L ? 1.0d : Math.min(1.0d, have / (double) cost);
+                int level = skills.accountLevel(player);
+                double fill = Math.min(1.0d, level / (double) at);
                 return named(
                         Material.IRON_TRAPDOOR,
-                        "§eSlot " + (index + 1) + " §8· §eNext",
-                        "§7Opens at §f" + coins(cost) + " §7lifetime coins.",
-                        SkillProgression.miniBar(fill, "§e") + " §7" + (int) Math.floor(fill * 100.0d) + "%",
-                        "",
-                        "§8Keep working. It's listening."
+                        t(player, "§eSlot ", "§ePlatz ") + (index + 1) + t(player, " §8· §eNext", " §8· §eAls Nächstes"),
+                        t(player, "§7Opens at §fAetherion Level " + at + "§7.", "§7Öffnet bei §fAetherion-Level " + at + "§7."),
+                        SkillProgression.miniBar(fill, "§e") + " §7" + level + "§8/§7" + at
                 );
             }
             return named(
                     Material.GRAY_DYE,
-                    "§8Slot " + (index + 1) + " §7· Locked",
-                    "§7Opens at §f" + coins(cost) + " §7lifetime coins."
+                    t(player, "§8Slot ", "§8Platz ") + (index + 1) + t(player, " §7· Locked", " §7· Zu"),
+                    t(player, "§7Opens at §fAetherion Level " + at + "§7.", "§7Öffnet bei §fAetherion-Level " + at + "§7.")
             );
         }
         AetherSkill skill = skills.inSlot(player, index);
@@ -574,7 +598,7 @@ public final class SkillMenu implements Listener {
             return named(
                     Material.ITEM_FRAME,
                     "§aSlot " + (index + 1) + " §8· §7Empty",
-                    "§7Pick a category below, then a skill.",
+                    t(player, "§7Pick a skill below, then a talent.", "§7Wähl unten einen Skill, dann ein Talent."),
                     "",
                     "§8It is judging you already."
             );
@@ -597,7 +621,7 @@ public final class SkillMenu implements Listener {
             lore.add("§5Asleep — wakes inside dungeon floors.");
         }
         lore.add("");
-        lore.add("§eClick §7to unequip §8(progress is kept)");
+        lore.add(t(player, "§eClick §7to take it out", "§eKlick §7zum Rausnehmen"));
         ItemStack item = named(
                 skill.icon(),
                 "§7Slot " + (index + 1) + " §8· " + rarity.getChatColor() + skill.displayName(),
@@ -642,26 +666,37 @@ public final class SkillMenu implements Listener {
         }
         List<AetherSkill> pool = skillsOf(category);
         int equipped = 0;
-        AetherSkill best = null;
-        int bestLevel = 0;
+        int open = 0;
         for (AetherSkill skill : pool) {
-            int level = skills.level(player, skill);
-            if (best == null || level > bestLevel) {
-                best = skill;
-                bestLevel = level;
-            }
             if (skills.slotOf(player, skill) >= 0) {
                 equipped++;
             }
+            if (skills.talentUnlocked(player, skill)) {
+                open++;
+            }
         }
         boolean active = category == selected;
+        int level = skills.skillLevel(player, category);
         List<String> lore = new ArrayList<>();
-        lore.add("§8" + pool.size() + " skills §8· levels from " + levelsFrom(category));
-        if (best != null && bestLevel > 1) {
-            lore.add("§7Best: " + SkillProgression.rarity(bestLevel).getChatColor() + best.displayName()
-                    + " §f" + bestLevel);
+        if (category.leveled()) {
+            if (SkillProgression.isMax(level)) {
+                lore.add("§7Lv. §d" + SkillProgression.MAX_LEVEL + " §8· §dMAX");
+            } else {
+                lore.add("§7Lv. " + SkillProgression.rarity(level).getChatColor() + level + "§8/§7" + SkillProgression.MAX_LEVEL
+                        + "  " + SkillProgression.miniBar(SkillProgression.levelFill(level, skills.skillXp(player, category)), "§a"));
+            }
+            lore.add(t(player, "§8Levels from " + levelsFrom(category), "§8Steigt durch " + levelsFrom(category)));
+        } else {
+            lore.add(t(player, "§7Follows your best skill: §f", "§7Folgt deinem besten Skill: §f") + level);
         }
-        lore.add(equipped > 0 ? "§aEquipped here: §f" + equipped : "§8Nothing equipped from here.");
+        lore.add(t(player, "§7Talents open: §f", "§7Talente offen: §f") + open + "§8/§7" + pool.size());
+        AetherSkill nextTalent = TalentUnlocks.next(category, level);
+        if (nextTalent != null) {
+            lore.add(t(player, "§8Next at " + TalentUnlocks.level(nextTalent) + ": §7", "§8Nächstes bei " + TalentUnlocks.level(nextTalent) + ": §7")
+                    + nextTalent.displayName());
+        }
+        lore.add(equipped > 0 ? t(player, "§aIn your slots: §f", "§aIn deinen Plätzen: §f") + equipped
+                : t(player, "§8None in your slots.", "§8Keins in deinen Plätzen."));
         String loop = loopHint(category);
         if (loop != null) {
             lore.add("");
@@ -671,7 +706,7 @@ public final class SkillMenu implements Listener {
             }
         }
         lore.add("");
-        lore.add(active ? "§a▶ Showing below" : "§eClick to browse");
+        lore.add(active ? t(player, "§a▶ Showing below", "§a▶ Unten zu sehen") : t(player, "§eClick to browse", "§eKlick zum Ansehen"));
         ItemStack item = named(
                 category.icon(),
                 (active ? "§a▶ " : "") + category.title(),
@@ -690,9 +725,10 @@ public final class SkillMenu implements Listener {
         List<String> lore = new ArrayList<>();
         lore.add(skill.category().title() + " §8· " + rarity.getChatColor() + SkillProgression.rarityName(rarity)
                 + " §8· " + stage.colored());
+        boolean open = skills.talentUnlocked(player, skill);
         lore.add(equippedSlot >= 0
-                ? "§a✔ Equipped §8· §aSlot " + (equippedSlot + 1)
-                : "§8○ In the pool");
+                ? t(player, "§a✔ In slot ", "§a✔ In Platz ") + (equippedSlot + 1)
+                : open ? t(player, "§8○ Ready to use", "§8○ Bereit") : lockedLine(player, skill));
         lore.add("");
         lore.add(levelLine(player, skill, level));
         lore.add(nextRarityLine(player, skill, level));
@@ -721,10 +757,11 @@ public final class SkillMenu implements Listener {
             lore.add("§3" + inLoop);
         }
         de.aetherion.items.codex.CodexService codex = codex();
-        if (codex != null) {
-            lore.add(SkillSeals.pips(skills, codex, player, skill));
-            if (SkillSeals.ready(skills, codex, player, skill) > 0) {
-                lore.add("§e§l✦ Rarity seal ready §8— §eShift-click §7to claim");
+        if (codex != null && skill.category().leveled()) {
+            lore.add(SkillSeals.pips(skills, codex, player, skill.category()));
+            if (SkillSeals.ready(skills, codex, player, skill.category()) > 0) {
+                lore.add(t(player, "§e§l✦ Rarity seal ready §8— §eShift-click §7to claim",
+                        "§e§l✦ Siegel bereit §8— §eShift-Klick §7zum Abholen"));
             }
         }
         if (skill.category() == AetherSkill.Category.DUNGEON) {
@@ -732,16 +769,18 @@ public final class SkillMenu implements Listener {
         }
         lore.add("");
         if (equippedSlot >= 0) {
-            lore.add("§eClick §7to unequip §8(progress is kept)");
+            lore.add(t(player, "§eClick §7to take it out", "§eKlick §7zum Rausnehmen"));
+        } else if (!open) {
+            lore.add(lockedLine(player, skill));
         } else if (loadoutFull) {
-            lore.add("§cNo free slot §8— click an equipped skill up top.");
+            lore.add(t(player, "§cNo free slot §8— click a talent up top.", "§cKein Platz frei §8— klick oben auf ein Talent."));
         } else {
-            lore.add("§eClick §7to equip §8→ Slot " + (firstFreeSlot(player, skills.unlockedSlots(player)) + 1));
-            lore.add("§8Levels while equipped.");
+            lore.add(t(player, "§eClick §7to put it in §8→ Slot ", "§eKlick §7zum Einsetzen §8→ Platz ")
+                    + (firstFreeSlot(player, skills.unlockedSlots(player)) + 1));
         }
         ItemStack item = named(
-                skill.icon(),
-                rarity.getChatColor() + skill.displayName(),
+                open ? skill.icon() : Material.GRAY_DYE,
+                (open ? rarity.getChatColor() : "§8") + skill.displayName(),
                 lore
         );
         return equippedSlot >= 0 ? glint(item) : item;

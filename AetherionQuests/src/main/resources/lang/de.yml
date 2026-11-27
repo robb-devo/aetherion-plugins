@@ -2155,13 +2155,13 @@ cast:
       - label: "Die Pfeife?"
         lines: ["Hält den Staub fern. Der Doktor sagt was anderes. Der Doktor gräbt nicht."]
   booster_tutor:
-    accept: "Lass uns was fusen."
+    accept: "Zeig mir die Booster."
     decline: "Vielleicht später."
-    on_accept: ["Ja! Der Emerald ist im Inventar. Der Anvil ist im Manager. Nicht ablecken."]
-    on_decline: ["Dann bleibt dein Gear eben langweilig. Deine Entscheidung."]
+    on_accept: ["Hier, einer von jeder Sorte. Setz einen am §eAmboss§f in deine Ausrüstung und spür den Unterschied."]
+    on_decline: ["Dann bleibt deine Ausrüstung eben schlicht. Komm wieder, wenn du sie stärker willst."]
     returning:
-      - "Immer noch nichts gefust, {player}? Der Emerald wartet auf dein Ja."
-      - "Dann Manager → §eAnvil§f. Gear links, Booster rechts."
+      - "Immer noch nichts in deiner Ausrüstung, {player}? Öffne den §eAmboss§f in deinem Journal."
+      - "Teil aufs Siegel, Booster in einen freien Platz darunter. Ein Klick nimmt ihn wieder raus."
     greet_new: ["{player}! Hast du was, das ich anzünden kann? Upgraden. Ich meinte upgraden."]
     greet: ["Riechst du das, {player}? Fortschritt. Und leicht verbrannt."]
     greet_grad: ["{player}! In letzter Zeit was Scharfes gefust?"]

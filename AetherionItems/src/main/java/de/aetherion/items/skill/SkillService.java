@@ -42,7 +42,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SkillService implements StatProvider, Listener {
 
     public static final int SLOT_COUNT = 7;
+    /** Old slot curve (lifetime coins). Only used once per player to keep the slots they already had. */
     public static final long[] COIN_UNLOCK = {0L, 5_000L, 25_000L, 80_000L, 200_000L, 500_000L, 1_250_000L};
+    /** Level-system v2: talent slot N opens at this Aetherion Level. */
+    public static final int[] SLOT_LEVELS = {1, 5, 10, 20, 35, 50, 75};
     /** Loadout presets per player; preset N opens at {@link #PRESET_UNLOCK}[N] Aetherion levels. */
     public static final int PRESET_COUNT = 3;
     public static final int[] PRESET_UNLOCK = {1, 10, 25};
@@ -92,11 +95,40 @@ public final class SkillService implements StatProvider, Listener {
     }
 
     public int unlockedSlots(Player player) {
-        PlayerSkills skills = of(player);
-        return Math.min(SLOT_COUNT, coinSlots(player) + skills.bonusSlots);
+        return Math.min(SLOT_COUNT, baseSlots(player) + of(player).bonusSlots);
     }
 
-    /** Slots opened by lifetime Legacy coins alone (ignores admin / bot bonus slots). */
+    /** Slots from the Aetherion Level, never fewer than the player had before slots moved to levels. */
+    private int baseSlots(Player player) {
+        PlayerSkills skills = of(player);
+        if (skills.slotFloor < 0 && player != null) {
+            skills.slotFloor = coinSlots(player);
+            dirty = true;
+        }
+        return Math.min(SLOT_COUNT, Math.max(levelSlots(accountLevel(player)), Math.max(1, skills.slotFloor)));
+    }
+
+    /** Talent slots the Aetherion Level alone opens. */
+    public static int levelSlots(int accountLevel) {
+        int open = 0;
+        for (int at : SLOT_LEVELS) {
+            if (accountLevel >= at) {
+                open++;
+            }
+        }
+        return Math.max(1, open);
+    }
+
+    /** Aetherion Level that opens the next talent slot, or {@code -1} once all seven are open. */
+    public int nextSlotLevel(Player player) {
+        int base = baseSlots(player);
+        if (base >= SLOT_COUNT || unlockedSlots(player) >= SLOT_COUNT) {
+            return -1;
+        }
+        return SLOT_LEVELS[base];
+    }
+
+    /** Slots opened by lifetime Legacy coins alone (old curve; kept for the one-time carry-over). */
     public int coinSlots(Player player) {
         int unlocked = 1;
         long lifetime = lifetimeCoins(player);
@@ -112,24 +144,16 @@ public final class SkillService implements StatProvider, Listener {
         return coins == null || player == null ? 0L : coins.lifetime(player);
     }
 
-    /** Lifetime-coin mark for the next slot, or {@code -1} once all seven are open. */
-    public long nextSlotCost(Player player) {
-        if (unlockedSlots(player) >= SLOT_COUNT) {
-            return -1L;
-        }
-        int next = coinSlots(player);
-        return next >= SLOT_COUNT ? -1L : COIN_UNLOCK[next];
-    }
-
-    public String unlockHint(int slotIndex) {
+    public String unlockHint(Player player, int slotIndex) {
         if (slotIndex <= 0) {
-            return "§7Always unlocked. Try not to waste it.";
+            return de.aetherion.core.exile.Say.t(player, "§7Always open.", "§7Immer offen.");
         }
         if (slotIndex >= SLOT_COUNT) {
-            return "§7That's all seven. Don't get greedy.";
+            return "";
         }
-        return "§7Unlock with §f" + String.format(Locale.US, "%,d", COIN_UNLOCK[slotIndex])
-                + " §7lifetime coins.";
+        return de.aetherion.core.exile.Say.t(player,
+                "§7Opens at §fAetherion Level " + SLOT_LEVELS[slotIndex] + "§7.",
+                "§7Öffnet bei §fAetherion-Level " + SLOT_LEVELS[slotIndex] + "§7.");
     }
 
     public String tabSlotLine(Player player, int slotIndex) {
@@ -153,21 +177,18 @@ public final class SkillService implements StatProvider, Listener {
         if (lineIndex < 0) {
             return "";
         }
-        List<AetherSkill> extras = new ArrayList<>();
-        Set<AetherSkill> equipped = new HashSet<>(equipped(player));
-        for (AetherSkill skill : AetherSkill.values()) {
-            if (equipped.contains(skill)) {
+        // Level-system v2: the tab shows the six skills (best first), two per line.
+        List<AetherSkill.Category> extras = new ArrayList<>();
+        for (AetherSkill.Category category : AetherSkill.Category.LEVELED) {
+            if (skillLevel(player, category) <= 1 && skillXp(player, category) <= 0) {
                 continue;
             }
-            if (level(player, skill) <= 1 && xp(player, skill) <= 0) {
-                continue;
-            }
-            extras.add(skill);
+            extras.add(category);
         }
         extras.sort(Comparator
-                .comparingInt((AetherSkill skill) -> level(player, skill))
+                .comparingInt((AetherSkill.Category category) -> skillLevel(player, category))
                 .reversed()
-                .thenComparing(AetherSkill::displayName, String.CASE_INSENSITIVE_ORDER));
+                .thenComparing(AetherSkill.Category::ordinal));
         int start = lineIndex * 2;
         if (start >= extras.size()) {
             return "";
@@ -179,8 +200,8 @@ public final class SkillService implements StatProvider, Listener {
         return first + " §8· " + extraName(player, extras.get(start + 1));
     }
 
-    private String extraName(Player player, AetherSkill skill) {
-        return "§7" + skill.displayName() + " §f" + level(player, skill);
+    private String extraName(Player player, AetherSkill.Category category) {
+        return "§7" + category.plain() + " §f" + skillLevel(player, category);
     }
 
     public List<AetherSkill> equipped(Player player) {
@@ -215,8 +236,33 @@ public final class SkillService implements StatProvider, Listener {
         return -1;
     }
 
+    /**
+     * Level-system v2: a talent is as strong as the level of its skill (Utility: the best skill). Every caller that
+     * asks a talent's level gets that, so effects, rarity and gates follow the skill automatically.
+     */
     public int level(Player player, AetherSkill skill) {
-        return of(player).level(skill);
+        return skill == null ? 1 : of(player).skillLevel(skill.category());
+    }
+
+    /** Level of a skill (Mining, Farming …), 1–150. Utility = the best skill. */
+    public int skillLevel(Player player, AetherSkill.Category category) {
+        return of(player).skillLevel(category);
+    }
+
+    /** XP into the current level of a skill. */
+    public int skillXp(Player player, AetherSkill.Category category) {
+        return of(player).skillXp(category);
+    }
+
+    /** The talent is open: its skill is high enough, the player had it before v2, or it sits in a slot. */
+    public boolean talentUnlocked(Player player, AetherSkill talent) {
+        if (talent == null) {
+            return false;
+        }
+        PlayerSkills data = of(player);
+        return data.keptTalents.contains(talent.id())
+                || data.skillLevel(talent.category()) >= TalentUnlocks.level(talent)
+                || slotOf(player, talent) >= 0;
     }
 
     public int accountLevel(Player player) {
@@ -227,15 +273,14 @@ public final class SkillService implements StatProvider, Listener {
         return AetherionLevel.tag(accountLevel(player));
     }
 
+    /**
+     * Level-system v2: every skill XP a player earns feeds the Aetherion Level once ({@code pool}), whatever is
+     * equipped. {@code legacyPool} is everything the old talent levels were worth on the day of the switch, so no
+     * level is lost. Bonus XP (pets, quests, Codex …) stays 1:1.
+     */
     public long accountXp(Player player) {
         PlayerSkills data = of(player);
-        long skillRaw = 0L;
-        for (AetherSkill skill : AetherSkill.values()) {
-            skillRaw += SkillProgression.spentXp(data.level(skill));
-            skillRaw += data.xp(skill);
-        }
-        // Skill grind XP is compressed; bonus XP (pets, …) is 1:1 toward the account pool (AetherionLevel curve).
-        return data.bonusXp + AetherionLevel.fromSkillXp(skillRaw);
+        return data.bonusXp + AetherionLevel.fromSkillXp(Math.max(0L, data.legacyPool) + data.pool);
     }
 
     public void addBonusXp(Player player, long amount) {
@@ -287,7 +332,7 @@ public final class SkillService implements StatProvider, Listener {
     }
 
     public int xp(Player player, AetherSkill skill) {
-        return of(player).xp(skill);
+        return skill == null ? 0 : of(player).skillXp(skill.category());
     }
 
     public double multiplier(Player player, AetherSkill skill) {
@@ -312,7 +357,7 @@ public final class SkillService implements StatProvider, Listener {
         if (player == null || skill == null) {
             return false;
         }
-        if (slotOf(player, skill) >= 0) {
+        if (slotOf(player, skill) >= 0 || !talentUnlocked(player, skill)) {
             return false;
         }
         int unlocked = unlockedSlots(player);
@@ -400,6 +445,9 @@ public final class SkillService implements StatProvider, Listener {
             if (placed >= unlocked) {
                 break;
             }
+            if (!talentUnlocked(player, skill)) {
+                continue;
+            }
             slots[placed++] = skill.id();
         }
         dirty = true;
@@ -463,53 +511,54 @@ public final class SkillService implements StatProvider, Listener {
         if (player == null) {
             return;
         }
-        PlayerSkills skills = of(player);
-        for (int i = 0; i < skills.slots.length; i++) {
-            skills.slots[i] = "";
-        }
-        skills.bonusSlots = 0;
-        skills.levels.clear();
-        skills.xp.clear();
+        of(player).wipe();
         dirty = true;
         refresh(player);
     }
 
+    /** DEV: sets the skill a talent belongs to (Utility: the best skill). Account XP follows the change. */
     public void setLevel(Player player, AetherSkill skill, int level) {
         if (player == null || skill == null) {
             return;
         }
+        setSkillLevel(player, of(player).leveledFor(skill.category()), level);
+    }
+
+    /** DEV: sets one skill to a level; the Aetherion pool moves by what that is worth. */
+    public void setSkillLevel(Player player, AetherSkill.Category category, int level) {
+        if (player == null || category == null || !category.leveled()) {
+            return;
+        }
         int before = accountLevel(player);
         PlayerSkills data = of(player);
-        data.levels.put(skill, SkillProgression.clampLevel(level));
-        data.xp.put(skill, 0);
+        int from = data.skillLevel(category);
+        int to = SkillProgression.clampLevel(level);
+        long delta = SkillProgression.spentXp(to) - (SkillProgression.spentXp(from) + data.skillXp(category));
+        data.pool = Math.max(0L, data.pool + delta);
+        data.skillLevels.put(category, to);
+        data.skillXp.put(category, 0);
         dirty = true;
         refresh(player);
         announceAccountLevel(player, before);
     }
 
     /**
-     * Admin/test grant straight into one skill (equipped or not). Runs the normal level-up path,
-     * so every moment (line, rarity title, stage, Mastered) fires exactly as in play.
+     * Admin/test grant straight into the skill of a talent. Runs the normal level-up path,
+     * so every moment (card, rarity, new talents, Mastered) fires exactly as in play.
      */
     public void grantXpDirect(Player player, AetherSkill skill, int amount) {
         if (player == null || skill == null || amount <= 0) {
             return;
         }
-        addXp(player, skill, amount);
+        addSkillXp(player, of(player).leveledFor(skill.category()), scaleXp(player, amount), true);
     }
 
+    /** Level of a skill. Kept under its old name: Mining, Farming, Foraging, Fishing and Quests call it. */
     public int highestLevel(Player player, AetherSkill.Category category) {
         if (player == null || category == null) {
             return 1;
         }
-        int best = 1;
-        for (AetherSkill skill : AetherSkill.values()) {
-            if (skill.category() != category) {
-                continue;
-            }
-            best = Math.max(best, level(player, skill));
-        }
-        return best;
+        return skillLevel(player, category);
     }
 
     public int miningLevel(Player player) {
@@ -524,16 +573,9 @@ public final class SkillService implements StatProvider, Listener {
         if (player == null) {
             return;
         }
-        int before = accountLevel(player);
-        PlayerSkills data = of(player);
-        int clamped = SkillProgression.clampLevel(level);
-        for (AetherSkill skill : AetherSkill.values()) {
-            data.levels.put(skill, clamped);
-            data.xp.put(skill, 0);
+        for (AetherSkill.Category category : AetherSkill.Category.LEVELED) {
+            setSkillLevel(player, category, level);
         }
-        dirty = true;
-        refresh(player);
-        announceAccountLevel(player, before);
     }
 
     public void grantFromBlock(Player player, Material material) {
@@ -580,6 +622,11 @@ public final class SkillService implements StatProvider, Listener {
             amount += 25;
         }
         grant(player, AetherSkill.Category.COMBAT, amount);
+        // Dungeon skill: kills on a floor teach it too (it never had an XP source before v2). The Aetherion
+        // pool already counted this kill once through Combat.
+        if (de.aetherion.items.dungeon.DungeonArmor.inDungeon(player)) {
+            addSkillXp(player, AetherSkill.Category.DUNGEON, scaleXp(player, amount), false);
+        }
     }
 
     public void grantFromFish(Player player, int amount) {
@@ -647,10 +694,22 @@ public final class SkillService implements StatProvider, Listener {
                 + SkillProgression.miniBar(SkillProgression.levelFill(skillLevel, xp(player, skill)), "§a");
     }
 
-    /** {@link #progressLine} for the focus skill of a category, or {@code null} with none equipped. */
+    /**
+     * Action-bar read of a skill: {@code Foraging 34 ▮▮▮▮▯▯▯▯▯▯}. Gathering loops append it to their success beat.
+     * Level-system v2: always there (the skill levels whatever is equipped), never {@code null} for a skill.
+     */
     public String loopCredit(Player player, AetherSkill.Category category) {
-        AetherSkill focus = focusSkill(player, category);
-        return focus == null ? null : progressLine(player, focus);
+        if (player == null || category == null) {
+            return null;
+        }
+        AetherSkill.Category skill = of(player).leveledFor(category);
+        int level = skillLevel(player, skill);
+        String name = SkillProgression.rarity(level).getChatColor() + skill.plain();
+        if (SkillProgression.isMax(level)) {
+            return name + " §dMAX";
+        }
+        return name + " §f" + level + " "
+                + SkillProgression.miniBar(SkillProgression.levelFill(level, skillXp(player, skill)), "§a");
     }
 
     /**
@@ -946,15 +1005,28 @@ public final class SkillService implements StatProvider, Listener {
             if (anyPreset) {
                 config.set(path + ".presets", presets);
             }
+            // Old per-talent progress: frozen since level-system v2, still written so an older jar reads it.
             for (AetherSkill skill : AetherSkill.values()) {
-                int level = skills.level(skill);
-                int xp = skills.xp(skill);
+                int level = skills.legacyLevel(skill);
+                int xp = skills.legacyXp(skill);
                 if (level <= 1 && xp <= 0) {
                     continue;
                 }
                 config.set(path + ".progress." + skill.id() + ".level", level);
                 config.set(path + ".progress." + skill.id() + ".xp", xp);
             }
+            String v2 = path + ".v2";
+            for (AetherSkill.Category category : AetherSkill.Category.LEVELED) {
+                config.set(v2 + ".skills." + category.key() + ".level", skills.skillLevel(category));
+                config.set(v2 + ".skills." + category.key() + ".xp", skills.skillXp(category));
+            }
+            config.set(v2 + ".pool", skills.pool);
+            config.set(v2 + ".legacyPool", Math.max(0L, skills.legacyPool));
+            config.set(v2 + ".utilityFloor", skills.utilityFloor);
+            config.set(v2 + ".slotFloor", skills.slotFloor);
+            List<String> kept = new ArrayList<>(skills.keptTalents);
+            java.util.Collections.sort(kept);
+            config.set(v2 + ".kept", kept);
         });
         try {
             AtomicYaml.save(config, file, plugin.getLogger());
@@ -970,20 +1042,15 @@ public final class SkillService implements StatProvider, Listener {
         }
     }
 
+    /**
+     * Level-system v2: the skill of the activity always gets the XP, equipped talents or not, and the Aetherion
+     * Level gets it once. Which talents sit in the slots only decides which bonuses are active.
+     */
     private void grant(Player player, AetherSkill.Category category, int amount) {
-        if (player == null || category == null || amount <= 0) {
+        if (player == null || category == null || amount <= 0 || !category.leveled()) {
             return;
         }
-        for (AetherSkill skill : equipped(player)) {
-            int grant = amount;
-            if (skill.category() != category) {
-                if (skill.category() != AetherSkill.Category.UTILITY) {
-                    continue;
-                }
-                grant = Math.max(1, amount / 2);
-            }
-            addXp(player, skill, grant);
-        }
+        addSkillXp(player, category, scaleXp(player, amount), true);
     }
 
     private boolean canEarnXp(Player player) {
@@ -1039,45 +1106,52 @@ public final class SkillService implements StatProvider, Listener {
         return plugin.xpBoost().scale(player, amount);
     }
 
-    private void addXp(Player player, AetherSkill skill, int amount) {
-        amount = scaleXp(player, amount);
-        PlayerSkills data = of(player);
-        int level = data.level(skill);
-        if (SkillProgression.isMax(level)) {
+    /**
+     * One skill gains XP: levels, the level-up beat and (when {@code feedPool}) the Aetherion pool. XP past the top
+     * level still feeds the Aetherion Level, so every action keeps counting.
+     */
+    private void addSkillXp(Player player, AetherSkill.Category category, int amount, boolean feedPool) {
+        if (player == null || category == null || !category.leveled() || amount <= 0) {
             return;
         }
+        PlayerSkills data = of(player);
         int accountBefore = accountLevel(player);
-        int xp = data.xp(skill) + amount;
-        int needed = SkillProgression.xpToNext(level);
-        boolean leveled = false;
+        int utilityBefore = data.skillLevel(AetherSkill.Category.UTILITY);
+        if (feedPool) {
+            data.pool += amount;
+        }
+        int level = data.skillLevel(category);
         int startLevel = level;
-        while (xp >= needed && needed > 0 && level < SkillProgression.MAX_LEVEL) {
-            xp -= needed;
-            level++;
-            leveled = true;
-            needed = SkillProgression.xpToNext(level);
+        if (!SkillProgression.isMax(level)) {
+            int xp = data.skillXp(category) + amount;
+            int needed = SkillProgression.xpToNext(level);
+            while (xp >= needed && needed > 0 && level < SkillProgression.MAX_LEVEL) {
+                xp -= needed;
+                level++;
+                needed = SkillProgression.xpToNext(level);
+            }
+            if (SkillProgression.isMax(level)) {
+                xp = 0;
+            }
+            data.skillLevels.put(category, level);
+            data.skillXp.put(category, xp);
         }
-        if (SkillProgression.isMax(level)) {
-            xp = 0;
-        }
-        data.levels.put(skill, level);
-        data.xp.put(skill, xp);
-        SkillSession.note(player, skill, amount, level - startLevel);
+        SkillSession.note(player, category, amount, level - startLevel);
         dirty = true;
-        if (leveled) {
-            queueLevelBeat(player, skill, startLevel, level);
+        if (level > startLevel) {
+            queueLevelBeat(player, category, startLevel, level, utilityBefore, data.skillLevel(AetherSkill.Category.UTILITY));
         }
         announceAccountLevel(player, accountBefore);
-        if (leveled) {
+        if (level > startLevel) {
             refresh(player);
         }
     }
 
     /**
-     * Level-ups land next tick as one beat: every skill that moved on one line, plus at most
-     * one headline moment (Mastered › new rarity › curve stage) with its own sound/title.
+     * Level-ups land next tick as one beat per skill: a small card for a plain level, a big card for a new talent,
+     * a new rarity or Mastered. Several skills in one tick share the beat instead of stacking cards.
      */
-    private void queueLevelBeat(Player player, AetherSkill skill, int from, int to) {
+    private void queueLevelBeat(Player player, AetherSkill.Category skill, int from, int to, int utilityFrom, int utilityTo) {
         if (player == null || skill == null || to <= from) {
             return;
         }
@@ -1093,8 +1167,10 @@ public final class SkillService implements StatProvider, Listener {
         if (existing != null) {
             existing.from = Math.min(existing.from, from);
             existing.to = Math.max(existing.to, to);
+            existing.utilityFrom = Math.min(existing.utilityFrom, utilityFrom);
+            existing.utilityTo = Math.max(existing.utilityTo, utilityTo);
         } else {
-            beats.add(new LevelBeat(skill, from, to));
+            beats.add(new LevelBeat(skill, from, to, utilityFrom, utilityTo));
         }
         if (beatFlushQueued.add(id)) {
             plugin.getServer().getScheduler().runTask(plugin, () -> flushLevelBeats(id));
@@ -1108,84 +1184,113 @@ public final class SkillService implements StatProvider, Listener {
         if (beats == null || beats.isEmpty() || player == null || !player.isOnline()) {
             return;
         }
-        StringBuilder line = new StringBuilder("§d▲ ");
-        for (int i = 0; i < beats.size(); i++) {
-            LevelBeat beat = beats.get(i);
-            if (i > 0) {
-                line.append(" §8· ");
-            }
-            line.append(coloredName(player, beat.skill)).append(" §f").append(beat.to);
-            if (beat.to - beat.from > 1) {
-                line.append(" §7(+").append(beat.to - beat.from).append(')');
-            }
+        // The loudest beat leads; plain level-ups of other skills ride along as rows.
+        beats.sort(Comparator.comparingInt(LevelBeat::rank).reversed());
+        LevelBeat lead = beats.get(0);
+        List<String> extra = new ArrayList<>();
+        for (int i = 1; i < beats.size(); i++) {
+            LevelBeat other = beats.get(i);
+            extra.add(levelColor(other.to) + other.skill.plain() + " §f" + other.to);
         }
-        player.sendMessage(line.toString());
-
-        LevelBeat headline = null;
-        int headlineRank = 0;
-        for (LevelBeat beat : beats) {
-            int rank = beat.rank();
-            if (rank > headlineRank) {
-                headline = beat;
-                headlineRank = rank;
-            }
-        }
-        if (headline == null) {
-            // Decade marks keep the old flavor habit, minus the ceremony.
-            for (LevelBeat beat : beats) {
-                if (beat.to / 10 > beat.from / 10) {
-                    player.sendMessage("§8“" + SkillFlavor.tagline(beat.skill, beat.to) + "”");
-                    break;
-                }
-            }
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.35f, 1.6f);
-            return;
-        }
-        playHeadline(player, headline);
+        playBeat(player, lead, extra);
     }
 
-    private void playHeadline(Player player, LevelBeat beat) {
-        AetherSkill skill = beat.skill;
+    private static String levelColor(int level) {
+        return SkillProgression.rarity(level).getChatColor().toString();
+    }
+
+    private void playBeat(Player player, LevelBeat beat, List<String> extra) {
+        AetherSkill.Category skill = beat.skill;
         Rarity rarity = SkillProgression.rarity(beat.to);
-        String name = rarity.getChatColor() + skill.displayName();
-        switch (beat.rank()) {
+        String name = rarity.getChatColor() + skill.plain();
+        List<AetherSkill> opened = new ArrayList<>(TalentUnlocks.openedBetween(skill, beat.from, beat.to));
+        opened.addAll(TalentUnlocks.openedBetween(AetherSkill.Category.UTILITY, beat.utilityFrom, beat.utilityTo));
+        int rank = beat.rank();
+        List<String> rows = new ArrayList<>();
+        String header;
+        String title;
+        String accent;
+        switch (rank) {
             case LevelBeat.RANK_MASTERED -> {
-                player.sendMessage("§d✦ " + name + " §dMASTERED§7. It has nothing left to prove.");
-                player.sendMessage("§8“" + SkillFlavor.tagline(skill, beat.to) + "”");
-                showTitle(player, "§dMastered", name + " §8· §7Lv. " + SkillProgression.MAX_LEVEL);
+                header = t(player, "Skill mastered", "Skill gemeistert");
+                title = name + " " + SkillProgression.MAX_LEVEL;
+                accent = "§d";
+                rows.add("§7“" + SkillFlavor.tagline(talentFor(skill), beat.to) + "”");
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1.0f);
                 player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 0.6f, 1.2f);
                 rarityRing(player, rarity);
             }
             case LevelBeat.RANK_RARITY -> {
-                sealButton(player, skill);
-                String rarityName = SkillProgression.rarityName(rarity);
-                player.sendMessage("§6✦ " + name + " §7is now " + rarity.getChatColor() + rarityName
-                        + "§7. §8+" + SkillProgression.rarityBonusPercent(beat.to) + "% effect from rarity");
-                player.sendMessage("§8“" + SkillFlavor.tagline(skill, beat.to) + "”");
-                showTitle(player, name, "§7now " + rarity.getChatColor() + rarityName);
+                header = t(player, "New rarity", "Neue Seltenheit");
+                title = name + " " + beat.to + " §8· " + rarity.getChatColor() + SkillProgression.rarityName(rarity);
+                accent = rarity.getChatColor().toString();
+                rows.add(t(player, "§7All " + skill.plain() + " talents: §a+" + SkillProgression.rarityBonusPercent(beat.to) + "% §7effect",
+                        "§7Alle " + skill.plain() + "-Talente: §a+" + SkillProgression.rarityBonusPercent(beat.to) + "% §7Wirkung"));
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.65f, 1.3f);
                 player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7f, 1.2f);
                 rarityRing(player, rarity);
             }
             default -> {
-                SkillProgression.Stage stage = SkillProgression.stage(beat.to);
-                player.sendMessage("§e» " + name + " §7reached " + stage.colored()
-                        + "§7 — " + stage.hint() + ".");
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.6f, 1.2f);
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.3f, 1.4f);
+                header = opened.isEmpty() ? null : t(player, "New talent", "Neues Talent");
+                title = name + " §f" + beat.to;
+                accent = "§a";
+                player.playSound(player.getLocation(), opened.isEmpty() ? Sound.ENTITY_PLAYER_LEVELUP : Sound.UI_TOAST_CHALLENGE_COMPLETE,
+                        opened.isEmpty() ? 0.35f : 0.6f, opened.isEmpty() ? 1.6f : 1.25f);
+            }
+        }
+        for (AetherSkill talent : opened) {
+            rows.add(t(player, "§a✚ New talent: §f", "§a✚ Neues Talent: §f") + talent.displayName()
+                    + " §8· §7" + effectLine(talent));
+        }
+        // Rarity seals pay out right away (coins + Shards); no claim line in chat.
+        int sealsPaid = rank == LevelBeat.RANK_RARITY || rank == LevelBeat.RANK_MASTERED
+                ? SkillSeals.claimQuiet(player, skill, rows)
+                : 0;
+        rows.addAll(extra);
+        String next = opened.isEmpty() && sealsPaid == 0 && rank == LevelBeat.RANK_NONE
+                ? nextTalentLine(player, skill, beat.to)
+                : t(player, "§8Journal › Character › Skills", "§8Journal › Charakter › Skills");
+        boolean big = rank != LevelBeat.RANK_NONE || !opened.isEmpty();
+        boolean shown = big
+                ? de.aetherion.items.util.CardsBridge.big(player, header, title, rows, null, next, accent, null)
+                : de.aetherion.items.util.CardsBridge.note(player, "▲", title, rows, next);
+        if (!shown) {
+            // No cards for this player: one short action-bar line, the rows only in chat when they matter.
+            player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                    .deserialize("§d▲ " + title));
+            if (big) {
+                for (String row : rows) {
+                    player.sendMessage(row);
+                }
             }
         }
     }
 
-    /** Clickable claim line for a fresh rarity seal (the seal itself pays out from the Codex ledger). */
-    private static void sealButton(Player player, AetherSkill skill) {
-        var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
-        player.sendMessage(legacy.deserialize("§8   ")
-                .append(legacy.deserialize("§e§l[CLAIM RARITY SEAL]")
-                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/codex claim s:" + skill.id()))
-                        .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                                legacy.deserialize("§7Coins and Aether Shards, once per rarity.\n§eClick to claim")))));
+    /** "Next talent at Lv. 20: Name" for the small level card, or a plain hint once all are open. */
+    private String nextTalentLine(Player player, AetherSkill.Category skill, int level) {
+        AetherSkill next = TalentUnlocks.next(skill, level);
+        if (next == null) {
+            return null;
+        }
+        return t(player, "§8Next talent at " + TalentUnlocks.level(next) + ": §7" + next.displayName(),
+                "§8Nächstes Talent bei " + TalentUnlocks.level(next) + ": §7" + next.displayName());
+    }
+
+    /** First sentence of a talent's details: what it does, without the joke. */
+    static String effectLine(AetherSkill talent) {
+        String details = talent == null ? "" : talent.details();
+        int dot = details.indexOf(". ");
+        return dot > 0 ? details.substring(0, dot) : details;
+    }
+
+    /** A talent of the skill, for the old per-talent flavour lines. */
+    private static AetherSkill talentFor(AetherSkill.Category skill) {
+        List<AetherSkill> talents = TalentUnlocks.of(skill);
+        return talents.isEmpty() ? AetherSkill.values()[0] : talents.get(0);
+    }
+
+    private static String t(Player player, String en, String german) {
+        return de.aetherion.core.exile.Say.t(player, en, german);
     }
 
     private static void showTitle(Player player, String title, String subtitle) {
@@ -1217,18 +1322,21 @@ public final class SkillService implements StatProvider, Listener {
 
     private static final class LevelBeat {
         static final int RANK_NONE = 0;
-        static final int RANK_STAGE = 1;
         static final int RANK_RARITY = 2;
         static final int RANK_MASTERED = 3;
 
-        final AetherSkill skill;
+        final AetherSkill.Category skill;
         int from;
         int to;
+        int utilityFrom;
+        int utilityTo;
 
-        LevelBeat(AetherSkill skill, int from, int to) {
+        LevelBeat(AetherSkill.Category skill, int from, int to, int utilityFrom, int utilityTo) {
             this.skill = skill;
             this.from = from;
             this.to = to;
+            this.utilityFrom = utilityFrom;
+            this.utilityTo = utilityTo;
         }
 
         int rank() {
@@ -1237,9 +1345,6 @@ public final class SkillService implements StatProvider, Listener {
             }
             if (SkillProgression.rarityTier(to) > SkillProgression.rarityTier(from)) {
                 return RANK_RARITY;
-            }
-            if (SkillProgression.stage(to) != SkillProgression.stage(from)) {
-                return RANK_STAGE;
             }
             return RANK_NONE;
         }
@@ -1258,19 +1363,24 @@ public final class SkillService implements StatProvider, Listener {
         announceAccountLevelNow(player, previous);
     }
 
+    /**
+     * Aetherion Level up. Level-system v2: a small card for a plain level, a big card when a gate opens (auto pickup,
+     * a talent slot, a talent set, the island, the Exile) or a new rank. Nothing in chat when cards are on.
+     */
     private void announceAccountLevelNow(Player player, int previous) {
         int current = accountLevel(player);
         if (current <= previous) {
             return;
         }
-        player.sendMessage("§6Aetherion Level §f" + previous + " §7→ " + AetherionLevel.coloredLevel(current));
+        List<String> rows = new ArrayList<>();
+        boolean big = false;
         if (AetherionLevel.titleTier(current) > AetherionLevel.titleTier(previous)) {
-            player.sendMessage("§eNew rank. " + AetherionLevel.coloredTitle(current) + "§e.");
-            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.05f);
-        } else if (current % 10 == 0) {
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.45f, 1.35f);
-        } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.2f);
+            rows.add(t(player, "§eNew rank: ", "§eNeuer Rang: ") + AetherionLevel.coloredTitle(current));
+            big = true;
+        }
+        for (String gate : gatesBetween(player, previous, current)) {
+            rows.add(gate);
+            big = true;
         }
         if (plugin.ranks() != null) {
             plugin.ranks().syncProgression(player, current);
@@ -1278,43 +1388,102 @@ public final class SkillService implements StatProvider, Listener {
         int statBefore = AetherionLevel.milestoneStatBonus(previous);
         int statAfter = AetherionLevel.milestoneStatBonus(current);
         if (statAfter > statBefore) {
-            player.sendMessage("§a+" + (statAfter - statBefore) + " Damage §8· §c+"
-                    + (statAfter - statBefore) + " Health §8· §7every " + AetherionLevel.statEveryAt(current) + " levels");
+            int gain = statAfter - statBefore;
+            rows.add(t(player, "§a+" + gain + " Damage §8· §c+" + gain + " Health",
+                    "§a+" + gain + " Schaden §8· §c+" + gain + " Leben"));
             refresh(player);
         }
         // World pace (silent move/jump) kicks in at Lv.3 — refresh attributes, no announcement.
         if (previous < 3 && current >= 3) {
             refresh(player);
         }
-        if (previous < de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL
-                && current >= de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL) {
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Auto pickup unlocked · the ground clocks out",
-                    net.kyori.adventure.text.format.NamedTextColor.AQUA
-            ));
-            player.showTitle(net.kyori.adventure.title.Title.title(
-                    net.kyori.adventure.text.Component.text(
-                            "AUTO PICKUP",
-                            net.kyori.adventure.text.format.NamedTextColor.AQUA
-                    ),
-                    net.kyori.adventure.text.Component.text(
-                            "Drops find you now",
-                            net.kyori.adventure.text.format.NamedTextColor.GRAY
-                    ),
-                    net.kyori.adventure.title.Title.Times.times(
-                            java.time.Duration.ofMillis(80),
-                            java.time.Duration.ofMillis(1800),
-                            java.time.Duration.ofMillis(350)
-                    )
-            ));
+        claimLevelShards(player, rows);
+        String title = "§6Aetherion Level " + AetherionLevel.coloredLevel(current);
+        String next = nextGateLine(player, current);
+        boolean shown = big
+                ? de.aetherion.items.util.CardsBridge.big(player, t(player, "Level up", "Level-Up"), title, rows, null, next, "§6", null)
+                : de.aetherion.items.util.CardsBridge.note(player, "✦", title, rows, next);
+        if (big) {
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.05f);
+        } else if (current % 10 == 0) {
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.45f, 1.35f);
+        } else {
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.2f);
         }
-        claimLevelShards(player);
-        // Match reward-block breathing room (blank before deferred flush in Quests).
-        player.sendMessage("");
+        if (!shown) {
+            player.sendMessage("§6Aetherion Level §f" + previous + " §7→ " + AetherionLevel.coloredLevel(current));
+            for (String row : rows) {
+                player.sendMessage("§8   " + row);
+            }
+            int autoPickup = de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL;
+            if (previous < autoPickup && current >= autoPickup) {
+                showTitle(player, "§bAUTO PICKUP", t(player, "§7Drops find you now", "§7Drops fliegen jetzt zu dir"));
+            }
+        }
         AetherionItems items = AetherionItems.getInstance();
         if (items != null && items.xpBarSync() != null) {
             items.xpBarSync().sync(player);
         }
+    }
+
+    /** What opens between two Aetherion Levels, one card row each. Only gates that exist in code. */
+    private List<String> gatesBetween(Player player, int from, int to) {
+        List<String> rows = new ArrayList<>();
+        int autoPickup = de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL;
+        if (from < autoPickup && to >= autoPickup) {
+            rows.add(t(player, "§b✚ Auto pickup: drops fly to you", "§b✚ Auto-Pickup: Drops fliegen zu dir"));
+        }
+        for (int i = 1; i < SLOT_LEVELS.length; i++) {
+            if (from < SLOT_LEVELS[i] && to >= SLOT_LEVELS[i]) {
+                rows.add(t(player, "§a✚ Talent slot " + (i + 1) + " is open", "§a✚ Talent-Platz " + (i + 1) + " ist offen"));
+            }
+        }
+        for (int i = 1; i < PRESET_COUNT; i++) {
+            if (from < PRESET_UNLOCK[i] && to >= PRESET_UNLOCK[i]) {
+                rows.add(t(player, "§a✚ Talent set " + (i + 1) + " to save a build", "§a✚ Talent-Set " + (i + 1) + " für einen Build"));
+            }
+        }
+        int island = de.aetherion.items.progress.ProgressionService.ISLAND_LEVEL;
+        if (from < island && to >= island) {
+            rows.add(t(player, "§6✚ Your own island, guilds and Compacting", "§6✚ Eigene Insel, Gilden und Verdichten"));
+        }
+        int guild = de.aetherion.items.progress.ProgressionService.GUILD_LEVEL;
+        if (from < guild && to >= guild) {
+            rows.add(t(player, "§5✚ The Exile (after the Pathwarden) and founding a guild",
+                    "§5✚ Das Exil (nach dem Pathwarden) und eine Gilde gründen"));
+        }
+        return rows;
+    }
+
+    /** The next gate above {@code level}, as the muted last line of a level card. */
+    private String nextGateLine(Player player, int level) {
+        int next = Integer.MAX_VALUE;
+        String what = null;
+        int autoPickup = de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL;
+        if (autoPickup > level) {
+            next = autoPickup;
+            what = t(player, "auto pickup", "Auto-Pickup");
+        }
+        for (int i = 1; i < SLOT_LEVELS.length; i++) {
+            if (SLOT_LEVELS[i] > level && SLOT_LEVELS[i] < next) {
+                next = SLOT_LEVELS[i];
+                what = t(player, "talent slot " + (i + 1), "Talent-Platz " + (i + 1));
+            }
+        }
+        int island = de.aetherion.items.progress.ProgressionService.ISLAND_LEVEL;
+        if (island > level && island <= next) {
+            next = island;
+            what = t(player, "your own island", "eigene Insel");
+        }
+        int guild = de.aetherion.items.progress.ProgressionService.GUILD_LEVEL;
+        if (guild > level && guild <= next) {
+            next = guild;
+            what = t(player, "the Exile", "das Exil");
+        }
+        if (what == null) {
+            return null;
+        }
+        return t(player, "§8Next at " + next + ": §7" + what, "§8Als Nächstes bei " + next + ": §7" + what);
     }
 
     @EventHandler
@@ -1345,6 +1514,14 @@ public final class SkillService implements StatProvider, Listener {
     }
 
     public void claimLevelShards(Player player) {
+        claimLevelShards(player, null);
+    }
+
+    /**
+     * Pays the Aether Shards for every 25th Aetherion Level not yet paid. With {@code rows} the lines go into the
+     * level card; without (login) they go to chat once.
+     */
+    public void claimLevelShards(Player player, List<String> rows) {
         if (player == null || plugin.getShards() == null) {
             return;
         }
@@ -1368,17 +1545,13 @@ public final class SkillService implements StatProvider, Listener {
         plugin.getShards().add(player, totalShards);
         skills.claimedShardLevel = lastMilestone;
         dirty = true;
-        if (milestones == 1) {
-            player.sendMessage("§b+" + totalShards + " Aether Shards §8· §7level " + lastMilestone);
-            player.sendMessage("§7Every §f25 §7levels. Once. The shop noticed.");
-        } else {
-            player.sendMessage("§6Aetherion Level " + AetherionLevel.coloredLevel(current)
-                    + " §7— stored XP carries you further.");
-            player.sendMessage("§b+" + totalShards + " Aether Shards §8· §7" + milestones
-                    + " milestones §8(§7through " + lastMilestone + "§8)");
-            player.sendMessage("§7Every §f" + AetherionLevel.statEveryAt(current)
-                    + " §7levels still grants §a+1 Damage §7& §c+1 Health§7.");
+        String line = t(player, "§b+" + totalShards + " Aether Shards §8· §7every 25 levels",
+                "§b+" + totalShards + " Aether-Splitter §8· §7alle 25 Level");
+        if (rows != null) {
+            rows.add(line);
+            return;
         }
+        player.sendMessage(line);
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.7f);
     }
 
@@ -1429,9 +1602,9 @@ public final class SkillService implements StatProvider, Listener {
     }
 
     /**
-     * Lifetime coins open slots silently in the math — this makes the moment land.
-     * {@code seenSlots < 0} means "never measured" (existing players after this update):
-     * record quietly instead of replaying every old unlock.
+     * Slots open with the Aetherion Level now, and the level card already says so. This only keeps
+     * {@code seenSlots} current and plays a short click with an action-bar line when a slot opens.
+     * {@code seenSlots < 0} means "never measured": record quietly instead of replaying old unlocks.
      */
     private void checkSlotUnlocks(Player player) {
         PlayerSkills skills = of(player);
@@ -1444,30 +1617,12 @@ public final class SkillService implements StatProvider, Listener {
         if (now == skills.seenSlots) {
             return;
         }
-        int from = skills.seenSlots;
         skills.seenSlots = now;
         dirty = true;
-        announceSlotUnlock(player, from, now);
-    }
-
-    private void announceSlotUnlock(Player player, int from, int now) {
         var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
-        String which = now - from > 1 ? "Slots " + (from + 1) + "–" + now : "Slot " + now;
-        showTitle(player, "§a" + which.toUpperCase(Locale.ROOT) + " OPEN",
-                now >= SLOT_COUNT ? "§7All seven. The locker room is yours." : "§7Room for one more opinion.");
-        player.sendMessage("§a✚ Skill " + which + " unlocked §8· §7Legacy coins did the talking.");
-        long next = nextSlotCost(player);
-        if (next > 0L) {
-            player.sendMessage("§8   Next slot at §f" + String.format(Locale.US, "%,d", next)
-                    + " §8lifetime coins.");
-        }
-        player.sendMessage(legacy.deserialize("§8   ")
-                .append(legacy.deserialize("§e[Open Skills]")
-                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/skills"))
-                        .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                                legacy.deserialize("§7Fill the new slot")))));
+        player.sendActionBar(legacy.deserialize(t(player, "§a✚ Talent slot " + now + " is open §8· §7Journal › Skills",
+                "§a✚ Talent-Platz " + now + " ist offen §8· §7Journal › Skills")));
         player.playSound(player.getLocation(), Sound.BLOCK_IRON_TRAPDOOR_OPEN, 0.8f, 1.1f);
-        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.55f, 1.2f);
     }
 
     public void reloadFromDisk() {
@@ -1527,9 +1682,93 @@ public final class SkillService implements StatProvider, Listener {
                     skills.xp.put(skill, Math.max(0, progress.getInt(skillId + ".xp", 0)));
                 }
             }
+            ConfigurationSection v2 = section.getConfigurationSection(key + ".v2");
+            if (v2 != null) {
+                for (AetherSkill.Category category : AetherSkill.Category.LEVELED) {
+                    skills.skillLevels.put(category,
+                            SkillProgression.clampLevel(v2.getInt("skills." + category.key() + ".level", 1)));
+                    skills.skillXp.put(category, Math.max(0, v2.getInt("skills." + category.key() + ".xp", 0)));
+                }
+                skills.pool = Math.max(0L, v2.getLong("pool"));
+                skills.legacyPool = Math.max(0L, v2.getLong("legacyPool"));
+                skills.utilityFloor = Math.max(1, v2.getInt("utilityFloor", 1));
+                skills.slotFloor = v2.getInt("slotFloor", -1);
+                skills.keptTalents.addAll(v2.getStringList("kept"));
+            } else {
+                migrateLegacy(skills);
+            }
             data.put(id, skills);
         } catch (IllegalArgumentException ignored) {
         }
+    }
+
+    /**
+     * Level-system v2 carry-over, once per player (the first time a v2 jar reads them). Nobody loses anything:
+     * each skill starts at the best talent level the player had in it, the Aetherion pool keeps everything the old
+     * talent levels were worth, talents the player ever used stay open, and slots are measured on the next login
+     * (lifetime coins need the player) and never drop below that.
+     */
+    static void migrateLegacy(PlayerSkills skills) {
+        long raw = 0L;
+        for (AetherSkill talent : AetherSkill.values()) {
+            raw += SkillProgression.spentXp(skills.legacyLevel(talent));
+            raw += skills.legacyXp(talent);
+        }
+        skills.legacyPool = raw;
+        skills.pool = 0L;
+        for (AetherSkill.Category category : AetherSkill.Category.LEVELED) {
+            int bestLevel = 1;
+            int bestXp = 0;
+            for (AetherSkill talent : TalentUnlocks.of(category)) {
+                int level = skills.legacyLevel(talent);
+                int xp = skills.legacyXp(talent);
+                if (level > bestLevel || (level == bestLevel && xp > bestXp)) {
+                    bestLevel = level;
+                    bestXp = xp;
+                }
+            }
+            skills.skillLevels.put(category, bestLevel);
+            skills.skillXp.put(category, bestXp);
+        }
+        int utility = 1;
+        for (AetherSkill talent : TalentUnlocks.of(AetherSkill.Category.UTILITY)) {
+            utility = Math.max(utility, skills.legacyLevel(talent));
+        }
+        skills.utilityFloor = utility;
+        for (AetherSkill talent : AetherSkill.values()) {
+            if (skills.legacyLevel(talent) > 1 || skills.legacyXp(talent) > 0) {
+                skills.keptTalents.add(talent.id());
+            }
+        }
+        for (String slot : skills.slots) {
+            AetherSkill talent = AetherSkill.byId(slot);
+            if (talent != null) {
+                skills.keptTalents.add(talent.id());
+            }
+        }
+        for (String preset : skills.presets) {
+            if (preset == null || preset.isBlank()) {
+                continue;
+            }
+            for (String id : preset.split(",")) {
+                AetherSkill talent = AetherSkill.byId(id.trim());
+                if (talent != null) {
+                    skills.keptTalents.add(talent.id());
+                }
+            }
+        }
+        skills.slotFloor = -1;
+    }
+
+    /** Test hook: a player with old per-talent levels and slots, carried over to v2. */
+    static PlayerSkills carriedOver(java.util.Map<AetherSkill, Integer> legacyLevels, String... slotIds) {
+        PlayerSkills skills = new PlayerSkills();
+        legacyLevels.forEach((talent, level) -> skills.levels.put(talent, SkillProgression.clampLevel(level)));
+        for (int i = 0; i < slotIds.length && i < SLOT_COUNT; i++) {
+            skills.slots[i] = slotIds[i];
+        }
+        migrateLegacy(skills);
+        return skills;
     }
 
     /**
@@ -1555,12 +1794,7 @@ public final class SkillService implements StatProvider, Listener {
             try {
                 UUID id = UUID.fromString(entry.trim());
                 PlayerSkills skills = data.computeIfAbsent(id, ignored -> new PlayerSkills());
-                for (int i = 0; i < skills.slots.length; i++) {
-                    skills.slots[i] = "";
-                }
-                skills.bonusSlots = 0;
-                skills.levels.clear();
-                skills.xp.clear();
+                skills.wipe();
                 wiped++;
             } catch (IllegalArgumentException ignored) {
             }
@@ -1629,8 +1863,22 @@ public final class SkillService implements StatProvider, Listener {
 
     public static final class PlayerSkills {
         private final String[] slots = new String[SLOT_COUNT];
+        /** Old per-talent progress. Frozen since level-system v2; read once for the carry-over, written back as is. */
         private final EnumMap<AetherSkill, Integer> levels = new EnumMap<>(AetherSkill.class);
         private final EnumMap<AetherSkill, Integer> xp = new EnumMap<>(AetherSkill.class);
+        /** Level-system v2: one level per skill. */
+        private final EnumMap<AetherSkill.Category, Integer> skillLevels = new EnumMap<>(AetherSkill.Category.class);
+        private final EnumMap<AetherSkill.Category, Integer> skillXp = new EnumMap<>(AetherSkill.Category.class);
+        /** Skill XP earned since v2, raw; feeds the Aetherion Level. */
+        private long pool;
+        /** Raw talent XP before v2 (carried over once). New players start at 0. */
+        private long legacyPool;
+        /** Best old Utility talent level, so Utility never drops below it. */
+        private int utilityFloor = 1;
+        /** Talent slots the player had before slots moved to levels; -1 = measure at the next look. */
+        private int slotFloor = 1;
+        /** Talents the player used before v2: they stay open whatever the skill level. */
+        private final Set<String> keptTalents = new HashSet<>();
         private int bonusSlots;
         private long bonusXp;
         private int claimedShardLevel;
@@ -1641,17 +1889,78 @@ public final class SkillService implements StatProvider, Listener {
 
         private PlayerSkills() {
             java.util.Arrays.fill(slots, "");
+            java.util.Arrays.fill(presets, "");
         }
 
-        int level(AetherSkill skill) {
+        int legacyLevel(AetherSkill skill) {
             return SkillProgression.clampLevel(levels.getOrDefault(skill, 1));
         }
 
-        int xp(AetherSkill skill) {
+        int legacyXp(AetherSkill skill) {
             return Math.max(0, xp.getOrDefault(skill, 0));
         }
-    }
 
+        /** Utility follows the best skill (and never drops below the old best Utility talent). */
+        AetherSkill.Category leveledFor(AetherSkill.Category category) {
+            if (category != null && category.leveled()) {
+                return category;
+            }
+            AetherSkill.Category best = AetherSkill.Category.COMBAT;
+            int bestLevel = 0;
+            for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
+                int level = SkillProgression.clampLevel(skillLevels.getOrDefault(skill, 1));
+                if (level > bestLevel) {
+                    best = skill;
+                    bestLevel = level;
+                }
+            }
+            return best;
+        }
+
+        int skillLevel(AetherSkill.Category category) {
+            if (category == null) {
+                return 1;
+            }
+            if (!category.leveled()) {
+                return Math.max(utilityFloor, skillLevel(leveledFor(category)));
+            }
+            return SkillProgression.clampLevel(skillLevels.getOrDefault(category, 1));
+        }
+
+        int skillXp(AetherSkill.Category category) {
+            if (category == null) {
+                return 0;
+            }
+            if (!category.leveled()) {
+                AetherSkill.Category best = leveledFor(category);
+                return utilityFloor > skillLevel(best) ? 0 : skillXp(best);
+            }
+            return Math.max(0, skillXp.getOrDefault(category, 0));
+        }
+
+        boolean keeps(String talentId) {
+            return keptTalents.contains(talentId);
+        }
+
+        long carried() {
+            return legacyPool;
+        }
+
+        /** Back to a fresh start: levels, pool, kept talents, slots. */
+        void wipe() {
+            java.util.Arrays.fill(slots, "");
+            bonusSlots = 0;
+            levels.clear();
+            xp.clear();
+            skillLevels.clear();
+            skillXp.clear();
+            pool = 0L;
+            legacyPool = 0L;
+            utilityFloor = 1;
+            slotFloor = 1;
+            keptTalents.clear();
+        }
+    }
 
     /** Full skill wipe for online or offline — RAM + skills.yml key removed. */
     public void wipePlayer(UUID playerId) {

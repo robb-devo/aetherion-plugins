@@ -439,7 +439,7 @@ public class AetherionManagerListener implements Listener {
         switch (slot) {
             case AetherionManagerGUI.BAZAAR_SLOT -> {
                 if (progress != null && !progress.bazaar(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.TRADER));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.TRADER));
                     return;
                 }
                 if (NetworkHooks.marketOnMain(player, "bazaar")) {
@@ -455,7 +455,7 @@ public class AetherionManagerListener implements Listener {
             }
             case AetherionManagerGUI.AUCTION_SLOT -> {
                 if (progress != null && !progress.auction(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.TRADER));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.TRADER));
                     return;
                 }
                 if (NetworkHooks.marketOnMain(player, "ah")) {
@@ -471,7 +471,7 @@ public class AetherionManagerListener implements Listener {
             }
             case AetherionManagerGUI.SKILLS_SLOT -> {
                 if (progress != null && !progress.skills(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.SKILLS));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.SKILLS));
                     return;
                 }
                 var menu = AetherionItems.getInstance().getSkillMenu();
@@ -491,7 +491,7 @@ public class AetherionManagerListener implements Listener {
             }
             case AetherionManagerGUI.RECIPE_SLOT -> {
                 if (progress != null && !progress.recipeBook(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.WORKBENCH));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.WORKBENCH));
                     return;
                 }
                 if (manager.getRecipeBookGUI() != null) {
@@ -503,7 +503,7 @@ public class AetherionManagerListener implements Listener {
                 boolean anyBook = progress == null || progress.collection(player) || progress.bestiary(player)
                         || de.aetherion.items.codex.JournalHubGUI.available(player);
                 if (!anyBook) {
-                    player.sendMessage(progress.collectionHint());
+                    lockedBar(player, progress.collectionHint());
                     return;
                 }
                 de.aetherion.items.codex.CodexMenus.openHub(player);
@@ -514,7 +514,7 @@ public class AetherionManagerListener implements Listener {
                     return;
                 }
                 if (progress != null && !progress.island(player)) {
-                    player.sendMessage(progress.islandHint());
+                    lockedBar(player, progress.islandHint());
                     return;
                 }
                 player.closeInventory();
@@ -526,7 +526,7 @@ public class AetherionManagerListener implements Listener {
                     return;
                 }
                 if (progress != null && !progress.guildJoin(player)) {
-                    player.sendMessage(progress.guildJoinHint());
+                    lockedBar(player, progress.guildJoinHint());
                     return;
                 }
                 player.closeInventory();
@@ -552,7 +552,7 @@ public class AetherionManagerListener implements Listener {
                     return;
                 }
                 if (progress != null && !progress.spawns(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.SPAWN_UNLOCKER));
                     return;
                 }
                 player.closeInventory();
@@ -560,7 +560,7 @@ public class AetherionManagerListener implements Listener {
             }
             case AetherionManagerGUI.PETS_SLOT -> {
                 if (progress != null && !progress.pets(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.PETS));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.PETS));
                     return;
                 }
                 if (!manager.hasPetMenu()) {
@@ -572,7 +572,7 @@ public class AetherionManagerListener implements Listener {
             }
             case AetherionManagerGUI.CRAFT_SLOT -> {
                 if (progress != null && !progress.craftingTable(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.WORKBENCH));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.WORKBENCH));
                     return;
                 }
                 player.closeInventory();
@@ -581,7 +581,7 @@ public class AetherionManagerListener implements Listener {
             }
             case AetherionManagerGUI.ANVIL_SLOT -> {
                 if (progress != null && !progress.anvil(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.ANVIL));
+                    lockedBar(player, progress.hint(player, ProgressionService.Flag.ANVIL));
                     return;
                 }
                 de.aetherion.items.util.QuestProgressHook.noteUsed(player, "AETHER_ANVIL");
@@ -598,5 +598,15 @@ public class AetherionManagerListener implements Listener {
         player.setItemOnCursor(null);
         giveManager(player);
         player.updateInventory();
+    }
+
+    /** A locked tile says why in the action bar (chat rule, 2026-11-27); the tile's own lore says it too. */
+    private static void lockedBar(Player player, String hint) {
+        if (player == null || hint == null || hint.isBlank()) {
+            return;
+        }
+        player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                .deserialize(hint));
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.5f, 0.8f);
     }
 }

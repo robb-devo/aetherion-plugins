@@ -55,7 +55,7 @@ public final class CodexHubGUI {
         int score = CodexBook.summary(service, player, CodexBook.Ledger.COLLECTION).level()
                 + CodexBook.summary(service, player, CodexBook.Ledger.BESTIARY).level();
         if (skills != null) {
-            for (AetherSkill skill : AetherSkill.values()) {
+            for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
                 score += SkillSeals.reached(skills, player, skill);
             }
         }

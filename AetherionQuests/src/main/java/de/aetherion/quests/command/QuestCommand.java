@@ -478,6 +478,24 @@ public class QuestCommand implements CommandExecutor {
 
         /*
          * =========================================================
+         * FIRST BOOSTERS (DEV): Temper's page again, without a reset
+         * =========================================================
+         */
+
+        if (args[0].equalsIgnoreCase("boosterpick")) {
+            if (denyUnlessAdmin(sender)) {
+                return true;
+            }
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("§cOnly players can use this.");
+                return true;
+            }
+            de.aetherion.quests.tutorial.BoosterPick.open(player);
+            return true;
+        }
+
+        /*
+         * =========================================================
          * EXPLORATION CHESTS (DEV)
          * =========================================================
          */
