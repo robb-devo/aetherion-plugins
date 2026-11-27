@@ -78,6 +78,8 @@ return-portal:
 # world per run; Floors 2 and 3 use their base world and, for the next party, a copy made off-thread.
 instances:
   max-runs: 3
+  # Floor 1 worlds built ahead of time; a party beyond these builds on the spot (~1 s freeze).
+  prebuilt-floor1: 2
 
 # Per-run measurement (A-06): one summary line per run in the log and in run-metrics.csv, plus a
 # [SlowTick] warning whenever the server thread stalls stall-ms or longer (gap between two tick starts,
