@@ -320,9 +320,12 @@ public final class AshesEncounter {
     }
 
     private static void callElite(Plugin plugin, World world, String templateId, Location at, String line, String title) {
-        world.getChunkAt(at).load(true);
         Player initiator = world.getPlayers().isEmpty() ? null : world.getPlayers().get(0);
-        if (!BossEngineBridge.spawn(at, initiator, templateId, false)) {
+        boolean spawned = DungeonRunMetrics.timed(world, "elite spawn", () -> {
+            world.getChunkAt(at).load(true);
+            return BossEngineBridge.spawn(at, initiator, templateId, false);
+        });
+        if (!spawned) {
             plugin.getLogger().warning("Ashes elite " + templateId + " did not spawn at "
                     + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ());
             return;
@@ -372,6 +375,7 @@ public final class AshesEncounter {
         final int[] index = {0};
         BukkitTask[] holder = new BukkitTask[1];
         holder[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            DungeonRunMetrics.mark("F3 gate opens");
             int end = Math.min(index[0] + 4, blocks.size());
             for (; index[0] < end; index[0]++) {
                 Block block = blocks.get(index[0]);
@@ -410,8 +414,10 @@ public final class AshesEncounter {
         state.bossSpawned = true;
         Player initiator = world.getPlayers().isEmpty() ? null : world.getPlayers().get(0);
         Location at = state.bossAt.clone();
-        at.getWorld().getChunkAt(at).load(true);
-        boolean ok = BossEngineBridge.spawn(at, initiator, BossEngineBridge.AETHERION, false);
+        boolean ok = DungeonRunMetrics.timed(world, "boss spawn", () -> {
+            at.getWorld().getChunkAt(at).load(true);
+            return BossEngineBridge.spawn(at, initiator, BossEngineBridge.AETHERION, false);
+        });
         if (!ok) {
             org.bukkit.entity.Enderman enderman =
                     (org.bukkit.entity.Enderman) world.spawnEntity(at, EntityType.ENDERMAN);
@@ -456,6 +462,7 @@ public final class AshesEncounter {
                 }
                 return;
             }
+            DungeonRunMetrics.mark("F3 mob spawn");
             for (int n = 0; n < 4 && cursor[0] < queue.size(); n++) {
                 int[] xyz = queue.get(cursor[0]++);
                 Location at = new Location(world, xyz[0] + 0.5, xyz[1] + 1, xyz[2] + 0.5);

@@ -25,6 +25,7 @@ public final class InstanceManager {
 
     private final JavaPlugin plugin;
     private final DungeonWarmPool warmPool;
+    private final DungeonRunMetrics metrics;
     private final Map<UUID, DungeonSession> byOwner = new ConcurrentHashMap<>();
     private final Map<String, DungeonSession> byWorld = new ConcurrentHashMap<>();
     private final Map<UUID, DungeonSession> byPlayer = new ConcurrentHashMap<>();
@@ -33,6 +34,8 @@ public final class InstanceManager {
     public InstanceManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.warmPool = new DungeonWarmPool(plugin);
+        this.metrics = new DungeonRunMetrics(plugin);
+        plugin.getServer().getPluginManager().registerEvents(metrics, plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::scanActiveRooms, 20L, 20L);
         // Orphan XL worlds leak RAM hard — sweep regularly.
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::purgeOrphanSessionsAndWorlds, 20L * 30, 20L * 60);
@@ -41,6 +44,11 @@ public final class InstanceManager {
     /** Called after leftover purge on enable — pre-bakes void + Endless XL. */
     public void startWarmPool() {
         warmPool.start();
+    }
+
+    /** Per-run measurements (build time, tick spikes, entity counts), see {@link DungeonRunMetrics}. */
+    public DungeonRunMetrics metrics() {
+        return metrics;
     }
 
     public DungeonSession sessionOf(Player player) {
@@ -143,6 +151,7 @@ public final class InstanceManager {
             return;
         }
 
+        long buildStarted = System.nanoTime();
         String worldName;
         World world = null;
         DungeonWarmPool.WarmEndless warmEndless = null;
@@ -169,6 +178,11 @@ public final class InstanceManager {
                     ? world.getName()
                     : WORLD_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         }
+        String buildKind = endless
+                ? (warmEndless != null ? "warm base" : "cold paste")
+                : ashes
+                    ? (warmAshes != null ? "warm base" : "cold load")
+                    : (world != null ? "warm world" : "new world");
         Location returnTo = player.getLocation().clone();
 
         String sessionFloorId = endless
@@ -216,6 +230,7 @@ public final class InstanceManager {
                 }
                 WorldCreator creator = new WorldCreator(DungeonWarmPool.ASHES_BASE);
                 creator.generateStructures(false);
+                creator.keepSpawnLoaded(net.kyori.adventure.util.TriState.FALSE);
                 world = creator.createWorld();
             } else {
                 world = createSlimVoidWorld(worldName);
@@ -299,6 +314,7 @@ public final class InstanceManager {
             return;
         }
         session.setLayout(layout);
+        metrics.begin(session, (System.nanoTime() - buildStarted) / 1_000_000.0, buildKind, party.size());
         final World instanceWorld = world;
         final DungeonLayout instanceLayout = layout;
         world.setSpawnLocation(spawn);
@@ -316,6 +332,7 @@ public final class InstanceManager {
             );
         }
         int extras = Math.max(0, party.size() - 1);
+        long teleportStarted = System.nanoTime();
         for (Player member : party) {
             member.closeInventory();
             member.teleport(dest);
@@ -327,6 +344,7 @@ public final class InstanceManager {
                 member.sendMessage("§5" + player.getName() + " §7opened a dungeon. You came along.");
             }
         }
+        DungeonRunMetrics.record(world, "teleport in", (System.nanoTime() - teleportStarted) / 1_000_000.0);
         if (endless) {
             session.setStarted(true);
             for (Player member : party) {
@@ -485,6 +503,7 @@ public final class InstanceManager {
         if (session == null) {
             return;
         }
+        long closeStarted = System.nanoTime();
         session.cancelClose();
         FloorOnePool.forget(session.worldName());
         byOwner.remove(session.ownerId());
@@ -533,6 +552,10 @@ public final class InstanceManager {
             deleteWorld(session.worldName(), world);
         }
         warmPool.ensureAll();
+        String result = session.bossDead()
+                ? "cleared"
+                : (message != null && message.contains("restarted") ? "server stop" : "left before the boss");
+        metrics.end(session, result, (System.nanoTime() - closeStarted) / 1_000_000.0);
     }
 
     public void markReady(Player player) {
@@ -616,20 +639,21 @@ public final class InstanceManager {
         for (Player occupant : session.world().getPlayers()) {
             occupant.sendMessage("§a" + chamberTitle(session, room) + " §7cleared. §f" + session.clearedCount() + "/" + session.layout().combatCount());
         }
-        PrototypeDungeonBuilder.placeLootChest(session.world(), room, session.floorNumber());
+        DungeonRunMetrics.time(session.world(), "loot chest",
+                () -> PrototypeDungeonBuilder.placeLootChest(session.world(), room, session.floorNumber()));
         for (Player occupant : session.world().getPlayers()) {
             occupant.sendMessage("§6A cache unseals in " + room.title() + "§7. Right-click it — one item each.");
         }
         if (room.miniBoss() && session.floorNumber() <= 1
                 && java.util.concurrent.ThreadLocalRandom.current().nextBoolean()) {
-            DungeonLootFx.placeGuaranteedVestige(
+            DungeonRunMetrics.time(session.world(), "vestige cache", () -> DungeonLootFx.placeGuaranteedVestige(
                     plugin,
                     session.world(),
                     room.bounds().maxX() - 2,
                     room.bounds().minZ() + 2,
                     1000 + roomIndex,
                     session.floorNumber()
-            );
+            ));
             for (Player occupant : session.world().getPlayers()) {
                 occupant.sendMessage("§6The warden left a vestige cache.");
             }
@@ -640,7 +664,8 @@ public final class InstanceManager {
                 continue;
             }
             session.unlock(next);
-            withScale(session, () -> PrototypeDungeonBuilder.unlockRoom(plugin, session.world(), session.layout(), next));
+            DungeonRunMetrics.time(session.world(), "open room",
+                    () -> withScale(session, () -> PrototypeDungeonBuilder.unlockRoom(plugin, session.world(), session.layout(), next)));
             opened = true;
             for (Player occupant : session.world().getPlayers()) {
                 occupant.sendMessage("§8A seal turns green. §7" + chamberTitle(session, session.layout().combat(next)));
@@ -657,7 +682,8 @@ public final class InstanceManager {
         }
         session.setBossReleased(true);
         Player initiator = session.world().getPlayers().isEmpty() ? null : session.world().getPlayers().get(0);
-        withScale(session, () -> PrototypeDungeonBuilder.unlockBoss(plugin, session.world(), session.layout(), initiator));
+        DungeonRunMetrics.time(session.world(), "boss spawn",
+                () -> withScale(session, () -> PrototypeDungeonBuilder.unlockBoss(plugin, session.world(), session.layout(), initiator)));
         for (Player occupant : session.world().getPlayers()) {
             DungeonProgressHud.hide(occupant);
             occupant.sendTitle(bossStirTitle(session.floorNumber()), "§7All chambers are clear", 10, 40, 15);
@@ -678,13 +704,15 @@ public final class InstanceManager {
             return;
         }
         session.setBossDead(true);
-        if (EndlessEncounter.isEndless(session)) {
-            EndlessEncounter.placeVictoryChest(plugin, session.world());
-        } else if (AshesEncounter.isAshes(session)) {
-            AshesEncounter.placeVictoryChest(plugin, session.world());
-        } else if (session.layout() != null) {
-            PrototypeDungeonBuilder.placeVictoryChest(session.world(), session.layout(), session.floorNumber());
-        }
+        DungeonRunMetrics.time(session.world(), "victory chest", () -> {
+            if (EndlessEncounter.isEndless(session)) {
+                EndlessEncounter.placeVictoryChest(plugin, session.world());
+            } else if (AshesEncounter.isAshes(session)) {
+                AshesEncounter.placeVictoryChest(plugin, session.world());
+            } else if (session.layout() != null) {
+                PrototypeDungeonBuilder.placeVictoryChest(session.world(), session.layout(), session.floorNumber());
+            }
+        });
         for (Player occupant : session.world().getPlayers()) {
             occupant.sendTitle(bossFallTitle(session.floorNumber()), "§760s until the instance closes", 10, 50, 15);
             occupant.sendMessage(bossFallTitle(session.floorNumber()) + "§7. Right-click the reward chest — one item each — then walk into the §5exit portal§7.");
@@ -727,7 +755,8 @@ public final class InstanceManager {
             if (session.layout() == null) {
                 session.setLayout(DungeonLayout.generate(session.worldName().hashCode(), session.floorNumber()));
             }
-            withScale(session, () -> PrototypeDungeonBuilder.startEncounter(plugin, session.world(), session.layout()));
+            DungeonRunMetrics.time(session.world(), "start",
+                    () -> withScale(session, () -> PrototypeDungeonBuilder.startEncounter(plugin, session.world(), session.layout())));
             for (Player occupant : session.world().getPlayers()) {
                 occupant.sendTitle("§5The gate opens", "§7Clear every chamber", 10, 45, 15);
                 occupant.playSound(occupant.getLocation(), org.bukkit.Sound.BLOCK_IRON_DOOR_OPEN, 1.0f, 0.8f);
@@ -789,6 +818,8 @@ public final class InstanceManager {
         creator.generator(VoidChunkGenerator.forDungeons());
         creator.generateStructures(false);
         creator.environment(World.Environment.NORMAL);
+        // No spawn area: preparing it cost ~0.7 s on the server thread for every new instance world (log 11-21).
+        creator.keepSpawnLoaded(net.kyori.adventure.util.TriState.FALSE);
         World world = creator.createWorld();
         if (world == null) {
             return null;

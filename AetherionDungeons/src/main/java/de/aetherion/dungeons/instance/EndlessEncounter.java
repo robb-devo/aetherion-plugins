@@ -436,6 +436,7 @@ public final class EndlessEncounter {
         final int[] index = {0};
         BukkitTask[] holder = new BukkitTask[1];
         holder[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            DungeonRunMetrics.mark("F2 gate opens");
             int end = Math.min(index[0] + 6, blocks.size());
             for (; index[0] < end; index[0]++) {
                 Block block = blocks.get(index[0]);
@@ -475,8 +476,10 @@ public final class EndlessEncounter {
         state.bossSpawned = true;
         Player initiator = world.getPlayers().isEmpty() ? null : world.getPlayers().get(0);
         Location at = state.bossAt.clone();
-        at.getWorld().getChunkAt(at).load(true);
-        boolean ok = BossEngineBridge.spawn(at, initiator, BossEngineBridge.FROSTBOUND, true);
+        boolean ok = DungeonRunMetrics.timed(world, "boss spawn", () -> {
+            at.getWorld().getChunkAt(at).load(true);
+            return BossEngineBridge.spawn(at, initiator, BossEngineBridge.FROSTBOUND, true);
+        });
         if (!ok) {
             // Fallback snow golem-ish from PrototypeDungeonBuilder path via engine miss.
             org.bukkit.entity.Snowman snowman = (org.bukkit.entity.Snowman) world.spawnEntity(at, EntityType.SNOW_GOLEM);
@@ -520,6 +523,7 @@ public final class EndlessEncounter {
                 }
                 return;
             }
+            DungeonRunMetrics.mark("F2 mob spawn");
             int batch = 4;
             for (int n = 0; n < batch && cursor[0] < queue.size(); n++) {
                 int[] xyz = queue.get(cursor[0]++);

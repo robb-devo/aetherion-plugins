@@ -225,7 +225,8 @@ final class DungeonWarmPool {
                 }
                 String name = InstanceManager.WORLD_PREFIX + "warm_void_"
                         + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-                World world = InstanceManager.createSlimVoidWorld(name);
+                World world = DungeonRunMetrics.timed(null, "pre-build next void world",
+                        () -> InstanceManager.createSlimVoidWorld(name));
                 if (world == null) {
                     plugin.getLogger().warning("Warm void world create failed.");
                     return;
@@ -344,6 +345,7 @@ final class DungeonWarmPool {
             creator.generator(VoidChunkGenerator.forDungeons());
             creator.generateStructures(false);
             creator.environment(World.Environment.NORMAL);
+            creator.keepSpawnLoaded(net.kyori.adventure.util.TriState.FALSE);
             World world = creator.createWorld();
             if (world != null) {
                 InstanceManager.slimExistingWorld(world);
@@ -541,6 +543,7 @@ final class DungeonWarmPool {
         WorldCreator creator = new WorldCreator(ASHES_BASE);
         creator.generateStructures(false);
         creator.environment(World.Environment.NORMAL);
+        creator.keepSpawnLoaded(net.kyori.adventure.util.TriState.FALSE);
         World world = creator.createWorld();
         if (world != null) {
             InstanceManager.slimExistingWorld(world);
