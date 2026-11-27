@@ -54,6 +54,12 @@ public final class ProgressUnlockListener implements Listener {
 
         if (type == Material.ANVIL || type == Material.CHIPPED_ANVIL || type == Material.DAMAGED_ANVIL) {
             event.setCancelled(true);
+            // Builds use anvils as props: 36 lamp posts (anvil on a cauldron under a wall post), caps under
+            // stairs, beacons and panes. Only a free-standing anvil (nothing on top, no cauldron below) is a
+            // workbench; a prop just does nothing.
+            if (decorative(event.getClickedBlock())) {
+                return;
+            }
             if (!progress.anvil(player)) {
                 bar(player, progress.hint(player, ProgressionService.Flag.ANVIL));
             } else {
@@ -80,6 +86,14 @@ public final class ProgressUnlockListener implements Listener {
         if (progress.unlock(player, ProgressionService.Flag.SPAWN_UNLOCKER)) {
             UnlockToast.show(player, "Spawns", "The map just got opinions");
         }
+    }
+
+    /** An anvil with something on top of it, or standing on a cauldron, is part of a build (lamp post, cap). */
+    static boolean decorative(org.bukkit.block.Block anvil) {
+        Material above = anvil.getRelative(org.bukkit.block.BlockFace.UP).getType();
+        Material below = anvil.getRelative(org.bukkit.block.BlockFace.DOWN).getType();
+        boolean topFree = above.isAir() || above == Material.LIGHT;
+        return !topFree || org.bukkit.Tag.CAULDRONS.isTagged(below);
     }
 
     private static boolean isSpawnUnlocker(ItemStack item) {
