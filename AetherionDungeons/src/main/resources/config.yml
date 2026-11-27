@@ -74,6 +74,13 @@ return-portal:
     yaw: 0.0
     pitch: 0.0
 
+# Per-run measurement (A-06): one summary line per run in the log and in run-metrics.csv,
+# plus a warning for every tick slower than slow-tick-ms with what ran in it. /dungeon metrics shows them.
+run-metrics:
+  enabled: true
+  slow-tick-ms: 100
+  log-every-seconds: 60
+
 tps-log:
   enabled: true
   interval-ticks: 1200

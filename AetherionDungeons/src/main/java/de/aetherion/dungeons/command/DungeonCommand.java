@@ -2,6 +2,7 @@ package de.aetherion.dungeons.command;
 
 import de.aetherion.dungeons.AetherionDungeons;
 import de.aetherion.dungeons.bridge.RemoteServerBridge;
+import de.aetherion.dungeons.instance.DungeonBench;
 import de.aetherion.dungeons.instance.InstanceManager;
 import de.aetherion.dungeons.npc.DungeonGuideService;
 import de.aetherion.dungeons.npc.DungeonKeeperService;
@@ -22,6 +23,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     private final DungeonKeeperService keeper;
     private final DungeonGuideService guide;
     private final RemoteServerBridge remote;
+    private DungeonBench bench;
 
     public DungeonCommand(InstanceManager instances, DungeonKeeperService keeper, RemoteServerBridge remote) {
         this(instances, keeper, null, remote);
@@ -37,6 +39,18 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length > 0 && (args[0].equalsIgnoreCase("bench") || args[0].equalsIgnoreCase("metrics"))) {
+            if (sender instanceof Player admin && !admin.hasPermission("aetherion.dungeon.admin")) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("metrics")) {
+                metrics(sender);
+            } else {
+                bench(sender, args);
+            }
+            return true;
+        }
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Players only.");
             return true;
@@ -208,6 +222,61 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    /** Measured runs since the last restart, newest first (the CSV keeps all of them). */
+    private void metrics(CommandSender sender) {
+        List<String> lines = instances.metrics().report();
+        if (lines.isEmpty()) {
+            sender.sendMessage("§7No dungeon run measured since the last restart. All runs: §fplugins/AetherionDungeons/run-metrics.csv");
+            return;
+        }
+        sender.sendMessage("§5Dungeon runs §8(newest first; all in run-metrics.csv)");
+        for (String line : lines) {
+            sender.sendMessage("§7" + line);
+        }
+    }
+
+    /** {@code /dungeon bench <player> <1|2|3> [seconds per stop]} or {@code /dungeon bench stop [player]}. */
+    private void bench(CommandSender sender, String[] args) {
+        if (bench == null) {
+            bench = new DungeonBench(AetherionDungeons.getInstance(), instances);
+        }
+        if (args.length >= 2 && args[1].equalsIgnoreCase("stop")) {
+            Player target = args.length >= 3 ? org.bukkit.Bukkit.getPlayerExact(args[2]) : null;
+            int stopped = bench.stop(target, "stopped by " + sender.getName());
+            sender.sendMessage("§7Stopped §f" + stopped + "§7 bench run(s).");
+            return;
+        }
+        if (args.length < 3) {
+            sender.sendMessage("§5/dungeon bench <player> <1|2|3> [seconds per stop] §7- play a measured run with a test player");
+            sender.sendMessage("§5/dungeon bench stop [player] §7- end it");
+            return;
+        }
+        Player target = org.bukkit.Bukkit.getPlayerExact(args[1]);
+        if (target == null) {
+            sender.sendMessage("§c" + args[1] + " is not online on this server.");
+            return;
+        }
+        int floor;
+        try {
+            floor = Integer.parseInt(args[2]);
+        } catch (NumberFormatException exception) {
+            sender.sendMessage("§cFloor must be 1, 2 or 3.");
+            return;
+        }
+        if (floor < 1 || floor > 3) {
+            sender.sendMessage("§cFloor must be 1, 2 or 3.");
+            return;
+        }
+        int seconds = 20;
+        if (args.length >= 4) {
+            try {
+                seconds = Integer.parseInt(args[3]);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        bench.start(sender, target, floor, seconds);
+    }
+
     private void usage(Player player) {
         player.sendMessage("§5/dungeon leave §7- leave your instance");
         player.sendMessage("§5/dhub §7- teleport to the dungeon hub (anywhere)");
@@ -223,6 +292,8 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§5/dungeon cleanup §7- remove capital leftovers (mmo-d)");
             player.sendMessage("§5/dungeon sync [player] §7- transfer ledger / pending snapshot");
             player.sendMessage("§5/dungeon pool [reload] §7- Floor 1 room pool + last run seed");
+            player.sendMessage("§5/dungeon metrics §7- measured runs (build time, tick spikes, mobs)");
+            player.sendMessage("§5/dungeon bench <player> <1|2|3> [s] §7- measured run with a test player");
         }
     }
 
@@ -232,7 +303,8 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             Stream<String> options = Stream.of("leave", "home", "return", "dhub", "hub");
             if (sender.hasPermission("aetherion.dungeon.admin")) {
                 options = Stream.concat(options, Stream.of(
-                        "give", "guide", "remove", "enter", "boss", "transfer", "mmod", "portal", "cleanup", "sync", "pool"));
+                        "give", "guide", "remove", "enter", "boss", "transfer", "mmod", "portal", "cleanup", "sync", "pool",
+                        "metrics", "bench"));
             }
             String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.filter(option -> option.startsWith(prefix)).toList();
