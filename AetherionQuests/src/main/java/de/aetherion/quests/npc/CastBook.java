@@ -580,6 +580,7 @@ public final class CastBook {
         };
         v.farewell = new String[] {"Mind the pile."};
         topic(v, "Seen anything odd?", "A troll's footprint by the mines. Size of a boat.", "I swept it. Evidence gone. Shouldn't have.");
+        topic(v, "Why sweep?", "Rookies drop cobble. Miners drop gravel. Everyone drops standards.", "Clean street, clean mind. Mostly clean street.");
 
         v = voice("lamp_lighter");
         v.greetNew = new String[] {"Evening's coming, {player}. I can feel it."};
@@ -1009,6 +1010,7 @@ public final class CastBook {
                 "Old Moll from the lighthouse lost her spectacles to a gull. Poor woman can't see a thing."
         };
         v.farewell = new String[] {"Come back hungry!"};
+        topic(v, "Any news?", "Clucksworth says his giant chicken McNugget escaped again. It's out on the farmlands somewhere, and it's huge.", "If you ever beat it, tell me first. I promise I'll only tell everybody.");
         topic(v, "Any gossip?", "Hettie's bees swarmed this morning, Tobin is writing a new song, and Wick named another lamp.", "Busy day for such a small harbour.");
         topic(v, "What's good today?", "The cod is fresh, the bread is crispy, and the oil is only a little bit old.", "My advice? Get the cod.");
 
@@ -1023,6 +1025,7 @@ public final class CastBook {
         };
         v.farewell = new String[] {"Don't lean on the railing, it isn't dry yet!"};
         topic(v, "Whose ship is this?", "She belongs to the harbour now. Her captain left years ago and never came back.", "So I look after her. Somebody has to.");
+        topic(v, "What do you fix?", "Bolts, planks, rope, nails. If it holds a ship together, I've hammered it at least once.", "Careful where you step, the paint on this deck is still wet.");
 
         v = voice("stall_crumb");
         v.greetNew = new String[] {"Good morning, {player}! Fresh bread, still warm."};
@@ -1070,7 +1073,8 @@ public final class CastBook {
                 "Some nights you can see something big moving out past the buoys."
         };
         v.farewell = new String[] {"Keep your feet dry."};
-        topic(v, "What lives down there?", "Nobody has seen all of it. Just arms, ink and a lot of angry bubbles.", "If you're strong enough one day, maybe you'll be the one to find out.");
+        topic(v, "What lives down there?", "Something with too many arms and a bad temper. Ink, poison, the whole show.", "If you're strong enough one day, maybe you'll be the one to find out.");
+        topic(v, "Tackle's opinion?", "Tackle says it's just a big squid.", "Tackle also says the fish like him, so I'm not sure.");
 
         v = voice("slag_poet");
         v.greetNew = new String[] {
