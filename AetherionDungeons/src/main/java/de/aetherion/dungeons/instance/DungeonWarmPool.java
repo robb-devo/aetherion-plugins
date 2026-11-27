@@ -47,7 +47,9 @@ final class DungeonWarmPool {
     private volatile WarmEndless warmEndless;
     private volatile WarmAshes warmAshes;
     private volatile World warmVoid;
-    private volatile WarmFloorOne warmFloorOne;
+    /** Pre-built Floor 1 worlds, oldest first; instances.prebuilt-floor1 of them (default 2). */
+    private final java.util.concurrent.ConcurrentLinkedDeque<WarmFloorOne> readyFloorOne =
+            new java.util.concurrent.ConcurrentLinkedDeque<>();
     /** Parallel runs (A-12): one ready copy of each base for the next party while the base is in use. */
     private volatile WarmEndless spareEndless;
     private volatile WarmAshes spareAshes;
@@ -148,12 +150,12 @@ final class DungeonWarmPool {
         if (voidWorld != null) {
             unloadDiscard(voidWorld);
         }
-        WarmFloorOne floorOne = warmFloorOne;
-        warmFloorOne = null;
-        if (floorOne != null && floorOne.world() != null) {
-            FloorOnePool.forget(floorOne.world().getName());
-            DungeonChunks.release(plugin, floorOne.world());
-            unloadDiscard(floorOne.world());
+        for (WarmFloorOne floorOne = readyFloorOne.pollFirst(); floorOne != null; floorOne = readyFloorOne.pollFirst()) {
+            if (floorOne.world() != null) {
+                FloorOnePool.forget(floorOne.world().getName());
+                DungeonChunks.release(plugin, floorOne.world());
+                unloadDiscard(floorOne.world());
+            }
         }
         String building = floorOneInProgress;
         floorOneInProgress = null;
@@ -178,9 +180,10 @@ final class DungeonWarmPool {
         if (ashes != null && ashes.world() != null && worldName.equals(ashes.world().getName())) {
             return true;
         }
-        WarmFloorOne floorOne = warmFloorOne;
-        if (floorOne != null && floorOne.world() != null && worldName.equals(floorOne.world().getName())) {
-            return true;
+        for (WarmFloorOne floorOne : readyFloorOne) {
+            if (floorOne.world() != null && worldName.equals(floorOne.world().getName())) {
+                return true;
+            }
         }
         if (worldName.equals(floorOneInProgress)) {
             return true;
@@ -202,8 +205,7 @@ final class DungeonWarmPool {
 
     /** A pre-built Floor 1, or null when none is ready (the caller then builds one on the spot). */
     WarmFloorOne takeFloorOne() {
-        WarmFloorOne ready = warmFloorOne;
-        warmFloorOne = null;
+        WarmFloorOne ready = readyFloorOne.pollFirst();
         if (ready != null) {
             plugin.getLogger().info("Claimed pre-built Floor 1: " + ready.world().getName());
             // The next one is built a little later, in small steps, while this party plays.
@@ -218,7 +220,8 @@ final class DungeonWarmPool {
      * costs a teleport instead of the 1.6 s one-piece build measured on 11-27.
      */
     private void ensureWarmFloorOne() {
-        if (warmFloorOne != null || !FloorOnePool.enabled(plugin) || !floorOneBuilding.compareAndSet(false, true)) {
+        int wanted = Math.max(1, plugin.getConfig().getInt("instances.prebuilt-floor1", 2));
+        if (readyFloorOne.size() >= wanted || !FloorOnePool.enabled(plugin) || !floorOneBuilding.compareAndSet(false, true)) {
             return;
         }
         String name = InstanceManager.WORLD_PREFIX + "warm_f1_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
@@ -268,11 +271,14 @@ final class DungeonWarmPool {
                     return;
                 }
                 target.setSpawnLocation(spawn[0]);
-                warmFloorOne = new WarmFloorOne(target, planned, spawn[0]);
+                readyFloorOne.addLast(new WarmFloorOne(target, planned, spawn[0]));
                 floorOneInProgress = null;
                 floorOneBuilding.set(false);
                 plugin.getLogger().info("Floor 1 pre-built in " + target.getName() + ": " + steps.size() + " steps, "
-                        + target.getChunkCount() + " chunks, " + (System.currentTimeMillis() - started) + " ms in all");
+                        + target.getChunkCount() + " chunks, " + (System.currentTimeMillis() - started) + " ms in all ("
+                        + readyFloorOne.size() + " ready)");
+                // Room for another one (a second party right behind the first): build it a little later.
+                plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmFloorOne, 100L);
             }, 1L, 1L);
         });
     }
