@@ -34,12 +34,16 @@ final class DungeonWarmPool {
     private final AtomicBoolean endlessBuilding = new AtomicBoolean(false);
     private final AtomicBoolean voidBuilding = new AtomicBoolean(false);
     private final AtomicBoolean ashesBuilding = new AtomicBoolean(false);
+    private final AtomicBoolean floorOneBuilding = new AtomicBoolean(false);
     private final Map<String, WarmEndless> claimedEndless = new ConcurrentHashMap<>();
     private final Map<String, WarmAshes> claimedAshes = new ConcurrentHashMap<>();
 
     private volatile WarmEndless warmEndless;
     private volatile WarmAshes warmAshes;
     private volatile World warmVoid;
+    private volatile WarmFloorOne warmFloorOne;
+    /** World name of the Floor 1 being pre-built, so the orphan sweep leaves it alone. */
+    private volatile String floorOneInProgress;
 
     DungeonWarmPool(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -49,6 +53,10 @@ final class DungeonWarmPool {
     }
 
     record WarmAshes(World world, AshesEncounter.Prep prep) {
+    }
+
+    /** A Floor 1 built ahead of time: its own void world, the plan and the party spawn. Chunks are pinned. */
+    record WarmFloorOne(World world, FloorOnePool.Plan plan, Location spawn) {
     }
 
     void start() {
@@ -64,12 +72,14 @@ final class DungeonWarmPool {
         // Prefer loading an existing base (fast). First-time paste is delayed further.
         plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmEndless, 140L);
         plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmAshes, 180L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmFloorOne, 220L);
     }
 
     void ensureAll() {
         ensureWarmVoid();
         ensureWarmEndless();
         ensureWarmAshes();
+        ensureWarmFloorOne();
     }
 
     void shutdown() {
@@ -104,6 +114,19 @@ final class DungeonWarmPool {
         if (voidWorld != null) {
             unloadDiscard(voidWorld);
         }
+        WarmFloorOne floorOne = warmFloorOne;
+        warmFloorOne = null;
+        if (floorOne != null && floorOne.world() != null) {
+            FloorOnePool.forget(floorOne.world().getName());
+            DungeonChunks.release(plugin, floorOne.world());
+            unloadDiscard(floorOne.world());
+        }
+        String building = floorOneInProgress;
+        floorOneInProgress = null;
+        World half = building == null ? null : Bukkit.getWorld(building);
+        if (half != null) {
+            unloadDiscard(half);
+        }
     }
 
     boolean isPoolWorld(String worldName) {
@@ -121,8 +144,104 @@ final class DungeonWarmPool {
         if (ashes != null && ashes.world() != null && worldName.equals(ashes.world().getName())) {
             return true;
         }
+        WarmFloorOne floorOne = warmFloorOne;
+        if (floorOne != null && floorOne.world() != null && worldName.equals(floorOne.world().getName())) {
+            return true;
+        }
+        if (worldName.equals(floorOneInProgress)) {
+            return true;
+        }
         World voidWorld = warmVoid;
         return voidWorld != null && worldName.equals(voidWorld.getName());
+    }
+
+    /** A pre-built Floor 1, or null when none is ready (the caller then builds one on the spot). */
+    WarmFloorOne takeFloorOne() {
+        WarmFloorOne ready = warmFloorOne;
+        warmFloorOne = null;
+        if (ready != null) {
+            plugin.getLogger().info("Claimed pre-built Floor 1: " + ready.world().getName());
+            // The next one is built a little later, in small steps, while this party plays.
+            plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmFloorOne, 20L * 20L);
+        }
+        return ready;
+    }
+
+    /**
+     * Builds the next Floor 1 ahead of time: a void world, a planned room pool, its chunks loaded off the
+     * server thread and pinned, then one build step per tick (a room template each). Entering Floor 1 then
+     * costs a teleport instead of the 1.6 s one-piece build measured on 11-27.
+     */
+    private void ensureWarmFloorOne() {
+        if (warmFloorOne != null || !FloorOnePool.enabled(plugin) || !floorOneBuilding.compareAndSet(false, true)) {
+            return;
+        }
+        String name = InstanceManager.WORLD_PREFIX + "warm_f1_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        floorOneInProgress = name;
+        long started = System.currentTimeMillis();
+        World world;
+        FloorOnePool.Plan plan;
+        try {
+            world = DungeonRunMetrics.timed(null, "pre-build Floor 1 world", () -> InstanceManager.createSlimVoidWorld(name));
+            plan = world == null ? null : FloorOnePool.plan(plugin, name.hashCode() ^ System.nanoTime());
+        } catch (RuntimeException exception) {
+            plugin.getLogger().warning("Floor 1 pre-build could not start: " + exception.getMessage());
+            world = Bukkit.getWorld(name);
+            plan = null;
+        }
+        if (world == null || plan == null) {
+            abandonFloorOne(name, world);
+            return;
+        }
+        final World target = world;
+        final FloorOnePool.Plan planned = plan;
+        DungeonLayout.Room box = planned.layout().bounds();
+        DungeonChunks.pinArea(plugin, target, box.minX() - 16, box.maxX() + 16, box.minZ() - 16, box.maxZ() + 16, () -> {
+            Location[] spawn = new Location[1];
+            List<Runnable> steps = LerfingTestBuilder.pooledSteps(plugin, target, planned, spawn);
+            int[] next = {0};
+            org.bukkit.scheduler.BukkitTask[] holder = new org.bukkit.scheduler.BukkitTask[1];
+            holder[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+                if (!name.equals(floorOneInProgress) || Bukkit.getWorld(name) == null) {
+                    holder[0].cancel();
+                    floorOneBuilding.set(false);
+                    return;
+                }
+                if (next[0] < steps.size()) {
+                    try {
+                        DungeonRunMetrics.time(null, "pre-build Floor 1 step", steps.get(next[0]++));
+                    } catch (RuntimeException exception) {
+                        holder[0].cancel();
+                        plugin.getLogger().warning("Floor 1 pre-build failed at step " + next[0] + ": " + exception);
+                        abandonFloorOne(name, target);
+                    }
+                    return;
+                }
+                holder[0].cancel();
+                if (spawn[0] == null) {
+                    abandonFloorOne(name, target);
+                    return;
+                }
+                target.setSpawnLocation(spawn[0]);
+                warmFloorOne = new WarmFloorOne(target, planned, spawn[0]);
+                floorOneInProgress = null;
+                floorOneBuilding.set(false);
+                plugin.getLogger().info("Floor 1 pre-built in " + target.getName() + ": " + steps.size() + " steps, "
+                        + target.getChunkCount() + " chunks, " + (System.currentTimeMillis() - started) + " ms in all");
+            }, 1L, 1L);
+        });
+    }
+
+    private void abandonFloorOne(String name, World world) {
+        if (name.equals(floorOneInProgress)) {
+            floorOneInProgress = null;
+        }
+        if (world != null) {
+            FloorOnePool.forget(world.getName());
+            DungeonChunks.release(plugin, world);
+            unloadDiscard(world);
+        }
+        floorOneBuilding.set(false);
     }
 
     boolean isReusableEndless(String worldName) {

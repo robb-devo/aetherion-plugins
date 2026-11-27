@@ -17,11 +17,11 @@ import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.AbstractSkeleton;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Husk;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Skeleton;
 import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -143,7 +143,8 @@ public final class EndlessEncounter {
         private final int minZ;
         private final int maxZ;
         private final int mobsTotal;
-        private final int killsNeeded;
+        /** Lowered once spawning ends if fewer mobs made it in than planned. */
+        private int killsNeeded;
         private BossBar bar;
         private boolean doorOpen;
         private boolean bossSpawned;
@@ -246,6 +247,9 @@ public final class EndlessEncounter {
             return;
         }
         clear(world);
+        // Bosses first, while their bodies are still there: an encounter whose body is removed first kept
+        // its spawn slot and blocked the next run's boss.
+        BossEngineBridge.despawnInWorld(world);
         for (org.bukkit.entity.Entity entity : new ArrayList<>(world.getEntities())) {
             if (entity instanceof Player) {
                 continue;
@@ -255,7 +259,6 @@ public final class EndlessEncounter {
         for (int[] xyz : prep.doorBlocks) {
             world.getBlockAt(xyz[0], xyz[1], xyz[2]).setType(DOOR_GLASS, false);
         }
-        BossEngineBridge.despawnInWorld(world);
         plugin.getLogger().info("Endless base recycled (" + world.getName() + ").");
     }
 
@@ -400,6 +403,11 @@ public final class EndlessEncounter {
                 return;
             }
             live.mobsLeft = countTrash(plugin, world);
+            // Never strand a party: if mobs were lost (void, water), everything left is enough.
+            int killable = live.kills + live.mobsLeft;
+            if (live.spawnTask == null && killable < live.killsNeeded) {
+                live.killsNeeded = Math.max(1, killable);
+            }
             refreshBar(live);
             if (live.kills >= live.killsNeeded) {
                 openBossDoor(plugin, world, live);
@@ -513,8 +521,19 @@ public final class EndlessEncounter {
             pick = new ArrayList<>(pick.subList(0, want));
         }
         final List<int[]> queue = pick;
+        List<int[]> pinned = new ArrayList<>(queue);
+        pinned.add(new int[]{BOSS_X, BOSS_Y, BOSS_Z});
+        // The world never saves: a mob in a chunk that unloads is gone, so every spot's chunk stays loaded.
+        DungeonChunks.pinColumns(plugin, world, pinned, () -> startSpawning(plugin, world, state, queue));
+    }
+
+    private static void startSpawning(Plugin plugin, World world, EndlessState state, List<int[]> queue) {
+        if (stateOf(world) != state) {
+            return;
+        }
         final int[] cursor = {0};
         final int[] spawned = {0};
+        final int[] failed = {0};
         BukkitTask[] holder = new BukkitTask[1];
         holder[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             if (stateOf(world) != state) {
@@ -528,13 +547,21 @@ public final class EndlessEncounter {
             for (int n = 0; n < batch && cursor[0] < queue.size(); n++) {
                 int[] xyz = queue.get(cursor[0]++);
                 Location at = new Location(world, xyz[0] + 0.5, xyz[1] + 1, xyz[2] + 0.5);
-                int kind = spawned[0]++;
-                if (kind % 4 == 3) {
-                    spawnArcher(plugin, world, at);
-                } else if (kind % 5 == 4) {
-                    spawnBrute(plugin, world, at);
-                } else {
-                    spawnWalker(plugin, world, at);
+                int kind = spawned[0] + failed[0];
+                try {
+                    if (kind % 4 == 3) {
+                        spawnArcher(plugin, world, at);
+                    } else if (kind % 5 == 4) {
+                        spawnBrute(plugin, world, at);
+                    } else {
+                        spawnWalker(plugin, world, at);
+                    }
+                    spawned[0]++;
+                } catch (RuntimeException exception) {
+                    if (failed[0]++ == 0) {
+                        plugin.getLogger().warning("Endless spawn failed at " + xyz[0] + "," + xyz[1] + "," + xyz[2]
+                                + ": " + exception);
+                    }
                 }
             }
             if (cursor[0] >= queue.size()) {
@@ -543,7 +570,18 @@ public final class EndlessEncounter {
                 if (holder[0] != null) {
                     holder[0].cancel();
                 }
-                plugin.getLogger().info("Endless trash finished spawning: " + state.mobsLeft);
+                // The gate asks for a share of what really made it in, never more than can be killed.
+                int killable = state.kills + state.mobsLeft;
+                int reachable = Math.max(1, (int) Math.ceil(Math.max(1, killable) * CLEAR_RATIO));
+                if (reachable < state.killsNeeded) {
+                    state.killsNeeded = reachable;
+                    refreshBar(state);
+                    if (state.kills >= state.killsNeeded && !state.doorOpen) {
+                        openBossDoor(plugin, world, state);
+                    }
+                }
+                plugin.getLogger().info("Endless trash finished spawning: " + state.mobsLeft + " alive, "
+                        + spawned[0] + " spawned, " + failed[0] + " failed, need " + state.killsNeeded + " kills");
             }
         }, 5L, 2L);
         state.spawnTask = holder[0];
@@ -705,7 +743,9 @@ public final class EndlessEncounter {
     }
 
     private static void spawnArcher(Plugin plugin, World world, Location at) {
-        Skeleton skeleton = (Skeleton) world.spawnEntity(at, EntityType.STRAY);
+        // A stray is an AbstractSkeleton, not a Skeleton: the old cast threw for every archer (18 of 72
+        // Floor 2 mobs never spawned, so the 54-kill gate could not open).
+        AbstractSkeleton skeleton = (AbstractSkeleton) world.spawnEntity(at, EntityType.STRAY);
         tagEndless(plugin, skeleton, "dungeon_skeleton");
         label(plugin, skeleton, "§bPacked Archer");
         arm(skeleton, Material.BOW, Material.CHAINMAIL_CHESTPLATE, Material.CHAINMAIL_HELMET);

@@ -1,6 +1,7 @@
 package de.aetherion.dungeons.instance;
 
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
+import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -34,13 +35,16 @@ import java.util.function.Supplier;
  * Measures every dungeon run (beta list A-06), so lag questions get numbers instead of guesses.
  *
  * <p>Per run: how long the floor took to build, every timed step (start, room opens, chests, boss spawn,
- * close), the server's tick times while the run was open, and the most mobs, entities and loaded chunks its
- * world held. One summary line per run goes to the log and to {@code run-metrics.csv}.
+ * close), the work per server tick, the worst <em>stalls</em>, and the most mobs, entities and loaded chunks
+ * its world held. One summary line per run goes to the log and to {@code run-metrics.csv}.
  *
- * <p>Any tick slower than {@code run-metrics.slow-tick-ms} is logged with what ran in it (joins, world loads,
- * our own steps), also when no run is open: the old freezes on this server happened outside the floors.
+ * <p>A stall is the gap between two tick starts (normally 50 ms). It counts everything that holds the server
+ * thread: the tick itself, but also commands, player clicks and tasks that run between ticks, which the
+ * tick time alone does not show. Every stall of {@code run-metrics.stall-ms} or more is logged as
+ * {@code [SlowTick]} with what ran in it (joins, world loads, our steps), also with no run open: the old
+ * freezes on this server happened outside the floors.
  *
- * <p>Everything runs on the server thread. With no run open the tick hook compares one number.
+ * <p>Everything runs on the server thread. With no run open the tick hooks compare one number.
  */
 public final class DungeonRunMetrics implements Listener {
 
@@ -48,30 +52,32 @@ public final class DungeonRunMetrics implements Listener {
 
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String CSV_HEADER = "ended,floor,world,party,result,seconds,build_ms,build_kind,"
-            + "tick_avg_ms,tick_max_ms,ticks_over_50ms,ticks_over_100ms,mobs_max,entities_max,chunks_max,"
-            + "tiles_max,slowest_step,slowest_step_ms,worst_tick_ms,worst_tick_during,steps";
+            + "tick_work_avg_ms,tick_work_max_ms,worst_stall_ms,worst_stall_during,stalls,stalls_over_500ms,"
+            + "mobs_max,entities_max,chunks_max,tiles_max,slowest_step,slowest_step_ms,steps";
     private static final int SAMPLE_TICKS = 100;
     private static final int MAX_MARKS = 8;
     private static final int RECENT = 12;
+    private static final double FREEZE_MS = 500.0;
 
     private final JavaPlugin plugin;
     private final Map<String, Run> runs = new LinkedHashMap<>();
     private final Deque<String> recent = new ArrayDeque<>();
     private final List<String> marks = new ArrayList<>();
     private final boolean enabled;
-    private final double slowTickMs;
+    private final double stallMs;
     private final long logEveryMs;
     private final long armedAt;
     private int sampleCountdown = SAMPLE_TICKS;
+    private long lastTickStart;
     private long lastSlowLog;
     private int slowSuppressed;
 
     public DungeonRunMetrics(JavaPlugin plugin) {
         this.plugin = plugin;
         this.enabled = plugin.getConfig().getBoolean("run-metrics.enabled", true);
-        this.slowTickMs = Math.max(55.0, plugin.getConfig().getDouble("run-metrics.slow-tick-ms", 100.0));
+        this.stallMs = Math.max(100.0, plugin.getConfig().getDouble("run-metrics.stall-ms", 150.0));
         this.logEveryMs = Math.max(0L, plugin.getConfig().getLong("run-metrics.log-every-seconds", 60L)) * 1000L;
-        // World loading at boot is slow by nature; slow-tick lines start one minute after enable.
+        // World loading at boot is slow by nature; [SlowTick] lines start one minute after enable.
         this.armedAt = System.currentTimeMillis() + 60_000L;
         active = this;
     }
@@ -82,7 +88,7 @@ public final class DungeonRunMetrics implements Listener {
 
     // ------------------------------------------------------------------ hooks for the dungeon code
 
-    /** Notes what ran in this tick, so a slow tick can say what it was. Server thread only; cheap. */
+    /** Notes what ran since the last tick start, so a stall can say what it was. Server thread only; cheap. */
     public static void mark(String what) {
         DungeonRunMetrics metrics = active;
         if (metrics == null || !metrics.enabled || what == null || !Bukkit.isPrimaryThread()) {
@@ -118,7 +124,7 @@ public final class DungeonRunMetrics implements Listener {
         if (metrics == null || !metrics.enabled) {
             return;
         }
-        mark(step);
+        mark(ms >= 20.0 ? String.format(Locale.ROOT, "%s %.0f ms", step, ms) : step);
         if (world == null) {
             return;
         }
@@ -135,7 +141,7 @@ public final class DungeonRunMetrics implements Listener {
         }
         Run run = new Run(session.worldName(), session.floorNumber(), party, buildMs, buildKind);
         runs.put(run.world, run);
-        mark("build F" + run.floor);
+        mark(String.format(Locale.ROOT, "build F%d %.0f ms", run.floor, buildMs));
         plugin.getLogger().info(String.format(Locale.ROOT, "[DungeonRun] F%d start %s · party %d · build %.0f ms (%s)",
                 run.floor, run.world, party, buildMs, buildKind));
     }
@@ -159,7 +165,7 @@ public final class DungeonRunMetrics implements Listener {
         appendCsv(run.csv(result));
     }
 
-    /** Newest first: finished runs, then one line per open run. */
+    /** One line per open run, then the finished runs, newest first. */
     public List<String> report() {
         List<String> out = new ArrayList<>();
         for (Run run : runs.values()) {
@@ -169,28 +175,46 @@ public final class DungeonRunMetrics implements Listener {
         return out;
     }
 
+    /** The newest finished run's summary, or null. */
+    public String lastRun() {
+        return recent.peekFirst();
+    }
+
     // ------------------------------------------------------------------ server events
 
     @EventHandler(priority = EventPriority.MONITOR)
+    public void onTickStart(ServerTickStartEvent event) {
+        long now = System.nanoTime();
+        long previous = lastTickStart;
+        lastTickStart = now;
+        if (!enabled || previous == 0L) {
+            marks.clear();
+            return;
+        }
+        double gap = (now - previous) / 1_000_000.0;
+        if (!runs.isEmpty()) {
+            for (Run run : runs.values()) {
+                run.gap(gap);
+            }
+        }
+        if (gap >= stallMs) {
+            stall(gap);
+        }
+        marks.clear();
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onTickEnd(ServerTickEndEvent event) {
-        if (!enabled) {
+        if (!enabled || runs.isEmpty()) {
             return;
         }
         double ms = event.getTickDuration();
-        if (!runs.isEmpty()) {
-            for (Run run : runs.values()) {
-                run.tick(ms);
-            }
-            if (--sampleCountdown <= 0) {
-                sampleCountdown = SAMPLE_TICKS;
-                sampleAll();
-            }
+        for (Run run : runs.values()) {
+            run.work(ms);
         }
-        if (ms >= slowTickMs) {
-            slowTick(ms);
-        }
-        if (!marks.isEmpty()) {
-            marks.clear();
+        if (--sampleCountdown <= 0) {
+            sampleCountdown = SAMPLE_TICKS;
+            sampleAll();
         }
     }
 
@@ -211,10 +235,10 @@ public final class DungeonRunMetrics implements Listener {
 
     // ------------------------------------------------------------------ internals
 
-    private void slowTick(double ms) {
+    private void stall(double gap) {
         String during = marks.isEmpty() ? "nothing of ours" : String.join(", ", marks);
         for (Run run : runs.values()) {
-            run.noteSlowTick(ms, during);
+            run.noteStall(gap, during);
         }
         long now = System.currentTimeMillis();
         if (now < armedAt) {
@@ -225,8 +249,8 @@ public final class DungeonRunMetrics implements Listener {
             return;
         }
         lastSlowLog = now;
-        StringBuilder line = new StringBuilder(String.format(Locale.ROOT, "[SlowTick] slow tick %.0f ms · %d online",
-                ms, Bukkit.getOnlinePlayers().size()));
+        StringBuilder line = new StringBuilder(String.format(Locale.ROOT, "[SlowTick] server stalled %.0f ms · %d online",
+                gap, Bukkit.getOnlinePlayers().size()));
         if (!runs.isEmpty()) {
             line.append(" · open runs");
             for (Run run : runs.values()) {
@@ -235,7 +259,7 @@ public final class DungeonRunMetrics implements Listener {
         }
         line.append(" · during: ").append(during);
         if (slowSuppressed > 0) {
-            line.append(" · ").append(slowSuppressed).append(" more slow tick(s) in the second before");
+            line.append(" · ").append(slowSuppressed).append(" more stall(s) in the second before");
             slowSuppressed = 0;
         }
         plugin.getLogger().warning(line.toString());
@@ -296,7 +320,7 @@ public final class DungeonRunMetrics implements Listener {
         return "\"" + clean + "\"";
     }
 
-    private static final class Run {
+    private final class Run {
         final String world;
         final int floor;
         final int party;
@@ -306,15 +330,17 @@ public final class DungeonRunMetrics implements Listener {
         long lastLog = startedAt;
 
         long ticks;
-        double tickSum;
-        double tickMax;
-        int over50;
-        int over100;
+        double workSum;
+        double workMax;
+        double worstStall;
+        String worstStallDuring = "";
+        int stalls;
+        int freezes;
 
         long windowTicks;
-        double windowSum;
-        double windowMax;
-        int windowOver50;
+        double windowWork;
+        double windowStall;
+        int windowStalls;
 
         int mobs;
         int entities;
@@ -325,8 +351,6 @@ public final class DungeonRunMetrics implements Listener {
         int chunksMax;
         int tilesMax;
 
-        double worstTick;
-        String worstTickDuring = "";
         /** step → {count, total ms, max ms}, in first-seen order. */
         final Map<String, double[]> steps = new LinkedHashMap<>();
 
@@ -338,30 +362,33 @@ public final class DungeonRunMetrics implements Listener {
             this.buildKind = buildKind == null ? "" : buildKind;
         }
 
-        void tick(double ms) {
+        void work(double ms) {
             ticks++;
-            tickSum += ms;
-            if (ms > tickMax) {
-                tickMax = ms;
-            }
-            if (ms > 50.0) {
-                over50++;
-                windowOver50++;
-            }
-            if (ms > 100.0) {
-                over100++;
+            workSum += ms;
+            if (ms > workMax) {
+                workMax = ms;
             }
             windowTicks++;
-            windowSum += ms;
-            if (ms > windowMax) {
-                windowMax = ms;
+            windowWork += ms;
+        }
+
+        void gap(double gap) {
+            if (gap >= stallMs) {
+                stalls++;
+                windowStalls++;
+            }
+            if (gap >= FREEZE_MS) {
+                freezes++;
+            }
+            if (gap > windowStall) {
+                windowStall = gap;
             }
         }
 
-        void noteSlowTick(double ms, String during) {
-            if (ms > worstTick) {
-                worstTick = ms;
-                worstTickDuring = during;
+        void noteStall(double gap, String during) {
+            if (gap > worstStall) {
+                worstStall = gap;
+                worstStallDuring = during;
             }
         }
 
@@ -387,9 +414,9 @@ public final class DungeonRunMetrics implements Listener {
 
         void resetWindow() {
             windowTicks = 0L;
-            windowSum = 0.0;
-            windowMax = 0.0;
-            windowOver50 = 0;
+            windowWork = 0.0;
+            windowStall = 0.0;
+            windowStalls = 0;
         }
 
         String slowestStep() {
@@ -413,28 +440,29 @@ public final class DungeonRunMetrics implements Listener {
         }
 
         String progress() {
-            double avg = windowTicks == 0L ? 0.0 : windowSum / windowTicks;
+            double avg = windowTicks == 0L ? 0.0 : windowWork / windowTicks;
             return String.format(Locale.ROOT,
-                    "F%d %s · %s in · %d player(s) · ticks avg %.1f max %.0f ms, %d over 50 ms · mobs %d · entities %d · chunks %d",
-                    floor, world, clock(System.currentTimeMillis() - startedAt), players, avg, windowMax, windowOver50,
+                    "F%d %s · %s in · %d player(s) · tick work avg %.1f ms · worst stall %.0f ms, %d stall(s) · mobs %d · entities %d · chunks %d",
+                    floor, world, clock(System.currentTimeMillis() - startedAt), players, avg, windowStall, windowStalls,
                     mobs, entities, chunks);
         }
 
         String summary(String result) {
-            double avg = ticks == 0L ? 0.0 : tickSum / ticks;
+            double avg = ticks == 0L ? 0.0 : workSum / ticks;
             StringBuilder line = new StringBuilder(String.format(Locale.ROOT,
-                    "F%d %s after %s · party %d · build %.0f ms (%s) · ticks avg %.1f max %.0f ms, %d over 50 ms, %d over 100 ms"
-                            + " · most mobs %d, entities %d, chunks %d · slowest step: %s %.0f ms",
-                    floor, result, clock(System.currentTimeMillis() - startedAt), party, buildMs, buildKind, avg, tickMax,
-                    over50, over100, mobsMax, entitiesMax, chunksMax, slowestStep(), slowestStepMs()));
-            if (worstTick > 0.0) {
-                line.append(String.format(Locale.ROOT, " · worst tick %.0f ms during %s", worstTick, worstTickDuring));
+                    "F%d %s after %s · party %d · build %.0f ms (%s) · tick work avg %.1f max %.0f ms"
+                            + " · %d stall(s) of %.0f ms+, %d over %.0f ms · most mobs %d, entities %d, chunks %d"
+                            + " · slowest step: %s %.0f ms",
+                    floor, result, clock(System.currentTimeMillis() - startedAt), party, buildMs, buildKind, avg, workMax,
+                    stalls, stallMs, freezes, FREEZE_MS, mobsMax, entitiesMax, chunksMax, slowestStep(), slowestStepMs()));
+            if (worstStall > 0.0) {
+                line.append(String.format(Locale.ROOT, " · worst stall %.0f ms during %s", worstStall, worstStallDuring));
             }
             return line.toString();
         }
 
         String csv(String result) {
-            double avg = ticks == 0L ? 0.0 : tickSum / ticks;
+            double avg = ticks == 0L ? 0.0 : workSum / ticks;
             StringBuilder stepText = new StringBuilder();
             for (Map.Entry<String, double[]> entry : steps.entrySet()) {
                 double[] stat = entry.getValue();
@@ -454,17 +482,17 @@ public final class DungeonRunMetrics implements Listener {
                     String.format(Locale.ROOT, "%.0f", buildMs),
                     csvText(buildKind),
                     String.format(Locale.ROOT, "%.2f", avg),
-                    String.format(Locale.ROOT, "%.0f", tickMax),
-                    String.valueOf(over50),
-                    String.valueOf(over100),
+                    String.format(Locale.ROOT, "%.0f", workMax),
+                    String.format(Locale.ROOT, "%.0f", worstStall),
+                    csvText(worstStallDuring),
+                    String.valueOf(stalls),
+                    String.valueOf(freezes),
                     String.valueOf(mobsMax),
                     String.valueOf(entitiesMax),
                     String.valueOf(chunksMax),
                     String.valueOf(tilesMax),
                     csvText(slowestStep()),
                     String.format(Locale.ROOT, "%.0f", slowestStepMs()),
-                    String.format(Locale.ROOT, "%.0f", worstTick),
-                    csvText(worstTickDuring),
                     csvText(stepText.toString()));
         }
     }

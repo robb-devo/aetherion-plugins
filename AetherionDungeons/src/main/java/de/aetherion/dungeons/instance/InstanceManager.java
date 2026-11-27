@@ -156,6 +156,7 @@ public final class InstanceManager {
         World world = null;
         DungeonWarmPool.WarmEndless warmEndless = null;
         DungeonWarmPool.WarmAshes warmAshes = null;
+        DungeonWarmPool.WarmFloorOne warmFloorOne = null;
         if (endless) {
             warmEndless = warmPool.takeEndless();
             if (warmEndless != null) {
@@ -173,7 +174,8 @@ public final class InstanceManager {
                 worldName = DungeonWarmPool.ASHES_BASE;
             }
         } else {
-            world = warmPool.takeVoid();
+            warmFloorOne = template && !bossOnly ? warmPool.takeFloorOne() : null;
+            world = warmFloorOne != null ? warmFloorOne.world() : warmPool.takeVoid();
             worldName = world != null
                     ? world.getName()
                     : WORLD_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
@@ -182,7 +184,7 @@ public final class InstanceManager {
                 ? (warmEndless != null ? "warm base" : "cold paste")
                 : ashes
                     ? (warmAshes != null ? "warm base" : "cold load")
-                    : (world != null ? "warm world" : "new world");
+                    : (warmFloorOne != null ? "pre-built" : (world != null ? "warm world" : "new world"));
         Location returnTo = player.getLocation().clone();
 
         String sessionFloorId = endless
@@ -281,6 +283,11 @@ public final class InstanceManager {
                 }
                 layout = AshesEncounter.layoutShell();
                 spawn = AshesEncounter.begin(plugin, world, session, prep);
+            } else if (warmFloorOne != null) {
+                // Built ahead of time by the warm pool, chunks already pinned: nothing to build now.
+                layout = warmFloorOne.plan().layout();
+                FloorOnePool.register(worldName, warmFloorOne.plan());
+                spawn = warmFloorOne.spawn();
             } else {
                 long runSeed = worldName.hashCode() ^ System.nanoTime();
                 FloorOnePool.Plan pooled = template && FloorOnePool.enabled(plugin)
@@ -299,6 +306,9 @@ public final class InstanceManager {
                             ? LerfingTestBuilder.build(plugin, world, layout, templateStyle)
                             : PrototypeDungeonBuilder.build(plugin, world, layout, floorNumber);
                 }
+                // Built on the spot: the build loaded every chunk, pin them so no room or mob is lost.
+                DungeonLayout.Room box = layout.bounds();
+                DungeonChunks.pinLoadedArea(plugin, world, box.minX() - 16, box.maxX() + 16, box.minZ() - 16, box.maxZ() + 16);
             }
         } catch (RuntimeException exception) {
             plugin.getLogger().severe("Dungeon build failed: " + exception.getMessage());
@@ -542,6 +552,8 @@ public final class InstanceManager {
         }
 
         session.setWorld(null);
+        // Tickets off before the base is parked or the world is unloaded.
+        DungeonChunks.release(plugin, world);
         if (world != null && warmPool.recycleEndless(world)) {
             // Reusable XL base — kept on disk, no delete/paste next time.
         } else if (world != null && warmPool.recycleAshes(world)) {
@@ -970,7 +982,8 @@ public final class InstanceManager {
             scheduleUnloadRetry(worldName, 40L);
             return;
         }
-        if (!Bukkit.unloadWorld(world, false)) {
+        boolean unloaded = DungeonRunMetrics.timed(null, "unload world", () -> Bukkit.unloadWorld(world, false));
+        if (!unloaded) {
             plugin.getLogger().warning("Could not unload dungeon world (retry): " + worldName);
             scheduleUnloadRetry(worldName, 40L);
             scheduleUnloadRetry(worldName, 100L);
@@ -1029,7 +1042,10 @@ public final class InstanceManager {
                     || DungeonWarmPool.ASHES_BASE.equals(name)) {
                 return;
             }
-            if (!deleteRecursively(folder)) {
+            long started = System.nanoTime();
+            boolean deleted = deleteRecursively(folder);
+            DungeonRunMetrics.record(null, "delete world folder", (System.nanoTime() - started) / 1_000_000.0);
+            if (!deleted) {
                 plugin.getLogger().warning("Could not fully delete dungeon world folder: " + folder.getName()
                         + " — will retry");
                 deleteFolderLater(folder, 100L);
