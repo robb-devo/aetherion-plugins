@@ -593,6 +593,25 @@ frame per menu, a flat page. While `journal.enabled` is on they are now pages of
 - Not converted (own books, not journal sub-pages): isle journals (Origin/Grove/Mine isle), island and guild menus,
   beta checklist, dev/staff menus, traders and other kit (`ChromePage`) menus.
 
+## Soll-Bild rounds (2026-11-27, PC session, main `bfac5da2`)
+
+Robb's target picture (`aetherion-ops/docs/audit/SOLL_UND_AUDIT_2026-11-27.md`, rules in `GRUNDLAGEN_2026-11-27.md`) is
+being worked step by step; every round is live and listed in `aetherion-ops/docs/LIVE_STATE_2026-10-19.md`.
+- Level system v2 (skills always level, talents scale with their skill, slots at Aetherion Level 1/5/10/20/35/50/75),
+  anvil handling, one booster of each kind, felling by hits + notch + gold spot (no aim), screen cards instead of chat,
+  pet `strict-areas` + painted zones, animal pens (`/aepen`, `animal-pens.yml`), curiosities 66 → 20.
+- Area pass, main island: pet zones repainted (mmo-r `pet-habitats.yml`), Clucksworth Barn = 8 pens,
+  `world.natural-animals: false` on mmo-r, 4 path-middle chests moved, 4 chat-only harbour NPCs removed, Ore Ledger →
+  Assayer, prop anvils inert. Tools: `aetherion-ops/tools/area-pass/`.
+- Dialogs: teachers explain their whole system (Forager, Miss Ledger, Craftsman, Tackle, Temper, Lark); the word list is
+  applied in Quests, the isle plugins, Hub and Items (Journal, talents, Amboss, Rezeptbuch, Fangkugel, Mining/Farming/
+  Foraging/Fishing Isle); residents open with one sentence, the rest behind topics; isle desks (TalkDesk) speak German.
+  Check DE with `python docs/dialogs/tools/validate_de_overlay.py` (pip pyyaml, PYTHONIOENCODING=utf-8).
+- Journal as handbook: `progress/PathLadder` (nine milestones from existing gates + next three goals, "Path n/9" on
+  Today), `menu/HandbookBook` (written book, `/handbook` `/handbuch`), `menu/JournalDe` (the whole Journal in German at
+  render time, unit-tested). Dialog paths name the real Journal path ("Journal › Workshop › Recipes").
+- Source files of Quests/Items/isle plugins are CRLF: patch with `newline=''`.
+
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 
 mmo-d lagged (MSPT spikes to 1.4 s with nobody online): `CryptHologramService` (Items) re-spawned its saved
