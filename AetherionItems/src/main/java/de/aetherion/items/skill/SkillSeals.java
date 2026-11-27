@@ -12,40 +12,73 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Rarity seals: the first time a skill reaches Uncommon, Rare, Epic, Legendary and Mythic it
- * earns a one-off seal (coins + Aether Shards). Seals are claimed like Codex tiers and filed in the
- * Codex claim ledger under {@code s:<skill id>} — retroactive for skills already past a rarity.
+ * Rarity seals: the first time a skill reaches Uncommon, Rare, Epic, Legendary and Mythic it earns a one-off seal
+ * (coins + Aether Shards). Level-system v2 (2026-11-27): seals belong to the six skills (Mining, Farming …), not to
+ * the 60 talents, and pay {@link #SCALE} times the old talent seal. They pay out the moment the rarity is reached
+ * (inside the level card). Filed in the Codex claim ledger under {@code s:<skill key>}; what a player already
+ * claimed on any talent of that skill under the old {@code s:<talent id>} keys counts, so nothing pays twice.
  */
 public final class SkillSeals {
 
     public static final int MAX_SEALS = 5;
+    /** A skill seal is worth this many old talent seals. */
+    public static final int SCALE = 3;
 
     private SkillSeals() {
     }
 
-    public static String key(AetherSkill skill) {
-        return "s:" + skill.id();
+    public static String key(AetherSkill.Category skill) {
+        return "s:" + skill.key();
+    }
+
+    /** {@code s:mining} or an old {@code s:<talent id>} key → the skill it belongs to. */
+    public static AetherSkill.Category forKey(String key) {
+        if (key == null || !key.startsWith("s:")) {
+            return null;
+        }
+        String id = key.substring(2);
+        AetherSkill.Category category = AetherSkill.Category.byKey(id);
+        if (category != null && category.leveled()) {
+            return category;
+        }
+        AetherSkill talent = AetherSkill.byId(id);
+        if (talent == null) {
+            return null;
+        }
+        return talent.category().leveled() ? talent.category() : null;
     }
 
     /** Seals reached by level (0 at Common, 5 at Mythic). */
-    public static int reached(SkillService skills, Player player, AetherSkill skill) {
-        return SkillProgression.rarityTier(skills.level(player, skill));
+    public static int reached(SkillService skills, Player player, AetherSkill.Category skill) {
+        return SkillProgression.rarityTier(skills.skillLevel(player, skill));
     }
 
-    public static int claimed(SkillService skills, CodexService codex, Player player, AetherSkill skill) {
-        return Math.min(reached(skills, player, skill), codex == null ? 0 : codex.claimed(player, key(skill)));
+    /** Highest tier already paid for this skill, old talent seals included. */
+    private static int paid(CodexService codex, Player player, AetherSkill.Category skill) {
+        if (codex == null) {
+            return 0;
+        }
+        int paid = codex.claimed(player, key(skill));
+        for (AetherSkill talent : TalentUnlocks.of(skill)) {
+            paid = Math.max(paid, codex.claimed(player, "s:" + talent.id()));
+        }
+        return paid;
     }
 
-    public static int ready(SkillService skills, CodexService codex, Player player, AetherSkill skill) {
+    public static int claimed(SkillService skills, CodexService codex, Player player, AetherSkill.Category skill) {
+        return Math.min(reached(skills, player, skill), paid(codex, player, skill));
+    }
+
+    public static int ready(SkillService skills, CodexService codex, Player player, AetherSkill.Category skill) {
         if (skills == null || codex == null) {
             return 0;
         }
-        return Math.max(0, reached(skills, player, skill) - codex.claimed(player, key(skill)));
+        return Math.max(0, reached(skills, player, skill) - paid(codex, player, skill));
     }
 
-    public static List<AetherSkill> ready(SkillService skills, CodexService codex, Player player) {
-        List<AetherSkill> out = new ArrayList<>();
-        for (AetherSkill skill : AetherSkill.values()) {
+    public static List<AetherSkill.Category> ready(SkillService skills, CodexService codex, Player player) {
+        List<AetherSkill.Category> out = new ArrayList<>();
+        for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
             if (ready(skills, codex, player, skill) > 0) {
                 out.add(skill);
             }
@@ -55,7 +88,7 @@ public final class SkillSeals {
 
     public static int readyTiers(SkillService skills, CodexService codex, Player player) {
         int total = 0;
-        for (AetherSkill skill : AetherSkill.values()) {
+        for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
             total += ready(skills, codex, player, skill);
         }
         return total;
@@ -64,7 +97,7 @@ public final class SkillSeals {
     /** Seals claimed across every skill, per rarity tier (index 1–5). */
     public static int[] claimedByRarity(SkillService skills, CodexService codex, Player player) {
         int[] counts = new int[MAX_SEALS + 1];
-        for (AetherSkill skill : AetherSkill.values()) {
+        for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
             int claimed = claimed(skills, codex, player, skill);
             for (int tier = 1; tier <= claimed; tier++) {
                 counts[tier]++;
@@ -76,7 +109,7 @@ public final class SkillSeals {
     /** Skills that have reached each rarity (index 1–5). */
     public static int[] reachedByRarity(SkillService skills, Player player) {
         int[] counts = new int[MAX_SEALS + 1];
-        for (AetherSkill skill : AetherSkill.values()) {
+        for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
             int reached = reached(skills, player, skill);
             for (int tier = 1; tier <= reached; tier++) {
                 counts[tier]++;
@@ -85,18 +118,23 @@ public final class SkillSeals {
         return counts;
     }
 
-    public static CodexTiers.Reward pending(SkillService skills, CodexService codex, Player player, AetherSkill skill) {
+    public static CodexTiers.Reward seal(int tier) {
+        CodexTiers.Reward one = CodexTiers.seal(tier);
+        return new CodexTiers.Reward(one.coins() * SCALE, one.xp() * SCALE, one.shards() * SCALE);
+    }
+
+    public static CodexTiers.Reward pending(SkillService skills, CodexService codex, Player player, AetherSkill.Category skill) {
         CodexTiers.Reward total = CodexTiers.Reward.NONE;
-        int from = codex == null ? 0 : codex.claimed(player, key(skill));
+        int from = paid(codex, player, skill);
         int to = reached(skills, player, skill);
         for (int tier = from + 1; tier <= to; tier++) {
-            total = total.plus(CodexTiers.seal(tier));
+            total = total.plus(seal(tier));
         }
         return total;
     }
 
     /** Pays every ready seal of one skill. Returns seals paid. */
-    public static int claim(Player player, AetherSkill skill, boolean announce) {
+    public static int claim(Player player, AetherSkill.Category skill, boolean announce) {
         AetherionItems plugin = AetherionItems.getInstance();
         if (plugin == null || player == null || skill == null) {
             return 0;
@@ -109,9 +147,11 @@ public final class SkillSeals {
         int ready = ready(skills, codex, player, skill);
         if (ready <= 0) {
             if (announce) {
-                int next = SkillProgression.nextRarityLevel(skills.level(player, skill));
-                player.sendMessage("§7No seal ready on §f" + skill.displayName() + "§7."
-                        + (next > 0 ? " §8Next at Lv. " + next + "." : " §8All five claimed."));
+                int next = SkillProgression.nextRarityLevel(skills.skillLevel(player, skill));
+                player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                        .deserialize(de.aetherion.core.exile.Say.t(player,
+                                "§7No seal ready on §f" + skill.plain() + (next > 0 ? " §8· next at Lv. " + next : " §8· all five paid"),
+                                "§7Kein Siegel bereit für §f" + skill.plain() + (next > 0 ? " §8· nächstes bei Lv. " + next : " §8· alle fünf bezahlt"))));
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.5f, 0.8f);
             }
             return 0;
@@ -123,9 +163,8 @@ public final class SkillSeals {
         try {
             if (announce) {
                 String rarity = SkillProgression.rarityName(SkillProgression.rarity(reached * SkillProgression.RARITY_EVERY));
-                player.sendMessage("§d✦ Rarity seal" + (ready > 1 ? "s" : "") + " §7claimed: "
-                        + skills.coloredName(player, skill) + " §8(" + (ready > 1 ? ready + " seals, up to " : "") + rarity
-                        + ") §8» " + reward.line());
+                player.sendMessage(de.aetherion.core.exile.Say.t(player, "§d✦ Rarity seal §7", "§d✦ Seltenheits-Siegel §7")
+                        + skill.plain() + " §8(" + rarity + ") §8» " + reward.line());
                 player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.2f);
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1.3f);
             }
@@ -138,8 +177,22 @@ public final class SkillSeals {
         return ready;
     }
 
+    /** Pays every ready seal of one skill without a chat line; the reward goes into {@code rows} (a level card). */
+    public static int claimQuiet(Player player, AetherSkill.Category skill, List<String> rows) {
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null || player == null || skill == null || plugin.getSkills() == null || plugin.getCodex() == null) {
+            return 0;
+        }
+        CodexTiers.Reward reward = pending(plugin.getSkills(), plugin.getCodex(), player, skill);
+        int paid = claim(player, skill, false);
+        if (paid > 0 && rows != null) {
+            rows.add(de.aetherion.core.exile.Say.t(player, "§d✦ Rarity seal: ", "§d✦ Seltenheits-Siegel: ") + reward.line());
+        }
+        return paid;
+    }
+
     /** One-line pip strip for lore: claimed seals green, ready gold, locked dark. */
-    public static String pips(SkillService skills, CodexService codex, Player player, AetherSkill skill) {
+    public static String pips(SkillService skills, CodexService codex, Player player, AetherSkill.Category skill) {
         int reached = reached(skills, player, skill);
         int claimed = claimed(skills, codex, player, skill);
         StringBuilder out = new StringBuilder("§7Seals ");

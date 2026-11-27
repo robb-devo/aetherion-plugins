@@ -222,8 +222,8 @@ public final class CodexCommand implements CommandExecutor, TabCompleter {
                 keys.add(card.key());
             }
         }
-        for (AetherSkill skill : AetherSkill.values()) {
-            keys.add("s:" + skill.id());
+        for (AetherSkill.Category skill : AetherSkill.Category.LEVELED) {
+            keys.add(de.aetherion.items.skill.SkillSeals.key(skill));
         }
         return keys;
     }

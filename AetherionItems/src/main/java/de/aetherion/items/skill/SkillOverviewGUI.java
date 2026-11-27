@@ -133,6 +133,11 @@ public final class SkillOverviewGUI {
                     : GuiItems.named(Material.MINECART, "§7No seals ready", "§8Reach a new rarity to earn one."));
         }
 
+        /** Seals belong to the skill of a talent (level-system v2); Utility talents have none. */
+        private static int sealsReady(SkillService skills, CodexService codex, Player player, AetherSkill skill) {
+            return skill.category().leveled() ? SkillSeals.ready(skills, codex, player, skill.category()) : 0;
+        }
+
         private List<AetherSkill> visible(Player player, SkillService skills, CodexService codex) {
             List<AetherSkill> list = new ArrayList<>();
             for (AetherSkill skill : AetherSkill.values()) {
@@ -140,7 +145,7 @@ public final class SkillOverviewGUI {
                 boolean keep = switch (show) {
                     case ALL -> true;
                     case EQUIPPED -> skills.slotOf(player, skill) >= 0;
-                    case SEALS -> SkillSeals.ready(skills, codex, player, skill) > 0;
+                    case SEALS -> sealsReady(skills, codex, player, skill) > 0;
                     case TRAINED -> level > 1 || skills.xp(player, skill) > 0;
                     case UNTRAINED -> level <= 1 && skills.xp(player, skill) <= 0;
                 };
@@ -190,8 +195,8 @@ public final class SkillOverviewGUI {
             lore.add("§7Reached §aU" + reached[1] + " §bR" + reached[2] + " §5E" + reached[3]
                     + " §6L" + reached[4] + " §dM" + reached[5]);
             lore.add("");
-            lore.add("§8Skills only level while equipped.");
-            lore.add("§8Swap freely — levels stay with the skill.");
+            lore.add("§8Skills level whenever you do the thing.");
+            lore.add("§8A talent is as strong as its skill.");
             return GuiItems.named(Material.EXPERIENCE_BOTTLE, "§b§lSkill Overview", lore);
         }
 
@@ -206,7 +211,7 @@ public final class SkillOverviewGUI {
                 lore.add("§7Pace §f" + CodexText.compact(snap.perHour()) + " XP/h");
             }
             if (snap.top() != null) {
-                lore.add("§7Top §f" + skills.coloredName(player, snap.top()) + " §8+" + CodexText.compact(snap.topXp()));
+                lore.add("§7Top §f" + snap.top().plain() + " §8+" + CodexText.compact(snap.topXp()));
             }
             return GuiItems.named(Material.CLOCK, "§eThis session", lore);
         }
@@ -215,7 +220,7 @@ public final class SkillOverviewGUI {
             int level = skills.level(player, skill);
             Rarity rarity = SkillProgression.rarity(level);
             int slot = skills.slotOf(player, skill);
-            int ready = SkillSeals.ready(skills, codex, player, skill);
+            int ready = sealsReady(skills, codex, player, skill);
             List<String> lore = new ArrayList<>();
             lore.add(skill.category().title() + " §8· " + rarity.getChatColor() + SkillProgression.rarityName(rarity)
                     + " §8· " + SkillProgression.stage(level).colored());
@@ -231,14 +236,19 @@ public final class SkillOverviewGUI {
                             + CodexText.compact(SkillProgression.xpUntil(level, skills.xp(player, skill), next)) + " XP)");
                 }
             }
-            lore.add(SkillSeals.pips(skills, codex, player, skill));
+            if (skill.category().leveled()) {
+                lore.add(SkillSeals.pips(skills, codex, player, skill.category()));
+            }
             lore.add("");
             lore.add("§7“" + SkillFlavor.tagline(skill, level) + "”");
             lore.add("");
-            lore.add(slot >= 0 ? "§a✔ Equipped §8· Slot " + (slot + 1) : "§8○ In the pool");
+            boolean open = skills.talentUnlocked(player, skill);
+            lore.add(slot >= 0 ? "§a✔ In slot " + (slot + 1)
+                    : open ? "§8○ Ready to use" : "§8✕ Opens at " + (skill.category().leveled() ? skill.category().plain() : "your best skill")
+                    + " " + TalentUnlocks.level(skill));
             if (ready > 0) {
                 lore.add("§e§l✦ " + ready + " seal" + (ready == 1 ? "" : "s") + " ready §8» "
-                        + SkillSeals.pending(skills, codex, player, skill).line());
+                        + SkillSeals.pending(skills, codex, player, skill.category()).line());
                 lore.add("§eClick §7to claim");
             } else {
                 lore.add("§eClick §7to open its page");
@@ -306,7 +316,7 @@ public final class SkillOverviewGUI {
                 int paid = 0;
                 boolean batch = skills.beginRewardBatch(player);
                 try {
-                    for (AetherSkill skill : SkillSeals.ready(skills, codex, player)) {
+                    for (AetherSkill.Category skill : SkillSeals.ready(skills, codex, player)) {
                         paid += SkillSeals.claim(player, skill, true);
                     }
                 } finally {
@@ -330,8 +340,8 @@ public final class SkillOverviewGUI {
                 render(player);
                 return;
             }
-            if (SkillSeals.ready(skills, codex, player, skill) > 0) {
-                SkillSeals.claim(player, skill, true);
+            if (sealsReady(skills, codex, player, skill) > 0) {
+                SkillSeals.claim(player, skill.category(), true);
                 render(player);
                 return;
             }
@@ -341,21 +351,30 @@ public final class SkillOverviewGUI {
         private static void toggle(Player player, SkillService skills, AetherSkill skill) {
             if (skills.slotOf(player, skill) >= 0) {
                 skills.unequip(player, skill);
-                player.sendMessage("§7− " + skills.coloredName(player, skill) + " §8(progress kept)");
+                player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                        .deserialize("§7− " + skills.coloredName(player, skill)));
                 player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_LEATHER, 0.7f, 0.8f);
                 return;
             }
             if (skill.category() == AetherSkill.Category.DUNGEON
                     && !SkillMenu.dungeonUnlocked(player)) {
-                player.sendMessage("§cDungeon skills unlock after clearing Floor 1.");
+                player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                        .deserialize("§cDungeon opens after you clear Floor 1."));
+                CodexChrome.deny(player);
+                return;
+            }
+            var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
+            if (!skills.talentUnlocked(player, skill)) {
+                player.sendActionBar(legacy.deserialize("§8✕ §7Opens at " + (skill.category().leveled()
+                        ? skill.category().plain() : "your best skill") + " " + TalentUnlocks.level(skill)));
                 CodexChrome.deny(player);
                 return;
             }
             if (skills.equip(player, skill)) {
-                player.sendMessage("§a✚ Slot " + (skills.slotOf(player, skill) + 1) + " §8· " + skills.coloredName(player, skill));
+                player.sendActionBar(legacy.deserialize("§a✚ Slot " + (skills.slotOf(player, skill) + 1) + " §8· " + skills.coloredName(player, skill)));
                 player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_CHAIN, 0.8f, 1.0f);
             } else {
-                player.sendMessage("§cNo free slot. §7Unequip something first.");
+                player.sendActionBar(legacy.deserialize("§cNo free slot. §7Take a talent out first."));
                 CodexChrome.deny(player);
             }
         }

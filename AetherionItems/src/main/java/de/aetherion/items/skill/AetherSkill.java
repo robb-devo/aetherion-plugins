@@ -619,6 +619,38 @@ public enum AetherSkill {
         public Material icon() {
             return icon;
         }
+
+        /** Plain name without colour ("Mining"). */
+        public String plain() {
+            return title.length() > 2 && title.charAt(0) == '§' ? title.substring(2) : title;
+        }
+
+        /** Lower-case key for storage and commands ("mining"). */
+        public String key() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        /**
+         * Level-system v2 (2026-11-27): these six are the skills a player levels by playing. Utility is not a skill
+         * of its own; its talents follow the player's best skill.
+         */
+        public boolean leveled() {
+            return this != UTILITY;
+        }
+
+        public static final Category[] LEVELED = {COMBAT, MINING, FORAGING, FARMING, FISHING, DUNGEON};
+
+        public static Category byKey(String key) {
+            if (key == null) {
+                return null;
+            }
+            for (Category category : values()) {
+                if (category.key().equalsIgnoreCase(key.trim())) {
+                    return category;
+                }
+            }
+            return null;
+        }
     }
 
     public enum Flag {

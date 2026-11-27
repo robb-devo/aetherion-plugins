@@ -19,7 +19,7 @@ public final class SkillSession {
     }
 
     /** A read-only view of one session. */
-    public record Snapshot(long started, long xp, int levels, AetherSkill top, long topXp) {
+    public record Snapshot(long started, long xp, int levels, AetherSkill.Category top, long topXp) {
 
         public long minutes() {
             return Math.max(0L, (System.currentTimeMillis() - started) / 60_000L);
@@ -37,12 +37,12 @@ public final class SkillSession {
 
     private static final class Tally {
         private final long started = System.currentTimeMillis();
-        private final EnumMap<AetherSkill, Long> xp = new EnumMap<>(AetherSkill.class);
+        private final EnumMap<AetherSkill.Category, Long> xp = new EnumMap<>(AetherSkill.Category.class);
         private long total;
         private int levels;
     }
 
-    static void note(Player player, AetherSkill skill, int amount, int levels) {
+    static void note(Player player, AetherSkill.Category skill, int amount, int levels) {
         if (player == null || skill == null || amount <= 0) {
             return;
         }
@@ -64,9 +64,9 @@ public final class SkillSession {
             return new Snapshot(System.currentTimeMillis(), 0L, 0, null, 0L);
         }
         synchronized (tally) {
-            AetherSkill top = null;
+            AetherSkill.Category top = null;
             long topXp = 0L;
-            for (Map.Entry<AetherSkill, Long> entry : tally.xp.entrySet()) {
+            for (Map.Entry<AetherSkill.Category, Long> entry : tally.xp.entrySet()) {
                 if (entry.getValue() > topXp) {
                     top = entry.getKey();
                     topXp = entry.getValue();
