@@ -84,7 +84,7 @@ public final class VexDeathHintListener implements Listener {
         player.sendMessage("§cSergeant Vex §8» §f" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_up", "You're vertical again."));
         if (gifted) {
             player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_care",
-                    "Four §8Coal Boosters§7. Don't make me write a receipt. Fuse them — or eat dirt again."));
+                    "Four §8Coal Boosters§7. Don't make me write a receipt. Socket them at the Anvil — or eat dirt again."));
         }
         if (QuestStoryGate.questCompleted(player, questManager, "lesson_boost")) {
             player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_gear",

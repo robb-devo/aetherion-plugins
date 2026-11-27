@@ -770,7 +770,7 @@ public class QuestNPCRegistry {
         // Skill-gated gather / catch / account loops (Dev Menu NPC anchors)
         registerNPC(new QuestNPC(
                 "ore_ledger",
-                "Ore Ledger",
+                "Assayer",
                 NPCType.QUEST,
                 "coal_audit",
                 "ore_ledger_intro",

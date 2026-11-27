@@ -429,7 +429,7 @@ quests:
     description: "Pet Scout will Beweise, dass du fangen kannst. Fang ein wildes Schwein mit einer Fangkugel."
   coal_audit:
     title: "Kohleprüfung"
-    description: "Ore Ledger will fünf Compressed Coal. Bring Belege, keine Ausreden."
+    description: "Der Assayer will fünf Gepresste Kohle. Bring Belege, keine Ausreden."
   stump_census:
     title: "Stumpfzählung"
     description: "Timber Clerk braucht fünf Compressed Oak Logs. Bäume, die Steuern gezahlt haben."
@@ -447,7 +447,7 @@ quests:
     description: "Quarry Broker tauscht einen Compacted Cobblestone gegen Club-nahen Respekt."
   signature_crystal:
     title: "Schliff"
-    description: "Ore Ledger will einen Crystal Find, von Hand geknackt. Holzfäller schärfen T4-Äxte daran; Bauern mahlen ihn in T5-Erde."
+    description: "Der Assayer will einen Crystal Find, von Hand geknackt. Holzfäller schärfen T4-Äxte daran; Bauern mahlen ihn in T5-Erde."
   signature_heartwood:
     title: "Maserung"
     description: "Timber Clerk will ein Elderbark Heartwood. Bergleute schäften T4-Spitzhacken damit; Kämpfer wickeln T4-Griffe in den dunklen Vetter."
@@ -681,9 +681,7 @@ dialogs:
     - "Mein größtes, McNugget, ist schon wieder ausgebüxt. Er ist irgendwo draußen auf den Feldern, und er ist riesig."
     - "Falls du ihm begegnest: schau ihm nicht in die Augen. Das hält er für eine Herausforderung."
   tollkeeper_intro:
-    - "Hallo! Früher gab's an dieser Brücke einen Zoll. Dann ist ein Troll unter die alten Übergänge gezogen und hat seine eigenen Regeln gemacht."
-    - "Er nimmt keine Münzen. Er nimmt Reisende, oder versucht es zumindest."
-    - "Heute führ ich nur noch das Buch für die Brücke. Ein sehr kurzes Buch. Vor allem Entschuldigungen an die Leute, die geschnappt wurden."
+    - "Hallo! An dieser Brücke gab's früher Zoll. Dann zog ein Troll unter die alten Übergänge."
   dockhand_intro:
     - "Das Wasser benimmt sich in letzter Zeit seltsam. Die Fischer kommen voller Tinte nach Hause."
   ash_scout_intro:
@@ -770,9 +768,7 @@ dialogs:
     - "Du brauchst Aetherion-Level zwanzig, bevor ich dich überhaupt anschaue."
     - "Dann bring mir einen Verdichteten Bruchstein. Nicht gepresst, verdichtet. Der Ziegel beweist, dass du es mit dem Bauen ernst meinst."
   slag_poet_intro:
-    - "Hallo! Ich grab am Erzkamm, und in meiner Freizeit schreib ich Gedichte darüber."
-    - "Die meisten handeln von Erzadern, die genau dann aufhören, wenn man sich freut. Das passiert oft."
-    - "Wenn du hier oben gräbst, folg den Kohleflözen bergab. Und wenn der Berg grollt, geh einen Schritt zurück. Das ist kein Applaus."
+    - "Hallo! Ich grab am Ore Ridge, und in meiner Freizeit schreib ich Gedichte darüber."
   bait_theory_intro:
     - "Ich teste seit elf Jahren Köder an diesem Pier. Würmer, Brot, Käse, alles Mögliche."
     - "Dock Whisper hört aufs Wasser, der Dock Scaler wiegt die Fische, und ich find raus, was sie zum Abendessen wollen."
@@ -783,7 +779,7 @@ dialogs:
     - "Wenn du zur Arbeit aufbrichst, nimm Brot mit. Hungrige Leute treffen schlechte Entscheidungen."
   stall_tack_intro:
     - "Nägel, Seile, Schnur, Schnallen. Ich verkauf all die Kleinigkeiten, die man vergisst, bis man sie braucht."
-    - "Die Bergleute oben am Erzkamm nutzen ihr Werkzeug schnell ab. Die meisten kommen zuerst hier vorbei."
+    - "Die Bergleute oben am Ore Ridge nutzen ihr Werkzeug schnell ab. Die meisten kommen zuerst hier vorbei."
     - "Schau dich ruhig um. Was ich nicht hab, brauchst du wahrscheinlich nicht."
   stall_brine_intro:
     - "Salz für Fisch, Salz für Fleisch, Salz für Suppe. Salz macht alles besser."
@@ -1611,7 +1607,7 @@ talk:
     gear_tip: "§7Kleiner Tipp — verbessere deine Ausrüstung, bevor du tiefer gehst. Rezeptbuch und Amboss helfen."
     rite_hint: "Optional als Nächstes — §cRite Warden§f. Borderlands-Bosse, Pulveraltar. Kein Papierkram von mir."
     death_up: "Wieder in der Senkrechten."
-    death_care: "Vier §8Coal Booster§7. Quittung schreib ich nicht. Fusionier sie — oder friss wieder Dreck."
+    death_care: "Vier §8Coal Booster§7. Quittung schreib ich nicht. Setz sie am Amboss ein — oder friss wieder Dreck."
     death_gear: "Probleme? Combat-Set + Booster. Rezeptbuch und Amboss. Dann die zehn fertig machen."
     death_temper: "Probleme? §eTemper§7 bringt dir Booster bei. Das Combat-Set steht im Rezeptbuch."
     ledger_first: "Warte, {player}. §dMiss Ledger§f stempelt die Orientierung erst zu. Dann reden wir über Stahl."
@@ -2814,7 +2810,7 @@ cast:
   stall_tack:
     greet_new: ["Hallo, {player}! Brauchst du einen Nagel? Ein Seil? Von allem ein bisschen?"]
     greet: ["Schon wieder da, {player}? Was vergessen, oder?"]
-    idle: ["Seile, Nägel, Schnallen, Haken! Alles, was ein beschäftigter Inselmensch vergisst!", "Heute Morgen hab ich alle Nägel nach Größe sortiert. Ein Kunde hat sie in fünf Minuten durcheinandergebracht.", "Die Bergleute sagen, der Erzkamm frisst eine Spitzhacke pro Woche. Gut fürs Geschäft, schlecht für Spitzhacken.", "Jedes Kleinteil auf diesem Tisch hat schon mal jemandem den Tag gerettet."]
+    idle: ["Seile, Nägel, Schnallen, Haken! Alles, was ein beschäftigter Inselmensch vergisst!", "Heute Morgen hab ich alle Nägel nach Größe sortiert. Ein Kunde hat sie in fünf Minuten durcheinandergebracht.", "Die Bergleute sagen, der Ore Ridge frisst eine Spitzhacke pro Woche. Gut fürs Geschäft, schlecht für Spitzhacken.", "Jedes Kleinteil auf diesem Tisch hat schon mal jemandem den Tag gerettet."]
     farewell: ["Komm wieder, wenn was kaputtgeht!"]
     topics:
       - label: "Was verkauft sich am besten?"
@@ -2840,11 +2836,13 @@ cast:
   slag_poet:
     greet_new: ["Ah, Besuch! Willst du ein Gedicht hören, {player}? Es ist ein kurzes."]
     greet: ["{player}! Ich hab eine neue Strophe fertig. Sie handelt von Kies."]
-    idle: ["'Oh Kupferader, hell und klar, warst weg, bevor die Nacht da war.' Ich arbeite noch dran.", "Der Erz-Buchhalter will Zahlen. Ich will Reime. Wir verstehen uns überraschend gut.", "Hier oben riecht der Wind immer nach Eisen und Stein.", "Jeder Bergmann auf diesem Kamm hat schon eine Ader verloren, die er geliebt hat. Gedichte helfen."]
+    idle: ["'Oh Kupferader, hell und klar, warst weg, bevor die Nacht da war.' Ich arbeite noch dran.", "Der Assayer will Zahlen. Ich will Reime. Wir verstehen uns überraschend gut.", "Hier oben riecht der Wind immer nach Eisen und Stein.", "Jeder Bergmann auf diesem Kamm hat schon eine Ader verloren, die er geliebt hat. Gedichte helfen."]
     farewell: ["Mögen deine Adern tief reichen!"]
     topics:
       - label: "Lies mir ein Gedicht vor."
         lines: ["'Die Spitzhacke singt, der Berg, der seufzt, die Kohle geht aus, eh' du dich's versiehst.'", "Es ist noch nicht fertig. Hier oben ist nie was fertig."]
+      - label: "Ein Tipp?"
+        lines: ["Folg den Kohleflözen bergab. Meine Gedichte handeln von Adern, die aufhören, wenn man sich freut.", "Und wenn der Berg grollt, geh einen Schritt zurück. Das ist kein Applaus."]
   bench_cynic:
     greet_new: ["Oh. Noch ein Tourist. Hallo, {player}."]
     greet: ["{player}. Du schon wieder. Die Bank ist immer noch besetzt."]
@@ -2906,7 +2904,7 @@ cast:
   ore_ledger:
     greet_new: ["Hallo, {player}. Zum Graben hier oder zum Helfen?"]
     greet: ["{player}! Heute Kohle für mein Buch dabei?"]
-    idle: ["Seit hundert Jahren kommt Kohle aus diesem Kamm. Meine Bücher decken neunzig davon ab.", "Die Bergleute bringen den Stein, ich die Zahlen. Schmutzige Hände kriegen wir beide.", "Jede Seite in diesem Buch ist ein harter Tag von jemandem in den Stollen.", "Der Erzkamm gibt viel, aber er gibt nie etwas umsonst."]
+    idle: ["Seit hundert Jahren kommt Kohle aus diesem Kamm. Meine Bücher decken neunzig davon ab.", "Die Bergleute bringen den Stein, ich die Zahlen. Schmutzige Hände kriegen wir beide.", "Jede Seite in diesem Buch ist ein harter Tag von jemandem in den Stollen.", "Der Ore Ridge gibt viel, aber er gibt nie etwas umsonst."]
     farewell: ["Pass auf die losen Steine hier oben auf!"]
     topics:
       - label: "Warum führst du Buch?"
@@ -2934,7 +2932,9 @@ cast:
     farewell: ["Pass auf das Wasser unter der Brücke auf."]
     topics:
       - label: "Der Troll?"
-        lines: ["Groß, mürrisch und sehr gut darin, sich unter Brücken zu verstecken.", "Wenn du eines Tages stark genug bist, bringst du ihm vielleicht Manieren bei."]
+        lines: ["Er nimmt keine Münzen. Er nimmt Reisende, oder versucht es zumindest.", "Groß, mürrisch und gut im Verstecken. Wenn du eines Tages stark genug bist, bring ihm Manieren bei."]
+      - label: "Und heute?"
+        lines: ["Heute führ ich nur noch das Buch für die Brücke.", "Ein sehr kurzes Buch. Vor allem Entschuldigungen an die Leute, die geschnappt wurden."]
   chicken_keeper:
     greet_new: ["Hallo, {player}! Pass auf deine Füße auf, die Küken sind überall."]
     greet: ["{player}! Irgendwo ein Riesenhuhn gesehen?"]

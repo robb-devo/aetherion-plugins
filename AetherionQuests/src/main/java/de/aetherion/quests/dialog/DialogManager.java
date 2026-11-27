@@ -1835,9 +1835,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("tollkeeper_intro")) {
             return new String[] {
-                    "Hello! This bridge used to have a toll. Then a troll moved in under the old crossings and made his own rules.",
-                    "He doesn't take coins. He takes travellers, or at least he tries to.",
-                    "These days I just keep the books for the bridge. Very short books. Mostly apologies to the people who got grabbed."
+                    "Hello! This bridge used to have a toll, until a troll moved in under the old crossings."
             };
         }
 
@@ -2070,9 +2068,7 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("slag_poet_intro")) {
             return new String[] {
-                    "Hello! I mine on Ore Ridge, and in my free time I write poems about it.",
-                    "Most of my poems are about ore veins that run out right when you get excited. That happens a lot.",
-                    "If you're mining up here, follow the coal seams downhill. And if the mountain rumbles, step back. That's not applause."
+                    "Hello! I mine on Ore Ridge, and in my free time I write poems about it."
             };
         }
 

@@ -821,7 +821,7 @@ openUp.addReward(
         Quest coalAudit = new Quest(
                 "coal_audit",
                 "Coal Audit",
-                "Ore Ledger wants five Compressed Coal. Bring receipts, not excuses."
+                "The Assayer wants five Compressed Coal. Bring receipts, not excuses."
         );
         coalAudit.setServiceId("ore_ledger");
         coalAudit.requireCategory(AetherSkill.Category.MINING, 8);
@@ -904,7 +904,7 @@ openUp.addReward(
          * neighbour ladder takes it at T4/T5. The payout beats the find's NPC price.
          */
         registerSignatureLesson(questManager, "signature_crystal", "Edge Work",
-                "Ore Ledger wants one Crystal Find, cracked by hand. Foragers hone T4 axes on them; farmers grind them into T5 soil.",
+                "The Assayer wants one Crystal Find, cracked by hand. Foragers hone T4 axes on them; farmers grind them into T5 soil.",
                 "ore_ledger", AetherSkill.Category.MINING, "crystal_find");
         registerSignatureLesson(questManager, "signature_heartwood", "Grain of Truth",
                 "Timber Clerk wants one Elderbark Heartwood. Miners haft T4 picks with it; fighters wrap T4 hilts in its dark cousin.",
