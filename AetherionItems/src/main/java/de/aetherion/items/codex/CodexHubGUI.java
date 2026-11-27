@@ -68,7 +68,7 @@ public final class CodexHubGUI {
 
         @Override
         protected net.kyori.adventure.text.Component chrome() {
-            return de.aetherion.items.util.ManagerChrome.CODEX;
+            return de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.CODEX);
         }
 
         @Override
@@ -120,7 +120,7 @@ public final class CodexHubGUI {
             captions.add(ready > 0
                     ? new BookPage.Caption(CLAIM_ALL, ready + (german ? " bereit" : " ready"), BookPage.State.NEXT)
                     : new BookPage.Caption(CLAIM_ALL, german ? "nichts" : "none", BookPage.State.LOCKED));
-            return BookPage.title(de.aetherion.items.util.ManagerChrome.CODEX_GLYPH, captions);
+            return de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.CODEX, captions);
         }
 
         @Override

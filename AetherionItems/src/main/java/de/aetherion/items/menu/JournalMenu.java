@@ -108,15 +108,7 @@ public final class JournalMenu {
     }
 
     private static ChromePage.Theme theme(Chapter chapter) {
-        return switch (chapter) {
-            case JOURNEY -> ChromePage.Theme.QUEST;
-            case ATLAS -> ChromePage.Theme.ISLAND;
-            case WORKSHOP -> ChromePage.Theme.FORGE;
-            case MARKET -> ChromePage.Theme.TRADE;
-            case COMPANY -> ChromePage.Theme.GUILD;
-            case SETTINGS -> ChromePage.Theme.BETA;
-            default -> ChromePage.Theme.AETHER;
-        };
+        return JournalPage.theme(chapter);
     }
 
     /** Manager tiles by chapter. Labels are the names the tutorial texts use (JournalText's line names). */

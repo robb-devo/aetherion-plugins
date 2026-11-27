@@ -37,7 +37,7 @@ public final class CodexMilestonesGUI {
 
         @Override
         protected net.kyori.adventure.text.Component chrome() {
-            return de.aetherion.items.util.ManagerChrome.MILESTONES;
+            return de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.MILESTONES);
         }
 
         @Override

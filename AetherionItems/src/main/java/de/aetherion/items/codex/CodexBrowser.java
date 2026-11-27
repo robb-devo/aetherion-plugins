@@ -117,8 +117,8 @@ public class CodexBrowser extends CodexView {
     @Override
     protected net.kyori.adventure.text.Component chrome() {
         return ledger == CodexBook.Ledger.COLLECTION
-                ? de.aetherion.items.util.ManagerChrome.COLLECTION
-                : de.aetherion.items.util.ManagerChrome.BESTIARY;
+                ? de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.COLLECTION)
+                : de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.BESTIARY);
     }
 
     @Override

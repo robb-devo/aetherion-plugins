@@ -63,7 +63,7 @@ public final class ShardShopMenu implements Listener {
         captions.add(new BookPage.Caption(MATERIALS_SLOT, german ? "Materialien" : "Materials", BookPage.State.OPEN));
         captions.add(new BookPage.Caption(EXCLUSIVE_SLOT, german ? "Exklusiv" : "Exclusive", BookPage.State.OPEN));
         Inventory inventory = Bukkit.createInventory(new Holder(View.ROOT), 45,
-                BookPage.title(ManagerChrome.SHOP_GLYPH, captions));
+                ManagerChrome.title(ManagerChrome.Page.SHOP, captions));
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 
@@ -95,19 +95,19 @@ public final class ShardShopMenu implements Listener {
     }
 
     public void openBoosts(Player player) {
-        openShelf(player, View.BOOSTS, ManagerChrome.SHOP_BOOSTS_GLYPH, boostOffers());
+        openShelf(player, View.BOOSTS, ManagerChrome.Page.SHOP_BOOSTS, boostOffers());
     }
 
     public void openMaterials(Player player) {
-        openShelf(player, View.MATERIALS, ManagerChrome.SHOP_MATERIALS_GLYPH, materialOffers());
+        openShelf(player, View.MATERIALS, ManagerChrome.Page.SHOP_MATERIALS, materialOffers());
     }
 
     public void openExclusive(Player player) {
-        openShelf(player, View.EXCLUSIVE, ManagerChrome.SHOP_EXCLUSIVE_GLYPH, exclusiveOffers());
+        openShelf(player, View.EXCLUSIVE, ManagerChrome.Page.SHOP_EXCLUSIVE, exclusiveOffers());
     }
 
     /** One shelf: its offers on row 2 with the price under each (faded when you can't afford it). */
-    private void openShelf(Player player, View view, char page, Offer[] offers) {
+    private void openShelf(Player player, View view, ManagerChrome.Page page, Offer[] offers) {
         List<BookPage.Caption> captions = new ArrayList<>();
         captions.add(balanceCaption(player));
         long balance = shards.get(player);
@@ -118,7 +118,7 @@ public final class ShardShopMenu implements Listener {
         if (view == View.EXCLUSIVE) {
             captions.add(new BookPage.Caption(MVP_SLOT, "MVP++", BookPage.State.NEXT));
         }
-        Inventory inventory = Bukkit.createInventory(new Holder(view), 45, BookPage.title(page, captions));
+        Inventory inventory = Bukkit.createInventory(new Holder(view), 45, ManagerChrome.title(page, captions));
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 

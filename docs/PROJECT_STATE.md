@@ -571,6 +571,28 @@ Manager: branch `backup/manager-pre-journal-2026-11-23` (= main `8326dea`). Conc
   "Netherstern"; "Aetherion Manager" was left only in Ledger's Court's blurb (#197, live on mmo-r since 2026-11-25; the
   hub server keeps its own Hub jar and runs no journal) and in a DeluxeHub config comment players never see.
 
+## Journal sub-pages (2026-11-27, PC session)
+
+The menus the journal opens (Skills with Overview and Presets, Storage, Stats, Loadouts, Pets with Aetherlex and
+details, the Codex books, Recipes, Anvil, Shop, Bazaar, Auction, Teleports) were still the old Manager pages: a
+frame per menu, a flat page. While `journal.enabled` is on they are now pages of the journal:
+- `core/api/JournalPage.leaf(chapter, rows, label)` builds the title: the chapter's frame (`JournalPage.theme`, the
+  same as the chapter page), the journal's leather and paper with a soft fold in the middle (no hard spine: grids and
+  captions run across it), the folded corner under the bottom-left slot (Back; a small seal there is left out), the
+  chapter's ribbon hanging out under the book (`TAIL`), kit pockets/seals per slot, gold under the picked slot (mark
+  18 pocket, 19 seal; mark 20 is the recipe arrow), the path on the plate ("CHARACTER · SKILLS") and captions in
+  ink. Art: `gen_journal_art.py` (leaf 0xE451..0xE456, tails 0xE460 + 16 * (rows - 1) + chapter) and the three
+  extra marks per row in `gen_gui_kit.py`.
+- Items: `util/ManagerChrome.title(Page, captions, label, picked...)`; every `Page` carries the old page's marks as
+  one word per row, so slots stay where they were; the Codex pages gold their own tab. Off = the old overlays,
+  byte for byte. Plate paths are dynamic for storage pages, recipe lists/details and Codex entries.
+- AetherMobs (Pets collection via `ManagerChrome.PETS`, Aetherlex and details via `JournalPage.open`) and Hub
+  (`SpawnMenu`, Atlas › Teleports, gold under the chosen /spawn) use the same.
+- Check art without a client: `ManagerChromeTest` writes every page with `-Djournal.samples=<file>`, then
+  `tools/render_title.py <file> <dir>` renders them with the pack fonts (client layout rules, stand-in items).
+- Not converted (own books, not journal sub-pages): isle journals (Origin/Grove/Mine isle), island and guild menus,
+  beta checklist, dev/staff menus, traders and other kit (`ChromePage`) menus.
+
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 
 mmo-d lagged (MSPT spikes to 1.4 s with nobody online): `CryptHologramService` (Items) re-spawned its saved

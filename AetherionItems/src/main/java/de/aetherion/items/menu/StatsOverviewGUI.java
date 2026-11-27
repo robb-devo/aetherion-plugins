@@ -79,7 +79,7 @@ public class StatsOverviewGUI {
         }
         contents[BACK_SLOT] = de.aetherion.items.util.ManagerNav.button();
 
-        Inventory inventory = Bukkit.createInventory(new Holder(), 54, BookPage.title('', captions));
+        Inventory inventory = Bukkit.createInventory(new Holder(), 54, de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.STATS, captions));
         inventory.setContents(contents);
         player.openInventory(inventory);
     }

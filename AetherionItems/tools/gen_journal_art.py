@@ -59,17 +59,17 @@ LINE_TOPS = (40, 58, 76, 94)  # GUI y of the text on rows 1..4 (JournalPage.LINE
 
 # ----------------------------------------------------------------------------- spread
 
-def _page(cv, x0, x1, spine_at_right):
-    for y in range(TOP, BOTTOM + 1):
+def _page(cv, x0, x1, spine_at_right, top=TOP, bottom=BOTTOM, ruled=True, gutter=(6, 0.55)):
+    for y in range(top, bottom + 1):
         for x in range(x0, x1 + 1):
             outer = (x - x0) if spine_at_right else (x1 - x)
             inner = (x1 - x) if spine_at_right else (x - x0)
-            edge = min(outer, y - TOP, BOTTOM - y)
+            edge = min(outer, y - top, bottom - y)
             t = 0.0 if edge >= 7 else (7 - edge) / 7.0 * 0.45
-            t += max(0.0, (6 - inner) / 6.0) * 0.55   # the gutter falls into the spine
+            t += max(0.0, (gutter[0] - inner) / gutter[0]) * gutter[1]   # the gutter falls into the spine
             cv.put(x, y, gc._paper(mix(PAGE, PAGE_DARK, min(1.0, t)), x, y))
     # ruled lines between rows 1..4, dotted toward the gutter
-    for r in range(1, 5):
+    for r in (range(1, 5) if ruled else ()):
         y = 35 + 18 * r
         a, b = (x0 + 3, x1 - 3)
         for x in range(a, b + 1):
@@ -80,7 +80,7 @@ def _page(cv, x0, x1, spine_at_right):
     # ink corner brackets at the outer top and bottom
     ox = x0 + 2 if spine_at_right else x1 - 2
     step = 1 if spine_at_right else -1
-    for (cy, dy) in ((TOP + 2, 1), (BOTTOM - 2, -1)):
+    for (cy, dy) in ((top + 2, 1), (bottom - 2, -1)):
         for k in range(4):
             cv.put(ox + step * k, cy, INK_SOFT)
             cv.put(ox, cy + dy * k, INK_SOFT)
@@ -213,6 +213,162 @@ def highlight():
     return im
 
 
+# ----------------------------------------------------------------------------- leaf (sub-pages)
+
+LEAF = 0xE450      # + rows: the open book for a menu of 1..6 rows (JournalPage.leaf)
+TAIL = 0xE460      # + 16 * (rows - 1) + chapter: the chapter's ribbon hanging out under the book
+LEAF_TOP = 16      # paper top: row 0's pockets and seals sit fully on the page
+TAIL_X = 147       # GUI x of a tail's left edge (under column 7, clear of the divider gem)
+
+
+def leaf_bottom(rows):
+    """Paper bottom: one texel under the last row's slot frames."""
+    return gc.geometry(rows)['cont_bot'] + 1
+
+
+def leaf(rows):
+    """The journal opened at a sub-page: the same leather cover, two pages and spine as the spread, but the paper
+    runs from just under the header (row 0 holds buttons on most sub-pages) to under the last row, no ruled lines,
+    and the folded corner sits under the bottom-left slot, where Back lives. The menu's pockets and seals are kit
+    marks drawn over it."""
+    top, bottom = LEAF_TOP, leaf_bottom(rows)
+    cv = Canvas()
+    for y in range(top - 2, bottom + 3):
+        for x in range(LEFT[0] - 2, RIGHT[1] + 3):
+            cv.put(x, y, gc._paper(LEATHER, x, y, 6))
+    for x in range(LEFT[0] - 2, RIGHT[1] + 3):
+        cv.put(x, top - 2, LEATHER_HI)
+        cv.put(x, bottom + 2, LEATHER_LO)
+    for y in range(top - 2, bottom + 3):
+        cv.put(LEFT[0] - 2, y, LEATHER_HI)
+        cv.put(RIGHT[1] + 2, y, LEATHER_LO)
+    for y in range(top, bottom + 2):
+        cv.put(LEFT[0] - 1, y, PAPER_EDGE)
+        cv.put(RIGHT[1] + 1, y, PAPER_EDGE)
+    for x in range(LEFT[0] - 1, RIGHT[1] + 2):
+        if x not in (87, 88):
+            cv.put(x, bottom + 1, PAPER_EDGE)
+    # a soft fold instead of the spread's leather spine: menus run their grids and captions across the middle
+    _page(cv, LEFT[0], LEFT[1], True, top, bottom, ruled=False, gutter=(5, 0.32))
+    _page(cv, RIGHT[0], RIGHT[1], False, top, bottom, ruled=False, gutter=(5, 0.32))
+    for y in range(top, bottom + 1):
+        cv.put(87, y, gc._paper(mix(PAGE_DARK, INK_SOFT, 0.30), 87, y, 3))
+        cv.put(88, y, gc._paper(mix(PAGE_DARK, INK_SOFT, 0.16), 88, y, 3))
+    for y in (top - 2, top - 1, bottom + 1, bottom + 2):
+        cv.put(87, y, LEATHER_LO)
+        cv.put(88, y, LEATHER)
+    gc.draw_diamond(cv, 87, top - 1, 1, GOLD, GOLD_DEEP)
+    if rows >= 2:
+        fold = 8
+        for k in range(fold):
+            for j in range(fold - k):
+                x, y = LEFT[0] + j, bottom - k
+                cv.put(x, y, mix(PAGE_DARK, INK_SOFT, 0.12 + 0.02 * j) if j < fold - k - 1 else INK_SOFT)
+        for k in range(fold):
+            cv.put(LEFT[0] + k, bottom - fold + 1 + k, INK_SOFT)
+    cv.put(255 - gc.OX, 120, INK, 1)
+    return cv.im
+
+
+def tail(silk):
+    """10x12: a ribbon's end hanging out of the book, notched, the silk darker where it leaves the cover."""
+    im = Image.new('RGBA', (10, 12), (0, 0, 0, 0))
+    px = im.load()
+    base = hx(silk)
+    x0, x1 = 1, 8
+    for y in range(0, 12):
+        for x in range(x0, x1 + 1):
+            if y > 8 and abs(x - 4.5) < (y - 8) + 0.5:
+                continue
+            c = base
+            if x in (x0, x1):
+                c = mix(base, INK, 0.38)
+            elif x == x0 + 2:
+                c = mix(base, (255, 255, 255), 0.28)
+            if y < 3:
+                c = mix(c, INK, 0.45 - 0.15 * y)
+            px[x, y] = (c[0], c[1], c[2], 255)
+    for y in range(2, 8):
+        px[x0 + 1, y] = GOLD + (255,)
+        px[x1 - 1, y] = GOLD + (255,)
+    if px[9, 11][3] == 0:
+        px[9, 11] = (INK[0], INK[1], INK[2], 1)   # measures 10 wide: advance 11
+    return im
+
+
+def add_leaf_glyphs(add):
+    for rows in range(1, 7):
+        add('journal_leaf_%d' % rows, leaf(rows), 23, 256, [chr(LEAF + rows)])
+        sheet = Image.new('RGBA', (10 * len(CHAPTERS), 12), (0, 0, 0, 0))
+        for n, (_key, silk, _sigil) in enumerate(CHAPTERS):
+            sheet.alpha_composite(tail(silk), (10 * n, 0))
+        top = leaf_bottom(rows) + 2
+        add('journal_tail_%d' % rows, sheet, 13 - top, 12,
+            [''.join(chr(TAIL + 16 * (rows - 1) + n) for n in range(len(CHAPTERS)))])
+
+
+def chosen_pocket():
+    """Mark 18 (slot-(0, 0) space like gen_gui_kit.pocket): the slot picked on this page, under a gold wash."""
+    im = Image.new('RGBA', (20, 20), (0, 0, 0, 0))
+    px = im.load()
+    wash = mix(PAGE, hx('#f2cf6b'), 0.62)
+    edge = mix(GOLD_DEEP, INK, 0.15)
+    for y in range(0, 20):
+        for x in range(0, 20):
+            if x in (0, 19) and y in (0, 19):
+                continue
+            border = x in (0, 19) or y in (0, 19)
+            c = edge if border else gc._paper(mix(wash, PAGE, 0.3 * (y / 19.0)), x, y, 3)
+            px[x, y] = (c[0], c[1], c[2], 255)
+    for (x, y) in ((1, 1), (18, 1), (1, 18), (18, 18)):
+        px[x, y] = edge + (255,)
+    return im
+
+
+def chosen_seal():
+    """Mark 19: a seal rung in gold, for the picked button of a row (tab, category)."""
+    im = Image.new('RGBA', (20, 20), (0, 0, 0, 0))
+    px = im.load()
+    inner = mix(PAGE, hx('#f2cf6b'), 0.6)
+    ring = GOLD_DEEP
+    cx, cy = 9.5, 9.5
+    for y in range(20):
+        for x in range(20):
+            d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+            if d <= 7.6:
+                c = mix(inner, PAGE, max(0.0, (y - cy) / 14.0))
+            elif d <= 8.6:
+                c = ring
+            elif d <= 9.5:
+                c = mix(GOLD_DEEP, INK, 0.35) if (x + y) % 5 else INK
+            else:
+                continue
+            px[x, y] = (c[0], c[1], c[2], 255)
+    return im
+
+
+def arrow_mark():
+    """Mark 20: an inked arrow across the slot, pointing right (craft grid to result)."""
+    im = Image.new('RGBA', (20, 20), (0, 0, 0, 0))
+    px = im.load()
+    x, y = 3, 9
+    for k in range(1, 13):
+        px[x + k, y] = INK + (255,)
+        if k <= 11:
+            px[x + k, y + 1] = INK_SOFT + (255,)
+    for k in range(1, 5):
+        px[x + 13 - k, y - k] = INK + (255,)
+        px[x + 13 - k, y + k] = INK + (255,)
+        px[x + 12 - k, y + k + 1] = INK_SOFT + (255,)
+    px[19, 19] = (INK[0], INK[1], INK[2], 1)
+    return im
+
+
+def extra_marks():
+    """Kit marks 18..20, appended to every marks row after the 16 pocket masks, the seal and the small seal."""
+    return [chosen_pocket(), chosen_seal(), arrow_mark()]
+
+
 # ----------------------------------------------------------------------------- kit hook + fonts
 
 def add_glyphs(add):
@@ -226,6 +382,7 @@ def add_glyphs(add):
     hi = highlight()
     for r in range(1, 5):
         add('journal_highlight_%d' % r, hi, 13 - (17 + 18 * r), 20, [chr(HIGHLIGHT + r - 1)])
+    add_leaf_glyphs(add)
 
 
 def write_line_fonts(root):
