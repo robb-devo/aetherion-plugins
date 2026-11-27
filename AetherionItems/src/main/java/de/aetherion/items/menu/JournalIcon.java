@@ -17,7 +17,9 @@ import java.util.List;
 enum JournalIcon {
     QUEST, QUEST_READY, QUEST_NONE, CHAPTER, CLAIM, ISLAND_GOAL, ISLE_MENU, TALK_LOG, GUIDE, DUNGEONS, EXILE, CAPITAL,
     GROVE, MINE_ISLE, ORIGIN, BOSSES, MILESTONES, AETHERLEX, PARTY, FRIENDS, LANGUAGE, TALK_MODE, REPORT, CHECKLIST,
-    RAID_BAN;
+    RAID_BAN,
+    /** 2026-11-27: the language picker's flags (Quests LangMenu uses paper 7825 / 7826 directly). */
+    FLAG_DE, FLAG_EN;
 
     private static final int OPEN = 7800;
     private static final int LOCKED = 7850;

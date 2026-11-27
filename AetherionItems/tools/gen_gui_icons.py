@@ -816,6 +816,33 @@ def i_raid_ban():
     return p.finish(STEEL[0])
 
 
+def i_flag_de():
+    """Deutsch: black, red, gold, a little wave in the cloth."""
+    p = Icon()
+    cloth = rect(p, 1, 3, 14, 12)
+    wave = (p.g.x > 6.5) & (p.g.x < 10.5)
+    p.put(cloth & (p.g.y < 6.5), SLATE[1])
+    p.put(cloth & (p.g.y >= 6.5) & (p.g.y < 9.5), CRIMSON[3])
+    p.put(cloth & (p.g.y >= 9.5), GOLD[4])
+    p.put(cloth & wave & (p.g.y < 6.5), SLATE[3])
+    p.put(cloth & wave & (p.g.y >= 6.5) & (p.g.y < 9.5), CRIMSON[4])
+    p.put(cloth & wave & (p.g.y >= 9.5), GOLD[5])
+    return p.finish(SLATE[0])
+
+
+def i_flag_en():
+    """English: the Union flag in fourteen by ten texels."""
+    p = Icon()
+    cloth = rect(p, 1, 3, 14, 12)
+    white = hx('#f4f4ee')
+    p.put(cloth, SKY[1])
+    p.put(cloth & (line(p, 1, 3, 14, 12, 2) | line(p, 1, 12, 14, 3, 2)), white)
+    p.put(cloth & (line(p, 1, 3, 14, 12) | line(p, 1, 12, 14, 3)), CRIMSON[3])
+    p.put(rect(p, 6, 3, 9, 12) | rect(p, 1, 6, 14, 9), white)
+    p.put(rect(p, 7, 3, 8, 12) | rect(p, 1, 7, 14, 8), CRIMSON[3])
+    return p.finish(SKY[0])
+
+
 # The Aether Journal's lines (JournalIcon.java, same order: append only): paper, open at 7800 + i, locked at 7850 + i.
 JOURNAL = (
     ('j_quest', i_quest), ('j_quest_ready', i_quest_ready), ('j_quest_none', i_quest_none),
@@ -825,6 +852,8 @@ JOURNAL = (
     ('j_bosses', i_bosses), ('j_milestones', i_milestones), ('j_aetherlex', i_aetherlex), ('j_party', i_party),
     ('j_friends', i_friends), ('j_language', i_language), ('j_talk_mode', i_talk_mode), ('j_report', i_report),
     ('j_checklist', i_checklist), ('j_raid_ban', i_raid_ban),
+    # 2026-11-27: the language picker's own flags (Quests LangMenu uses paper 7825 / 7826).
+    ('j_flag_de', i_flag_de), ('j_flag_en', i_flag_en),
 )
 JOURNAL_OPEN = 7800
 JOURNAL_LOCKED = 7850

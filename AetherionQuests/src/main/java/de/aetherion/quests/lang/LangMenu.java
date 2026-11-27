@@ -42,6 +42,9 @@ public final class LangMenu implements Listener {
     private static final int SLOT_DE = 11;
     private static final int SLOT_EN = 15;
     private static final int SLOT_INFO = 13;
+    /** Paper CustomModelData of the flags in the served pack (JournalIcon FLAG_DE / FLAG_EN = 7800 + ordinal). */
+    private static final int FLAG_DE = 7825;
+    private static final int FLAG_EN = 7826;
 
     private static final Set<UUID> REOPEN = ConcurrentHashMap.newKeySet();
 
@@ -77,7 +80,7 @@ public final class LangMenu implements Listener {
                 "§8Später ändern: §7/sprache",
                 "§8Change it later: §7/language"
         ));
-        inventory.setItem(SLOT_DE, flag(Material.RED_BANNER,
+        inventory.setItem(SLOT_DE, flag(FLAG_DE, Material.RED_BANNER,
                 List.of(new Pattern(DyeColor.BLACK, PatternType.STRIPE_TOP),
                         new Pattern(DyeColor.YELLOW, PatternType.STRIPE_BOTTOM)),
                 "§6§lDeutsch",
@@ -86,7 +89,7 @@ public final class LangMenu implements Listener {
                 "",
                 "§eKlicken zum Auswählen"
         ));
-        inventory.setItem(SLOT_EN, flag(Material.BLUE_BANNER,
+        inventory.setItem(SLOT_EN, flag(FLAG_EN, Material.BLUE_BANNER,
                 List.of(new Pattern(DyeColor.WHITE, PatternType.CROSS),
                         new Pattern(DyeColor.RED, PatternType.STRAIGHT_CROSS)),
                 "§a§lEnglish",
@@ -126,8 +129,22 @@ public final class LangMenu implements Listener {
         return stack;
     }
 
-    /** A small flag: a banner with its stripes, the banner's own pattern list hidden from the tooltip. */
-    private static ItemStack flag(Material banner, List<Pattern> patterns, String name, String... lore) {
+    /**
+     * The flag: our own pixel flag from the served pack (paper with CustomModelData, AetherionItems
+     * gen_gui_icons.py j_flag_de / j_flag_en). Without the pack the paper would look like paper, so the banner
+     * with its stripes stays as the fallback ({@code language.banner-flags: true} in config.yml).
+     */
+    private static ItemStack flag(int cmd, Material banner, List<Pattern> patterns, String name, String... lore) {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        if (plugin == null || !plugin.getConfig().getBoolean("language.banner-flags", false)) {
+            ItemStack paper = item(Material.PAPER, name, lore);
+            ItemMeta meta = paper.getItemMeta();
+            if (meta != null) {
+                meta.setCustomModelData(cmd);
+                paper.setItemMeta(meta);
+            }
+            return paper;
+        }
         ItemStack stack = item(banner, name, lore);
         if (stack.getItemMeta() instanceof BannerMeta meta) {
             meta.setPatterns(patterns);
