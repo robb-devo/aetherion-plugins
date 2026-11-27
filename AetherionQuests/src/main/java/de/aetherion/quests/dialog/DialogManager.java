@@ -1446,7 +1446,7 @@ public class DialogManager implements Listener {
         }
         if ("a_simple_craft".equalsIgnoreCase(quest.getId())) {
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    de.aetherion.quests.lang.LangPack.ui(player, "tip.recipe_pickaxe", "Journal → Recipes — find the Mining Pickaxe (2nd recipe)"),
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.recipe_pickaxe", "Journal › Workshop › Recipes — find the Mining Pickaxe (2nd recipe)"),
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -1810,7 +1810,7 @@ public class DialogManager implements Listener {
                     "Lark. Pets are my thing. And that one's my parrot, not yours.",
                     "Wild pets live in their own habitats around the island. Some roam right here on the fields.",
                     "Hold a §eCatch Sphere§f, look at a wild pet and §eright-click§f to throw it.",
-                    "Equip your catch in your Journal under Pets. It follows you, fights with you and levels with you.",
+                    "Equip your catch in Journal › Character › Pets. It follows you, fights with you and levels with you.",
                     "Catch §eone§f, then come back to me."
             };
         }
@@ -1948,7 +1948,7 @@ public class DialogManager implements Listener {
                     "Miss Ledger, Capital records. Let me show you how you grow here.",
                     "Everything you do trains a skill: chopping trains Foraging, digging Mining, fighting Combat.",
                     "All your skills together raise your §eAetherion Level§f. And skills open §dtalents§f.",
-                    "Open your Journal (slot §e9§f) → §dSkills§f and put one talent into a free slot.",
+                    "Open Journal › Character › §dSkills§f and put one talent into a free slot.",
                     "Talents grow with their skill. More slots open at Aetherion Level 5, 10, 20 and beyond.",
                     "Then look at your §eCodex§f, top-left. It counts trees, ores and kills, and pays coins.",
                     "Do both, {player}, and you get my stamp."
@@ -2146,7 +2146,7 @@ public class DialogManager implements Listener {
             }
             return de.aetherion.quests.lang.LangPack.dialogs(player, "isle_clerk_intro.default", new String[] {
                     "Personal island unlocks at Aetherion Level §e20§f.",
-                    "Journal, slot nine → Island. Claim it there. I don't do paperwork.",
+                    "Journal › Company › Island. Claim it there. I don't do paperwork.",
                     "A clerk who doesn't do paperwork. Yes. I know."
             });
         }
@@ -2414,7 +2414,7 @@ public class DialogManager implements Listener {
                     : !QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "egon.orientation", new String[] {
                             "Your next stop's on the §eyellow bar up top§f. Trust it more than me.",
-                            "Lost? Journal → §eSpawns§f → Capital. §dMiss Ledger§f sorts you out."
+                            "Lost? Journal › Atlas › §eTeleports§f › Capital. §dMiss Ledger§f sorts you out."
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "egon.default", new String[] {
                             "Kit fits? Good. §eQuartermaster§f past the little market wants you next."
@@ -2593,7 +2593,7 @@ public class DialogManager implements Listener {
     private String[] craftsmanIntroLines(Player player) {
         return new String[] {
                 "Hm. Craftsman. Everything you build starts in the §aRecipe Book§f.",
-                "Open your Journal (slot §e9§f) → §aRecipes§f. Every blueprint is in there.",
+                "Open Journal › Workshop › §aRecipes§f. Every blueprint is in there.",
                 "A recipe always works the same: the old piece goes in the middle, the materials around it.",
                 "Make a §fMining Pickaxe§f: your Simple Pickaxe in the middle, coal around it. Bring it here."
         };
@@ -2645,7 +2645,7 @@ public class DialogManager implements Listener {
         if (!craftsmanSpoken) {
             de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
             if (progress != null) {
-                progress.unlock(player, "WORKBENCH", "Workbench + Recipes", "Journal → Recipes");
+                progress.unlock(player, "WORKBENCH", "Workbench + Recipes", "Journal › Workshop › Recipes");
             }
             if (plugin != null && plugin.getPlayerQuestStorage() != null && player != null) {
                 plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "craftsman_spoken");

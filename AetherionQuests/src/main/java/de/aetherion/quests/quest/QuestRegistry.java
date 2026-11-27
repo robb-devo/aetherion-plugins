@@ -728,7 +728,7 @@ openUp.addReward(
         Quest lessonManager = new Quest(
                 "lesson_manager",
                 "Your First Talent",
-                "Miss Ledger wants one talent in a talent slot and your Codex opened. Journal → Skills."
+                "Miss Ledger wants one talent in a talent slot and your Codex opened. Journal › Character › Skills."
         );
         lessonManager.setServiceId("ledger");
         lessonManager.addObjective(new Objective(ObjectiveType.USE, "AETHER_SKILL", 1));

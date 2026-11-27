@@ -86,7 +86,7 @@ public final class SurveyorMineHintListener implements Listener, Runnable {
         if (progress == null) {
             return;
         }
-        boolean unlocked = progress.unlock(player, "WORKBENCH", "Workbench + Recipes", "Journal → Recipes");
+        boolean unlocked = progress.unlock(player, "WORKBENCH", "Workbench + Recipes", "Journal › Workshop › Recipes");
         plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), MINE_CRAFT_BACKUP);
         if (!unlocked) {
             return;
@@ -94,9 +94,9 @@ public final class SurveyorMineHintListener implements Listener, Runnable {
         player.sendMessage(de.aetherion.core.api.JournalText.t(
                 "§6✦ §eCrafting unlocked. §7You skipped the Craftsman — Recipe Book is in the Manager."));
         player.sendMessage(de.aetherion.core.api.JournalText.t(
-                "§7Journal (slot 9) → §aRecipes§7. Make a Mining Pickaxe when you're ready."));
+                "§7Journal › Workshop › §aRecipes§7. Make a Mining Pickaxe when you're ready."));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.core.api.JournalText.t("Workbench unlocked · Journal → Recipes"),
+                de.aetherion.core.api.JournalText.t("Workbench unlocked · Journal › Workshop › Recipes"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
     }

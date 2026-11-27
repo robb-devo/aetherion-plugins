@@ -139,7 +139,7 @@ public final class CastBook {
                 "Right now: a forge that eats coal and a harbour that eats forges.");
         topic(v, "How do teleports work?",
                 "Walk somewhere once — it's unlocked. Or plant a Homestead Marker.",
-                "Then Journal → Spawns, or type the place. §e/harbour§f, §e/mines§f. Like that.");
+                "Then Journal › Atlas › Teleports, or type the place. §e/harbour§f, §e/mines§f. Like that.");
 
         v = voice("craftsman");
         v.greetNew = new String[] {"Hm. {player}. The Recipe Book's in your Journal."};
@@ -156,7 +156,7 @@ public final class CastBook {
                 "Old piece in the middle. Resources around it. That's the whole secret.",
                 "Rest is sweat. Mostly yours.");
         topic(v, "Where's the Recipe Book?",
-                "Journal, hotbar §e9§f, then Recipes. Every blueprint's in there.");
+                "Journal › Workshop › Recipes. Every blueprint's in there.");
 
         v = voice("foreman");
         v.accept = "Clocking in.";
@@ -207,7 +207,7 @@ public final class CastBook {
         v = voice("ledger");
         v.accept = "Stamp me in.";
         v.decline = "Later.";
-        v.onAccept = new String[] {"Noted. Journal, slot nine, Skills. It blinks."};
+        v.onAccept = new String[] {"Noted. Journal › Character › Skills. It glows."};
         v.onDecline = new String[] {"Your file stays open. It judges you."};
         v.returning = new String[] {
                 "{player}. The stamp's waiting. So am I.",

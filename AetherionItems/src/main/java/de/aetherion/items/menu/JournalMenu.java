@@ -103,7 +103,7 @@ public final class JournalMenu {
             case MARKET -> "Shop, Bazaar and Auction House.";
             case CODEX -> "Collection, Bestiary, bosses and milestones.";
             case COMPANY -> "Party, friends, island and guild.";
-            case SETTINGS -> "Language, talk mode, reports.";
+            case SETTINGS -> "Language, talk mode, reports, the Handbook.";
         };
     }
 
@@ -116,7 +116,7 @@ public final class JournalMenu {
         STATS(AetherionManagerGUI.STATS_SLOT, "Stats", Material.EXPERIENCE_BOTTLE, Chapter.CHARACTER,
                 "Your level, gear and active stats."),
         SKILLS(AetherionManagerGUI.SKILLS_SLOT, "Skills", Material.NETHERITE_SCRAP, Chapter.CHARACTER,
-                "Seven slots, one to start. Skills level with you; swap freely."),
+                "Your skills and talents. Talents go into slots; more slots come with your Aetherion Level."),
         PETS(AetherionManagerGUI.PETS_SLOT, "Pets", Material.LEAD, Chapter.CHARACTER,
                 "Your caught pets. Equip one: they add stats, quietly."),
         STORAGE(AetherionManagerGUI.STORAGE_SLOT, "Storage", Material.ENDER_CHEST, Chapter.CHARACTER,
@@ -136,9 +136,9 @@ public final class JournalMenu {
         CRAFTING(AetherionManagerGUI.CRAFT_SLOT, "Crafting", Material.CRAFTING_TABLE, Chapter.WORKSHOP,
                 "A portable workbench."),
         RECIPES(AetherionManagerGUI.RECIPE_SLOT, "Recipes", Material.KNOWLEDGE_BOOK, Chapter.WORKSHOP,
-                "The green Recipe Book: every Aetherion recipe."),
+                "The Recipe Book: every Aetherion recipe."),
         ANVIL(AetherionManagerGUI.ANVIL_SLOT, "Anvil", Material.ANVIL, Chapter.WORKSHOP,
-                "Booster sockets: gear left, booster right. Fourteen slots, swap any time."),
+                "Socket boosters into your gear: item on top, boosters below. Swap any time."),
         ISLAND(AetherionManagerGUI.ISLAND_SLOT, "Island", Material.GRASS_BLOCK, Chapter.COMPANY,
                 "Your private island: a click takes you home. Without one, the island menu opens."),
         GUILD(AetherionManagerGUI.GUILD_SLOT, "Guild", Material.YELLOW_BANNER, Chapter.COMPANY,
@@ -310,7 +310,7 @@ public final class JournalMenu {
         private Guide findGuide() {
             if (state(Tile.SKILLS) == State.OPEN
                     && QuestProgressHook.isQuestActive(player, AetherionManagerGUI.SKILLS_QUEST_ID)) {
-                return new Guide(Tile.SKILLS, "Miss Ledger wants one skill equipped: pick any skill, drop it in a free slot.");
+                return new Guide(Tile.SKILLS, "Miss Ledger wants one talent in a slot: pick any talent and drop it in a free slot.");
             }
             if (state(Tile.PETS) == State.OPEN && QuestProgressHook.shouldGuidePetsEquip(player)) {
                 return new Guide(Tile.PETS, "Lark wants your catch equipped: open Pets and equip it.");
@@ -405,15 +405,18 @@ public final class JournalMenu {
             }
         }
         int strong = -1;
+        boolean german = AetherServices.german(player);
         List<JournalPage.Line> lines = new ArrayList<>();
         for (Entry entry : entries) {
-            lines.add(new JournalPage.Line(entry.row(), entry.right(), entry.label(), entry.ink()));
+            lines.add(new JournalPage.Line(entry.row(), entry.right(),
+                    german ? JournalDe.t(entry.label()) : entry.label(), entry.ink()));
             if (entry.strong() && strong < 0) {
                 strong = JournalPage.slot(entry.row(), entry.right());
             }
         }
         Inventory inventory = Bukkit.createInventory(holder, 54,
-                JournalPage.title(theme(chapter), "Journal · " + name(chapter), ribbons, strong, lines));
+                JournalPage.title(theme(chapter), "Journal · " + (german ? JournalDe.t(name(chapter)) : name(chapter)),
+                        ribbons, strong, lines));
         ItemStack spacer = GuiIcons.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, spacer.clone());
@@ -444,6 +447,11 @@ public final class JournalMenu {
             player.closeInventory();
         } : () -> turn(player, Chapter.TODAY);
         holder.actions.put(BACK_SLOT, back);
+        if (german) {
+            for (ItemStack item : inventory.getContents()) {
+                JournalDe.localize(item);
+            }
+        }
 
         stopPulse(player);
         // Turning a ribbon inside the open book, or taking the book out of the hotbar (or back from a sub-menu).
@@ -452,8 +460,8 @@ public final class JournalMenu {
         bookmarks.put(player.getUniqueId(), new Bookmark(chapter, System.currentTimeMillis()));
         if (fresh) {
             JournalSounds.reveal(player);
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "✦ New chapter in your journal: " + name(chapter),
+            String freshLine = "✦ New chapter in your journal: " + name(chapter);
+            player.sendActionBar(net.kyori.adventure.text.Component.text(german ? JournalDe.t(freshLine) : freshLine,
                     net.kyori.adventure.text.format.NamedTextColor.GOLD));
         } else {
             if (turning) {
@@ -462,8 +470,8 @@ public final class JournalMenu {
                 JournalSounds.open(player, coverStage(player));
             }
             if (read.guide != null && (today || chapter == read.guide.tile().chapter)) {
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        "→ " + name(read.guide.tile().chapter) + " › " + read.guide.tile().label + " is glowing",
+                String glowing = "→ " + name(read.guide.tile().chapter) + " › " + read.guide.tile().label + " is glowing";
+                player.sendActionBar(net.kyori.adventure.text.Component.text(german ? JournalDe.t(glowing) : glowing,
                         net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
             }
         }
@@ -544,6 +552,10 @@ public final class JournalMenu {
             new Cmd("Mine Isle", "mineisle", JournalIcon.MINE_ISLE, "Mining Isle: journal, compass and crew tour."),
             new Cmd("Origin", "origin", JournalIcon.ORIGIN, "Origin Journal: districts, glowcaps, bells, skyways."));
 
+    /** The Handbook (a written book): how every system works, and the player's path. */
+    private static final Cmd HANDBOOK = new Cmd("Handbook", "handbook", JournalIcon.GUIDE,
+            "How everything works, and your path.");
+
     private List<Entry> entries(Read read, Chapter chapter) {
         List<Entry> out = new ArrayList<>();
         switch (chapter) {
@@ -588,7 +600,7 @@ public final class JournalMenu {
                         new Cmd("Language", "language", JournalIcon.LANGUAGE, "Quest and hint language."),
                         new Cmd("Talk mode", "npctalk", JournalIcon.TALK_MODE, "Bubbles and reply chips, or classic chat."),
                         new Cmd("Report", "report", JournalIcon.REPORT, "Send a bug report to the team."),
-                        new Cmd("Checklist", "checklist", JournalIcon.CHECKLIST, "The beta checklist.")), 1);
+                        new Cmd("Checklist", "checklist", JournalIcon.CHECKLIST, "The beta checklist."), HANDBOOK), 1);
                 commands(read, out, true, List.of(
                         new Cmd("Dev menu", "devmenu", null, Material.COMMAND_BLOCK, "Staff: the Aetherion DEV chest."),
                         new Cmd("Raid ban", "raidban", JournalIcon.RAID_BAN, "Staff: the anti bot-raid menu.")), 1);
@@ -680,8 +692,36 @@ public final class JournalMenu {
                     () -> locked(player, read.hint(nextTile)), false, false));
         }
 
-        // Right page: the essentials that are open, most used first.
+        // Right page: the path (GRUNDLAGEN §7) first, then the essentials that are open, most used first.
         int row = 1;
+        if (available(player, "handbook")) {
+            boolean german = AetherServices.german(player);
+            List<de.aetherion.items.progress.PathLadder.Step> steps =
+                    de.aetherion.items.progress.PathLadder.steps(player, german);
+            int done = de.aetherion.items.progress.PathLadder.doneCount(steps);
+            List<String> lore = new ArrayList<>();
+            for (de.aetherion.items.progress.PathLadder.Step step : steps) {
+                String mark = switch (step.state()) {
+                    case DONE -> "§a✔ §7";
+                    case NOW -> "§6➜ §f";
+                    default -> "§8• ";
+                };
+                lore.add(mark + step.name());
+            }
+            List<String> goals = de.aetherion.items.progress.PathLadder.nextGoals(player, german);
+            if (!goals.isEmpty()) {
+                lore.add("");
+                lore.add(german ? "§6Deine nächsten Ziele" : "§6Your next goals");
+                for (String goal : goals) {
+                    lore.addAll(wrap("§e› §7" + goal, "§7"));
+                }
+            }
+            lore.add("");
+            lore.add(german ? "§eKlicken §7öffnet das Handbuch" : "§eClick §7to open the Handbook");
+            out.add(new Entry(row++, true, "Path " + done + "/" + steps.size(), Ink.AMBER,
+                    JournalIcon.GUIDE.item(german ? "§6Dein Weg" : "§6Your path", lore),
+                    () -> openHandbook(player), false, false));
+        }
         for (Tile tile : new Tile[] {Tile.TELEPORTS, Tile.SKILLS, Tile.RECIPES, Tile.STORAGE, Tile.LOADOUTS, Tile.SHOP}) {
             if (row > 4) {
                 break;
@@ -939,6 +979,20 @@ public final class JournalMenu {
     }
 
     /** True when this server knows {@code line}'s command and the player may run it. */
+    /** The Handbook as a written book (closes the Journal first; a book can't open over a chest). */
+    private static void openHandbook(Player player) {
+        player.closeInventory();
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                HandbookBook.open(player);
+            }
+        });
+    }
+
     private static boolean available(Player player, String line) {
         Command command = Bukkit.getCommandMap().getCommand(line.split(" ", 2)[0]);
         if (command == null) {

@@ -204,6 +204,11 @@ public class AetherionItems extends JavaPlugin {
         new de.aetherion.items.world.ShabbyMineGuard(this);
         new de.aetherion.items.world.NaturalSpawnGuard(this);
         de.aetherion.items.world.AnimalPens animalPens = new de.aetherion.items.world.AnimalPens(this);
+        if (getCommand("handbook") != null) {
+            de.aetherion.items.menu.HandbookBook handbook = new de.aetherion.items.menu.HandbookBook();
+            getCommand("handbook").setExecutor(handbook);
+            getCommand("handbook").setTabCompleter(handbook);
+        }
         if (getCommand("aepen") != null) {
             getCommand("aepen").setExecutor(animalPens);
         }
