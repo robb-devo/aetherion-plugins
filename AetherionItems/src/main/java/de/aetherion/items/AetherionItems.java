@@ -203,6 +203,10 @@ public class AetherionItems extends JavaPlugin {
         new de.aetherion.items.world.TestArenaGuard(this, testArena);
         new de.aetherion.items.world.ShabbyMineGuard(this);
         new de.aetherion.items.world.NaturalSpawnGuard(this);
+        de.aetherion.items.world.AnimalPens animalPens = new de.aetherion.items.world.AnimalPens(this);
+        if (getCommand("aepen") != null) {
+            getCommand("aepen").setExecutor(animalPens);
+        }
         // No boot preload: the test arena world is made on first use, so backends stay free of it.
         new de.aetherion.items.listener.HungerListener(this);
 

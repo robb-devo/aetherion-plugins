@@ -61,6 +61,17 @@ public final class NaturalSpawnGuard implements Listener, Runnable {
         CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
         boolean allowedExplicit = allowedExplicit(reason);
 
+        // 2026-11-27: random land animals can be switched off (config world.natural-animals: false) once the pens
+        // (AnimalPens) are built; pens are where leather and feathers come from then. Fish and squid stay natural,
+        // islands are left alone (players breed their own there). Default on: nothing changes before the pens.
+        if (entity instanceof Animals
+                && (reason == CreatureSpawnEvent.SpawnReason.NATURAL || reason == CreatureSpawnEvent.SpawnReason.CHUNK_GEN)
+                && !islandWorld(world)
+                && !naturalAnimals()) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (isHostile(entity)) {
             // MobZoneService / BossEngine / rites spawn via CUSTOM — keep those.
             if (allowedExplicit) {
@@ -345,6 +356,16 @@ public final class NaturalSpawnGuard implements Listener, Runnable {
             return true;
         }
         return areas != null && areas.isType(location, AreaType.ELDERVALE);
+    }
+
+    private static boolean naturalAnimals() {
+        de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
+        return items == null || items.getConfig().getBoolean("world.natural-animals", true);
+    }
+
+    private static boolean islandWorld(World world) {
+        String name = world.getName().toLowerCase();
+        return name.equals("aether_islands") || name.equals("aether_guilds") || name.equals("isles_lobby");
     }
 
     static boolean applies(World world) {

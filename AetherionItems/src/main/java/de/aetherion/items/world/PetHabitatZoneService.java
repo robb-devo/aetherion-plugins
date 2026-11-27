@@ -380,6 +380,13 @@ public final class PetHabitatZoneService implements Runnable {
 
     private void save() {
         YamlConfiguration yaml = new YamlConfiguration();
+        // Keep the strict areas (AetherMobs reads them; edited by hand per area, 2026-11-27).
+        if (file.isFile()) {
+            YamlConfiguration old = YamlConfiguration.loadConfiguration(file);
+            if (old.isConfigurationSection("strict-areas")) {
+                yaml.set("strict-areas", old.getConfigurationSection("strict-areas"));
+            }
+        }
         for (PetHabitatZone zone : zones.values()) {
             String path = "zones." + zone.getId();
             yaml.set(path + ".habitat", zone.getHabitat().id());

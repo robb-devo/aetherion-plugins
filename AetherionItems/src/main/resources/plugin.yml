@@ -63,6 +63,9 @@ commands:
       - aethermanager
       - journal
 
+  aepen:
+    description: Animal pens (ops) - keep a fixed number of animals at a fitting place.
+    usage: /aepen add <id> <animal> <count> [radius] | remove <id> | list
   devmenu:
     description: Open the Aetherion DEV chest
     aliases:
