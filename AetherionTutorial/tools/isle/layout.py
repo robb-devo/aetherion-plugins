@@ -78,3 +78,15 @@ STEPS_FLIGHTS = 3       # flights of seven steps with a two-block landing betwee
 # The ways the lessons follow, in order. They get lantern posts; side ways (lighthouse, farm, mill) do not.
 ROUTE = ["bell_down", "to_falls", "falls_west", "to_quarry", "to_forge", "forge_village", "to_yard", "to_flat",
          "village_harbour", "shore"]
+
+# The island's own biome (a data pack inside the world folder): its colours are the mood of the place. One
+# biome for land and sea, so the stream and the bay share one clear water. No rain, no natural spawns.
+BIOME = "morningbell:isle"
+BIOME_LOOK = {
+    "sky_color": 0x8CC4F0,          # a pale early sky
+    "fog_color": 0xE8E4D8,          # warm haze at the horizon
+    "water_color": 0x58BDE6,        # clear, a little green
+    "water_fog_color": 0x2A7C9C,
+    "grass_color": 0x8CC65E,        # fresh
+    "foliage_color": 0x74B552,
+}

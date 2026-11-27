@@ -56,6 +56,23 @@ def build(stage=99):
     return w, t
 
 
+def datapack(folder):
+    """The data pack that defines the island's biome. It belongs into <world>/datapacks/ before the first start."""
+    ns, name = L.BIOME.split(":")
+    target = os.path.join(folder, "data", ns, "worldgen", "biome")
+    os.makedirs(target, exist_ok=True)
+    with open(os.path.join(folder, "pack.mcmeta"), "w", encoding="utf-8") as f:
+        json.dump({"pack": {"pack_format": 48, "description": "Morningbell: the tutorial isle"}}, f, indent=1)
+    biome = {
+        "has_precipitation": False, "temperature": 0.7, "downfall": 0.4,
+        "effects": dict(L.BIOME_LOOK, mood_sound={"sound": "minecraft:ambient.cave", "tick_delay": 6000,
+                                                  "block_search_extent": 8, "offset": 2.0}),
+        "spawners": {}, "spawn_costs": {}, "carvers": {}, "features": [],
+    }
+    with open(os.path.join(target, name + ".json"), "w", encoding="utf-8") as f:
+        json.dump(biome, f, indent=1)
+
+
 if __name__ == "__main__":
     out = sys.argv[1]
     stage = 99
@@ -67,5 +84,6 @@ if __name__ == "__main__":
         json.dump({"marks": w.marks, "sea": L.SEA}, f, indent=1)
     if "--no-region" not in sys.argv:
         clock = time.time()
-        w.save(os.path.join(out, "region"))
+        w.save(os.path.join(out, "region"), ocean_biome=L.BIOME)
+        datapack(os.path.join(out, "datapacks", "morningbell"))
         print("region %.1fs" % (time.time() - clock))

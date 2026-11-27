@@ -13,7 +13,7 @@ PLINTH = Mix([("cobblestone", 4), ("andesite", 2.5), ("stone_bricks", 2), ("moss
               ("cracked_stone_bricks", 0.6)], scale=2.4, seed=401)
 # plaster is one material per house (a patchwork of whites reads as dirt, not as weathering)
 PLASTER = Mix([("mushroom_stem", 1)], seed=403)
-PLASTER_WARM = Mix([("white_terracotta", 1)], seed=405)
+PLASTER_WARM = Mix([("calcite", 1)], seed=405)
 PLASTER_OCHRE = Mix([("smooth_sandstone", 1)], seed=407)
 
 ROOFS = {

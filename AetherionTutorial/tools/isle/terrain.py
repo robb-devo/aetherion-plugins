@@ -351,9 +351,7 @@ def dress_stream(w, t):
 def paint(w, t):
     _slope(t)
     _paint(w, t)
-    w.set_biome("minecraft:meadow")
-    cell = (~t.land).reshape(L.SZ // 4, 4, L.SX // 4, 4).mean(axis=(1, 3)) > 0.5
-    w.set_biome("minecraft:lukewarm_ocean", cell)
+    w.set_biome(L.BIOME)
 
 
 def _dress_cliffs(H, land, protect, seed):

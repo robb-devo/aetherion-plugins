@@ -125,7 +125,7 @@ class World:
         self.index = {"minecraft:air": 0}
         self.raw_index = {"air": 0, "minecraft:air": 0}
         self.bents = {}
-        self.biome_names = ["minecraft:meadow"]
+        self.biome_names = ["minecraft:plains"]
         self.biome = np.zeros((sz // 4, sx // 4), dtype=np.uint8)
         self.marks = {}
         self._wet_ids = set()         # still water and waterlogged blocks: what a block set here stands in

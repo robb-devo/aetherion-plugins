@@ -9,11 +9,19 @@ from PIL import Image
 
 from world import base_name, props_of
 
-GRASS_TINT = (0x83, 0xBB, 0x6D)      # meadow
-FOLIAGE_TINT = (0x63, 0xA9, 0x48)    # meadow
+def _rgb(v):
+    return ((v >> 16) & 255, (v >> 8) & 255, v & 255)
+
+
+try:                                  # the preview follows the island's own biome colours
+    import layout as _L
+    GRASS_TINT = _rgb(_L.BIOME_LOOK["grass_color"])
+    FOLIAGE_TINT = _rgb(_L.BIOME_LOOK["foliage_color"])
+    WATER_TINT = _rgb(_L.BIOME_LOOK["water_color"])
+except Exception:
+    GRASS_TINT, FOLIAGE_TINT, WATER_TINT = (0x83, 0xBB, 0x6D), (0x63, 0xA9, 0x48), (0x45, 0xAD, 0xF2)
 BIRCH_TINT = (0x80, 0xA7, 0x55)
 SPRUCE_TINT = (0x61, 0x99, 0x61)
-WATER_TINT = (0x45, 0xAD, 0xF2)      # lukewarm ocean
 LILY_TINT = (0x20, 0x80, 0x30)
 
 F_CUTOUT = 1
