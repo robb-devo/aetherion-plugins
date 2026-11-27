@@ -100,22 +100,35 @@ public final class MineCast implements Listener {
                         TalkDesk.Topic.of("Where do I dig?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
                                 "Where should I dig?",
                                 "Any rock feeds the rhythm, ore feeds it double. Seven quarries — the Terraces east keep an ore depot.",
-                                "Check your pick's ⛏ before you swing at a vein. Too soft and the rock just laughs."),
+                                "Check your pick's ⛏ before you swing at a vein. Too soft and the rock just laughs.")
+                                .de("Wo grab ich?", "Wo soll ich graben?",
+                                        "Jeder Fels füttert den Rhythmus, Erz doppelt. Sieben Steinbrüche, im Osten ein Erzlager.",
+                                        "Schau vorher aufs ⛏ deiner Spitzhacke. Ist sie zu weich, lacht der Fels nur."),
                         TalkDesk.Topic.of("How deep?", net.kyori.adventure.text.format.NamedTextColor.YELLOW,
                                 "How deep does it go?",
                                 "Galleries, Deep Works, then the Undercroft. Deeper rock, more Fortune.",
-                                "First time in a band you get a card and some XP. Mind the heat in the Emberseam."),
+                                "First time in a band you get a card and some XP. Mind the heat in the Emberseam.")
+                                .de("Wie tief?", "Wie tief geht's runter?",
+                                        "Galleries, Deep Works, dann die Undercroft. Tieferer Fels, mehr Fortune.",
+                                        "Beim ersten Mal in einer Schicht gibt's eine Karte und XP. Vorsicht, Hitze im Emberseam."),
                         TalkDesk.Topic.of("Who's who?", net.kyori.adventure.text.format.NamedTextColor.AQUA,
                                 "Who runs this rock?",
                                 "§6Otto§f hands out contracts. §6Nan§f at the Hearth feeds you — in ore.",
-                                "§dIlse§f buys specimens up at the Assay Office. §6Brann§f runs the Deep Forge on the pit floor."),
+                                "§dIlse§f buys specimens up at the Assay Office. §6Brann§f runs the Deep Forge on the pit floor.")
+                                .de("Wer ist wer?", "Wer hat hier das Sagen?",
+                                        "§6Otto§f verteilt Aufträge. §6Nan§f am Herd füttert dich — mit Erz.",
+                                        "§dIlse§f kauft Fundstücke oben im Assay Office. §6Brann§f führt die Deep Forge in der Grube."),
                         TalkDesk.Topic.of("Anything bite?", net.kyori.adventure.text.format.NamedTextColor.RED,
                                 "What should I watch for?",
                                 "Strain the rock and it caves in. You'll hear it first — move.",
                                 "Stonejaws guard the rich seams. Sixteen good hits and they pay.")
+                                .de("Beißt hier was?", "Worauf muss ich achten?",
+                                        "Überlastest du den Fels, stürzt er ein. Du hörst es vorher — dann weg da.",
+                                        "Stonejaws bewachen die reichen Adern. Sechzehn gute Treffer, dann zahlen sie.")
                 ),
                 "Map…", player -> isle.menus().open(player, MineRole.LAMPWARDEN),
-                "Mind your lamp.");
+                "Mind your lamp.")
+                .german("Karte…", "Pass auf deine Lampe auf.");
     }
 
     /** Where the NPC actually stands right now (spawned villager), else its placed spot. */

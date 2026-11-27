@@ -95,22 +95,35 @@ public final class LakeCast implements Listener {
                         TalkDesk.Topic.of("The waters?", net.kyori.adventure.text.format.NamedTextColor.AQUA,
                                 "Where do I fish?",
                                 "Twelve named waters — the lake, the high tarns, even the plaza fountain.",
-                                "Walk up to one and it goes on your card. Find all twelve and I pay for it."),
+                                "Walk up to one and it goes on your card. Find all twelve and I pay for it.")
+                                .de("Die Gewässer?", "Wo angle ich?",
+                                        "Zwölf benannte Gewässer — der See, die Bergseen, sogar der Brunnen am Platz.",
+                                        "Geh zu einem hin, dann steht es auf deiner Karte. Findest du alle zwölf, zahl ich."),
                         TalkDesk.Topic.of("Heat & streaks?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
                                 "What's this heat?",
                                 "Clean catches warm the water: Warm, Hot, Boiling, Whirlpool.",
-                                "Hotter water, rarer fish. One miss and it's cold again."),
+                                "Hotter water, rarer fish. One miss and it's cold again.")
+                                .de("Hitze & Serien?", "Was ist diese Hitze?",
+                                        "Saubere Fänge wärmen das Wasser: Warm, Heiß, Kochend, Strudel.",
+                                        "Heißeres Wasser, seltenere Fische. Ein Fehler, und es ist wieder kalt."),
                         TalkDesk.Topic.of("Shoal & bells?", net.kyori.adventure.text.format.NamedTextColor.YELLOW,
                                 "What are the bells for?",
                                 "Water boiling with leaping fish? That's the shoal. Cast inside — it moves on.",
-                                "Bells mean a Silver Run, or the Eldermaw. When it's the Eldermaw, everyone pulls."),
+                                "Bells mean a Silver Run, or the Eldermaw. When it's the Eldermaw, everyone pulls.")
+                                .de("Schwarm & Glocken?", "Wofür sind die Glocken?",
+                                        "Kocht das Wasser vor springenden Fischen? Das ist der Schwarm. Wirf mitten hinein.",
+                                        "Glocken heißen: ein Silver Run oder der Eldermaw. Beim Eldermaw ziehen alle mit."),
                         TalkDesk.Topic.of("Who's who?", net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE,
                                 "Who else is here?",
                                 "§eTilly§f at the Bait Shack turns fish into bait. §dOdile§f keeps the Log and buys trophies.",
                                 "§3Old Finn§f watches the lake from the south pier. Ask him about the pale one.")
+                                .de("Wer ist wer?", "Wer ist noch hier?",
+                                        "§eTilly§f in der Köderhütte macht aus Fisch Köder. §dOdile§f führt das Buch und kauft Trophäen.",
+                                        "§3Old Finn§f beobachtet den See vom Südsteg. Frag ihn nach dem Blassen.")
                 ),
                 "Card…", player -> isle.menus().openHarbour(player),
-                "Tight lines, love.");
+                "Tight lines, love.")
+                .german("Karte…", "Petri Heil, Schatz.");
     }
 
     /** Where the NPC actually stands right now (spawned villager), else its placed spot. */
