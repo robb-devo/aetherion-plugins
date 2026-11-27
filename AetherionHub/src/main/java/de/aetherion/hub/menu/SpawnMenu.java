@@ -47,16 +47,18 @@ public final class SpawnMenu {
 
     private static String caption(HubSpawn spawn, boolean german) {
         return switch (spawn.id()) {
-            case "harbour" -> german ? "Hafen" : "Harbor";
-            case "ore_ridge" -> german ? "Erzgrat" : "Ridge";
+            // Place names follow the place table (GRUNDLAGEN §4): proper names stay, generic words are translated.
+            case "harbour" -> "Anker Harbour";
+            case "ore_ridge" -> "Ore Ridge";
             case "mines" -> german ? "Minen" : "Mines";
-            case "farm" -> "Farm";
+            case "farm" -> "Clucksworth";
             case "capital" -> german ? "Hauptstadt" : "Capital";
-            case "forage_isle" -> german ? "Waldinsel" : "Forage";
-            case "farm_isle" -> german ? "Farminsel" : "Farm Isle";
+            case "forage_isle" -> german ? "Foraging-Insel" : "Foraging Isle";
+            case "farm_isle" -> german ? "Farming-Insel" : "Farming Isle";
             case "colosseum" -> german ? "Kolosseum" : "Colosseum";
-            case "eldervale" -> "Eldervale";
-            case "borderlands" -> german ? "Grenzland" : "Borderlands";
+            case "eldervale" -> german ? "Mining-Insel" : "Mining Isle";
+            case "fishing_eldervale" -> german ? "Fishing-Insel" : "Fishing Isle";
+            case "borderlands" -> "Borderlands";
             default -> spawn.displayName();
         };
     }

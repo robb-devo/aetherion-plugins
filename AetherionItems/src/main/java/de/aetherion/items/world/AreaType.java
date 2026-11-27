@@ -8,7 +8,7 @@ public enum AreaType {
 
     STARTER_PORT("starter_port", "Anker Harbour", Material.OAK_BOAT),
     ORE_RIDGE("ore_ridge", "Ore Ridge", Material.IRON_ORE),
-    FORAGE_ISLE("forage_isle", "Forage Isle", Material.OAK_LEAVES),
+    FORAGE_ISLE("forage_isle", "Foraging Isle", Material.OAK_LEAVES),
     SHABBY_MINE("shabby_mine", "Shabby Mine", Material.STONE_PICKAXE),
     FARM("farm", "Farm", Material.WHEAT),
     PATH("path", "Path", Material.DIRT_PATH),

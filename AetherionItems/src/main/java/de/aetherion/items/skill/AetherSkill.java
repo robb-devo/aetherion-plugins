@@ -184,7 +184,7 @@ public enum AetherSkill {
             Category.MINING,
             Material.CHISELED_DEEPSLATE,
             "Eldervale stone knows your boots.",
-            "+16 Fortune and +6 Spread on Mining Eldervale only.",
+            "+16 Fortune and +6 Spread on the Mining Isle only.",
             Flag.BEDROCK_BORN,
             bonus(ItemCapability.FORTUNE, 16),
             bonus(ItemCapability.SPREAD, 6)
@@ -280,7 +280,7 @@ public enum AetherSkill {
             Category.FORAGING,
             Material.MOSS_BLOCK,
             "The island's trees know your boots.",
-            "Foraging Eldervale: bigger wood cap, mastery grows faster.",
+            "Foraging Isle: bigger wood cap, mastery grows faster.",
             Flag.GROVE_BORN
     ),
     SAP_SENSE(
@@ -325,7 +325,7 @@ public enum AetherSkill {
             Category.FORAGING,
             Material.HEART_OF_THE_SEA,
             "Heartwood hums when you walk past.",
-            "Heartwood turns up more often on Foraging Eldervale.",
+            "Heartwood turns up more often on the Foraging Isle.",
             Flag.HEART_HUNTER
     ),
 
@@ -366,7 +366,7 @@ public enum AetherSkill {
             Category.FARMING,
             Material.ROOTED_DIRT,
             "Eldervale dirt knows your boots.",
-            "+18 Fortune and +12 Harvest on the Farm Isle only.",
+            "+18 Fortune and +12 Harvest on the Farming Isle only.",
             Flag.SOIL_SENSE,
             bonus(ItemCapability.FORTUNE, 18),
             bonus(ItemCapability.HARVEST_SPREAD, 12)
@@ -447,7 +447,7 @@ public enum AetherSkill {
             Category.FISHING,
             Material.HEART_OF_THE_SEA,
             "Eldervale water knows your line.",
-            "+20 Fish Catch and +8 Fish Speed on Fishing Eldervale only.",
+            "+20 Fish Catch and +8 Fish Speed on the Fishing Isle only.",
             Flag.LAKE_SENSE,
             bonus(ItemCapability.FISHING_CATCH, 20),
             bonus(ItemCapability.FISHING_SPEED, 8)
@@ -458,7 +458,7 @@ public enum AetherSkill {
             Category.FISHING,
             Material.STRING,
             "Your hands stop shaking. The fish don't.",
-            "Gold perfect cell is two wide on Fishing Eldervale. Boiling streaks can survive a miss.",
+            "Gold perfect cell is two wide on the Fishing Isle. Boiling streaks can survive a miss.",
             Flag.STEADY_LINE
     ),
     TALL_TALES(
@@ -467,7 +467,7 @@ public enum AetherSkill {
             Category.FISHING,
             Material.NAUTILUS_SHELL,
             "Every fish you talk about gets heavier. Some really are.",
-            "Rare and legendary bites more often on Fishing Eldervale, and fish weigh in heavier.",
+            "Rare and legendary bites more often on the Fishing Isle, and fish weigh in heavier.",
             Flag.TALL_TALES
     ),
     TIDE_READER(

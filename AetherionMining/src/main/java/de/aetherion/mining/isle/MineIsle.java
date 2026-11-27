@@ -128,9 +128,9 @@ public final class MineIsle implements Listener, StatProvider {
             ActiveEquipmentStats.registerProvider(this);
             itemsHooked = true;
         } catch (LinkageError error) {
-            plugin.getLogger().warning("Mining Eldervale: AetherionItems stat hook unavailable. Rhythm/ration Spread is off.");
+            plugin.getLogger().warning("Mining Isle: AetherionItems stat hook unavailable. Rhythm/ration Spread is off.");
         }
-        plugin.getLogger().info("Mining Eldervale: " + districts.size() + " districts, " + cast.placedCount()
+        plugin.getLogger().info("Mining Isle: " + districts.size() + " districts, " + cast.placedCount()
                 + " NPCs placed, " + MineWorld.describe(plugin).replaceAll("§.", ""));
     }
 
@@ -162,7 +162,7 @@ public final class MineIsle implements Listener, StatProvider {
         MineWorld.refresh(plugin);
         districts.reload();
         props.rebuild();
-        return "§aMining Eldervale reloaded §8· §7" + districts.size() + " districts · " + MineWorld.describe(plugin);
+        return "§aMining Isle reloaded §8· §7" + districts.size() + " districts · " + MineWorld.describe(plugin);
     }
 
     // ------------------------------------------------------------------ the strike

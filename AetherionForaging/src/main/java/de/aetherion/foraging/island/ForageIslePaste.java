@@ -71,14 +71,14 @@ public final class ForageIslePaste {
         boolean centerOnPlayer = atPlayer != null;
 
         if (centerOnPlayer) {
-            sender.sendMessage("§ePasting Forage Isle centered on you at §f"
+            sender.sendMessage("§ePasting Foraging Isle centered on you at §f"
                     + atPlayer.getBlockX() + " " + atPlayer.getBlockY() + " " + atPlayer.getBlockZ()
                     + " §e(rotateY=" + rotateY + ", ignoreAir=" + ignoreAir + ") — may lag…");
         } else {
             int x = plugin.getConfig().getInt("forage-isle.paste.x", 450);
             int y = plugin.getConfig().getInt("forage-isle.paste.y", 90);
             int z = plugin.getConfig().getInt("forage-isle.paste.z", -500);
-            sender.sendMessage("§ePasting Forage Isle at config origin §f" + x + " " + y + " " + z
+            sender.sendMessage("§ePasting Foraging Isle at config origin §f" + x + " " + y + " " + z
                     + " §e(rotateY=" + rotateY + ", ignoreAir=" + ignoreAir + ") — may lag…");
         }
 
@@ -91,7 +91,7 @@ public final class ForageIslePaste {
             try {
                 loaded = readClipboard(schem);
             } catch (Throwable t) {
-                fail(plugin, sender, queued, "Forage Isle paste failed", "§cPaste failed: ", t);
+                fail(plugin, sender, queued, "Foraging Isle paste failed", "§cPaste failed: ", t);
                 return;
             }
             final Clipboard clipboard = loaded;
@@ -116,18 +116,18 @@ public final class ForageIslePaste {
                                 .build();
                         Operations.complete(op);
                     } catch (Throwable t) {
-                        fail(plugin, sender, queued, "Forage Isle paste failed", "§cPaste failed: ", t);
+                        fail(plugin, sender, queued, "Foraging Isle paste failed", "§cPaste failed: ", t);
                         return;
                     }
                     long ms = System.currentTimeMillis() - start;
                     // Step 4 (main thread): return pad, Hub pads, messages.
                     onMain(plugin, queued, () -> {
                         if (centerTarget != null) {
-                            sender.sendMessage("§aForage Isle pasted in §f" + ms + "ms§a — center at §f"
+                            sender.sendMessage("§aForaging Isle pasted in §f" + ms + "ms§a — center at §f"
                                     + centerTarget.getBlockX() + " " + centerTarget.getBlockY() + " "
                                     + centerTarget.getBlockZ() + "§a.");
                         } else {
-                            sender.sendMessage("§aForage Isle pasted in §f" + ms + "ms§a at §f"
+                            sender.sendMessage("§aForaging Isle pasted in §f" + ms + "ms§a at §f"
                                     + at.getBlockX() + " " + at.getBlockY() + " " + at.getBlockZ() + "§a.");
                         }
                         placeReturnPad(plugin, world);
@@ -268,7 +268,7 @@ public final class ForageIslePaste {
         int z = plugin.getConfig().getInt("forage-isle.paste.z", -500);
         int rotateY = normalizeRotateY(plugin.getConfig().getInt("forage-isle.rotate-y", 0));
 
-        sender.sendMessage("§eClearing Forage Isle footprint at §f" + x + " " + y + " " + z
+        sender.sendMessage("§eClearing Foraging Isle footprint at §f" + x + " " + y + " " + z
                 + " §e(rotateY=" + rotateY + ")…");
 
         boolean queued = FaweQueue.present();
@@ -312,7 +312,7 @@ public final class ForageIslePaste {
                     sender.sendMessage("§7Stand at the island center, then §f/forageadmin isle paste here§7.");
                 });
             } catch (Throwable t) {
-                fail(plugin, sender, queued, "Forage Isle clear failed", "§cClear failed: ", t);
+                fail(plugin, sender, queued, "Foraging Isle clear failed", "§cClear failed: ", t);
             }
         };
         if (queued) {

@@ -231,7 +231,7 @@ public final class MineCast implements Listener {
                 count++;
             }
         }
-        return "§aPlaced §f" + count + "§a Mining Eldervale NPCs on their presets.";
+        return "§aPlaced §f" + count + "§a Mining Isle NPCs on their presets.";
     }
 
     public String remove(MineRole role) {
@@ -250,7 +250,7 @@ public final class MineCast implements Listener {
         placed.clear();
         pending.clear();
         save();
-        return "§eRemoved §f" + count + "§e Mining Eldervale NPCs.";
+        return "§eRemoved §f" + count + "§e Mining Isle NPCs.";
     }
 
     // ------------------------------------------------------------------ anchors
@@ -261,7 +261,7 @@ public final class MineCast implements Listener {
         if (meta != null) {
             meta.setDisplayName(role.color() + role.display() + " §8(" + role.title() + ")");
             meta.setLore(List.of(
-                    "§7DEV · Mining Eldervale NPC anchor.",
+                    "§7DEV · Mining Isle NPC anchor.",
                     "§7" + role.role(),
                     "",
                     "§eRight-click a block §7to place here.",

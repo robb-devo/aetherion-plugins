@@ -95,7 +95,7 @@ final class MineIsleDevPages {
     private void drawHub(Inventory inventory) {
         List<String> status = new ArrayList<>(status());
         status.add("");
-        status.add("§8Mining Eldervale lives in the hub world.");
+        status.add("§8Mining Isle lives in the hub world.");
         status.add("§8Gear shelf: Mining Sets (page MINING).");
         inventory.setItem(4, button(Material.DIAMOND_PICKAXE, "§6§lMining Island", "page:" + HUB, status.toArray(String[]::new)));
 
@@ -138,7 +138,7 @@ final class MineIsleDevPages {
     }
 
     private void drawSpots(Inventory inventory) {
-        inventory.setItem(4, button(Material.COMPASS, "§eMining Eldervale Teleports", "page:MINE_ISLE_SPOTS",
+        inventory.setItem(4, button(Material.COMPASS, "§eMining Isle Teleports", "page:MINE_ISLE_SPOTS",
                 "§7Crew spots use the placed NPC, else its preset.", "§7Districts land on their anchor (or centre)."));
         Map<String, Location> spots = spots();
         int index = 0;
@@ -158,7 +158,7 @@ final class MineIsleDevPages {
     }
 
     private void drawNpcs(Inventory inventory) {
-        inventory.setItem(4, button(Material.VILLAGER_SPAWN_EGG, "§dMining Eldervale Cast", "page:MINE_ISLE_NPCS",
+        inventory.setItem(4, button(Material.VILLAGER_SPAWN_EGG, "§dMining Isle Cast", "page:MINE_ISLE_NPCS",
                 "§eLeft §7give anchor  §eRight §7place at preset",
                 "§eShift-left §7teleport there  §eShift-right §7remove",
                 "§8Villagers respawn with their chunk — no dupes."));
@@ -262,7 +262,7 @@ final class MineIsleDevPages {
         inventory.setItem(40, button(Material.MAP, "§7Reset Discovery", PREFIX + "districts:reset"));
         inventory.setItem(41, button(Material.BOOK, "§7Reset Collection Claims", PREFIX + "claims:reset"));
         inventory.setItem(42, button(Material.GRINDSTONE, "§7Reset Forge Marks + Rep", PREFIX + "forge:reset"));
-        inventory.setItem(43, button(Material.TNT, "§cWipe My Mining Eldervale Profile", PREFIX + "profile:reset",
+        inventory.setItem(43, button(Material.TNT, "§cWipe My Mining Isle Profile", PREFIX + "profile:reset",
                 "§7Districts, mastery, cabinet, contracts,", "§7marks, rep, depth. §8Skills untouched.",
                 "§eShift-click §7to confirm."));
     }
@@ -360,7 +360,7 @@ final class MineIsleDevPages {
     private static String dev(Player player, String action) {
         MiningAccess mining = mining();
         if (mining == null) {
-            return "§cAetherionMining is not loaded (or Core predates Mining Eldervale).";
+            return "§cAetherionMining is not loaded (or Core predates Mining Isle).";
         }
         try {
             String reply = mining.devAction(player, action);

@@ -88,7 +88,7 @@ public final class FarmIsle implements Listener, StatProvider {
         } catch (LinkageError error) {
             plugin.getLogger().warning("Eldervale: AetherionItems stat hook unavailable — Harvest bonuses off.");
         }
-        plugin.getLogger().info("Eldervale Farm Isle: " + plots.size() + " plots, " + cast.placedCount() + " NPCs placed.");
+        plugin.getLogger().info("Eldervale Farming Isle: " + plots.size() + " plots, " + cast.placedCount() + " NPCs placed.");
     }
 
     public void shutdown() {

@@ -420,16 +420,16 @@ final class DevHubs {
                 "§7Wipes your quest progress —", "§7harbour onboarding starts fresh.", "§8Asks to confirm."));
         inventory.setItem(20, tile(Material.HAY_BLOCK, "§cWipe My Farm Eldervale Profile", "confirm:farmisle:profile:reset",
                 "§7Plots, mastery, prizes, orders, food.", "§8Asks to confirm."));
-        inventory.setItem(21, tile(Material.FISHING_ROD, "§cWipe My Fishing Eldervale Profile", "confirm:fishisle:profile:reset",
+        inventory.setItem(21, tile(Material.FISHING_ROD, "§cWipe My Fishing Isle Profile", "confirm:fishisle:profile:reset",
                 "§7Log, waters, trophies, rank, bait.", "§8Asks to confirm."));
-        inventory.setItem(22, tile(Material.IRON_PICKAXE, "§cWipe My Mining Eldervale Profile", "confirm:mineisle:profile:reset",
+        inventory.setItem(22, tile(Material.IRON_PICKAXE, "§cWipe My Mining Isle Profile", "confirm:mineisle:profile:reset",
                 "§7Districts, mastery, cabinet, contracts, marks, rep.", "§8Asks to confirm."));
-        inventory.setItem(23, tile(Material.VILLAGER_SPAWN_EGG, "§cRemove Farm Isle Cast", "confirm:farmisle:npcall:remove",
+        inventory.setItem(23, tile(Material.VILLAGER_SPAWN_EGG, "§cRemove Farming Isle Cast", "confirm:farmisle:npcall:remove",
                 "§7Despawns all eight Farm Eldervale NPCs.", "§8Asks to confirm."));
         inventory.setItem(24, tile(Material.VILLAGER_SPAWN_EGG, "§cRemove Fishing Isle Cast", "confirm:fishisle:npcall:remove",
-                "§7Despawns all four Fishing Eldervale NPCs.", "§8Asks to confirm."));
+                "§7Despawns all four Fishing Isle NPCs.", "§8Asks to confirm."));
         inventory.setItem(25, tile(Material.VILLAGER_SPAWN_EGG, "§cRemove Mining Isle Cast", "confirm:mineisle:npcall:remove",
-                "§7Despawns all six Mining Eldervale NPCs.", "§8Asks to confirm."));
+                "§7Despawns all six Mining Isle NPCs.", "§8Asks to confirm."));
         inventory.setItem(29, tile(Material.END_PORTAL_FRAME, "§cRebuild Legacy Farm Island", "confirm:farmportal:rebuild",
                 "§7Re-pastes the old void-world schematic.", "§8Asks to confirm."));
         inventory.setItem(30, tile(Material.GRASS_BLOCK, "§cReset MY Island", "confirm:island:wipe",
@@ -608,10 +608,10 @@ final class DevHubs {
             case "testbot:stopall" -> "Stop ALL testbots";
             case "farmportal:rebuild" -> "Rebuild legacy farm island";
             case "farmisle:profile:reset" -> "Wipe my Farm Eldervale profile";
-            case "farmisle:npcall:remove" -> "Remove the Farm Isle cast";
-            case "fishisle:profile:reset" -> "Wipe my Fishing Eldervale profile";
+            case "farmisle:npcall:remove" -> "Remove the Farming Isle cast";
+            case "fishisle:profile:reset" -> "Wipe my Fishing Isle profile";
             case "fishisle:npcall:remove" -> "Remove the Fishing Isle cast";
-            case "mineisle:profile:reset" -> "Wipe my Mining Eldervale profile";
+            case "mineisle:profile:reset" -> "Wipe my Mining Isle profile";
             case "mineisle:npcall:remove" -> "Remove the Mining Isle cast";
             default -> action;
         };
@@ -630,9 +630,9 @@ final class DevHubs {
             case "farmisle:profile:reset" -> List.of("§7Your plots, mastery, prizes, orders, food.");
             case "farmisle:npcall:remove" -> List.of("§7Despawns the whole Farm Eldervale cast.", "§8Presets can re-place them.");
             case "fishisle:profile:reset" -> List.of("§7Your Log, waters, trophies, rank, bait.");
-            case "fishisle:npcall:remove" -> List.of("§7Despawns the whole Fishing Eldervale cast.", "§8Presets can re-place them.");
+            case "fishisle:npcall:remove" -> List.of("§7Despawns the whole Fishing Isle cast.", "§8Presets can re-place them.");
             case "mineisle:profile:reset" -> List.of("§7Districts, mastery, cabinet, contracts, marks, rep.");
-            case "mineisle:npcall:remove" -> List.of("§7Despawns the whole Mining Eldervale cast.", "§8Presets can re-place them.");
+            case "mineisle:npcall:remove" -> List.of("§7Despawns the whole Mining Isle cast.", "§8Presets can re-place them.");
             default -> List.of();
         };
     }

@@ -60,7 +60,7 @@ public final class FarmDistrictMarker implements Listener {
             meta.setLore(List.of(
                     district.subtitle,
                     "",
-                    "§7Place on Farm Isle to mark the Bezirk.",
+                    "§7Place on Farming Isle to mark the Bezirk.",
                     "§8DEV — not consumed from creative invent"
             ));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);

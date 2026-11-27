@@ -73,7 +73,7 @@ public final class MineMenus implements Listener {
         MineProfiles.Profile profile = isle.profiles().of(player);
         List<MineDistricts.District> districts = isle.districts().all();
         int found = isle.compass().countKnown(profile);
-        set(holder, 4, Material.FILLED_MAP, "§eMining Eldervale §7· " + found + "/" + districts.size() + " places", lines(
+        set(holder, 4, Material.FILLED_MAP, "§eMining Isle §7· " + found + "/" + districts.size() + " places", lines(
                 "§7Halls on top, quarries in the open,",
                 "§7shafts in the dark, water where it pools.",
                 "",

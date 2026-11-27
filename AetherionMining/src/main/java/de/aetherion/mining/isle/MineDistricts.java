@@ -213,7 +213,7 @@ public final class MineDistricts {
                 }
                 if (circles.isEmpty()) {
                     if (log != null) {
-                        log.warning("Mining Eldervale district '" + id + "' has no circles — skipped.");
+                        log.warning("Mining Isle district '" + id + "' has no circles — skipped.");
                     }
                     continue;
                 }

@@ -128,7 +128,7 @@ public final class FeaturedCropService implements Runnable {
     }
 
     private void announce() {
-        String msg = "§aFarm Isle Featured §8· §e" + prettyName()
+        String msg = "§aFarming Isle Featured §8· §e" + prettyName()
                 + " §7pays a little extra this hour.";
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (FarmIsleZones.inFarmIsleFootprint(plugin, player.getLocation())) {

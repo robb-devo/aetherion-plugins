@@ -276,7 +276,7 @@ public final class MineCompass {
         isle.profiles().markDirty();
         MineSkills.coins(player, CARTOGRAPHER_COINS);
         MineSkills.bonus(player, CARTOGRAPHER_XP);
-        player.sendMessage("§6✦ Cartographer §8· §7You've walked every hall, quarry and shaft on Mining Eldervale."
+        player.sendMessage("§6✦ Cartographer §8· §7You've walked every hall, quarry and shaft on the Mining Isle."
                 + " §6+" + MineText.coins(CARTOGRAPHER_COINS) + " coins §8· §a+" + CARTOGRAPHER_XP + " Mining XP");
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.0f);
     }

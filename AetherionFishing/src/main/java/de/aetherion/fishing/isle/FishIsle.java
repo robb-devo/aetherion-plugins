@@ -88,9 +88,9 @@ public final class FishIsle implements CastHooks, Listener, StatProvider {
             ActiveEquipmentStats.registerProvider(this);
             itemsHooked = true;
         } catch (LinkageError error) {
-            plugin.getLogger().warning("Fishing Eldervale: AetherionItems stat hook unavailable — Angler Rank bonuses off.");
+            plugin.getLogger().warning("Fishing Isle: AetherionItems stat hook unavailable — Angler Rank bonuses off.");
         }
-        plugin.getLogger().info("Fishing Eldervale: " + waters.size() + " waters, " + shoals.spots().size()
+        plugin.getLogger().info("Fishing Isle: " + waters.size() + " waters, " + shoals.spots().size()
                 + " shoal spots, " + cast.placedCount() + " NPCs placed, footprint " + LakeWorld.describe());
     }
 

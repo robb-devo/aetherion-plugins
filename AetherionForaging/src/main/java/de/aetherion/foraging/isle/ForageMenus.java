@@ -109,7 +109,7 @@ public final class ForageMenus implements Listener {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         if (head.getItemMeta() instanceof SkullMeta skull) {
             skull.setOwningPlayer(player);
-            skull.setDisplayName("§a" + player.getName() + " §8· §2Foraging Eldervale");
+            skull.setDisplayName("§a" + player.getName() + " §8· §2Foraging Isle");
             skull.setLore(List.of(
                     "§7Warden Standing",
                     WardenStanding.line(profile),

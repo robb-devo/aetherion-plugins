@@ -71,7 +71,7 @@ public final class ScarecrowProp implements Listener {
         if (meta != null) {
             meta.setDisplayName("§6Scarecrow §8(DEV)");
             meta.setLore(List.of(
-                    "§7Farm Isle bird minigame anchor.",
+                    "§7Farming Isle bird minigame anchor.",
                     "§7Every few minutes birds land",
                     "§7around it — click them to shoo.",
                     "§7Clearing a wave grants §6Golden Hour§7.",

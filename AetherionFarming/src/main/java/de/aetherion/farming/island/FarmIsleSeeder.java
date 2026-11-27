@@ -77,14 +77,14 @@ public final class FarmIsleSeeder implements Runnable {
      */
     public String start(boolean force) {
         if (running) {
-            return "§eFarm Isle seeding already running.";
+            return "§eFarming Isle seeding already running.";
         }
         if (!force && plugin.getConfig().getBoolean("farm-isle-cane.seeded", false)) {
-            return "§eFarm Isle already seeded §8· §7use force to run again.";
+            return "§eFarming Isle already seeded §8· §7use force to run again.";
         }
         FarmIsleZones.Footprint footprint = FarmIsleZones.footprint(plugin);
         if (footprint == null) {
-            return "§cFarm Isle footprint disabled or its world is not loaded.";
+            return "§cFarming Isle footprint disabled or its world is not loaded.";
         }
         world = footprint.world();
         minX = footprint.minX();
@@ -104,11 +104,11 @@ public final class FarmIsleSeeder implements Runnable {
             }
         }
         if (pending.isEmpty()) {
-            return "§cFarm Isle footprint is empty.";
+            return "§cFarming Isle footprint is empty.";
         }
         running = true;
         task = plugin.getServer().getScheduler().runTaskTimer(plugin, this, 1L, 1L);
-        return "§aFarm Isle seeding started §8· §f" + pending.size() + " §7chunks queued.";
+        return "§aFarming Isle seeding started §8· §f" + pending.size() + " §7chunks queued.";
     }
 
     @Override
@@ -149,7 +149,7 @@ public final class FarmIsleSeeder implements Runnable {
         }
         plugin.getConfig().set("farm-isle-cane.seeded", true);
         plugin.saveConfig();
-        plugin.getLogger().info("Farm Isle seeded cane=+" + canePlanted + " crops=+" + cropsPlanted);
+        plugin.getLogger().info("Farming Isle seeded cane=+" + canePlanted + " crops=+" + cropsPlanted);
     }
 
     private void seedChunk(Chunk chunk) {

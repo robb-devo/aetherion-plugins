@@ -84,13 +84,13 @@ public final class HubService {
         changed |= ensureSpawn("ore_ridge", "Ore Ridge", "Coal hill near the harbour. Quartermaster's first errand.", "IRON_ORE", 11);
         changed |= ensureSpawn("mines", "Mines", "Shabby Mine mouth. Shaft Foreman runs the first shift.", "IRON_PICKAXE", 12);
         changed |= ensureSpawn("capital", "Capital", "City hub — Skills, Ledger, and the road onward.", "BELL", 13);
-        changed |= ensureSpawn("forage_isle", "Forage Isle", "Wooded chop loops. Find the lumberjack.", "OAK_LEAVES", 14);
+        changed |= ensureSpawn("forage_isle", "Foraging Isle", "Wooded chop loops. Find the lumberjack.", "OAK_LEAVES", 14);
         changed |= ensureSpawn("farm", "Farm", "Fields and Clucksworth. Walk in to unlock.", "HAY_BLOCK", 15);
-        changed |= ensureSpawn("farm_isle", "Farm Isle", "Eldervale fields and the Harvest Hall. Elsie meets you at the pad.", "WHEAT", 16);
+        changed |= ensureSpawn("farm_isle", "Farming Isle", "Eldervale fields and the Harvest Hall. Elsie meets you at the pad.", "WHEAT", 16);
         changed |= ensureSpawn("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes.", "COARSE_DIRT", 21);
         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
-        changed |= ensureSpawn("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
-        changed |= ensureSpawn("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22);
+        changed |= ensureSpawn("eldervale", "Mining Isle", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
+        changed |= ensureSpawn("fishing_eldervale", "Fishing Isle", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22);
         changed |= ensureSpawn("summit", "Skyreach Summit", "Above the clouds on Mount Skyreach. Ride the updraft behind the Mountain Gate. Walk in to unlock.", "SPYGLASS", 23);
         changed |= ensureSpawn("whisperwood", "Whisperwood Shrine", "The old shrine in the north-west wilds. Walk in to unlock.", "MOSSY_COBBLESTONE", 24);
 
@@ -123,13 +123,13 @@ public final class HubService {
         changed |= applyLayout("ore_ridge", "Ore Ridge", "Coal hill near the harbour. Quartermaster's first errand. Walk in to unlock.", "IRON_ORE", 11, false);
         changed |= applyLayout("mines", "Mines", "Shabby Mine mouth. Shaft Foreman runs the first shift.", "IRON_PICKAXE", 12, false);
         changed |= applyLayout("capital", "Capital", "City hub — Skills, Ledger, and the road onward. Walk in to unlock.", "BELL", 13, false);
-        changed |= applyLayout("forage_isle", "Forage Isle", "Wooded chop loops. Find the lumberjack.", "OAK_LEAVES", 14, false);
+        changed |= applyLayout("forage_isle", "Foraging Isle", "Wooded chop loops. Find the lumberjack.", "OAK_LEAVES", 14, false);
         changed |= applyLayout("farm", "Farm", "Fields and Clucksworth. Walk in to unlock.", "HAY_BLOCK", 15, false);
-        changed |= applyLayout("farm_isle", "Farm Isle", "Eldervale fields and the Harvest Hall. Elsie meets you at the pad.", "WHEAT", 16, false);
+        changed |= applyLayout("farm_isle", "Farming Isle", "Eldervale fields and the Harvest Hall. Elsie meets you at the pad.", "WHEAT", 16, false);
         changed |= applyLayout("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes. Walk in to unlock.", "COARSE_DIRT", 21, false);
         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
-        changed |= applyLayout("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
-        changed |= applyLayout("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22, false);
+        changed |= applyLayout("eldervale", "Mining Isle", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
+        changed |= applyLayout("fishing_eldervale", "Fishing Isle", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22, false);
         changed |= applyLayout("summit", "Skyreach Summit", "Above the clouds on Mount Skyreach. Ride the updraft behind the Mountain Gate. Walk in to unlock.", "SPYGLASS", 23, false);
         changed |= applyLayout("whisperwood", "Whisperwood Shrine", "The old shrine in the north-west wilds. Walk in to unlock.", "MOSSY_COBBLESTONE", 24, false);
         changed |= ensureDiscoverRadius("ore_ridge", 40);

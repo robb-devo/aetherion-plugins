@@ -769,7 +769,7 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
                 hideBar(id);
             }
         }
-        String label = isle ? "§6Farm Isle" : "§6Field";
+        String label = isle ? "§6Farming Isle" : "§6Field";
         if (phase == Phase.INCOMING) {
             float fill = (float) Math.min(1.0d, phaseTicks / (double) INCOMING_TICKS);
             for (Player nearby : nearbyNow) {

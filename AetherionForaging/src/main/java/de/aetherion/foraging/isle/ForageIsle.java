@@ -124,7 +124,7 @@ public final class ForageIsle implements Listener {
             ledger.removeBoard();
         }, 80L);
         instance = this;
-        plugin.getLogger().info("Foraging Eldervale: grid " + map.status() + " · " + config.landmarks().size() + " places · "
+        plugin.getLogger().info("Foraging Isle: grid " + map.status() + " · " + config.landmarks().size() + " places · "
                 + config.updrafts().size() + " updrafts · Items skills " + (ForageBridge.skillsInstalled() ? "found" : "not in this Items jar"));
     }
 
@@ -140,7 +140,7 @@ public final class ForageIsle implements Listener {
             cfg.set("bait.enabled", true);
             cfg.set("hotspots.designed", "grove-events-v1");
             plugin.saveConfig();
-            plugin.getLogger().info("Foraging Eldervale: hotspots (Golden Sap) and bait (Sap Lure) switched on — set false to opt out.");
+            plugin.getLogger().info("Foraging Isle: hotspots (Golden Sap) and bait (Sap Lure) switched on — set false to opt out.");
         }
     }
 

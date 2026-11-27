@@ -211,10 +211,10 @@ public final class ForageDev {
                 switch (verb) {
                     case "reset" -> {
                         if (!arg.equals("confirm")) {
-                            return "§eSure? §7Run §f/grove dev profile:reset:confirm §7to wipe YOUR Foraging Eldervale profile.";
+                            return "§eSure? §7Run §f/grove dev profile:reset:confirm §7to wipe YOUR Foraging Isle profile.";
                         }
                         isle.profiles().wipe(player.getUniqueId());
-                        return "§eYour Foraging Eldervale profile was wiped.";
+                        return "§eYour Foraging Isle profile was wiped.";
                     }
                     case "standing" -> {
                         isle.standing().add(player, profile, Math.max(1, parse(arg, 10)), "dev");
@@ -347,7 +347,7 @@ public final class ForageDev {
                 }
             });
         }
-        inv.setItem(4, ForageMenus.button(Material.OAK_SAPLING, "§2Foraging Eldervale", "§7" + isle.map().status(),
+        inv.setItem(4, ForageMenus.button(Material.OAK_SAPLING, "§2Foraging Isle", "§7" + isle.map().status(),
                 "§7" + isle.events().status()));
         if (!page.equals("main")) {
             inv.setItem(49, ForageMenus.button(Material.ARROW, "§eBack"));
@@ -447,7 +447,7 @@ public final class ForageDev {
                 new Btn(Material.CHISELED_BOOKSHELF, "§dFill the Cabinet", "profile:cabinet", true),
                 new Btn(Material.FILLED_MAP, "§aDiscover everything", "profile:discover", true),
                 new Btn(Material.STICK, "§e+5 Crown Shaker charges", "profile:shaker", true),
-                new Btn(Material.TNT, "§cWipe my Foraging Eldervale profile", "profile:reset", true, "§7Districts, mastery, marks,",
+                new Btn(Material.TNT, "§cWipe my Foraging Isle profile", "profile:reset", true, "§7Districts, mastery, marks,",
                         "§7cabinet, orders, standing."));
     }
 }

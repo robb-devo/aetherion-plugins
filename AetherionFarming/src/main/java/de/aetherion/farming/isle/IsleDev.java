@@ -226,7 +226,7 @@ public final class IsleDev {
                 IslePlots.Plot plot = isle.plots().at(player.getLocation());
                 boolean onIsle = IsleWorld.onIsle(plugin(), player);
                 yield plot == null
-                        ? (onIsle ? "§7On the isle, outside every named plot." : "§7Not on the Farm Isle footprint.")
+                        ? (onIsle ? "§7On the isle, outside every named plot." : "§7Not on the Farming Isle footprint.")
                         : "§7You are in " + plot.colored() + " §8(" + plot.kind().name().toLowerCase(Locale.ROOT) + ", id " + plot.id() + ")";
             }
             case "show" -> showOutlines(player);

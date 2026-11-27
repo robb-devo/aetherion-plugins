@@ -64,7 +64,7 @@ public final class GroveCommand implements CommandExecutor, TabCompleter {
                 Grove grove = isle.grove(at);
                 Landmark place = isle.landmark(at);
                 if (!isle.onIsle(at)) {
-                    player.sendMessage("§7You're not on Foraging Eldervale. §f/forage §7takes you there.");
+                    player.sendMessage("§7You're not on the Foraging Isle. §f/forage §7takes you there.");
                     return true;
                 }
                 player.sendMessage("§2❦ " + (grove == null ? "§7Between forests" : grove.colored() + " §8· §7" + grove.tagline())

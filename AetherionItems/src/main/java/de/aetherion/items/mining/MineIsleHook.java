@@ -28,7 +28,7 @@ public final class MineIsleHook {
         if (!broken) {
             broken = true;
             java.util.logging.Logger.getLogger("AetherionItems").warning(
-                    "Mining Eldervale hooks off — Core/Mining jar predates them (" + error.getClass().getSimpleName() + ").");
+                    "Mining Isle hooks off — Core/Mining jar predates them (" + error.getClass().getSimpleName() + ").");
         }
     }
 

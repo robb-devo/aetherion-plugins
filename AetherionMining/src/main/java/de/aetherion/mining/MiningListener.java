@@ -63,7 +63,7 @@ public class MiningListener implements Listener {
             if (allowsMining(block)) {
                 event.setCancelled(true);
                 event.setDropItems(false);
-                event.getPlayer().sendMessage("§7Mining is off on the Farm Isle.");
+                event.getPlayer().sendMessage("§7Mining is off on the Farming Isle.");
             }
             return;
         }

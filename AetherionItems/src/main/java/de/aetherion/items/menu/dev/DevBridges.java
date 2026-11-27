@@ -346,7 +346,7 @@ public final class DevBridges {
             case "borderlands" -> "Beyond Vex's gate";
             case "eldervale" -> "Mining island · slime jump";
             case "farm_isle" -> "Shared fields · Millstone pantry";
-            case "fishing" -> "Fishing Eldervale · north pad";
+            case "fishing" -> "Fishing Isle · north pad";
             case "bloodstone" -> "Hollow Sun arena";
             case "amethyst" -> "PLACE THIS · Amethyst Area spawn for /amethyst";
             default -> null;
