@@ -109,8 +109,8 @@ public final class IsleGuideNpc implements Listener {
                         : "Back again, {player}? Ask away — or go fell something.",
                 List.of(
                         TalkDesk.Topic.of("The chop?", NamedTextColor.DARK_GREEN, "How do I fell trees here?",
-                                "Hit a trunk, look where it should fall, hit again. A green line means a clean fell, the gold ring a Perfect one.",
-                                "Big trunks (Titans) need two cuts. If a tree hangs up on something, the streak cools."),
+                                "Hit a trunk until the notch is through. Better axes need fewer hits, and the tree falls away from you.",
+                                "A gold spot lights up now and then: hit it and the hit counts double. A last hit on the gold is a clean cut, and clean cuts build your streak. Titans take twice the hits."),
                         TalkDesk.Topic.of("Crown Finds?", NamedTextColor.GOLD, "What's a Crown Find?",
                                 "Sometimes the crown lets go of a glowing find as the tree falls. Catch it mid-air for bonus weight.",
                                 "§ePell§f at the Landing buys board orders — wood and Titans. That's the daily money loop."),
@@ -274,8 +274,8 @@ public final class IsleGuideNpc implements Listener {
         // Classic chat: one useful line instead of a chest of tooltips.
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
         player.sendMessage("§a" + DISPLAY + " §8» §f" + (de.aetherion.core.api.AetherServices.german(player)
-                ? "Du bestimmst, wohin der Baum fällt: grüne Linie, goldener Ring, Serien zahlen. §ePell§f kauft Holz auf Bestellung, §f/grove§f ist dein Journal."
-                : "You choose where the tree falls: green line, gold ring, streaks pay. §ePell§f buys wood by order, §f/grove§f is your journal."));
+                ? "Schlag den Stamm, bis er fällt: Die goldene Stelle zählt doppelt, saubere Schnitte bauen Serien. §ePell§f kauft Holz auf Bestellung, §f/grove§f zeigt deinen Stand."
+                : "Hit the trunk until it falls: the gold spot counts double, clean cuts build streaks. §ePell§f buys wood by order, §f/grove§f shows where you stand."));
     }
 
     @EventHandler(priority = EventPriority.HIGH)

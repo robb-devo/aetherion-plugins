@@ -12,7 +12,7 @@
 #   cast.<npcId>.*        CastBook voice: chips, reactions, return visits, greetings, barks, topics
 #   banter                NPC-to-NPC scripts, same order and speakers as CastBook
 #
-# Proper nouns stay as the game shows them (Ore Ridge, Shabby Mine, Recipe Book, Anvil,
+# Proper nouns stay as the game shows them (Ore Ridge, Shabby Mine; since 2026-11-27 Rezeptbuch and Amboss are German,
 # Catch Sphere, Quartermaster …) so speech matches nametags, menus and the compass.
 # Rite Warden / Proctor (Borderlands rites) keep their existing lines — owned by the Hub pass.
 
@@ -21,10 +21,10 @@ ui:
   exile_loop:
     echo: "§8Exil §8» §7Ein Echo von"
     echo_tail: "bleibt bei dir. Vier verschiedene: der Wirt der Letzten Glocke braut daraus die Phiole für die Großen Tore."
-  stamp_recipes: "§a✦ Rezeptbuch offen §8· §7Nether Star → grünes Buch. Dort leben die Ausrüstungs-Upgrades."
+  stamp_recipes: "§a✦ Rezeptbuch offen §8· §7Journal → Rezepte. Dort stehen die Ausrüstungs-Upgrades."
   act3_subtitle: "der Drill · der Stempel · die Straßen"
   act3_title: "AKT III · DIE STRASSEN"
-  act2_subtitle: "dein Loadout · dein Codex · Booster"
+  act2_subtitle: "dein erstes Talent · dein Codex · Booster"
   act2_title: "AKT II · DIE CAPITAL"
   hint: "Hinweis"
   via_lift: "über den Königslift"
@@ -126,11 +126,11 @@ ui:
     isle_farm: "→ Farm-Isle-Pad · Elsie bringt dir die Insel bei"
     isle_fish: "→ Fishing-Eldervale-Pad · Maren bringt dir die Insel bei"
     isle_mine: "→ Mining-Eldervale-Pad · Old Wick bringt dir die Insel bei"
-    kit_to_capital: "Kit an · Nether Star (Slot 9) → Teleports → Capital · oder /capital"
+    kit_to_capital: "Kit an · Journal (Platz 9) → Spawns → Capital · oder /capital"
     tutorial_stamp: "Akt III · Miss Ledgers Stempel · /capital"
     tutorial_vex_gate: "Akt III · Sergeant Vex · Tor zu den Borderlands"
     tutorial_temper_boost: "Akt II · Temper · Südstraße · Booster"
-    tutorial_ledger_loadout: "Akt II · Miss Ledger · Capital · Nether Star → Teleports"
+    tutorial_ledger_loadout: "Akt II · Miss Ledger · Capital · Journal → Spawns"
     tutorial_egon_oak: "Akt I · zehn Eiche zu Egon · am Pier"
     tutorial_forager: "Akt I · der Forager · Eiche fällen, wohin du schaust"
     tutorial_egon_pier: "Akt I · Egon · am Pier"
@@ -154,13 +154,13 @@ ui:
       ferryman: "Runter von der Fähre · sprich mit dem Fährmann"
     egon_wood_first: "Hinweis · Egon · erst Holz"
     mines_foreman: "Hinweis · Minen · Shaft Foreman"
-    skills_blink: "Nether Star öffnen (Slot 9) → Skills blinkt"
+    skills_blink: "Journal öffnen (Platz 9) → Skills blinkt"
     throw_sphere: "Catch Sphere auf ein wildes Pet werfen — dann mit Lark reden"
-    recipe_pickaxe: "Manager → grünes Recipe Book — Mining Pickaxe suchen (2. Rezept)"
-    lark_equip: "→ Manager → Pets → Fang ausrüsten"
+    recipe_pickaxe: "Journal → Rezepte — Mining Pickaxe suchen (2. Rezept)"
+    lark_equip: "→ Journal → Pets → Fang ausrüsten"
     chop_demo: "→ Chop-Demo anschauen, dann Eiche für Egon fällen"
     to_foreman: "→ Shaft Foreman · Minen"
-    mines_tp: "→ Mines-Teleport · Manager oder /mines"
+    mines_tp: "→ Minen-Spawn · Journal → Spawns oder /mines"
     fields: "Hinweis · Felder · Farmer + Lark → dann Ledger"
     vex_next: "Tipp · Gear aufrüsten · dann Rite Warden"
     vex_soft: "Tipp · Sergeant Vex"
@@ -192,7 +192,7 @@ ui:
     kit_to_quartermaster: "Kit an? Rüstung in die Rüstungsslots · → Quartermaster hinterm Markt"
     to_lark: "→ Lark · Felder-Zaun · ein Pet fangen"
     to_farmer: "→ Farmer · Felder · 48 Weizen, Vögel verscheuchen"
-    chop_now: "→ Leuchtender Stamm · hinschauen, wohin er fällt · nochmal schlagen · 10 Eiche für Egon"
+    chop_now: "→ Eichenstamm schlagen · goldene Stelle zählt doppelt · 10 Eiche für Egon"
     mine_foreman: "→ Shaft Foreman · /mines"
     farm_farmer: "→ Farmer · die Felder"
   # Soft-hint bossbar labels (QuestHint)
@@ -213,10 +213,10 @@ ui:
     autopickup: "Auto-Pickup schaltet sich bei Aetherion-Level §f5§7 ein — du bist Level §f{0}§7."
     vex_gate: "Als Nächstes: §cSergeant Vex §7am Tor zu den Borderlands — ein kurzer Kampf-Drill an seinem Golem."
     temper_south: "Als Nächstes: §eTemper §7an der Südstraße Richtung Minen — verschmilz einen Booster."
-    ledger_capital: "Als Nächstes: §dMiss Ledger §7in der Capital — Nether Star → Teleports → Capital, oder §f/capital§7."
+    ledger_capital: "Als Nächstes: §dMiss Ledger §7in der Capital — Journal → Spawns → Capital, oder §f/capital§7."
     forager_fell: "§aDer Forager §7oben am Hügel zeigt dir das Fällen — du bestimmst, wohin der Baum fällt."
     act3: "Akt III · Die Straßen — Sergeant Vex, dann der Stempel"
-    act2: "Akt II · Die Capital — Loadout & Codex, Booster, dann ein Pet"
+    act2: "Akt II · Die Capital — erstes Talent & Codex, Booster, dann ein Pet"
     act1: "Akt I · Anker Harbour — Egon, das Fällen, dein Kit"
     no_quests: "Sprich mit §aEgon §7am Pier von Anker Harbour — da beginnt die Orientierung."
     active: "Aktive Quest: §f{0}§7 — {1}"
@@ -227,8 +227,8 @@ ui:
     oak_deliver: "Eiche hacken und §f10 Eichenstämme §7bei §aEgon §7am Pier abgeben."
     quartermaster: "Als Nächstes: §eQuartermaster §7hinter dem kleinen Markt — Kohlelauf (§f20 Kohle§7)."
     foreman: "Als Nächstes: §eShaft Foreman §7an der Shabby Mine — seine Schicht fertig machen (§f/mines§7)."
-    temper: "Als Nächstes: §eTemper §7(Booster Tutor) auf dem Weg zur Capital — einen Booster fusen."
-    ledger: "Als Nächstes: §dMiss Ledger §7in der Capital — sie öffnet Skills im Manager."
+    temper: "Als Nächstes: §eTemper §7(Schmied) an seiner Schmiede an der Minenstraße — einen Booster einsetzen."
+    ledger: "Als Nächstes: §dMiss Ledger §7in der Capital — sie zeigt dir Skills und Talente im Journal."
     farmer: "Als Nächstes: §eFarmer §7auf den Feldern — 48 Weizen, Vögel verscheuchen."
     lark: "Als Nächstes: §dLark §7am Feldzaun — ein Pet fangen."
     stamp: "Zurück zu §dMiss Ledger §7— sie stempelt die Orientierung zu und zeigt dir die Inseln."
@@ -241,7 +241,7 @@ ui:
     gui_header_2: "§7Such dir einen Weg aus — ich richte den Pfeil aus."
     gui_filed: "Wege abgeheftet"
     gui_briefing: "§eBriefing-Themen"
-    gui_briefing_1: "§7Manager, Booster, Pets, Lager…"
+    gui_briefing_1: "§7Journal, Booster, Pets, Lager…"
     gui_briefing_2: "§7Der Auffrischungs-Schalter."
     card_filed: "§a✔ Abgeheftet. Komm jederzeit zurück."
     card_next: "§e➜ Vorschlag als Nächstes"
@@ -330,7 +330,7 @@ quests:
     description: "Sprich mit dem Forager oben am Hügel über Anker Harbour."
   gather_wood:
     title: "Egons Holzlauf"
-    description: "Fäll Eiche mit der Axt des Foragers — hinschauen, wohin sie fallen soll, nochmal schlagen — und bring Egon 10 Stämme."
+    description: "Fäll Eiche mit der Axt des Foragers (schlag den Stamm, bis er fällt) und bring Egon 10 Stämme."
   forge_coal:
     title: "Kohle für die Schmiede"
     description: "Bring dem Quartermaster 20 Kohle vom Ore Ridge."
@@ -345,7 +345,7 @@ quests:
     description: "Ernte Weizen auf den Feldern. Lark hat seine Sammlung gleich nebenan."
   a_simple_craft:
     title: "Zweites Rezept"
-    description: "Öffne das §agrüne Recipe Book§7 im Manager und crafte eine §fMining Pickaxe§7 — Simple Pickaxe in die Mitte, Kohle drumherum."
+    description: "Öffne das §aRezeptbuch§7 im Journal (Rezepte) und bau eine §fMining Pickaxe§7 — Simple Pickaxe in die Mitte, Kohle drumherum."
   shiny_things:
     title: "Glänzendes"
     description: "Bau drei Diamanten ab."
@@ -360,7 +360,7 @@ quests:
     description: "Öffne die Probekiste des Merchants."
   pocket_zoo:
     title: "Taschenzoo"
-    description: "Fang mit einer Catch Sphere ein wildes Pet für Lark, sprich mit ihm und rüste es im Manager aus."
+    description: "Fang mit einer Fangkugel ein wildes Pet für Lark, sprich mit ihm und rüste es im Journal unter Pets aus."
   those_sounds:
     title: "Diese Geräusche"
     description: "Finde die Quelle der Geräusche und erledige den Hollow Lurker."
@@ -405,13 +405,13 @@ quests:
     description: "Sergeant Vex will zehn Feinde in den Borderlands erledigt sehen. Endgültig."
   lesson_boost:
     title: "Lektion: Boost"
-    description: "Temper will einen Booster auf deinem Gear sehen — gefust am Anvil im Manager."
+    description: "Temper will einen Booster an deiner Ausrüstung sehen — eingesetzt am Amboss (an seiner Schmiede oder im Journal)."
   border_rites:
     title: "Border-Riten"
     description: "Spirit-Fläschchen farmen, am Pulver-Altar zünden — ein Borderlands-Boss."
   lesson_manager:
-    title: "Dein Loadout"
-    description: "Miss Ledger will einen Skill in deinem Loadout und deinen Codex offen sehen. Nether Star → Skills."
+    title: "Dein erstes Talent"
+    description: "Miss Ledger will ein Talent in einem Talent-Platz sehen und deinen Codex offen. Journal → Skills."
   lesson_bones:
     title: "Lektion: Dungeons"
     description: "Rook will zehn Knochen. Dungeon-Hausaufgaben ohne Dungeon."
@@ -461,7 +461,7 @@ quests:
 dialogs:
   egon_kit_capital:
     - "Zehn Stämme, gezählt. Dein Kit: Spitzhacke, Schwert, Hacke, Rüstung. Maus drüber zeigt die Werte."
-    - "Alles andere steckt im §eNether Star§f, Slot 9: dein Manager. §eTeleports§f → Capital, dort wartet §dMiss Ledger§f."
+    - "Alles andere steckt im §eJournal§f auf Platz 9. Unter §eSpawns§f → Capital wartet §dMiss Ledger§f."
   vex_combat_intro:
     - "Sergeant Vex. Kämpfen heißt hier nicht: Klick halten und beten."
     - "Rüstung an — Egons ganzes Kit — und eine Klinge in die Hand. Dann sieh mich an."
@@ -491,32 +491,43 @@ dialogs:
     - "Die Rüstung ist gebraucht. Vorbesitzer ist in Rente. Größtenteils friedlich."
     - "Der §eQuartermaster§f sitzt hinter dem kleinen Markt. Na los, {player}."
   lumberjack_intro:
-    - "Egon will zehn Eiche. Schau mir einmal zu, dann bist du dran."
+    - "Egon will zehn Eichenstämme. Dafür brauchst du eine Axt, und ich bin der Forager."
+    - "Fällen ist einfach: Schlag mit der Axt gegen den Stamm. Jeder Schlag macht die Kerbe tiefer."
+    - "Manchmal leuchtet eine Stelle am Stamm golden. Triffst du sie, zählt der Schlag doppelt."
+    - "Ist die Kerbe durch, fällt der Baum von dir weg. Bessere Äxte brauchen weniger Schläge."
+    - "Schau mir einmal zu. Dann gehört die Axt dir, und Egon kriegt seine Eiche."
   quartermaster_intro:
     - "Quartermaster. Ich brauche §e20 Kohle§f vom §eOre Ridge§f, dem Hügel hinter dem kleinen Markt."
     - "Der gelbe Pfeil oben zeigt den Weg."
   craftsman_intro:
-    - "Craftsman. Dein §aRecipe Book§f: Nether Star, Slot §e9§f → grünes Buch."
+    - "Hm. Craftsman. Alles, was du baust, fängt im §aRezeptbuch§f an."
+    - "Öffne dein Journal (Platz §e9§f) → §aRezepte§f. Da steht jede Blaupause drin."
+    - "Ein Rezept geht immer gleich: Das alte Teil kommt in die Mitte, das Material drumherum."
     - "Bau eine §fMining Pickaxe§f: Simple Pickaxe in die Mitte, Kohle drumherum. Bring sie her."
   foreman_intro:
     default:
       - "Die Shabby Mine ist hinter mir. Schäbig trifft's."
       - "Bau §eKohle, Kupfer, Eisen§f ab. §e32 Erzblöcke§f, dann komm zurück, {player}."
-      - "Mining Pickaxe und etwas Rüstung helfen. Das Recipe Book ist im Manager."
+      - "Mining Pickaxe und etwas Rüstung helfen. Das Rezeptbuch ist im Journal."
     crafting_unlocked:
       - "Die Shabby Mine ist hinter mir. Schäbig trifft's."
       - "Bau §eKohle, Kupfer, Eisen§f ab. §e32 Erzblöcke§f, dann komm zurück, {player}."
-      - "Crafting ist jetzt offen. Grünes Recipe Book, im Manager."
+      - "Die Werkbank ist jetzt offen. Das Rezeptbuch findest du im Journal unter Rezepte."
       - "Mining Pickaxe und etwas Rüstung helfen da unten."
     start:
       - "Shaft Foreman. Bau hier §e32 Erz§f ab: Kohle, Kupfer, Eisen. Dann komm zurück, {player}."
-      - "Rüstung an, der Fels beißt. Kohle und deine Spitzhacke ergeben eine §fMining Pickaxe§f: grünes §aRecipe Book§f im Manager."
+      - "Rüstung an, der Fels beißt. Kohle und deine Spitzhacke ergeben eine §fMining Pickaxe§f: §aRezeptbuch§f im Journal."
   booster_tutor_intro:
     - "Temper. Booster machen deine Ausrüstung stärker. Du steckst sie am §eAmboss§f ein."
     - "Sag ja und such dir deinen ersten aus. Auf jedem steht, was er macht."
   ledger_intro:
-    - "Miss Ledger. Nether Star → §dSkills§f (es blinkt): rüste einen Skill aus, {player}."
-    - "Dann deinen §eCodex§f oben links. Er zählt alles und zahlt Münzen."
+    - "Miss Ledger, Archiv der Capital. Ich zeig dir, wie du hier stärker wirst."
+    - "Alles, was du tust, trainiert einen Skill: Hacken Foraging, Graben Mining, Kämpfen Combat."
+    - "Alle Skills zusammen heben dein §eAetherion-Level§f. Und Skills schalten §dTalente§f frei."
+    - "Öffne dein Journal (Platz §e9§f) → §dSkills§f und setz ein Talent in einen freien Platz."
+    - "Talente wachsen mit ihrem Skill. Mehr Plätze gibt es ab Aetherion-Level 5, 10, 20 und später."
+    - "Dann schau in deinen §eCodex§f, oben links. Er zählt Bäume, Erze und Kills und zahlt Coins."
+    - "Mach beides, {player}, dann kriegst du meinen Stempel."
   farmer_intro:
     default:
       - "Farmer. Bau Weizen ab, bis du §e48§f hast. Landen Vögel? §eKlick§f sie weg."
@@ -527,10 +538,12 @@ dialogs:
     - "Lark. Halt eine §eCatch Sphere§f, schau ein wildes Tier an, §eRechtsklick§f zum Werfen. Nicht mein Papagei!"
     - "Fang §eeins§f, dann komm zurück zu mir."
   fisher_intro:
-    - "Auswerfen. Auf den Biss warten. §eREEL§f, wenn die Leiste grün wird."
-    - "Fenster verpasst, Fisch weg. Fang §efünf§f, dann komm zurück, {player}."
+    - "Tackle. Ich bring hier am Pier das Angeln bei, {player}."
+    - "Wirf die Rute ins Wasser und warte. Beißt ein Fisch an, erscheint eine Leiste."
+    - "Hol ein, sobald sie grün wird: §eREEL§f. Verpasst du das Grün, ist der Fisch weg."
+    - "Fang §efünf§f Fische, dann komm zurück. Ruten gibt es beim Fishmonger."
   fishmonger_intro:
-    - "Shop. Ruten. Rüstung. Münzen willkommen."
+    - "Frischer Fisch, Angelruten und Rüstung für den Anfang. Schau dich um, {player}!"
   vex_intro:
     - "Sergeant Vex. Zehn Feinde hinter dem Tor zu den §cBorderlands§f, egal welche."
     - "Rüstung an, Klinge in die Hand. Abmarsch, {player}."
@@ -579,10 +592,10 @@ dialogs:
   isle_clerk_intro:
     default:
       - "Die eigene Insel gibt's ab Aetherion Level §e20§f."
-      - "Nether Star, Slot neun → Island-Tab. Dort claimen. Ich mach keinen Papierkram."
+      - "Journal, Platz neun → Insel. Dort beanspruchen. Ich mach keinen Papierkram."
       - "Ein Beamter ohne Papierkram. Ja. Ich weiß."
     after_seal:
-      - "Der Island-Tab ist im Manager, {player}. Slot neun. Wie immer."
+      - "Die Insel findest du im Journal, {player}. Platz neun. Wie immer."
       - "Königreich Eldervale. Ich hab's nachgeschlagen, als du weg warst."
       - "Dann hieß es von der Registry, ich soll aufhören. Also hab ich aufgehört."
   merchant_intro:
@@ -1118,7 +1131,7 @@ completed:
   egon:
     orientation:
       - "Dein nächster Halt steht im §egelben Balken oben§f. Trau ihm mehr als mir."
-      - "Verlaufen? Nether Star → §eTeleports§f → Capital. §dMiss Ledger§f regelt den Rest."
+      - "Verlaufen? Journal → §eSpawns§f → Capital. §dMiss Ledger§f regelt den Rest."
     default:
       - "Passt das Kit? Gut. Der §eQuartermaster§f hinter dem kleinen Markt will dich als Nächstes."
     after_coal:
@@ -1132,24 +1145,24 @@ completed:
   craftsman:
     default:
       - "Schöne Spitzhacke, {player}. Du bist bereit für die Minen."
-      - "Als Nächstes: §eShaft Foreman§f. Das Recipe Book griffbereit halten — später kommen neue Seiten."
+      - "Als Nächstes: §eShaft Foreman§f. Das Rezeptbuch griffbereit halten — später kommen neue Seiten."
     after_shift:
       - "Hm. {player}. Hält die Spitzhacke? Gut."
-      - "Das Recipe Book wächst mit dir. Schau ab und zu rein."
+      - "Das Rezeptbuch wächst mit dir. Schau ab und zu rein."
   foreman:
     default:
       - "Schicht ist zu. Als Nächstes: §eTemper§f, auf dem Weg zur Capital."
-      - "Ein Booster fusen, dann Skills. Vertrau der Reihenfolge."
+      - "Erst ein Booster, dann Talente. Vertrau der Reihenfolge."
     after_boost:
       - "Die Mine ist noch da, {player}. Der Staub auch."
       - "Tiefere Adern zahlen besser. Tiefere Adern beißen auch."
   booster_tutor:
     default:
-      - "Booster gefust. Rezepte bleiben jederzeit im §eRecipe Book§f."
-      - "Als Nächstes: §eMiss Ledger§f in der Capital — dein Loadout. Dann §dLark§f und §cSergeant Vex§f."
+      - "Booster sitzt. Neue Booster findest du jederzeit im §eRezeptbuch§f."
+      - "Als Nächstes: §eMiss Ledger§f in der Capital — dein erstes Talent. Dann §dLark§f und §cSergeant Vex§f."
     after_skills:
-      - "In letzter Zeit was Scharfes gefust, {player}?"
-      - "Der Anvil ist immer im Manager. Rezepte im §eRecipe Book§f."
+      - "In letzter Zeit was Scharfes eingesetzt, {player}?"
+      - "Den Amboss hast du immer im Journal. Neue Booster stehen im §eRezeptbuch§f."
   ledger:
     - "Loadout steht. Als Nächstes: §eTemper§f, §dLark§f, dann §cSergeant Vex§f."
     - "Komm nach allen dreien zurück, {player}."
@@ -1275,18 +1288,18 @@ talk:
     first_equipment: "Deine erste Ausrüstung ist fertig."
     to_work: "An die Arbeit."
   lumberjack:
-    replay: "Immer noch am Zuschauen, {player}? Nochmal — schau, wohin ich ihn fallen lasse."
+    replay: "Immer noch am Zuschauen, {player}? Nochmal. Zähl die Schläge mit."
     egon_first: "Erst Egon, {player}. Der hat den Papierkram. Dann hacken wir."
     lesson: "Egon schickt dich? Klar tut er das. Dann Axt-Lektion."
     take_axe: "Nimm die Axt. Schau mir einmal zu — langsam — dann hackst du."
-    click_trunk: "Linksklick auf einen leuchtenden Stamm, hinschauen, wohin er fallen soll, nochmal klicken."
+    click_trunk: "Schlag mit der Axt gegen den Stamm, bis die Kerbe durch ist."
     ten_oak: "Zehn Eichenstämme zu §eEgon §fam Pier."
-    demo_chop: "Linksklick auf einen leuchtenden Stamm, hinschauen, wohin er fallen soll, nochmal Linksklick."
+    demo_chop: "Schlag den Stamm, bis die Kerbe durch ist. Die goldene Stelle zählt doppelt."
     demo_egon: "Zehn Eichenstämme zu Egon am Pier."
-    axe_now: "Die Axt gehört dir. Schlag einen §eleuchtenden Stamm§f, schau, wohin er fallen soll, und schlag nochmal."
+    axe_now: "Die Axt gehört dir. Schlag einen §eEichenstamm§f, bis er fällt. Gold zählt doppelt."
   quartermaster:
     coal_logged: "Kohle verbucht. Danke, {player}. Ehrlich."
-    mines_tp: "Der Mines-Teleport ist offen — Manager → Teleports, oder tipp §e/mines§f."
+    mines_tp: "Der Minen-Spawn ist offen — Journal → Spawns, oder tipp §e/mines§f."
     next_foreman: "Als Nächstes: §eShaft Foreman§f an den Minen. Der gelbe Pfeil verfolgt ihn. Ich verfolge den Pfeil."
   craftsman:
     pick_ok: "Da ist sie — Mining Pickaxe. Gute Arbeit, {player}. Ehrlich."
@@ -1303,23 +1316,23 @@ talk:
     next_lark: "Als Nächstes: §dLark§f am Feldzaun. Er gibt dir Catch Spheres, du bringst ein Pet zurück."
     mining_line: "Mining Power öffnet härteres Erz, Fortune vervielfacht es. Crystal Finds und Dungeon-Core-Picken kommen später."
     upgrade_warning: "Sitzt ein Booster einmal drin, bleibt er — bis du ihn hier rausholst. Upgrades werfen ihn nicht raus."
-    fused: "Booster gefust! Riechst du das? Fortschritt. Und leicht verbrannt."
+    fused: "Booster sitzt! Riechst du das? Fortschritt. Und leicht verbrannt."
     next_ledger_short: "Als Nächstes — §dMiss Ledger§f in der Capital."
     next_ledger: "Als Nächstes — §dMiss Ledger§f in der Capital. Skills."
-    picked: "Gute Wahl. Nether Star → §eAmboss§f: Ausrüstung links, Booster rechts."
-    picked_default: "Keine Wahl? Dann Eisen: mehr von dem, was das Teil kann. Nether Star → §eAmboss§f: Ausrüstung links, Booster rechts."
+    picked: "Gute Wahl. Am §eAmboss§f: Gegenstand oben drauf, Booster in einen freien Platz darunter."
+    picked_default: "Keine Wahl? Dann Eisen: mehr von dem, was das Teil kann. Am §eAmboss§f: Gegenstand oben drauf, Booster darunter."
     fused_short: "Eingesetzt. Er bleibt drauf, auch beim Aufwerten. Mehr Booster findest du beim Spielen."
   ledger:
     next_temper: "Als Nächstes: §eTemper§f, Südstraße Richtung Minen. Booster — die andere Hälfte deines Builds."
     autopickup_soon: "Achte auf den Balken unten: Level §e5§f, und Drops fliegen zu dir. Du bist Level §e{0}§f."
-    loadout_ok: "Loadout steht, Codex offen. Gut. Abgeheftet."
+    loadout_ok: "Talent sitzt, Codex offen. Gut. Abgeheftet."
     skill_next: "Jetzt §dSkills§f — der blinkende Tab. Rüste einen aus."
     codex_seen: "Dein Kontobuch. Jeder Baum, jedes Erz, jeder Kill landet da drin — Stufen zahlen Münzen."
     codex_next: "Jetzt dein §eCodex§f — oben links auf derselben Seite, oder §e/codex§f."
-    loadout_set: "Da — das ist ein Loadout. Der Skill levelt, während du sein Handwerk machst."
+    loadout_set: "Da, dein erstes Talent. Es wird stärker, während sein Skill levelt."
     autopickup_on: "Hörst du das? Aetherion-Level §e5§f, {player}. Drops fliegen jetzt zu dir — Auto-Pickup."
     early_egon: "§aEgon§f, Hafenpier. Zehn Eiche. Dann komm zurück."
-    early_kit: "Zu früh, {player}. Kein Kit, kein Loadout."
+    early_kit: "Zu früh, {player}. Erst das Kit, dann Talente."
     skill_ok: "Skill sitzt. Gut. Gestempelt."
     next_fields: "Als Nächstes: die Felder. §eFarmer§f braucht Weizen, §eLark§f macht Pets. Dann zurück zu mir."
     fields_farmer: "Wenn du so weit bist: die Felder. §eFarmer§f braucht Weizen — ernten, Vögel verscheuchen."
@@ -1398,31 +1411,31 @@ talk:
         label: "Wohin jetzt?"
         echo: "Wohin als Nächstes?"
       aetherion_manager:
-        label: "Aetherion Manager"
-        echo: "Erzähl mir vom Manager."
+        label: "Das Journal"
+        echo: "Erzähl mir vom Journal."
         lines:
-          - "Der Nether Star ist kein Schmuck. Das ist der Aetherion Manager."
+          - "Das Buch auf Platz neun ist kein Schmuck. Das ist dein Journal."
           - "Aufmachen. Skills, Pets, Rezepte, Lager, Spawns — alles drin."
-          - "Er schaltet mehr frei, je weniger nutzlos du bist. Schau oft rein."
+          - "Es schaltet mehr frei, je weiter du kommst. Schau oft rein."
       skills:
         label: "Skills"
         echo: "Erzähl mir von Skills."
         lines:
-          - "Skills sind ausgerüstete Bäume, keine Hausaufgaben. Manager → Skills."
-          - "Einen Skill in einen freien Slot klicken. Ich prüfe das."
-          - "Ein Slot frei zum Start. Mehr gibt's mit Münz-Meilensteinen."
+          - "Skills sind das, was du tust. Sie leveln von allein, während du arbeitest."
+          - "Talente kommen in einen freien Talent-Platz: Journal → Skills. Sie wachsen mit ihrem Skill."
+          - "Ein Platz ist zum Start frei. Mehr gibt es mit dem Aetherion-Level: 5, 10, 20 und später."
       travel:
         label: "Rumkommen"
         echo: "Wie komm ich hier überhaupt rum?"
         lines:
-          - "Nether Star → Manager → §eTeleports§f. Jedes Camp, in das du reingelaufen bist, ist ein Klick."
+          - "Journal → §eSpawns§f. Jedes Camp, in das du reingelaufen bist, ist ein Klick."
           - "Die Inseln sind Pads: §aTwigs§f Schleim-Pad für Forage, §eHarlows§f Weg zur Farm, das West-Pad fürs Angeln."
           - "Verlaufen? §e/capital§f bringt dich an meinen Schalter zurück. Ich tu so, als hätt ich's nicht gesehen."
       pets:
         label: "Pets"
         echo: "Erzähl mir von Pets."
         lines:
-          - "Pets sitzen im Manager. Eins ausrüsten. Gibt Stats. Leise."
+          - "Pets rüstest du im Journal unter Pets aus. Eins zur Zeit. Es gibt dir Werte, ganz leise."
           - "Sie leveln, während du spielst. Drachen machen ein Drama draus."
           - "Hat es im Dungeon eine Aura: erst Tooltip lesen, dann angeben."
       boosters:
@@ -1438,7 +1451,7 @@ talk:
     isle_peek: "Hinteres Ende der Scheune — das ist §eHarlow§f. Der kennt den Weg runter zur Farm Isle. Später."
   lark:
     nice_catch: "Schöner Fang, {player}. Die Tasche quiekt."
-    equip_now: "Jetzt ausrüsten: §eManager → Pets§f — blinkt. Deinen Fang auswählen."
+    equip_now: "Jetzt ausrüsten: §eJournal → Pets§f — blinkt. Deinen Fang auswählen."
     catch_done: "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
     pets_explained: "Es folgt dir, kämpft mit dir und levelt mit dir. Mehr Spheres im Shop, seltenere bei mir."
     next_vex: "Als Nächstes: §cSergeant Vex§f am Tor zu den Borderlands. Nimm das Pet mit, es mag Kämpfe."
@@ -1573,7 +1586,7 @@ talk:
     done_gear: "Aber nicht in dieser Ausrüstung. Hol dir erst bessere Rüstung. Die Crypt schlägt viel härter zu."
   vex:
     combat_stamp: "Jetzt §dMiss Ledgers§f Stempel. §e/capital§f — den Teleport hast du."
-    combat_kit: "Vor dem Ödland: ein Kampf-Skill ins Loadout, Schadens-Booster auf die Klinge."
+    combat_kit: "Vor dem Ödland: ein Combat-Talent in einen Talent-Platz, Schadens-Booster an die Klinge."
     combat_pass: "Ausreichend. Bestanden — für heute."
     combat_tempo: "Jede Klinge hat ihr §e⚡ Tempo§f, es steht auf dem Item. Dolche schnell, Hämmer langsam. Zuschlagen, wenn das Fadenkreuz voll ist."
     combat_armour: "Rüstung in die Rüstungsslots, {player}. Egons ganzes Kit. Dann die Klinge."
@@ -1596,12 +1609,12 @@ talk:
     ten_down: "Zehn erledigt, {player}. Stahl abgeheftet. Du bist weniger ein Risiko."
     tip_fallback: "§7Kleiner Tipp — Combat-Set und Booster aufrüsten, bevor's ins härtere Ödland geht."
     rite_fallback: "Loser Faden — §cRite Warden§f im Ödland, für Bosse. Oder nicht. Die Karte gehört dir."
-    gear_tip: "§7Kleiner Tipp — härte dein Gear, bevor du tiefer gehst. Recipe Book und Anvil helfen."
+    gear_tip: "§7Kleiner Tipp — verbessere deine Ausrüstung, bevor du tiefer gehst. Rezeptbuch und Amboss helfen."
     rite_hint: "Optional als Nächstes — §cRite Warden§f. Borderlands-Bosse, Pulveraltar. Kein Papierkram von mir."
     death_up: "Wieder in der Senkrechten."
     death_care: "Vier §8Coal Booster§7. Quittung schreib ich nicht. Fusionier sie — oder friss wieder Dreck."
-    death_gear: "Probleme? Combat-Set + Booster. Recipe Book und Anvil. Dann die zehn fertig machen."
-    death_temper: "Probleme? §eTemper§7 bringt dir Booster bei. Das Combat-Set steht im Recipe Book."
+    death_gear: "Probleme? Combat-Set + Booster. Rezeptbuch und Amboss. Dann die zehn fertig machen."
+    death_temper: "Probleme? §eTemper§7 bringt dir Booster bei. Das Combat-Set steht im Rezeptbuch."
     ledger_first: "Warte, {player}. §dMiss Ledger§f stempelt die Orientierung erst zu. Dann reden wir über Stahl."
     # Red thread — gear check before the first "go fight" (once, skippable)
     check_armour: "Gear-Check, {player}. …Keine Rüstung. Mutig. Und dumm."
@@ -1638,7 +1651,7 @@ talk:
   redirect:
     vex_gate: "§cSergeant Vex§f, Tor zu den Borderlands. Er drillt Rookies."
     temper_south: "§eTemper§f, Südstraße Richtung Minen. Booster."
-    ledger_capital: "§dMiss Ledger§f, Capital. Nether Star → Teleports, oder §e/capital§f."
+    ledger_capital: "§dMiss Ledger§f, Capital. Journal → Spawns, oder §e/capital§f."
     egon_oak: "§aEgon§f wartet auf seine Eiche. Pier."
     forager: "§aDer Forager§f, oben am Hügel hinter dem Pier. Eiche, fällen, wohin du willst."
     egon_pier: "§aEgon §fam Pier. Er rüstet dich aus — da fängt alles an."
@@ -1647,14 +1660,14 @@ talk:
     egon: "§aEgon §fam Pier — erst Eiche. Dann der Quartermaster."
     quartermaster: "§eQuartermaster §fhinter dem kleinen Markt — als Nächstes Kohle."
     foreman: "§eShaft Foreman §fan der Shabby Mine — seine Schicht fertig machen."
-    temper: "§eTemper §f— Booster Tutor. Einen Booster fusen, dann weiter."
-    ledger_skills: "§dMiss Ledger §fin der Capital — Skills im Manager."
+    temper: "§eTemper §f— Schmied. Einen Booster einsetzen, dann weiter."
+    ledger_skills: "§dMiss Ledger §fin der Capital — Skills und Talente im Journal."
     farmer: "§eFarmer §fauf den Feldern — als Nächstes Weizen."
     lark: "§dLark §fam Zaun — ein Fang für seine Sammlung."
     stamp: "§dMiss Ledger §fschließt die Orientierung. Hol dir den Stempel."
   gate:
     orientation_first: "§eErst die Orientierung. §7Miss Ledger stempelt dich durch — folg dem gelben Balken."
-    ledger_kit_first: "§eErst Egons Kit. §7Zehn Eiche am Hafenpier, dann öffne ich dein Loadout."
+    ledger_kit_first: "§eErst Egons Kit. §7Zehn Eiche am Hafenpier, dann zeig ich dir die Talente."
     kit_first: "§eErst Egons Kit. §7Zehn Eiche am Hafenpier."
     ledger_foreman_first: "§eErst der Shaft Foreman. §7Minenschicht, dann öffnen wir Skills."
     tutorial_first: "§eErst das Tutorial. §7Miss Ledger schließt die Orientierung nach den Feldern."
@@ -2097,7 +2110,7 @@ cast:
     on_accept: ["Schau zu."]
     on_decline: ["Die Bäume warten. Können sie gut."]
     returning:
-      - "Leuchtender Stamm, hinschauen, wohin er fällt, nochmal schlagen. Zehn Eiche für §eEgon§f, {player}."
+      - "Schlag den Stamm, bis die Kerbe durch ist, die goldene Stelle zählt doppelt. Zehn Eiche für §eEgon§f, {player}."
     greet_new: ["Axt-neugierig, {player}? Egon hat dich geschickt, oder?"]
     greet: ["{player}! In letzter Zeit Bäume fallen hören?", "Schon Muskelkater, {player}? Gut."]
     greet_grad: ["Da ist ja der Holzfäller-Profi. Die Bäume tuscheln immer noch über dich, {player}."]
@@ -2107,7 +2120,7 @@ cast:
       - label: "Lumberjack oder Forager?"
         lines: ["Auf dem Schild steht Lumberjack. Ich sag Forager.", "Lumberjack klingt brutal. Forager klingt, als wär's mir nicht egal. Ist es nicht. Ich hack trotzdem."]
       - label: "Baum-Tipps?"
-        lines: ["Größere Bäume, längere Leisten. Nicht gierig werden.", "Nur leuchtende Stämme. Der Rest ist Deko. Emotional."]
+        lines: ["Große Bäume brauchen mehr Schläge. Eine gute Axt macht das wett.", "Achte auf die goldene Stelle. Ist dein letzter Schlag darauf, ist es ein sauberer Schnitt mit dem besten Holz."]
   quartermaster:
     accept: "Zwanzig Stück. Bin dran."
     decline: "Heute nicht."
@@ -2125,9 +2138,9 @@ cast:
       - label: "Was lieferst du?"
         lines: ["Alles. Irgendwann. Erst der Papierkram.", "Gerade: eine Schmiede, die Kohle frisst, und einen Hafen, der Schmieden frisst."]
       - label: "Wie gehen Teleports?"
-        lines: ["Einmal hinlaufen — schon freigeschaltet. Oder einen Homestead Marker setzen.", "Dann Manager → Teleports, oder den Ort tippen. §e/harbour§f, §e/mines§f. So."]
+        lines: ["Einmal hinlaufen — schon freigeschaltet. Oder einen Homestead Marker setzen.", "Dann Journal → Spawns, oder den Ort tippen. §e/harbour§f, §e/mines§f. So."]
   craftsman:
-    greet_new: ["Hm. {player}. Das Recipe Book ist in deinem Manager."]
+    greet_new: ["Hm. {player}. Das Rezeptbuch ist in deinem Journal."]
     greet: ["Hm. {player}.", "Hält die Spitzhacke? Hm. Gut."]
     greet_grad: ["Hm. Gute Arbeit in letzter Zeit, {player}. Bild dir nichts drauf ein."]
     idle: ["Der Hammer war von meinem Vater. Der Stiel von meinem Großvater. Der Kopf ist allerdings neu.", "Eisen wird launisch, wenn's kalt ist. Ich auch, also verstehen wir uns.", "Bring mir Kohle und Geduld. Den Lärm liefere ich.", "Jede Spitzhacke in diesem Hafen ist mindestens einmal durch meine Hände gegangen."]
@@ -2135,8 +2148,8 @@ cast:
     topics:
       - label: "Was macht gutes Gear aus?"
         lines: ["Altes Teil in die Mitte. Material drumherum. Das ist das ganze Geheimnis.", "Der Rest ist Schweiß. Hauptsächlich deiner."]
-      - label: "Wo ist das Recipe Book?"
-        lines: ["Nether Star, Hotbar §e9§f. Grünes Buch. Da ist jede Blaupause drin."]
+      - label: "Wo ist das Rezeptbuch?"
+        lines: ["Journal, Hotbar §e9§f, dann Rezepte. Da ist jede Blaupause drin."]
   foreman:
     accept: "Stempel mich ein."
     decline: "Noch nicht."
@@ -2164,7 +2177,7 @@ cast:
       - "Teil aufs Siegel, Booster in einen freien Platz darunter. Ein Klick nimmt ihn wieder raus."
     greet_new: ["{player}! Hast du was, das ich anzünden kann? Upgraden. Ich meinte upgraden."]
     greet: ["Riechst du das, {player}? Fortschritt. Und leicht verbrannt."]
-    greet_grad: ["{player}! In letzter Zeit was Scharfes gefust?"]
+    greet_grad: ["{player}! In letzter Zeit was Scharfes eingesetzt?"]
     idle: ["Der Funke? Völlig Absicht. Größtenteils Absicht.", "Immer mit Schutzbrille. Das hab ich auf die helle Tour gelernt.", "Ein Booster auf dem Anvil ist Kraft. Ein Booster in der Tasche ist nur ein hübscher Stein.", "Ich hab drei Werkbänke in die Luft gejagt. Der vierten geht's prima."]
     farewell: ["Bleib entflammbar. Moment. Nein. Lieber nicht."]
     topics:
@@ -2401,8 +2414,8 @@ cast:
     greet_new: ["Hört, hört! {player} wandelt unter uns!"]
     greet: ["Oyez, {player}! Nachrichten um elf. Und jetzt."]
     idle:
-      - "Hört, hört! Der Manager wohnt in Hotbar-Slot neun!"
-      - "Hört, hört! Booster gehören auf den Anvil, nicht in den Mund!"
+      - "Hört, hört! Das Journal wohnt auf Hotbar-Platz neun!"
+      - "Hört, hört! Booster gehören an den Amboss, nicht in den Mund!"
       - "Hört, hört! Redet mit Fremden! Die haben Quests!"
       - "Hört, hört! Passt auf eure Kinder auf, sonst holt sie Aetherion!"
       - "Hört, hört! In der Wildnis spawnen Kisten! Macht Sachen auf!"

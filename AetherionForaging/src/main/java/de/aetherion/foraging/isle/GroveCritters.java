@@ -43,7 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *   <li><b>Canopy Squirrel</b> (Elderwood Vale, Canopy Crown; day): sometimes bolts out of a felled
  *       crown with something in its cheeks. It runs; one hit and it drops the find.</li>
  *   <li><b>Frost Moth</b> (Frostpine Ridge, at night or in snow): flutters near foragers. Catch it for
- *       <i>Frostlit</i> — the gold ring is one step wider for a minute.</li>
+ *       <i>Frostlit</i> — the gold spot stays lit longer for a minute.</li>
  *   <li><b>Glowcap Wisp</b> (Gloamwood Hollow, in fog or at night): drifts off through the trunks. Follow
  *       it — where it fades, it leaves a Gloamcap behind.</li>
  *   <li><b>Bark Beetle</b> (Bark Blight): crawls at your ankles and nips. Two hits.</li>

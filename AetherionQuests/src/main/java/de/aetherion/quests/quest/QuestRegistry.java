@@ -263,7 +263,7 @@ firstHunt.addReward(
                 new Quest(
                         "gather_wood",
                         "Egon's Timber Run",
-                        "Fell oak with the Forager's axe — look where it should fall, hit again — then bring Egon 10 logs."
+                        "Fell oak with the Forager's axe (hit the trunk until it falls), then bring Egon 10 logs."
                 );
 
 
@@ -385,7 +385,7 @@ firstHunt.addReward(
                 new Quest(
                         "a_simple_craft",
                         "Second Recipe",
-                        "Open the §agreen Recipe Book§7 in the Manager and craft a §fMining Pickaxe§7 — Simple Pickaxe in the middle, coal around it."
+                        "Open the §aRecipe Book§7 in your Journal (Recipes) and make a §fMining Pickaxe§7 — Simple Pickaxe in the middle, coal around it."
                 );
 
 
@@ -705,7 +705,7 @@ openUp.addReward(
         Quest lessonBoost = new Quest(
                 "lesson_boost",
                 "Lesson: Boost",
-                "Temper wants one booster fused onto your gear at the Manager anvil."
+                "Temper wants one booster socketed into your gear at the Anvil (at his forge or in your Journal)."
         );
         lessonBoost.setServiceId("booster_tutor");
         lessonBoost.addObjective(new Objective(ObjectiveType.USE, "APPLY_BOOSTER", 1));
@@ -727,8 +727,8 @@ openUp.addReward(
 
         Quest lessonManager = new Quest(
                 "lesson_manager",
-                "Your Loadout",
-                "Miss Ledger wants one skill in your loadout and your Codex opened. Nether Star → Skills."
+                "Your First Talent",
+                "Miss Ledger wants one talent in a talent slot and your Codex opened. Journal → Skills."
         );
         lessonManager.setServiceId("ledger");
         lessonManager.addObjective(new Objective(ObjectiveType.USE, "AETHER_SKILL", 1));

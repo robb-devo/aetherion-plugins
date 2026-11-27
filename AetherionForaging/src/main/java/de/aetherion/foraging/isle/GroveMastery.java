@@ -12,7 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * <ul>
  *   <li>+1 wood cap per tier (a tree of it pays up to +7 more logs at VII),</li>
  *   <li>+0.25% heartwood chance per tier,</li>
- *   <li>IV: the gold ring (Perfect fell) is one step wider on that wood,</li>
+ *   <li>IV: the gold spot stays lit one step longer on that wood,</li>
  *   <li>VII: Crown Finds ×1.5 on that wood, and the title "Warden of …".</li>
  * </ul>
  * A Titan counts twice. Grove Born sometimes counts a fell twice.
@@ -99,7 +99,7 @@ public final class GroveMastery {
             ForageBridge.coins(player, coins);
             ForageBridge.bonus(player, paid * 40);
             String perk = switch (paid) {
-                case 4 -> " §8· §aGold ring +1 on " + wood.display();
+                case 4 -> " §8· §aGold spot lasts longer on " + wood.display();
                 case 7 -> " §8· §6Crown Finds ×1.5 on " + wood.display();
                 default -> " §8· §a+1 wood cap on " + wood.display();
             };

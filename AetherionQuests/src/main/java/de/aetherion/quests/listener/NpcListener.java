@@ -412,7 +412,7 @@ public class NpcListener implements Listener {
                     && questManager.getQuestState(player, timber) == QuestState.ACTIVE
                     && locked) {
                 org.bukkit.Location at = resolveNpcLocation(npc);
-                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.replay", "Still watching, {player}? One more time — watch where I make it fall."));
+                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.replay", "Still watching, {player}? One more time. Count the hits."));
                 if (at != null) {
                     playForagerDemo(player, at);
                 } else {
@@ -562,9 +562,9 @@ public class NpcListener implements Listener {
                                 return;
                             }
                             npcSay(player, npc,
-                                    de.aetherion.quests.lang.LangPack.say(player, "lark.equip_now", "Now equip it: §eManager → Pets§f — it blinks. Pick your catch."));
+                                    de.aetherion.quests.lang.LangPack.say(player, "lark.equip_now", "Now equip it: §eJournal → Pets§f — it blinks. Pick your catch."));
                             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                                    de.aetherion.quests.lang.LangPack.ui(player, "tip.lark_equip", "→ Manager → Pets → Equip your catch"),
+                                    de.aetherion.quests.lang.LangPack.ui(player, "tip.lark_equip", "→ Journal → Pets → Equip your catch"),
                                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
                             ));
                             de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
@@ -667,9 +667,9 @@ public class NpcListener implements Listener {
         // One line, the axe, and the trees are open at once: people go straight for a trunk, so the demo beside
         // him is there to watch, never a wait.
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.axe_now",
-                "Axe's yours. Hit a §eglowing trunk§f, look where it should fall, then hit again."));
+                "The axe is yours. Hit an §eoak trunk§f until it falls. Gold counts double."));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.quests.lang.LangPack.ui(player, "tip.chop_now", "→ Glowing trunk · look where it falls · hit again · 10 oak for Egon"),
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.chop_now", "→ Hit an oak trunk · gold spot counts double · 10 oak for Egon"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
         Quest timber = questManager.getQuest("gather_wood");
@@ -713,7 +713,7 @@ public class NpcListener implements Listener {
             return;
         }
         LivingNpcProfile.say(player, "lumberjack", "Forager",
-                de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_chop", "Left-click a glowing trunk, look where it should fall, left-click again."));
+                de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_chop", "Hit the trunk until the notch is through. The gold spot counts double."));
         LivingNpcProfile.say(player, "lumberjack", "Forager",
                 de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_egon", "Ten oak logs to Egon on the pier."));
     }
@@ -896,7 +896,7 @@ public class NpcListener implements Listener {
         // Unlock crafting on first real visit.
         de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
         if (progress != null) {
-            progress.unlock(player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
+            progress.unlock(player, "WORKBENCH", "Workbench + Recipes", "Journal → Recipes");
         }
         if (plugin != null && plugin.getPlayerQuestStorage() != null) {
             plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "craftsman_spoken");
@@ -1154,7 +1154,7 @@ public class NpcListener implements Listener {
 
         LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "quartermaster.coal_logged", "Coal logged. Thank you, {player}. Genuinely."));
         LivingNpcProfile.say(player, npc,
-                de.aetherion.quests.lang.LangPack.say(player, "quartermaster.mines_tp", "Mines teleport's open — Manager → Teleports, or type §e/mines§f."));
+                de.aetherion.quests.lang.LangPack.say(player, "quartermaster.mines_tp", "The Mines spawn is open — Journal → Spawns, or type §e/mines§f."));
         player.sendMessage("");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
                 de.aetherion.quests.lang.LangPack.ui(player, "tip.mines_tp", "→ Mines teleport · Manager or /mines"),
@@ -1228,7 +1228,7 @@ public class NpcListener implements Listener {
         AetherionQuests plugin = AetherionQuests.getInstance();
         String name = npc.getName();
 
-        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.loadout_ok", "Loadout set, Codex open. Good. Filed."));
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.loadout_ok", "Talent in, Codex open. Good. Filed."));
         int level = de.aetherion.quests.util.QuestSkillGate.accountLevel(player);
         if (level >= 0 && level < de.aetherion.quests.util.QuestStoryGate.AUTO_PICKUP_LEVEL) {
             npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.autopickup_soon",
@@ -1634,7 +1634,7 @@ public class NpcListener implements Listener {
                         de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger", "/capital");
                         player.sendActionBar(net.kyori.adventure.text.Component.text(
                                 de.aetherion.quests.lang.LangPack.ui(player, "tip.kit_to_capital",
-                                        "Kit on · Nether Star (slot 9) → Teleports → Capital · or /capital"),
+                                        "Kit on · Journal (slot 9) → Spawns → Capital · or /capital"),
                                 net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
                     }
                 });
@@ -2908,7 +2908,7 @@ public class NpcListener implements Listener {
             ));
         }
         String[] travel = de.aetherion.quests.lang.LangPack.sayLines(player, "ledger.desk.travel.lines", new String[] {
-                "Nether Star → Manager → §eTeleports§f. Every camp you've walked into is one click.",
+                "Journal → §eSpawns§f. Every camp you've walked into is one click.",
                 "The isles are pads: §aTwig§f's slime pad for Forage, §eHarlow§f's road for the Farm, the west pad for Fishing.",
                 "Lost? §e/capital§f puts you back at my desk. I'll pretend not to notice."
         });

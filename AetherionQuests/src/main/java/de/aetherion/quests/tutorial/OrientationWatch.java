@@ -147,7 +147,7 @@ public final class OrientationWatch implements Listener {
         if (SKILL.equalsIgnoreCase(target) && skill && !codex) {
             watch.later(player, 20L, () -> {
                 ledger(player, LangPack.say(player, "ledger.loadout_set",
-                        "There — that's a loadout. That skill levels as you work its trade."));
+                        "There, your first talent. It gets stronger as its skill levels."));
                 ledger(player, LangPack.say(player, "ledger.codex_next",
                         "Now your §eCodex§f — top-left of that same page, or §e/codex§f."));
             });
@@ -179,7 +179,7 @@ public final class OrientationWatch implements Listener {
                 ? LangPack.ui(player, "act2_title", "ACT II · THE CAPITAL")
                 : LangPack.ui(player, "act3_title", "ACT III · THE ROADS");
         String subtitle = act == 2
-                ? LangPack.ui(player, "act2_subtitle", "your loadout · your Codex · boosters")
+                ? LangPack.ui(player, "act2_subtitle", "your first talent · your Codex · boosters")
                 : LangPack.ui(player, "act3_subtitle", "the drill · the stamp · the roads");
         player.showTitle(Title.title(
                 Component.text(title, act == 2 ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.RED, TextDecoration.BOLD),
