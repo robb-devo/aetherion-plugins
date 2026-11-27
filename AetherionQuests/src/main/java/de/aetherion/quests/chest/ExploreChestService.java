@@ -209,6 +209,30 @@ public final class ExploreChestService {
     }
 
     /**
+     * Moves an exploration chest to an empty block (2026-11-27 area pass: chests off the paths). Kind and cooldowns
+     * of the player who opened it stay with the kind; the facing is kept unless one is given. A scatter spot that
+     * pointed at the old block points at the new one, so it never comes back at the old place.
+     */
+    public boolean relocate(Block from, Block to, BlockFace face) {
+        ExploreChestKind kind = kindOf(from);
+        if (kind == null || to == null || (!to.getType().isAir() && to.getType() != Material.WATER)) {
+            return false;
+        }
+        String oldId = key(from);
+        BlockFace keep = facings.get(oldId);
+        drop(from);
+        to.setType(Material.BARRIER, false);
+        String id = key(to);
+        chests.add(id);
+        kinds.put(id, kind);
+        facings.put(id, face != null ? horizontal(face) : (keep == null ? BlockFace.SOUTH : keep));
+        seeded.replaceAll((spot, chestKey) -> oldId.equals(chestKey) ? id : chestKey);
+        save();
+        ensureFx(to);
+        return true;
+    }
+
+    /**
      * Places an authored scatter chest (no player). The caller has checked the ground; a spot that
      * already holds an exploration chest is only marked as seeded.
      */
