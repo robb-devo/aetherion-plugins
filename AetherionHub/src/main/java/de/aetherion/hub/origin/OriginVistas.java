@@ -82,14 +82,21 @@ public final class OriginVistas implements Listener {
         if (first) {
             profile.dirty = true;
             long paid = isle.pay(player, "vista", 120L);
-            OriginText.card(player, "§f§l" + vista.name(), "§7Vista · look around", 50);
-            player.sendMessage("§f✦ Vista §8· §f" + vista.name() + " §8· §7the island names itself" + (paid > 0 ? " §8· §6+" + paid : ""));
+            OriginText.card(player, "§f§l" + vista.name(), OriginText.t(player, "§7Vista · look around", "§7Aussichtspunkt · schau dich um"), 50);
+            if (!OriginText.toast(player, "✦", OriginText.t(player, "§fVista §8· §f", "§fAussichtspunkt §8· §f") + vista.name(),
+                    java.util.List.of(paid > 0 ? "§6+" + OriginText.coins(paid) + " Coins" : "§7"))) {
+                player.sendMessage("§f✦ Vista §8· §f" + vista.name() + " §8· §7the island names itself" + (paid > 0 ? " §8· §6+" + paid : ""));
+            }
             int total = isle.config().vistas().size();
             long found = isle.config().vistas().keySet().stream().filter(profile.vistas::contains).count();
             if (found >= total && profile.mark("stargazer")) {
-                OriginText.card(player, "§d§lStargazer", "§7Every vista on Origin", 60);
                 long bonus = isle.pay(player, "stargazer", 750L);
-                player.sendMessage("§d✦ Stargazer §8· §6+" + OriginText.coins(bonus) + " coins");
+                if (!OriginText.bigCard(player, OriginText.t(player, "Milestone", "Meilenstein"), "§d§lStargazer",
+                        java.util.List.of(OriginText.t(player, "§7Every vista on Origin", "§7Jeder Aussichtspunkt auf Origin"),
+                                "§6+" + OriginText.coins(bonus) + " Coins"), "§d")) {
+                    OriginText.card(player, "§d§lStargazer", "§7Every vista on Origin", 60);
+                    player.sendMessage("§d✦ Stargazer §8· §6+" + OriginText.coins(bonus) + " coins");
+                }
             }
         } else {
             OriginText.bar(player, "§f✦ " + vista.name() + " §8· §7look around");

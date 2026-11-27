@@ -26,23 +26,23 @@ final class ForagingHud {
     private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
 
     /** Live aim: green when the lane is clear and on the gold ring, yellow when clear, red when it would hit. */
+    /** A fell in progress: how deep the notch is, and whether the gold spot is lit right now. */
     void aiming(Player player, FellAim aim, int streak) {
         boolean german = AetherServices.german(player);
-        boolean clear = aim.laneClear();
-        boolean ring = clear && aim.onMark();
+        boolean glow = aim.glowing();
         paint(
                 player,
-                ForagingStrike.aimTitle(german, clear, ring, aim.slipping(), streak),
-                aim.timeLeft(),
-                !clear ? BarColor.RED : ring ? BarColor.GREEN : BarColor.YELLOW
+                ForagingStrike.notchTitle(german, aim.hits(), aim.hitsNeeded, glow, streak),
+                aim.progress(),
+                glow ? BarColor.YELLOW : BarColor.GREEN
         );
     }
 
-    /** Tutorial: the Forager is aiming — same bar, driven by the demo. */
-    void demo(Player player, boolean onRing) {
+    /** Tutorial: the Forager cuts a notch — same bar, driven by the demo. */
+    void demo(Player player, int hits, int needed) {
         boolean german = AetherServices.german(player);
-        paint(player, ForagingStrike.aimTitle(german, true, onRing, false, 0), 1.0d,
-                onRing ? BarColor.GREEN : BarColor.YELLOW);
+        paint(player, ForagingStrike.notchTitle(german, hits, needed, false, 0), Math.min(1.0d, hits / (double) needed),
+                BarColor.GREEN);
     }
 
     /** One reused BossBar per player — look preview, never a second bar. */

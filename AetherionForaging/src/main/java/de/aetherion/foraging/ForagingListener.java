@@ -407,8 +407,28 @@ public class ForagingListener implements Listener {
                 return;
             }
             event.setCancelled(true);
-            if (pulse.chop()) {
+            Block clicked = event.getClickedBlock();
+            if (action != Action.LEFT_CLICK_BLOCK || clicked == null) {
+                return;
+            }
+            if (!pulse.job.blockKeys().contains(FellLane.key(clicked.getX(), clicked.getY(), clicked.getZ()))) {
+                // A swing at another tree starts that one (switching is free).
+                if (isLog(clicked.getType())) {
+                    TreeJob other = jobs.get(key(clicked));
+                    if (other == null) {
+                        other = createJob(clicked, player, null);
+                    }
+                    if (other != null && other != pulse.job && !other.collapsing && !other.fellSpent && other.fellLog != null) {
+                        cancelChop(pulse);
+                        startChop(player, other);
+                    }
+                }
+                return;
+            }
+            if (pulse.chop(player)) {
                 resolveChop(pulse);
+            } else {
+                hud.aiming(player, pulse, streaks.current(pulse.playerId));
             }
             return;
         }
@@ -507,14 +527,11 @@ public class ForagingListener implements Listener {
                 cancelChop(pulse);
                 continue;
             }
-            boolean timedOut = pulse.tick(player);
-            if (pulse.slipEdge()) {
-                ForagingFx.slip(player);
-            }
+            boolean idle = pulse.tick(player);
             hud.aiming(player, pulse, streaks.current(pulse.playerId));
-            if (timedOut) {
-                pulse.slipAway();
-                resolveChop(pulse);
+            if (idle) {
+                // Stopped hitting: no fell, no penalty, the crack fades.
+                cancelChop(pulse);
             }
         }
     }
@@ -620,8 +637,8 @@ public class ForagingListener implements Listener {
         }
         lastHintTick.put(player.getUniqueId(), now);
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                de.aetherion.core.exile.Say.t(player, "Hit the trunk · then look where it should fall · hit again",
-                        "Stamm schlagen · dann hinschauen, wohin er fallen soll · nochmal schlagen"),
+                de.aetherion.core.exile.Say.t(player, "Hit the trunk until it falls · the glowing spot counts twice",
+                        "Auf den Stamm schlagen, bis er fällt · die leuchtende Stelle zählt doppelt"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
     }
@@ -779,23 +796,72 @@ public class ForagingListener implements Listener {
         lookCache.remove(player.getUniqueId());
         job.felling = true;
         int streak = streaks.current(player.getUniqueId());
-        int zone = ForagingStrike.zoneSize(zoneFor(player, streak, job.family, base, job.notched));
-        int budget = (int) Math.round(plugin.fellAimTicks() / speedFor(player, base, job.notched));
-        FellAim pulse = new FellAim(player, job, base, job.reach(), job.blockKeys(), budget,
-                ForagingStrike.tolerance(zone));
+        ForageIsle isle = ForageIsle.get();
+        boolean titan = isle != null && !job.notched && isle.titan(job.baseLocation(), job.logs.size());
+        if (titan) {
+            // Titans need twice the hits in one go (no second aim any more); the isle still pays them as Titans.
+            job.notched = true;
+        }
+        // The old Perfect-ring sources (skill level, streak, isle marks, Steady Hands) now keep the gold spot lit longer.
+        int zone = ForagingStrike.zoneSize(zoneFor(player, streak, job.family, base, false));
+        int glow = (int) Math.round((8 + 2 * zone) / speedFor(player, base, false));
+        int hits = hitsFor(player.getInventory().getItemInMainHand(), job.logs.size(), titan);
+        FellAim pulse = new FellAim(player, job, base, job.reach(), job.blockKeys(), plugin.fellAimTicks(), hits, glow);
         job.pulse = pulse;
         pulses.put(player.getUniqueId(), pulse);
 
-        // Every living tree is aimed: look where it should fall, hit again.
         ForagingFx.start(player, job.fellLocation());
         hud.aiming(player, pulse, streak);
-        if (chopHintsDone(player) < 3) {
-            player.sendMessage(de.aetherion.core.exile.Say.t(player,
-                    "§2❦ §fLook where the tree should fall. §7The line on the ground shows its way — §agreen§7 is free, "
-                            + "§cred§7 hits something. Land it on the §6gold ring§7 for a Perfect fell. §fHit again to fell.",
-                    "§2❦ §fSchau dorthin, wohin der Baum fallen soll. §7Die Linie am Boden zeigt seinen Weg — §agrün§7 ist frei, "
-                            + "§crot§7 trifft etwas. Lande ihn im §6goldenen Ring§7 für einen perfekten Fall. §fNochmal schlagen zum Fällen."));
+    }
+
+    /**
+     * Hits a tree takes (2026-11-27): the axe sets it, T1 6 … T5 2; big trees (24+ logs) take half again,
+     * Titans twice. Vanilla axes count as T1 (wood, stone, gold), T2 (iron), T3 (diamond), T4 (netherite).
+     */
+    static int hitsFor(ItemStack axe, int logs, boolean titan) {
+        int tier = axeTier(axe);
+        int hits = Math.max(2, 7 - tier);
+        if (logs >= 24) {
+            hits = (int) Math.ceil(hits * 1.5d);
         }
+        if (titan) {
+            hits *= 2;
+        }
+        return hits;
+    }
+
+    static int axeTier(ItemStack axe) {
+        if (axe == null || axe.getType().isAir()) {
+            return 1;
+        }
+        try {
+            AetherionItems items = AetherionItems.getInstance();
+            String id = items == null || items.getItemManager() == null ? null : items.getItemManager().getItemId(axe);
+            if (id != null) {
+                String lower = id.toLowerCase(Locale.ROOT);
+                if (lower.startsWith("foraging_axe")) {
+                    int dash = lower.lastIndexOf('_');
+                    String tail = lower.substring(dash + 1);
+                    return tail.chars().allMatch(Character::isDigit) ? Math.max(1, Math.min(5, Integer.parseInt(tail))) : 1;
+                }
+                if (lower.equals("god_axe")) {
+                    return 5;
+                }
+                if (lower.equals(CANOPY_CLEAVER_ID.toLowerCase(Locale.ROOT)) || lower.contains("timber") || lower.contains("bridged")) {
+                    return 3;
+                }
+                if (lower.equals("simple_axe")) {
+                    return 1;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return switch (axe.getType()) {
+            case NETHERITE_AXE -> 4;
+            case DIAMOND_AXE -> 3;
+            case IRON_AXE -> 2;
+            default -> 1;
+        };
     }
 
     /** Stump centre at the stump block's bottom — where every fall pivots. */
@@ -933,6 +999,7 @@ public class ForagingListener implements Listener {
         ForageIsle isle = ForageIsle.get();
         Player cutter = Bukkit.getPlayer(pulse.playerId);
         if (cutter != null && isle != null && !pulse.job.notched && isle.titan(pulse.job.baseLocation(), pulse.job.logs.size())) {
+            // Only a fell started before the hit-count update can still land here.
             notchTitan(cutter, pulse);
             return;
         }
@@ -1069,7 +1136,7 @@ public class ForagingListener implements Listener {
 
     private static void announceStreak(Player player, int streak) {
         if (streak == ForagingStrike.HOT_STREAK) {
-            player.sendMessage("§6✦ Five clean fells. §7The gold ring just got wider. Don't waste it.");
+            player.sendMessage("§6✦ Five clean fells. §7The glowing spot now stays lit longer. Don't waste it.");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.7f, 1.5f);
         } else if (streak > ForagingStrike.HOT_STREAK && streak % 10 == 0) {
             player.sendMessage("§6✦ " + streak + " clean fells. §7The trees have started a support group.");
@@ -1092,6 +1159,7 @@ public class ForagingListener implements Listener {
         if (pulse == null || !pulses.remove(pulse.playerId, pulse)) {
             return;
         }
+        pulse.release(Bukkit.getPlayer(pulse.playerId));
         pulse.job.pulse = null;
         pulse.job.felling = false;
         // Keep fell mark — only this player is locked from THIS tree briefly.
@@ -1122,6 +1190,7 @@ public class ForagingListener implements Listener {
         if (pulse == null || !pulses.remove(pulse.playerId, pulse)) {
             return;
         }
+        pulse.release(Bukkit.getPlayer(pulse.playerId));
         pulse.job.pulse = null;
         pulse.job.felling = false;
         hud.hide(pulse.playerId);

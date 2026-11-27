@@ -1,8 +1,9 @@
 package de.aetherion.foraging;
 
 /**
- * Fell vocabulary (A-51: the timing bar is gone). A fell is aimed: the cutter looks where the tree should
- * fall. The bar up top reads {@code Fall  ➜ lane clear · on the gold ring · hit again  ✦N}; {@code ✦N} is
+ * Fell vocabulary. Since 2026-11-27 a fell is a number of hits on the trunk (see {@link FellAim}); the gold spot
+ * on the trunk replaces the old Perfect ring. Before that (A-51) a fell was aimed: the cutter looked where the tree
+ * should fall. The bar up top reads {@code Fall  ➜ lane clear · on the gold ring · hit again  ✦N}; {@code ✦N} is
  * the running streak of clean fells. The Perfect ring's size is counted in steps (the old window cells),
  * so every skill, mark and streak bonus that widened the window now widens the ring.
  */
@@ -46,10 +47,31 @@ final class ForagingStrike {
         return out.toString();
     }
 
+    /**
+     * A fell in progress (2026-11-27): {@code Fällen  ▮▮▮▯▯ 3/5 · schlag weiter auf den Stamm}. While the gold spot
+     * glows the line says so; that is the only thing to learn.
+     */
+    static String notchTitle(boolean de, int hits, int needed, boolean glow, int streak) {
+        StringBuilder out = new StringBuilder("§2").append(de ? "Fällen" : "Fell").append("  ");
+        for (int i = 0; i < needed; i++) {
+            out.append(i < hits ? "§a▮" : "§8▯");
+        }
+        out.append(" §f").append(hits).append("§8/§7").append(needed).append(" §8· ");
+        if (glow) {
+            out.append(de ? "§6✦ triff die leuchtende Stelle: zählt doppelt" : "§6✦ hit the glowing spot: counts twice");
+        } else if (hits >= needed - 1) {
+            out.append(de ? "§fnoch ein Schlag!" : "§fone more hit!");
+        } else {
+            out.append(de ? "§7schlag weiter auf den Stamm" : "§7keep hitting the trunk");
+        }
+        out.append(streakTag(streak));
+        return out.toString();
+    }
+
     /** Look-ahead: an axe on a living trunk, before the first hit. */
     static String previewTitle(boolean de, int streak) {
         return "§2" + (de ? "Fällen" : "Fell") + "  §aREADY §8· §7"
-                + (de ? "Stamm schlagen, dann hinschauen, wohin er fällt" : "hit the trunk, then look where it should fall")
+                + (de ? "auf den Stamm schlagen, bis er fällt" : "hit the trunk until it falls")
                 + streakTag(streak);
     }
 

@@ -297,8 +297,8 @@ public enum AetherSkill {
             "Steady Hands",
             Category.FORAGING,
             Material.GOLDEN_AXE,
-            "Trees lean the way you look now.",
-            "Gold ring (Perfect fell) one step wider on the isle, shorter miss cooldown.",
+            "Your swing lands where the wood glows.",
+            "The glowing spot on a trunk stays lit longer. Shorter miss cooldown on the Foraging Isle.",
             Flag.STEADY_HANDS
     ),
     DEADFALL_DANCER(

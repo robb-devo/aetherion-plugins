@@ -61,6 +61,57 @@ public final class OriginText {
                 Duration.ofMillis(400), Duration.ofMillis(Math.max(10, holdTicks) * 50L), Duration.ofMillis(800))));
     }
 
+    /**
+     * Small card at the top (Quests' screen cards, 2026-11-27 chat rule): a find shows there instead of in chat.
+     * False when Quests or cards are missing for this player; the caller then says it the old way.
+     */
+    public static boolean toast(Player player, String glyph, String title, java.util.List<String> rows) {
+        return cards("note", new Class<?>[]{Player.class, String.class, String.class, java.util.List.class, String.class},
+                player, glyph, title, rows, null);
+    }
+
+    /** Big card above the middle (milestones). Same fallback rule as {@link #toast}. */
+    public static boolean bigCard(Player player, String header, String title, java.util.List<String> rows, String accent) {
+        return cards("big", new Class<?>[]{Player.class, String.class, String.class, java.util.List.class, java.util.List.class,
+                        String.class, String.class, String.class},
+                player, header, title, rows, null, null, accent, null);
+    }
+
+    private static boolean cards(String method, Class<?>[] types, Object... args) {
+        if (args.length == 0 || args[0] == null) {
+            return false;
+        }
+        // Rows that are only colour codes ("no reward") are left out.
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof java.util.List<?> list && types[i] == java.util.List.class && !list.isEmpty()
+                    && list.get(0) instanceof String) {
+                java.util.List<String> rows = new java.util.ArrayList<>();
+                for (Object row : list) {
+                    if (row instanceof String text && !text.replaceAll("§.", "").isBlank()) {
+                        rows.add(text);
+                    }
+                }
+                args[i] = rows;
+            }
+        }
+        org.bukkit.plugin.Plugin quests = org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionQuests");
+        if (quests == null || !quests.isEnabled()) {
+            return false;
+        }
+        try {
+            Class<?> cards = Class.forName("de.aetherion.quests.api.Cards", true, quests.getClass().getClassLoader());
+            Object result = cards.getMethod(method, types).invoke(null, args);
+            return result instanceof Boolean ok && ok;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** English / German by the player's language. */
+    public static String t(Player player, String en, String german) {
+        return de.aetherion.core.exile.Say.t(player, en, german);
+    }
+
     public static String coins(long amount) {
         return String.format(Locale.US, "%,d", amount);
     }

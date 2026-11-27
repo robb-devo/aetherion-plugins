@@ -435,7 +435,7 @@ public final class GroveCritters implements Listener {
                 profile.frostlitUntil = System.currentTimeMillis() + 60_000L;
                 world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.NEUTRAL, 0.8f, 1.6f);
                 de.aetherion.core.api.Vfx.puff(at, Particle.SNOWFLAKE, 20, Math.max(0.3, 0.3), null);
-                ForageText.bar(player, "§b❄ Frostlit §8· §7Gold ring +1 for §f1:00");
+                ForageText.bar(player, "§b❄ Frostlit §8· §7glowing spot lasts longer for §f1:00");
                 ForageBridge.bonus(player, 12);
             }
             case WISP -> {

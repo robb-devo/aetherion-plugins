@@ -366,14 +366,22 @@ public final class OriginTales implements Listener {
             long paid = tale.coins() == 0 ? 0L : isle.pay(player, "tale", tale.coins() > 0 ? tale.coins() : 50L);
             int found = found(profile);
             OriginConfig.District d = isle.config().district(tale.district());
-            player.sendMessage("§6✉ Tale §8· " + (d == null ? "§f" : d.color()) + tale.name() + (paid > 0 ? " §8· §6+" + paid : "")
-                    + " §8· §7" + found + "/" + tales.size() + " §8· §7click the note to read it");
+            if (!OriginText.toast(player, "✉", OriginText.t(player, "§6Tale §8· ", "§6Geschichte §8· ") + (d == null ? "§f" : d.color()) + tale.name(),
+                    java.util.List.of("§7" + found + "/" + tales.size() + (paid > 0 ? " §8· §6+" + OriginText.coins(paid) + " Coins" : ""),
+                            OriginText.t(player, "§8Click the note to read it.", "§8Klick die Notiz zum Lesen.")))) {
+                player.sendMessage("§6✉ Tale §8· " + (d == null ? "§f" : d.color()) + tale.name() + (paid > 0 ? " §8· §6+" + paid : "")
+                        + " §8· §7" + found + "/" + tales.size() + " §8· §7click the note to read it");
+            }
             if (found >= tales.size() && profile.mark("taleteller")) {
                 long bonus = isle.pay(player, "taleteller", 1500L);
-                if (!isle.quiet(player)) {
-                    OriginText.card(player, "§6§lTaleteller", "§7Every storytelling chest on Origin", 70);
+                if (!OriginText.bigCard(player, OriginText.t(player, "Milestone", "Meilenstein"), "§6§lTaleteller",
+                        java.util.List.of(OriginText.t(player, "§7Every tale chest on Origin", "§7Jede Geschichtenkiste auf Origin"),
+                                bonus > 0 ? "§6+" + OriginText.coins(bonus) + " Coins" : "§7"), "§6")) {
+                    if (!isle.quiet(player)) {
+                        OriginText.card(player, "§6§lTaleteller", "§7Every storytelling chest on Origin", 70);
+                    }
+                    player.sendMessage("§6✦ Taleteller §8· §7every storytelling chest on Origin" + (bonus > 0 ? " §8· §6+" + OriginText.coins(bonus) + " coins" : ""));
                 }
-                player.sendMessage("§6✦ Taleteller §8· §7every storytelling chest on Origin" + (bonus > 0 ? " §8· §6+" + OriginText.coins(bonus) + " coins" : ""));
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.15f);
             }
         } else {
