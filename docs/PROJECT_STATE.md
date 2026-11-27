@@ -612,6 +612,30 @@ being worked step by step; every round is live and listed in `aetherion-ops/docs
   render time, unit-tested). Dialog paths name the real Journal path ("Journal › Workshop › Recipes").
 - Source files of Quests/Items/isle plugins are CRLF: patch with `newline=''`.
 
+## Dungeons measured and fixed (2026-11-27, PC session, main `54b3dbce`)
+
+Beta list A-06 to A-12. Numbers come from bench runs with a test player on mmo-d.
+- Measurement: `instance/DungeonRunMetrics` logs one `[DungeonRun]` line per run (build time, tick work, stalls as the
+  gap between tick starts, most mobs/entities/chunks, slowest step) and appends `run-metrics.csv`; any stall of
+  `run-metrics.stall-ms` (150) is logged as `[SlowTick]` with what ran in it. `/dungeon metrics` lists recent runs.
+- Bench: `/dungeon bench <player> <1|2|3> [seconds]` (console or admin) plays a run with a test player: readies,
+  moves it room to room or pack to pack, kills what is left, then the boss (`instance/DungeonBench`).
+- Dungeon worlds never save (autosave off). Anything in a chunk that unloads is gone, and anything on their disk is
+  left over from a restart save. So: run chunks are loaded off-thread and pinned (`instance/DungeonChunks`), and
+  dungeon mobs, bosses and minions read from an `aedun_` disk are removed on `EntitiesLoadEvent` (Dungeons) or never
+  adopted (BossEngine `staleDungeonBody`).
+- Floor 1 is built ahead of time by the warm pool (`instances.prebuilt-floor1`, 2 worlds; one room template per tick
+  via `LerfingTestBuilder.pooledSteps`). The on-the-spot build (1.6 s freeze) is only the fallback.
+- Floor 2 archers are strays (`AbstractSkeleton` cast); spawn errors are caught; the kill target follows what really
+  spawned and drops to "everything left" if mobs are lost.
+- Floor 3: recycles despawn bosses before removing entities, BossEngine's `despawnInWorld` also takes bodiless
+  encounters, and mmo-d's stationary `dungeon_aetherion_home` spawner is off (it put the boss on the throne early).
+- Parallel runs: `instances.max-runs` (3). Floors 2 and 3 use their base world, and while it is in a run the warm pool
+  copies it off-thread (no lock, no uid) as the spare for the next party. mmo-d's `dungeon_aetherion` allows 4.
+- Damage numbers on dungeon mobs: the hit goes to the PDC HP pool and is left as `aetherion_boss_hit` metadata, which
+  Items' `DamageNumbers` reads (as for BossEngine bosses).
+- Instance worlds are created with `keepSpawnLoaded(FALSE)` (no spawn-area preparation, was ~0.7 s each).
+
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 
 mmo-d lagged (MSPT spikes to 1.4 s with nobody online): `CryptHologramService` (Items) re-spawned its saved
