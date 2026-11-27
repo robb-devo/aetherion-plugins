@@ -40,12 +40,14 @@ public final class HandbookBook implements TabExecutor {
                     "The book in hotbar slot 9 is your Journal. Every system lives in it.",
                     "The ribbons along the top are chapters: Today, Character, Journey, Atlas, Workshop, Market, Codex, Company, Settings.",
                     "New chapters appear when you unlock them. A glowing line is the one a teacher wants you to open.",
-                    "Today shows your quest, what opens next and your path."
+                    "Today shows your quest, what opens next and your path.",
+                    "Quests with a ✦ belong to the story. It is optional: nothing else waits for it."
             }, new String[] {
                     "Das Buch auf Hotbar-Platz 9 ist dein Journal. Jedes System steckt darin.",
                     "Die Bänder oben sind Kapitel: Heute, Charakter, Reise, Atlas, Werkstatt, Markt, Codex, Gemeinschaft, Optionen.",
                     "Neue Kapitel erscheinen, wenn du sie freischaltest. Eine leuchtende Zeile will ein Lehrer von dir geöffnet sehen.",
-                    "Heute zeigt deine Quest, was als Nächstes kommt, und deinen Weg."
+                    "Heute zeigt deine Quest, was als Nächstes kommt, und deinen Weg.",
+                    "Quests mit einem ✦ gehören zur Story. Sie ist freiwillig: Nichts anderes wartet darauf."
             }),
             new Topic("skills", "Skills & Talents", "Skills & Talente", new String[] {
                     "Everything you do trains a skill: Mining, Farming, Foraging, Fishing, Combat and Dungeon.",

@@ -257,10 +257,15 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
                     target = compass == null ? null : compass.locationOf(npc);
                 }
             }
+            // The story ("Das Schlaflied") is optional: its quests carry a star and say so (Soll-Bild §5).
+            boolean story = quest.getId().startsWith("lullaby_");
+            boolean german = de.aetherion.quests.lang.LangPack.german(player);
+            String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
+            String detail = de.aetherion.quests.lang.LangPack.questDescription(player, quest.getId(), quest.getDescription());
             JournalQuest line = new JournalQuest(
                     quest.getId(),
-                    de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle()),
-                    de.aetherion.quests.lang.LangPack.questDescription(player, quest.getId(), quest.getDescription()),
+                    story ? "✦ " + title : title,
+                    story ? (german ? "Story, freiwillig. " : "Story, optional. ") + detail : detail,
                     ready,
                     tracked,
                     de.aetherion.core.api.JournalText.t(QuestProgressDisplay.step(player, manager, quest).line()),
