@@ -667,6 +667,22 @@
     [
       7874,
       "aetherion:item/gui/j_raid_ban_locked"
+    ],
+    [
+      7825,
+      "aetherion:item/gui/j_flag_de"
+    ],
+    [
+      7875,
+      "aetherion:item/gui/j_flag_de_locked"
+    ],
+    [
+      7826,
+      "aetherion:item/gui/j_flag_en"
+    ],
+    [
+      7876,
+      "aetherion:item/gui/j_flag_en_locked"
     ]
   ],
   "pink_stained_glass_pane": [
