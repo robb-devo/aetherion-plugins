@@ -48,7 +48,7 @@ public final class QuestStoryGate {
     private static final Stop EGON_OAK = new Stop("egon", "Egon", null,
             "tip.tutorial_egon_oak", "Act I · ten oak to Egon · the pier", NamedTextColor.GREEN);
     private static final Stop LEDGER = new Stop("ledger", "Miss Ledger", "/capital",
-            "tip.tutorial_ledger_loadout", "Act II · Miss Ledger · Capital · Journal → Spawns", NamedTextColor.LIGHT_PURPLE);
+            "tip.tutorial_ledger_loadout", "Act II · Miss Ledger · Capital · Journal › Atlas › Teleports", NamedTextColor.LIGHT_PURPLE);
     private static final Stop TEMPER = new Stop("booster_tutor", "Temper", "Boosters",
             "tip.tutorial_temper_boost", "Act II · Temper · south road · boosters", NamedTextColor.GOLD);
     private static final Stop LARK = new Stop("lark", "Lark", "the Fields",
@@ -373,7 +373,7 @@ public final class QuestStoryGate {
         } else if (stop == EGON_OAK) {
             tips.add(guide(player, "oak_back", "Bring the oak logs back to §aEgon §7on the pier."));
         } else if (stop == LEDGER) {
-            tips.add(guide(player, "ledger_capital", "Next: §dMiss Ledger §7at the Capital — Journal → Spawns → Capital, or §f/capital§7."));
+            tips.add(guide(player, "ledger_capital", "Next: §dMiss Ledger §7at the Capital — Journal › Atlas › Teleports › Capital, or §f/capital§7."));
         } else if (stop == TEMPER) {
             tips.add(guide(player, "temper_south", "Next: §eTemper §7on the south road toward the Mines — socket one booster."));
         } else if (stop == LARK) {
@@ -461,7 +461,7 @@ public final class QuestStoryGate {
             return LangPack.say(player, "redirect.egon_oak", "§aEgon§f's waiting on his oak. Pier.");
         }
         if (stop == LEDGER) {
-            return LangPack.say(player, "redirect.ledger_capital", "§dMiss Ledger§f, Capital. Journal → Spawns, or §e/capital§f.");
+            return LangPack.say(player, "redirect.ledger_capital", "§dMiss Ledger§f, Capital. Journal › Atlas › Teleports, or §e/capital§f.");
         }
         if (stop == TEMPER) {
             return LangPack.say(player, "redirect.temper_south", "§eTemper§f, south road toward the Mines. Boosters.");

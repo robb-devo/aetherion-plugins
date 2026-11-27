@@ -102,7 +102,7 @@ public final class EgonBriefingGUI implements Listener {
                 Material.CHEST,
                 "§6Storage",
                 "§7Extra pages for your hoarding.",
-                "§7Journal → Storage."
+                "§7Journal › Character › Storage."
         ));
         inventory.setItem(SLOT_DUNGEONS, button(
                 Material.IRON_BARS,
@@ -258,18 +258,18 @@ public final class EgonBriefingGUI implements Listener {
                     "There's a cap. Don't ask me to raise it. Ask someone with a clipboard."
             };
             case SLOT_PETS -> new String[]{
-                    "Pets are equipped in your Journal under Pets. One at a time. They add stats. Quietly.",
+                    "Pets are equipped in Journal › Character › Pets. One at a time. They add stats. Quietly.",
                     "They level when you play. Dragons get dramatic about it.",
                     "If it has an aura in a dungeon, read the tooltip before you brag."
             };
             case SLOT_SKILLS -> new String[]{
                     "Skills are what you do: Mining, Farming, Foraging, Fishing, Combat. They level by themselves.",
-                    "Talents go into a free talent slot: Journal → Skills. Miss Ledger will check.",
+                    "Talents go into a free talent slot: Journal › Character › Skills. Miss Ledger will check.",
                     "One slot is free at the start. More open with your Aetherion Level: 5, 10, 20 and later."
             };
             case SLOT_RECIPES -> new String[]{
                     "The Craftsman at the market opens the Recipe Book for you.",
-                    "Journal → Recipes. Every blueprint lives there.",
+                    "Journal › Workshop › Recipes. Every blueprint lives there.",
                     "You already got Egon's Simple Pickaxe. Next page: Mining Pickaxe — pick in the middle, coal around it.",
                     "Gear upgrades: old piece in the middle, resources around it."
             };

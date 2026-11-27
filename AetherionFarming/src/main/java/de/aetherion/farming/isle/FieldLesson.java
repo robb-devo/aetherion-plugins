@@ -269,8 +269,8 @@ public final class FieldLesson {
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.2f);
         if (teleport) {
             player.sendMessage(de.aetherion.core.api.JournalText.t(t(player,
-                    "§e✦ Farming Isle §7added to your §fSpawns §8(Journal)§7.",
-                    "§e✦ Farming-Insel §7zu deinen §fSpawns §7hinzugefügt §8(Journal)§7.")));
+                    "§e✦ Farming Isle §7added to your §fTeleports §8(Journal › Atlas)§7.",
+                    "§e✦ Farming-Insel §7zu deinen §fTeleports §7hinzugefügt §8(Journal › Atlas)§7.")));
         }
         QuestProgressAccess quests = AetherServices.quests();
         if (quests != null) {

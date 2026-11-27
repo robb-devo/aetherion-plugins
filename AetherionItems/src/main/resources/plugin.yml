@@ -63,6 +63,10 @@ commands:
       - aethermanager
       - journal
 
+  handbook:
+    description: The Handbook - how every system works, and your path.
+    aliases: [handbuch]
+    usage: /handbook [topic]
   aepen:
     description: Animal pens (ops) - keep a fixed number of animals at a fitting place.
     usage: /aepen add <id> <animal> <count> [radius] | remove <id> | list
