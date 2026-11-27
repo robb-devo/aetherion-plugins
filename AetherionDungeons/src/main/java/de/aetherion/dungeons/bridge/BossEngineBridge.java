@@ -49,16 +49,75 @@ public final class BossEngineBridge {
         }
         String id = templateId == null || templateId.isBlank() ? SENTINEL : templateId;
         BossSpawnAccess access = AetherServices.bosses();
+        boolean ok;
         if (access != null) {
-            boolean ok = access.spawn(id, location, initiator);
+            ok = access.spawn(id, location, initiator);
             if (ok && compactHearths) {
                 // Entity is tagged after spawn via API path below when reflection used;
                 // typed access tags separately when we have the entity.
                 tagCompactHearthsNear(location, access);
             }
-            return ok;
+        } else {
+            ok = spawnReflect(location, initiator, id, compactHearths);
         }
-        return spawnReflect(location, initiator, id, compactHearths);
+        if (!ok) {
+            explainRefusal(id, location);
+        }
+        return ok;
+    }
+
+    /**
+     * BossEngine refuses a spawn without saying why (max-instances counts live encounters and every loaded body
+     * tagged with the template). Log what holds the slot, so a fallback mob never goes unexplained again.
+     */
+    private static void explainRefusal(String id, Location location) {
+        StringBuilder bodies = new StringBuilder();
+        int tagged = 0;
+        for (World world : Bukkit.getWorlds()) {
+            for (org.bukkit.entity.LivingEntity entity : world.getLivingEntities()) {
+                String tid = templateId(entity);
+                if (tid == null || !tid.equalsIgnoreCase(id)) {
+                    continue;
+                }
+                tagged++;
+                if (tagged <= 6) {
+                    bodies.append(' ').append(world.getName()).append(':').append(entity.getType())
+                            .append('@').append(entity.getLocation().getBlockX()).append(',')
+                            .append(entity.getLocation().getBlockY()).append(',').append(entity.getLocation().getBlockZ())
+                            .append(entity.isValid() ? "" : "(invalid)").append(entity.isDead() ? "(dead)" : "");
+                }
+            }
+        }
+        StringBuilder slots = new StringBuilder();
+        Plugin engine = Bukkit.getPluginManager().getPlugin("BossEngine");
+        try {
+            if (engine != null) {
+                Object manager = engine.getClass().getMethod("getBossManager").invoke(engine);
+                Object list = manager.getClass().getMethod("getByTemplate", String.class).invoke(manager, id);
+                if (list instanceof java.util.Collection<?> encounters) {
+                    slots.append(encounters.size()).append(" encounter(s) holding the slot");
+                    for (Object encounter : encounters) {
+                        Object body = encounter.getClass().getMethod("getEntity").invoke(encounter);
+                        Object spawn = encounter.getClass().getMethod("getSpawnLocation").invoke(encounter);
+                        slots.append(" [body=").append(body instanceof Entity e
+                                        ? e.getWorld().getName() + ":" + e.getType() + (e.isValid() ? "" : "(gone)")
+                                        : "none")
+                                .append(" spawn=").append(spawn instanceof Location l && l.getWorld() != null
+                                        ? l.getWorld().getName() + "@" + l.getBlockX() + "," + l.getBlockZ() : "?")
+                                .append(']');
+                    }
+                }
+            }
+        } catch (Exception exception) {
+            slots.append("encounters unknown (").append(exception.getClass().getSimpleName()).append(')');
+        }
+        Plugin owner = Bukkit.getPluginManager().getPlugin("AetherionDungeons");
+        if (owner != null) {
+            owner.getLogger().warning("[Boss] BossEngine refused '" + id + "' at "
+                    + (location.getWorld() == null ? "?" : location.getWorld().getName()) + " "
+                    + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ()
+                    + ": " + tagged + " loaded bod" + (tagged == 1 ? "y" : "ies") + bodies + "; " + slots);
+        }
     }
 
     private static void tagCompactHearthsNear(Location location, BossSpawnAccess access) {
