@@ -71,6 +71,20 @@ public class AetherionForaging extends JavaPlugin {
         if (!getConfig().isSet("fell.aim-ticks")) {
             getConfig().set("fell.aim-ticks", 160);
         }
+        Bukkit.getPluginManager().registerEvents(new GrownTrees(this), this);
+        if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
+            Bukkit.getPluginManager().registerEvents(new WorldGuardLogAllow(), this);
+        }
+        if (getConfig().getBoolean("mode.islands-only", false)) {
+            // Island server (2026-11-27): only the fell loop for trees grown on the islands. No Foraging Isle,
+            // no rituals, guide, weather, habitat scans or paste commands (no WorldGuard / WorldEdit there).
+            ForagingListener foragingListener = new ForagingListener(this);
+            this.listener = foragingListener;
+            Bukkit.getPluginManager().registerEvents(foragingListener, this);
+            Bukkit.getScheduler().runTaskTimer(this, foragingListener::tick, 1L, 1L);
+            getLogger().info("AetherionForaging enabled (islands only: trees grown on islands fell with hits).");
+            return;
+        }
         mergeExtraWoodTypes();
         ensureWeatherAndRitualDefaults();
         saveConfig();

@@ -1,6 +1,5 @@
 package de.aetherion.foraging;
 
-import com.sk89q.worldguard.bukkit.event.block.BreakBlockEvent;
 
 import de.aetherion.foraging.isle.FellContext;
 import de.aetherion.foraging.isle.ForageBridge;
@@ -51,7 +50,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.bukkit.event.Event.Result.ALLOW;
 
 public class ForagingListener implements Listener {
 
@@ -224,19 +222,6 @@ public class ForagingListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onWorldGuardBreak(BreakBlockEvent event) {
-        if (allowsLog(event.getCause().getFirstBlock())) {
-            event.setResult(ALLOW);
-            return;
-        }
-        for (Block block : event.getBlocks()) {
-            if (allowsLog(block)) {
-                event.setResult(ALLOW);
-                return;
-            }
-        }
-    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onBlockBreak(BlockBreakEvent event) {
@@ -257,20 +242,18 @@ public class ForagingListener implements Listener {
             event.getPlayer().sendMessage("§7Foraging is off on the Farm Isle.");
             return;
         }
-        // Personal/guild islands: chop permanently — no tree seal-regen.
-        if (worldName.equals("aether_islands")
-                || worldName.equals("aether_guilds")
-                || worldName.equals("aether_test")
-                || worldName.startsWith("aether_test_")) {
+        // Personal/guild islands: handled in onIslandBreak, after the island's own build protection.
+        if (GrownTrees.islandWorld(world)) {
             return;
         }
+        boolean island = false;
 
         Player player = event.getPlayer();
         if (player.getGameMode() == org.bukkit.GameMode.CREATIVE
                 || player.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
             return;
         }
-        if (!QuestProgressHook.canChopTrees(player)) {
+        if (!island && !QuestProgressHook.canChopTrees(player)) {
             event.setCancelled(true);
             denyChop(player);
             return;
@@ -298,6 +281,10 @@ public class ForagingListener implements Listener {
         if (job == null) {
             job = createJob(start, event.getPlayer(), start);
             if (job == null) {
+                if (island) {
+                    // Not a whole grown tree any more: the normal way.
+                    return;
+                }
                 // No connected leaves → build/deco log. Survival cannot break these.
                 event.setCancelled(true);
                 hintLeafless(player);
@@ -350,6 +337,46 @@ public class ForagingListener implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> afterBreak(tracked));
     }
 
+    /**
+     * Islands (2026-11-27): a tree that grew there from a sapling is felled like everywhere else (hits, notch,
+     * fall) and stays gone. Runs after the island's build protection, so only someone allowed to break here can
+     * start a fell: the first log is dug normally, then the fell takes over. Built logs, and any log without an
+     * axe, break the normal way.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onIslandBreak(BlockBreakEvent event) {
+        Block start = event.getBlock();
+        if (!GrownTrees.islandWorld(start.getWorld()) || !isLog(start.getType()) || !GrownTrees.isGrown(start)) {
+            return;
+        }
+        Player player = event.getPlayer();
+        if (player.getGameMode() == org.bukkit.GameMode.CREATIVE
+                || player.getGameMode() == org.bukkit.GameMode.SPECTATOR
+                || !isAxe(player.getInventory().getItemInMainHand())) {
+            return;
+        }
+        if (collapsingPlayers.contains(player.getUniqueId()) || regenerating.contains(key(start))) {
+            event.setCancelled(true);
+            return;
+        }
+        TreeJob job = jobs.get(key(start));
+        if (job == null) {
+            job = createJob(start, player, null);
+        }
+        if (job == null || job.collapsing || job.fellSpent || job.fellLog == null) {
+            return;
+        }
+        event.setCancelled(true);
+        FellAim live = pulses.get(player.getUniqueId());
+        if (live != null && live.job == job) {
+            if (live.chop(player)) {
+                resolveChop(live);
+            }
+            return;
+        }
+        startChop(player, job);
+    }
+
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
     public void allowProtectedLogs(BlockBreakEvent event) {
         Block block = event.getBlock();
@@ -365,6 +392,10 @@ public class ForagingListener implements Listener {
             return;
         }
         if (worldName.equals("aether_farm_island") || worldName.startsWith("aether_farm_")) {
+            return;
+        }
+        // Islands keep their own build protection (who may break here is the island's call).
+        if (GrownTrees.islandWorld(world)) {
             return;
         }
         // Only force-allow living trees. Placed build logs keep region protection.
@@ -412,8 +443,9 @@ public class ForagingListener implements Listener {
                 return;
             }
             if (!pulse.job.blockKeys().contains(FellLane.key(clicked.getX(), clicked.getY(), clicked.getZ()))) {
-                // A swing at another tree starts that one (switching is free).
-                if (isLog(clicked.getType())) {
+                // A swing at another tree starts that one (switching is free). Not on islands: there a new tree
+                // starts only through the protected break (onIslandBreak).
+                if (isLog(clicked.getType()) && !GrownTrees.islandWorld(clicked.getWorld())) {
                     TreeJob other = jobs.get(key(clicked));
                     if (other == null) {
                         other = createJob(clicked, player, null);
@@ -444,6 +476,11 @@ public class ForagingListener implements Listener {
         if (block == null || !isLog(block.getType())) {
             return;
         }
+        boolean island = GrownTrees.islandWorld(block.getWorld());
+        if (island) {
+            // The first log is dug normally (onIslandBreak checks the island's protection first).
+            return;
+        }
         TreeJob job = jobs.get(key(block));
         if (job == null) {
             job = createJob(block, player, null);
@@ -452,7 +489,7 @@ public class ForagingListener implements Listener {
             return;
         }
         // Any log of this tree — not only the bottom fell-mark.
-        if (!QuestProgressHook.canChopTrees(player)) {
+        if (!island && !QuestProgressHook.canChopTrees(player)) {
             event.setCancelled(true);
             denyChop(player);
             return;
@@ -1440,7 +1477,51 @@ public class ForagingListener implements Listener {
                 collapsingPlayers.remove(job.suppressSwing);
             }
         }, clearAt);
+        if (GrownTrees.islandWorld(base.getWorld())) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> settleIslandFell(job), clearAt + 2L);
+            return;
+        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> restore(job), clearAt + REGROW_TICKS);
+    }
+
+    /**
+     * Island fell: the tree is gone for good (it was the player's own). Clear the bookkeeping, forget the grown
+     * marks, and drop one or two saplings at the stump so it can be planted again.
+     */
+    private void settleIslandFell(TreeJob job) {
+        if (job.breaker != null) {
+            collapsingPlayers.remove(job.breaker);
+        }
+        if (job.suppressSwing != null) {
+            collapsingPlayers.remove(job.suppressSwing);
+        }
+        for (Snapshot snapshot : job.all()) {
+            regenerating.remove(snapshot.key());
+            jobs.remove(snapshot.key());
+        }
+        for (Snapshot log : job.logs) {
+            GrownTrees.forget(log.block());
+        }
+        Location stump = job.baseLocation();
+        Material sapling = saplingOf(job.family);
+        if (stump != null && stump.getWorld() != null && sapling != null) {
+            int count = 1 + (java.util.concurrent.ThreadLocalRandom.current().nextInt(100) < 35 ? 1 : 0);
+            stump.getWorld().dropItemNaturally(stump.clone().add(0.0d, 0.6d, 0.0d), new ItemStack(sapling, count));
+        }
+    }
+
+    private static Material saplingOf(Material log) {
+        if (log == null) {
+            return Material.OAK_SAPLING;
+        }
+        String name = log.name().replace("STRIPPED_", "").replace("_LOG", "").replace("_WOOD", "");
+        Material sapling = switch (name) {
+            case "MANGROVE" -> Material.MANGROVE_PROPAGULE;
+            case "CRIMSON" -> Material.CRIMSON_FUNGUS;
+            case "WARPED" -> Material.WARPED_FUNGUS;
+            default -> Material.matchMaterial(name + "_SAPLING");
+        };
+        return sapling == null ? Material.OAK_SAPLING : sapling;
     }
 
     private void restore(TreeJob job) {
@@ -1468,10 +1549,19 @@ public class ForagingListener implements Listener {
 
     private TreeJob createJob(Block start, Player player, Block skipMark) {
         List<Block> logs = collectLogs(start);
+        boolean island = start != null && GrownTrees.islandWorld(start.getWorld());
+        if (island) {
+            // A built wall touching a tree is never part of it: only logs that grew there.
+            logs.removeIf(log -> !GrownTrees.isGrown(log));
+        }
         if (logs.isEmpty()) {
             return null;
         }
         List<Block> leaves = collectConnectedCanopy(logs);
+        if (island) {
+            // Placed leaves are persistent; grown ones are not.
+            leaves.removeIf(leaf -> leaf.getBlockData() instanceof org.bukkit.block.data.type.Leaves l && l.isPersistent());
+        }
         // No connected canopy = not a living tree (cabins / builds stay vanilla).
         if (leaves.isEmpty()) {
             return null;
@@ -1746,7 +1836,7 @@ public class ForagingListener implements Listener {
         return Math.max(dx, dz) <= MAX_HORIZONTAL && dy <= MAX_VERTICAL;
     }
 
-    private static boolean allowsLog(Block block) {
+    static boolean allowsLog(Block block) {
         // Only bypass WG for real trees (connected canopy). Builds stay protected.
         if (block == null || !isLog(block.getType())) {
             return false;
@@ -1954,6 +2044,12 @@ public class ForagingListener implements Listener {
         if (job == null || job.woodCap > 0) {
             return;
         }
+        Location at = job.baseLocation();
+        if (at != null && GrownTrees.islandWorld(at.getWorld())) {
+            // Your own tree: every log is yours (no regrow on islands).
+            job.woodCap = Math.max(1, job.logs.size());
+            return;
+        }
         int base = woodCapFor(player);
         ForageIsle isle = ForageIsle.get();
         job.woodCap = isle == null ? base : isle.woodCap(player, job.family, job.baseLocation(), base, job.notched);
@@ -2009,7 +2105,7 @@ public class ForagingListener implements Listener {
      * Regrow always restores original BlockData regardless of this.
      */
     private Material forcedDropOr(Material source, Location at) {
-        if (inForageIsle(at)) {
+        if (inForageIsle(at) || (at != null && GrownTrees.islandWorld(at.getWorld()))) {
             return dropLog(source);
         }
         String forced = plugin.getConfig().getString("foraging.force-drop", "OAK_LOG");

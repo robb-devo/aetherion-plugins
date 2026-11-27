@@ -5,8 +5,8 @@ api-version: '1.21'
 
 depend:
   - AetherionCore
-  - WorldGuard
 softdepend:
+  - WorldGuard
   - AetherionItems
   - WorldEdit
   - FancyNpcs
