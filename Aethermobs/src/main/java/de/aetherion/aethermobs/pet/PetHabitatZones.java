@@ -62,6 +62,27 @@ public final class PetHabitatZones {
         return !snapshot().zones().isEmpty();
     }
 
+    /**
+     * Strict area (2026-11-27, Robb: pet spawns must stop using random blocks): inside a circle listed under
+     * {@code strict-areas} in {@code pet-habitats.yml}, wild pets come only from painted zones. Block counting
+     * (sand = desert, spruce = dark grove …) is off there. Areas are switched on one by one, once they are painted.
+     */
+    public static boolean strictAt(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return false;
+        }
+        for (Strict area : snapshot().strict()) {
+            if (area.world().equals(location.getWorld())) {
+                double dx = location.getX() - area.x();
+                double dz = location.getZ() - area.z();
+                if (dx * dx + dz * dz <= area.radius() * area.radius()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private static CacheSnapshot snapshot() {
         long now = System.currentTimeMillis();
         CacheSnapshot hit = cached;
@@ -75,11 +96,22 @@ public final class PetHabitatZones {
 
     private static CacheSnapshot load() {
         List<Zone> zones = new ArrayList<>();
+        List<Strict> strict = new ArrayList<>();
         Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
         if (items != null) {
             File file = new File(items.getDataFolder(), "pet-habitats.yml");
             if (file.isFile()) {
                 YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+                ConfigurationSection areas = yaml.getConfigurationSection("strict-areas");
+                if (areas != null) {
+                    for (String key : areas.getKeys(false)) {
+                        ConfigurationSection area = areas.getConfigurationSection(key);
+                        World world = area == null ? null : Bukkit.getWorld(area.getString("world", "world"));
+                        if (world != null && area.getDouble("radius", 0.0) > 0.0) {
+                            strict.add(new Strict(world, area.getDouble("x"), area.getDouble("z"), area.getDouble("radius")));
+                        }
+                    }
+                }
                 ConfigurationSection root = yaml.getConfigurationSection("zones");
                 if (root != null) {
                     for (String key : root.getKeys(false)) {
@@ -111,7 +143,7 @@ public final class PetHabitatZones {
                 }
             }
         }
-        return new CacheSnapshot(List.copyOf(zones), System.currentTimeMillis(), true);
+        return new CacheSnapshot(List.copyOf(zones), List.copyOf(strict), System.currentTimeMillis(), true);
     }
 
     private static PetHabitat parseHabitat(String raw) {
@@ -135,8 +167,11 @@ public final class PetHabitatZones {
     ) {
     }
 
-    private record CacheSnapshot(List<Zone> zones, long atMs, boolean resolved) {
+    private record Strict(World world, double x, double z, double radius) {
+    }
+
+    private record CacheSnapshot(List<Zone> zones, List<Strict> strict, long atMs, boolean resolved) {
         private static final CacheSnapshot EMPTY =
-                new CacheSnapshot(List.of(), 0L, false);
+                new CacheSnapshot(List.of(), List.of(), 0L, false);
     }
 }

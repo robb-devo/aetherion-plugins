@@ -136,6 +136,11 @@ public enum PetHabitat {
             return true;
         }
 
+        // Strict area: only painted zones count, no block guessing.
+        if (PetHabitatZones.strictAt(location)) {
+            return false;
+        }
+
         return switch (this) {
 
             case FARM ->
@@ -148,7 +153,9 @@ public enum PetHabitat {
                     isShoreConfirmed(location);
 
             case DESERT ->
-                    isDesertConfirmed(location);
+                    // 2026-11-27: desert pets (camels) only in painted desert zones. Sand lies on every path and
+                    // beach of a built map, so counting it put camels everywhere.
+                    false;
 
             case SNOW ->
                     countNearby(location, 14, PetHabitat::isSnowBlock, 6) >= 6;
@@ -215,6 +222,11 @@ public enum PetHabitat {
             return painted;
         }
 
+        // Strict area: no painted zone means no habitat here (no guessing from blocks).
+        if (PetHabitatZones.strictAt(location)) {
+            return ANY;
+        }
+
         if (cacheFresh(location)) {
             return habitatCache.dominant();
         }
@@ -243,6 +255,11 @@ public enum PetHabitat {
         if (painted != null) {
             writeCache(origin, painted);
             return painted;
+        }
+
+        // Strict area: only painted zones (checked above) count.
+        if (PetHabitatZones.strictAt(origin)) {
+            return null;
         }
 
         PetHabitat cached =

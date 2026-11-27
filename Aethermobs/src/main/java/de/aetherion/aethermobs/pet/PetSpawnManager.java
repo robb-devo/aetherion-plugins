@@ -776,14 +776,26 @@ public class PetSpawnManager {
                     if (!petHabitat.presentAt(spawnLocation)) {
                         continue;
                     }
+                } else if (PetHabitatZones.strictAt(spawnLocation)) {
+                    // Strict area: everyday pets only inside a painted zone that is not desert or snow.
+                    PetHabitat painted = PetHabitatZones.habitatAt(spawnLocation);
+                    if (painted == null || painted == PetHabitat.DESERT || painted == PetHabitat.SNOW) {
+                        continue;
+                    }
                 } else if (PetHabitat.exclusiveAt(spawnLocation) != null) {
                     continue;
                 }
             }
 
+            // In a strict area a painted zone is proof enough; the block checks below are for unpainted land.
+            boolean paintedProof = PetHabitatZones.strictAt(spawnLocation)
+                    && definition.getHabitat() != null
+                    && PetHabitatZones.habitatAt(spawnLocation) == definition.getHabitat();
+
 
             if (
-                    definition.getHabitat()
+                    !paintedProof
+                            && definition.getHabitat()
                             == PetHabitat.SHORE
                             && !PetHabitat.isShoreConfirmed(
                             spawnLocation
@@ -795,7 +807,8 @@ public class PetSpawnManager {
 
 
             if (
-                    definition.getHabitat()
+                    !paintedProof
+                            && definition.getHabitat()
                             == PetHabitat.DESERT
                             && !PetHabitat.isDesertConfirmed(
                             spawnLocation
@@ -821,7 +834,8 @@ public class PetSpawnManager {
 
 
             if (
-                    definition.getHabitat()
+                    !paintedProof
+                            && definition.getHabitat()
                             == PetHabitat.FARM
                             && !PetCrops.nearby(
                             spawnLocation,
@@ -834,7 +848,8 @@ public class PetSpawnManager {
 
 
             if (
-                    definition.getHabitat()
+                    !paintedProof
+                            && definition.getHabitat()
                             == PetHabitat.VILLAGE
                             && !PetVillages.nearby(
                             spawnLocation,

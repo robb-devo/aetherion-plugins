@@ -19,6 +19,9 @@ public enum PetHabitatKind {
     MUSHROOM("mushroom", "Mushroom", Material.RED_MUSHROOM_BLOCK, "§c"),
     SWAMP("swamp", "Swamp", Material.MANGROVE_ROOTS, "§2"),
     FLOWER("flower", "Flower", Material.PINK_PETALS, "§d"),
+    SHORE("shore", "Shore", Material.SAND, "§e"),
+    FARM("farm", "Farm", Material.HAY_BLOCK, "§6"),
+    VILLAGE("village", "Village", Material.BELL, "§6"),
     ELDERVALE("eldervale", "Eldervale", Material.DEEPSLATE_DIAMOND_ORE, "§b");
 
     private final String id;
