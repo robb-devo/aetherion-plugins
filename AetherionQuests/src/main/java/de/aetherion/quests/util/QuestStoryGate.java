@@ -48,7 +48,7 @@ public final class QuestStoryGate {
     private static final Stop EGON_OAK = new Stop("egon", "Egon", null,
             "tip.tutorial_egon_oak", "Act I · ten oak to Egon · the pier", NamedTextColor.GREEN);
     private static final Stop LEDGER = new Stop("ledger", "Miss Ledger", "/capital",
-            "tip.tutorial_ledger_loadout", "Act II · Miss Ledger · Capital · Nether Star → Teleports", NamedTextColor.LIGHT_PURPLE);
+            "tip.tutorial_ledger_loadout", "Act II · Miss Ledger · Capital · Journal → Spawns", NamedTextColor.LIGHT_PURPLE);
     private static final Stop TEMPER = new Stop("booster_tutor", "Temper", "Boosters",
             "tip.tutorial_temper_boost", "Act II · Temper · south road · boosters", NamedTextColor.GOLD);
     private static final Stop LARK = new Stop("lark", "Lark", "the Fields",
@@ -353,7 +353,7 @@ public final class QuestStoryGate {
         }
         int act = act(player, qm);
         tips.add(actLine(player, 1, act, guide(player, "act1", "Act I · Anker Harbour — Egon, the Fell, your kit")));
-        tips.add(actLine(player, 2, act, guide(player, "act2", "Act II · The Capital — your loadout & Codex, boosters, then a pet")));
+        tips.add(actLine(player, 2, act, guide(player, "act2", "Act II · The Capital — your first talent & Codex, boosters, then a pet")));
         tips.add(actLine(player, 3, act, guide(player, "act3", "Act III · The Roads — Sergeant Vex, then the stamp")));
 
         Quest active = qm.findActiveOrReadyQuest(player);
@@ -373,7 +373,7 @@ public final class QuestStoryGate {
         } else if (stop == EGON_OAK) {
             tips.add(guide(player, "oak_back", "Bring the oak logs back to §aEgon §7on the pier."));
         } else if (stop == LEDGER) {
-            tips.add(guide(player, "ledger_capital", "Next: §dMiss Ledger §7at the Capital — Nether Star → Teleports → Capital, or §f/capital§7."));
+            tips.add(guide(player, "ledger_capital", "Next: §dMiss Ledger §7at the Capital — Journal → Spawns → Capital, or §f/capital§7."));
         } else if (stop == TEMPER) {
             tips.add(guide(player, "temper_south", "Next: §eTemper §7on the south road toward the Mines — fuse one booster."));
         } else if (stop == LARK) {
@@ -461,7 +461,7 @@ public final class QuestStoryGate {
             return LangPack.say(player, "redirect.egon_oak", "§aEgon§f's waiting on his oak. Pier.");
         }
         if (stop == LEDGER) {
-            return LangPack.say(player, "redirect.ledger_capital", "§dMiss Ledger§f, Capital. Nether Star → Teleports, or §e/capital§f.");
+            return LangPack.say(player, "redirect.ledger_capital", "§dMiss Ledger§f, Capital. Journal → Spawns, or §e/capital§f.");
         }
         if (stop == TEMPER) {
             return LangPack.say(player, "redirect.temper_south", "§eTemper§f, south road toward the Mines. Boosters.");
@@ -526,7 +526,7 @@ public final class QuestStoryGate {
         if (ledgerUnlocked(player, questManager)) {
             return null;
         }
-        return LangPack.say(player, "gate.ledger_kit_first", "§eEgon's kit first. §7Ten oak on the harbour pier, then I open your loadout.");
+        return LangPack.say(player, "gate.ledger_kit_first", "§eEgon's kit first. §7Ten oak on the harbour pier, then I show you talents.");
     }
 
     /** Ledger before Act I: back to the harbour. */
@@ -536,7 +536,7 @@ public final class QuestStoryGate {
         }
         String name = ledgerName == null || ledgerName.isBlank() ? "Miss Ledger" : ledgerName;
         player.sendMessage("");
-        npcSay(player, name, LangPack.say(player, "ledger.early_kit", "You're early, {player}. No kit, no loadout."));
+        npcSay(player, name, LangPack.say(player, "ledger.early_kit", "You're early, {player}. Kit first, then talents."));
         npcSay(player, name, LangPack.say(player, "ledger.early_egon", "§aEgon§f, harbour pier. Ten oak. Then come back."));
         player.sendMessage("");
         QuestManager qm = questManager();
@@ -546,7 +546,7 @@ public final class QuestStoryGate {
 
     public static String[] ledgerBlockedLines() {
         return new String[] {
-                "You're early, {player}. No kit, no loadout.",
+                "You're early, {player}. Kit first, then talents.",
                 "§aEgon§f, on the harbour pier. Ten oak — the Forager shows you how.",
                 "Then I open your Skills. Not a minute before."
         };

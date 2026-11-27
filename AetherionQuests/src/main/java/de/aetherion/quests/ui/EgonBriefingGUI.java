@@ -64,9 +64,9 @@ public final class EgonBriefingGUI implements Listener {
         ));
         inventory.setItem(SLOT_MANAGER, button(
                 de.aetherion.core.api.JournalText.enabled() ? Material.BOOK : Material.NETHER_STAR,
-                "§eAetherion Manager",
-                "§7The Nether Star in your inventory.",
-                "§7Your growing hub of systems."
+                "§eJournal",
+                "§7The book on hotbar slot 9.",
+                "§7Every system you unlock lives in it."
         ));
         inventory.setItem(SLOT_BOOSTERS, button(
                 Material.COAL,
@@ -83,8 +83,8 @@ public final class EgonBriefingGUI implements Listener {
         inventory.setItem(SLOT_SKILLS, button(
                 Material.NETHERITE_SCRAP,
                 "§dSkills",
-                "§7Equipped trees. Seven slots.",
-                "§7One free. The rest cost ambition."
+                "§7Skills level as you work.",
+                "§7Talents go into slots; more with your level."
         ));
         inventory.setItem(SLOT_RECIPES, button(
                 Material.CRAFTING_TABLE,
@@ -102,7 +102,7 @@ public final class EgonBriefingGUI implements Listener {
                 Material.CHEST,
                 "§6Storage",
                 "§7Extra pages for your hoarding.",
-                "§7Manager → Storage."
+                "§7Journal → Storage."
         ));
         inventory.setItem(SLOT_DUNGEONS, button(
                 Material.IRON_BARS,
@@ -114,7 +114,7 @@ public final class EgonBriefingGUI implements Listener {
                 Material.EMERALD,
                 "§2Trader / Bazaar / AH",
                 "§7Talk to the trader once.",
-                "§7Unlocks market tabs in the Manager."
+                "§7Unlocks market tabs in your Journal."
         ));
         inventory.setItem(SLOT_CLOSE, button(
                 Material.BARRIER,
@@ -232,7 +232,7 @@ public final class EgonBriefingGUI implements Listener {
 
     private static String topicTitle(int slot) {
         return switch (slot) {
-            case SLOT_MANAGER -> "Aetherion Manager";
+            case SLOT_MANAGER -> "Journal";
             case SLOT_BOOSTERS -> "Boosters";
             case SLOT_PETS -> "Pets";
             case SLOT_SKILLS -> "Skills";
@@ -248,9 +248,9 @@ public final class EgonBriefingGUI implements Listener {
     private static String[] linesFor(int slot) {
         return switch (slot) {
             case SLOT_MANAGER -> new String[]{
-                    "That Nether Star isn't jewelry. It's the Aetherion Manager.",
+                    "The book on slot nine isn't jewelry. It's your Journal.",
                     "Open it. Skills, pets, recipes, storage, spawns — all there.",
-                    "It unlocks more as you stop being useless. Check it often."
+                    "It unlocks more the further you get. Check it often."
             };
             case SLOT_BOOSTERS -> new String[]{
                     "Boosters are sticky upgrades. Slap them on gear that allows them.",
@@ -258,18 +258,18 @@ public final class EgonBriefingGUI implements Listener {
                     "There's a cap. Don't ask me to raise it. Ask someone with a clipboard."
             };
             case SLOT_PETS -> new String[]{
-                    "Pets sit in the Manager. Equip one. They add stats. Quietly.",
+                    "Pets are equipped in your Journal under Pets. One at a time. They add stats. Quietly.",
                     "They level when you play. Dragons get dramatic about it.",
                     "If it has an aura in a dungeon, read the tooltip before you brag."
             };
             case SLOT_SKILLS -> new String[]{
-                    "Skills are equipped trees, not homework. Manager → Skills.",
-                    "Click one skill into a free slot. Miss Ledger will check.",
-                    "One slot free at start. More unlock with coin milestones."
+                    "Skills are what you do: Mining, Farming, Foraging, Fishing, Combat. They level by themselves.",
+                    "Talents go into a free talent slot: Journal → Skills. Miss Ledger will check.",
+                    "One slot is free at the start. More open with your Aetherion Level: 5, 10, 20 and later."
             };
             case SLOT_RECIPES -> new String[]{
-                    "Market Craftsman unlocks the green Recipe Book in the Manager.",
-                    "Nether Star → Manager → green book. That's recipes — not the crafting table.",
+                    "The Craftsman at the market opens the Recipe Book for you.",
+                    "Journal → Recipes. Every blueprint lives there.",
                     "You already got Egon's Simple Pickaxe. Next page: Mining Pickaxe — pick in the middle, coal around it.",
                     "Gear upgrades: old piece in the middle, resources around it."
             };
@@ -279,7 +279,7 @@ public final class EgonBriefingGUI implements Listener {
                     "Mining armor is for fortune. Combat armor is for not dying. Don't mix them up."
             };
             case SLOT_STORAGE -> new String[]{
-                    "Storage is in the Manager. Extra pages for the pack-rat lifestyle.",
+                    "Storage is in your Journal. Extra pages for the pack-rat lifestyle.",
                     "If your inventory looks like a landfill, that's a you problem — and a Storage problem."
             };
             case SLOT_DUNGEONS -> new String[]{
@@ -289,7 +289,7 @@ public final class EgonBriefingGUI implements Listener {
             };
             case SLOT_TRADER -> new String[]{
                     "Find the trader. Talk to him once.",
-                    "That unlocks Bazaar and Auction House in the Manager.",
+                    "That unlocks Bazaar and Auction House in your Journal.",
                     "He buys junk. You buy better junk. Capitalism with sarcasm."
             };
             default -> null;

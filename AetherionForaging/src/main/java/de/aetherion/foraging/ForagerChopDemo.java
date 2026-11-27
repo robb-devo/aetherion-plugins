@@ -49,8 +49,8 @@ public final class ForagerChopDemo {
         Block trunk = listener.findDemoTrunk(nearForager, 6);
         if (trunk == null) {
             RUNNING.remove(viewer.getUniqueId());
-            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer, "Just hit a glowing trunk with the axe.",
-                    "Schlag einfach einen leuchtenden Stamm mit der Axt."));
+            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer, "Just hit an oak trunk with the axe.",
+                    "Schlag einfach mit der Axt gegen einen Eichenstamm."));
             unlockChop(viewer);
             return;
         }
@@ -58,8 +58,8 @@ public final class ForagerChopDemo {
         ForagingListener.TreeJob job = listener.createJobPublic(trunk, viewer, null);
         if (job == null || job.fellLog == null) {
             RUNNING.remove(viewer.getUniqueId());
-            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer, "Find a glowing trunk and hit it with the axe.",
-                    "Such einen leuchtenden Stamm und schlag ihn mit der Axt."));
+            foragerSay(viewer, de.aetherion.core.exile.Say.t(viewer, "Find an oak and hit its trunk with the axe.",
+                    "Such dir eine Eiche und schlag mit der Axt gegen den Stamm."));
             unlockChop(viewer);
             return;
         }

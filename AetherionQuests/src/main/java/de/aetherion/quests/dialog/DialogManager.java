@@ -1446,7 +1446,7 @@ public class DialogManager implements Listener {
         }
         if ("a_simple_craft".equalsIgnoreCase(quest.getId())) {
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    de.aetherion.quests.lang.LangPack.ui(player, "tip.recipe_pickaxe", "Manager → green Recipe Book — find Mining Pickaxe (2nd recipe)"),
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.recipe_pickaxe", "Journal → Recipes — find the Mining Pickaxe (2nd recipe)"),
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -1748,7 +1748,11 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("lumberjack_intro")) {
             return new String[] {
-                    "Egon wants ten oak. Watch me once, then it's your turn."
+                    "Egon wants ten oak logs. For that you need an axe, and I'm the Forager.",
+                    "Felling is simple: hit the trunk with your axe. Every hit cuts the notch deeper.",
+                    "Now and then a spot on the trunk glows gold. Hit it and that hit counts double.",
+                    "When the notch is through, the tree falls away from you. Better axes need fewer hits.",
+                    "Watch me do one. Then the axe is yours, and Egon gets his oak."
             };
         }
 
@@ -1769,14 +1773,16 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("fisher_intro")) {
             return new String[] {
-                    "Cast into water. Wait for the bite. §eREEL§f when the bar turns green.",
-                    "Miss the window, the fish leaves. Catch §efive§f, then come back, {player}."
+                    "Tackle. I teach fishing on this pier, {player}.",
+                    "Cast your rod into the water and wait. When a fish bites, a bar appears.",
+                    "Reel in as soon as it turns green: §eREEL§f. Miss the green and the fish is gone.",
+                    "Catch §efive§f fish, then come back. The Fishmonger sells rods."
             };
         }
 
         if (dialogId.equalsIgnoreCase("fishmonger_intro")) {
             return new String[] {
-                    "Shop. Rods. Armour. Coins welcome."
+                    "Fresh fish, fishing rods and starter armour. Have a look, {player}!"
             };
         }
 
@@ -1936,8 +1942,13 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("ledger_intro")) {
             return new String[] {
-                    "Miss Ledger. Nether Star → §dSkills§f (it blinks): equip one skill, {player}.",
-                    "Then your §eCodex§f, top-left. It counts everything and pays coins."
+                    "Miss Ledger, Capital records. Let me show you how you grow here.",
+                    "Everything you do trains a skill: chopping trains Foraging, digging Mining, fighting Combat.",
+                    "All your skills together raise your §eAetherion Level§f. And skills open §dtalents§f.",
+                    "Open your Journal (slot §e9§f) → §dSkills§f and put one talent into a free slot.",
+                    "Talents grow with their skill. More slots open at Aetherion Level 5, 10, 20 and beyond.",
+                    "Then look at your §eCodex§f, top-left. It counts trees, ores and kills, and pays coins.",
+                    "Do both, {player}, and you get my stamp."
             };
         }
 
@@ -2408,14 +2419,14 @@ public class DialogManager implements Listener {
                     : !QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "egon.orientation", new String[] {
                             "Your next stop's on the §eyellow bar up top§f. Trust it more than me.",
-                            "Lost? Nether Star → §eTeleports§f → Capital. §dMiss Ledger§f sorts you out."
+                            "Lost? Journal → §eSpawns§f → Capital. §dMiss Ledger§f sorts you out."
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "egon.default", new String[] {
                             "Kit fits? Good. §eQuartermaster§f past the little market wants you next."
                     });
             case "farmer" -> farmerCompletedLines(player);
             case "ledger" -> de.aetherion.quests.lang.LangPack.completed(player, "ledger_spine", new String[] {
-                    "Loadout's set. Next: §eTemper§f, §dLark§f, then §cSergeant Vex§f.",
+                    "Your first talent is in. Next: §eTemper§f, §dLark§f, then §cSergeant Vex§f.",
                     "Come back after all three, {player}."
             });
             case "lark" -> QuestStoryGate.tutorialDone(player, questManager)
@@ -2430,7 +2441,7 @@ public class DialogManager implements Listener {
             case "craftsman", "blacksmith" -> QuestStoryGate.questCompleted(player, questManager, "first_shift")
                     ? de.aetherion.quests.lang.LangPack.completed(player, "craftsman.after_shift", new String[] {
                             "Hm. {player}. Pick holding up? Good.",
-                            "Recipe Book grows as you do. Check it now and then."
+                            "The Recipe Book grows as you do. Check it now and then."
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "craftsman.default", new String[] {
                             "Nice pick, {player}. You're set for the Mines.",
@@ -2454,16 +2465,16 @@ public class DialogManager implements Listener {
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "foreman.default", new String[] {
                             "Shift's closed. Next: §eTemper§f, on the road to Capital.",
-                            "One booster fused before skills. Trust the order."
+                            "One booster before talents. Trust the order."
                     });
             case "booster_tutor" -> QuestStoryGate.questCompleted(player, questManager, "lesson_manager")
                     ? de.aetherion.quests.lang.LangPack.completed(player, "booster_tutor.after_skills", new String[] {
-                            "Fused anything spicy lately, {player}?",
-                            "Anvil's always in the Manager. Recipes in the §eRecipe Book§f."
+                            "Socketed anything spicy lately, {player}?",
+                            "The Anvil is always in your Journal. New boosters are in the §eRecipe Book§f."
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "booster_tutor.default", new String[] {
-                            "Booster fused. Recipes stay in the §eRecipe Book§f anytime.",
-                            "Next: §eMiss Ledger§f at Capital — your loadout. Then §dLark§f and §cSergeant Vex§f."
+                            "Booster's in. New boosters are in the §eRecipe Book§f anytime.",
+                            "Next: §eMiss Ledger§f at Capital — your first talent. Then §dLark§f and §cSergeant Vex§f."
                     });
             case "surveyor" -> new String[] {
                     "Desk stays open. Collection up top, stamp a blueprint into its tool below.",
@@ -2586,8 +2597,10 @@ public class DialogManager implements Listener {
 
     private String[] craftsmanIntroLines(Player player) {
         return new String[] {
-                "Craftsman. Your §aRecipe Book§f: Nether Star, slot §e9§f → green book.",
-                "Make a §fMining Pickaxe§f: Simple Pickaxe in the middle, coal around it. Bring it here."
+                "Hm. Craftsman. Everything you build starts in the §aRecipe Book§f.",
+                "Open your Journal (slot §e9§f) → §aRecipes§f. Every blueprint is in there.",
+                "A recipe always works the same: the old piece goes in the middle, the materials around it.",
+                "Make a §fMining Pickaxe§f: your Simple Pickaxe in the middle, coal around it. Bring it here."
         };
     }
 
@@ -2637,19 +2650,19 @@ public class DialogManager implements Listener {
         if (!craftsmanSpoken) {
             de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
             if (progress != null) {
-                progress.unlock(player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
+                progress.unlock(player, "WORKBENCH", "Workbench + Recipes", "Journal → Recipes");
             }
             if (plugin != null && plugin.getPlayerQuestStorage() != null && player != null) {
                 plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "craftsman_spoken");
             }
             return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.start", new String[] {
                     "Shaft Foreman. Mine §e32 ore§f in here: coal, copper, iron. Then come back, {player}.",
-                    "Armour on, the rock bites. Coal and your pick make a §fMining Pickaxe§f: green §aRecipe Book§f in the Manager."
+                    "Armour on, the rock bites. Coal and your pick make a §fMining Pickaxe§f: §aRecipe Book§f in your Journal."
             });
         }
         return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.start", new String[] {
                 "Shaft Foreman. Mine §e32 ore§f in here: coal, copper, iron. Then come back, {player}.",
-                "Armour on, the rock bites. Coal and your pick make a §fMining Pickaxe§f: green §aRecipe Book§f in the Manager."
+                "Armour on, the rock bites. Coal and your pick make a §fMining Pickaxe§f: §aRecipe Book§f in your Journal."
         });
     }
 

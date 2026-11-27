@@ -88,7 +88,7 @@ public final class VexDeathHintListener implements Listener {
         }
         if (QuestStoryGate.questCompleted(player, questManager, "lesson_boost")) {
             player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_gear",
-                    "Trouble? Combat set + boosters. Recipe Book and anvil. Then finish the ten."));
+                    "Trouble? Combat set + boosters. Recipe Book and Anvil. Then finish the ten."));
         } else {
             player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_temper",
                     "Trouble? §eTemper§7 teaches boosters. Combat set's in the Recipe Book."));

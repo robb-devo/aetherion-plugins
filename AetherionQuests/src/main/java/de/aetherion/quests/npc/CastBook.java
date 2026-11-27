@@ -105,7 +105,7 @@ public final class CastBook {
         v.decline = "Maybe later.";
         v.onAccept = new String[] {"Watch."};
         v.onDecline = new String[] {"Trees'll wait. They're good at that."};
-        v.returning = new String[] {"Glowing trunk, look where it falls, hit again. Ten oak for §eEgon§f, {player}."};
+        v.returning = new String[] {"Hit the trunk until the notch is through, the gold spot counts double. Ten oak for §eEgon§f, {player}."};
         v.greetNew = new String[] {"Axe-curious, {player}? Egon sent you, didn't he."};
         v.greet = new String[] {"{player}! Heard any trees fall lately?", "Arms sore yet, {player}? Good."};
         v.greetGrad = new String[] {"There's the chopper. Trees still whisper about you, {player}."};
@@ -116,8 +116,8 @@ public final class CastBook {
                 "Sign says Lumberjack. I say Forager.",
                 "Lumberjack sounds violent. Forager sounds like I care. I do care. I also chop.");
         topic(v, "Tree tips?",
-                "Bigger trees, bigger bars. Don't get greedy.",
-                "Glowing trunks only. The rest are decorative. Emotionally.");
+                "Big trees take more hits. A good axe makes up for it.",
+                "Watch for the gold spot. Make your last hit on it and you get a clean cut, with the best wood.");
 
         v = voice("quartermaster");
         v.accept = "Twenty lumps. On it.";
@@ -139,10 +139,10 @@ public final class CastBook {
                 "Right now: a forge that eats coal and a harbour that eats forges.");
         topic(v, "How do teleports work?",
                 "Walk somewhere once — it's unlocked. Or plant a Homestead Marker.",
-                "Then Manager → Teleports, or type the place. §e/harbour§f, §e/mines§f. Like that.");
+                "Then Journal → Spawns, or type the place. §e/harbour§f, §e/mines§f. Like that.");
 
         v = voice("craftsman");
-        v.greetNew = new String[] {"Hm. {player}. Recipe Book's in your Manager."};
+        v.greetNew = new String[] {"Hm. {player}. The Recipe Book's in your Journal."};
         v.greet = new String[] {"Hm. {player}.", "Pick's holding? Hm. Good."};
         v.greetGrad = new String[] {"Hm. Good work lately, {player}. Don't let it go to your head."};
         v.idle = new String[] {
@@ -156,7 +156,7 @@ public final class CastBook {
                 "Old piece in the middle. Resources around it. That's the whole secret.",
                 "Rest is sweat. Mostly yours.");
         topic(v, "Where's the Recipe Book?",
-                "Nether Star, hotbar §e9§f. Green book. Every blueprint's in there.");
+                "Journal, hotbar §e9§f, then Recipes. Every blueprint's in there.");
 
         v = voice("foreman");
         v.accept = "Clocking in.";
@@ -207,11 +207,11 @@ public final class CastBook {
         v = voice("ledger");
         v.accept = "Stamp me in.";
         v.decline = "Later.";
-        v.onAccept = new String[] {"Noted. Skills tab. Slot nine. It blinks."};
+        v.onAccept = new String[] {"Noted. Journal, slot nine, Skills. It blinks."};
         v.onDecline = new String[] {"Your file stays open. It judges you."};
         v.returning = new String[] {
                 "{player}. The stamp's waiting. So am I.",
-                "Say yes, equip §eany one§f skill, come back."
+                "One talent in a slot, one look at the Codex, then come back."
         };
         v.greetNew = new String[] {"{player}. Present. Good."};
         v.greet = new String[] {"{player}. On time. Almost.", "Posture, {player}."};
@@ -225,9 +225,9 @@ public final class CastBook {
         v.farewell = new String[] {"Dismissed."};
         v.greetDoubt = lines("{player}. No records before the Silent Year. That's no accident.");
         v.doubtStage = 3;
-        topic(v, "What are skills?",
-                "Equipped trees. Not homework.",
-                "One slot free at start. More unlock with coin milestones.");
+        topic(v, "Skills or talents?",
+                "Skills are what you do: Mining, Farming, Foraging, Fishing, Combat. They level by themselves while you work.",
+                "Talents go into a talent slot and grow with their skill. More slots come with your Aetherion Level.");
         topic(v, "What's left for me?",
                 "Fields first. Then my stamp.",
                 "After that, every skill has an isle. I'll point.");
