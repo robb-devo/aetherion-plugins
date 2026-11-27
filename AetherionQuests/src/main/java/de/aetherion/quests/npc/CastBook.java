@@ -191,7 +191,7 @@ public final class CastBook {
         };
         v.greetNew = new String[] {"{player}! Got anything I can set on fire? Upgrade. I meant upgrade."};
         v.greet = new String[] {"Smell that, {player}? Progress. Also mild burning."};
-        v.greetGrad = new String[] {"{player}! Fused anything spicy lately?"};
+        v.greetGrad = new String[] {"{player}! Socketed anything spicy lately?"};
         v.idle = new String[] {
                 "That spark? Completely intentional. Mostly intentional.",
                 "Goggles on, always. I learned that the bright way.",
@@ -202,7 +202,7 @@ public final class CastBook {
         topic(v, "Is there a limit?",
                 "There's a cap. Don't ask me to raise it.",
                 "I tried once. There was a fire. A good fire, but still.");
-        topic(v, "Best booster?", "The one you actually fuse, {player}.");
+        topic(v, "Best booster?", "The one you actually socket, {player}.");
 
         v = voice("ledger");
         v.accept = "Stamp me in.";
@@ -252,7 +252,7 @@ public final class CastBook {
         };
         v.farewell = new String[] {"Eyes up. They're always up there."};
         topic(v, "Why the birds?", "They know what they did.", "Every season. Same birds. I recognise that one.");
-        topic(v, "Farm Isle?", "Harlow, far end of the barn. He knows the way down.", "Farming ten. Bigger fields. Fewer birds.");
+        topic(v, "Farming Isle?", "Harlow, far end of the barn. He knows the way down.", "Farming ten. Bigger fields. Fewer birds.");
 
         v = voice("lark");
         v.accept = "Show me the spheres.";
@@ -289,7 +289,7 @@ public final class CastBook {
         };
         v.greetNew = new String[] {"Tackle. Harbour practice first, {player}. Then the west pad."};
         v.greet = new String[] {"Line's calling, {player}.", "Wind's right. Fish aren't."};
-        v.greetGrad = new String[] {"{player}. Real water's on the west pad — Fishing Eldervale."};
+        v.greetGrad = new String[] {"{player}. Real water's on the west pad — Fishing Isle."};
         v.idle = new String[] {
                 "East wind today. The fish sulk when it blows from the east.",
                 "Something nibbled, then it changed its mind. That's my whole life in one sentence.",
@@ -357,10 +357,10 @@ public final class CastBook {
         topic(v, "What happened here?", "Exams, monsters and paperwork, in that order.", "These days it's mostly paperwork, sadly.");
 
         v = voice("farm_isle_guide");
-        v.greetNew = new String[] {"Harlow. Farm Isle pad's down the road, {player}. Elsie teaches the rest."};
+        v.greetNew = new String[] {"Harlow. Farming Isle pad's down the road, {player}. Elsie teaches the rest."};
         v.greet = new String[] {"Pad's that way, {player}. Arrow knows.", "Soil's good today, {player}."};
         v.idle = new String[] {
-                "The soil on the Farm Isle is better than here. Don't tell the farmer I said that.",
+                "The soil on the Farming Isle is better than here. Don't tell the farmer I said that.",
                 "The pad thumps all day long. I stopped hearing it years ago.",
                 "Chewing on wheat helps me think. It doesn't really help, but I keep trying."
         };
@@ -481,7 +481,7 @@ public final class CastBook {
                         "So I stopped. I'm very good at stopping."));
 
         v = voice("forage_pad_guide");
-        v.greetNew = new String[] {"Twig! Slime pad → Forage Isle, {player}. Jump. Arrow's on it."};
+        v.greetNew = new String[] {"Twig! Slime pad → Foraging Isle, {player}. Jump. Arrow's on it."};
         v.greet = new String[] {"Pad's right there, {player}. Knees bent!", "Back from the isle, {player}? Smell that spruce!"};
         v.idle = new String[] {
                 "The pad is a bit sticky today. That's the good kind of sticky, I promise.",
