@@ -181,13 +181,13 @@ public final class CastBook {
                 "Keeps the dust out. Doctor says otherwise. Doctor doesn't mine.");
 
         v = voice("booster_tutor");
-        v.accept = "Let's fuse something.";
+        v.accept = "Show me the boosters.";
         v.decline = "Maybe later.";
-        v.onAccept = new String[] {"Yes! Emerald's in your bag. Anvil's in the Manager. Don't lick it."};
-        v.onDecline = new String[] {"Your gear stays boring, then. Your call."};
+        v.onAccept = new String[] {"Here, one of every kind. Put one into your gear at the §eAnvil§f and feel the difference."};
+        v.onDecline = new String[] {"Your gear stays plain, then. Come back when you want it stronger."};
         v.returning = new String[] {
-                "Still no fuse, {player}? The Emerald's waiting on your yes.",
-                "Then Manager → §eAnvil§f. Gear left, booster right."
+                "Still nothing in your gear, {player}? Open the §eAnvil§f in your Journal.",
+                "Item on the seal, booster into a free slot below it. One click takes it out again."
         };
         v.greetNew = new String[] {"{player}! Got anything I can set on fire? Upgrade. I meant upgrade."};
         v.greet = new String[] {"Smell that, {player}? Progress. Also mild burning."};

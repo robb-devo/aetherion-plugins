@@ -218,11 +218,11 @@ public class AetherionManagerGUI {
                 "§7Open a portable workbench.");
         put(inventory, RECIPE_SLOT, progress != null && progress.recipeBook(player),
                 Material.KNOWLEDGE_BOOK, "§6Recipe Book",
-                progress == null ? "§7Craftsman unlocks this with Crafting." : progress.hint(ProgressionService.Flag.WORKBENCH),
+                progress == null ? "§7Craftsman unlocks this with Crafting." : progress.hint(player, ProgressionService.Flag.WORKBENCH),
                 "§7Browse every Aetherion recipe.");
         put(inventory, ANVIL_SLOT, progress != null && progress.anvil(player),
                 Material.ANVIL, "§eAnvil",
-                progress == null ? "§7Talk to Temper first." : progress.hint(ProgressionService.Flag.ANVIL),
+                progress == null ? "§7Talk to Temper first." : progress.hint(player, ProgressionService.Flag.ANVIL),
                 "§7Open booster sockets.",
                 "§714 slots. Swap anytime.");
         boolean guildPlugin = NetworkHooks.islandsAvailable();
@@ -291,7 +291,7 @@ public class AetherionManagerGUI {
         caption(out, CODEX_SLOT, "Codex");
         caption(out, CRAFT_SLOT, german ? "Bauen" : "Craft");
         caption(out, RECIPE_SLOT, german ? "Rezepte" : "Recipes");
-        caption(out, ANVIL_SLOT, german ? "Sockel" : "Anvil");
+        caption(out, ANVIL_SLOT, german ? "Amboss" : "Anvil");
         caption(out, ISLAND_SLOT, german ? "Insel" : "Island");
         caption(out, GUILD_SLOT, german ? "Gilde" : "Guild");
         return out;

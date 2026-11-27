@@ -87,7 +87,7 @@ public final class BoosterSocketMenu implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (event.getClick() == ClickType.DOUBLE_CLICK || event.getClick() == ClickType.NUMBER_KEY) {
+        if (event.getClick() == ClickType.DOUBLE_CLICK) {
             return;
         }
         Inventory top = event.getView().getTopInventory();
@@ -95,10 +95,18 @@ public final class BoosterSocketMenu implements Listener {
         if (!inTop) {
             if (event.isShiftClick()) {
                 shiftFromPlayer(player, holder, event.getCurrentItem(), event.getSlot());
+                resync(player);
             }
             return;
         }
         int slot = event.getRawSlot();
+        if (event.getClick() == ClickType.NUMBER_KEY) {
+            if (slot == GEAR_SLOT) {
+                hotbarSwap(player, holder, event.getHotbarButton());
+                resync(player);
+            }
+            return;
+        }
         if (slot == CLOSE_SLOT) {
             player.closeInventory();
             return;
@@ -108,25 +116,146 @@ public final class BoosterSocketMenu implements Listener {
             return;
         }
         if (slot == GEAR_SLOT) {
-            clickGear(player, holder, event.getCursor());
+            if (event.isShiftClick() && (event.getCursor() == null || event.getCursor().getType().isAir())) {
+                gearToInventory(player, holder);
+            } else {
+                clickGear(player, holder, event.getCursor());
+            }
+            resync(player);
             return;
         }
         int socket = socketIndex(slot);
         if (socket >= 0) {
-            clickSocket(player, holder, socket, event.getCursor());
+            if (event.isShiftClick() && (event.getCursor() == null || event.getCursor().getType().isAir())) {
+                socketToInventory(player, holder, socket);
+            } else {
+                clickSocket(player, holder, socket, event.getCursor());
+            }
+            resync(player);
         }
     }
 
+    /**
+     * 2026-11-27: putting things in has to feel like any inventory. A drag that lands on exactly one slot of the
+     * page (the item seal or a socket) counts as a click there with what was on the cursor; any other drag into the
+     * page is refused as before. Drags inside the player's own inventory stay normal.
+     */
+
     @EventHandler
     public void onDrag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof Holder) {
-            for (int raw : event.getRawSlots()) {
-                if (raw < SIZE) {
-                    event.setCancelled(true);
-                    return;
-                }
+        if (!(event.getView().getTopInventory().getHolder() instanceof Holder holder)) {
+            return;
+        }
+        int target = -1;
+        int topSlots = 0;
+        for (int raw : event.getRawSlots()) {
+            if (raw < SIZE) {
+                topSlots++;
+                target = raw;
             }
         }
+        if (topSlots == 0) {
+            return;
+        }
+        event.setCancelled(true);
+        if (topSlots != 1 || !(event.getWhoClicked() instanceof Player player)
+                || (target != GEAR_SLOT && socketIndex(target) < 0)) {
+            return;
+        }
+        int slot = target;
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        // The cancelled drag hands the stack back to the cursor first; act on it one tick later.
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline() || !(player.getOpenInventory().getTopInventory().getHolder() instanceof Holder open)
+                    || open != holder) {
+                return;
+            }
+            ItemStack cursor = player.getItemOnCursor();
+            if (slot == GEAR_SLOT) {
+                clickGear(player, holder, cursor);
+            } else {
+                clickSocket(player, holder, socketIndex(slot), cursor);
+            }
+            player.updateInventory();
+        });
+    }
+
+    /** The client guesses what a click does; after we rebuild the page, send it the truth. */
+    private static void resync(Player player) {
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin != null) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (player.isOnline()) {
+                    player.updateInventory();
+                }
+            });
+        }
+    }
+
+    /** Shift-click on the seal: the item goes back into the inventory (not onto the cursor). */
+    private void gearToInventory(Player player, Holder holder) {
+        ItemStack gear = gear(holder);
+        if (gear == null || holder.inventory == null) {
+            return;
+        }
+        holder.inventory.setItem(GEAR_SLOT, null);
+        give(player, gear);
+        paint(holder);
+        player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 0.6f, 0.9f);
+    }
+
+    /** Shift-click on a socket: the booster comes out into the inventory. */
+    private void socketToInventory(Player player, Holder holder, int index) {
+        ItemStack gear = gear(holder);
+        if (gear == null) {
+            return;
+        }
+        BoosterType[] slots = BoosterSockets.read(items, gear);
+        BoosterType sitting = index < slots.length ? slots[index] : null;
+        if (sitting == null) {
+            return;
+        }
+        if (takeOut(player, holder, gear, slots, index, sitting)) {
+            give(player, boosterItem(sitting));
+        }
+    }
+
+    /** Number key on the seal: swap the item with that hotbar slot, like any inventory. */
+    private void hotbarSwap(Player player, Holder holder, int hotbar) {
+        if (holder.inventory == null || hotbar < 0 || hotbar > 8) {
+            return;
+        }
+        ItemStack inHand = player.getInventory().getItem(hotbar);
+        ItemStack gear = gear(holder);
+        if (inHand != null && !inHand.getType().isAir()) {
+            if (!items.isAetherionItem(inHand) || items.getBoosterType(inHand) != null || inHand.getAmount() > 1) {
+                bar(player, onlyGear(player));
+                return;
+            }
+        }
+        holder.inventory.setItem(GEAR_SLOT, inHand == null || inHand.getType().isAir() ? null : inHand.clone());
+        player.getInventory().setItem(hotbar, gear);
+        paint(holder);
+        player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 0.6f, 1.2f);
+    }
+
+    private static void bar(Player player, String legacy) {
+        if (player != null && legacy != null && !legacy.isBlank()) {
+            player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                    .deserialize(legacy));
+        }
+    }
+
+    private static String t(Player player, String en, String german) {
+        return de.aetherion.core.exile.Say.t(player, en, german);
+    }
+
+    private static String onlyGear(Player player) {
+        return t(player, "§7Only Aetherion gear takes boosters. §8Make it in the Recipe Book.",
+                "§7Nur Aetherion-Ausrüstung nimmt Booster. §8Herstellen im Rezeptbuch.");
     }
 
     @EventHandler
@@ -154,7 +283,8 @@ public final class BoosterSocketMenu implements Listener {
         ItemStack gear = gear(holder);
         if (items.getBoosterType(stack) != null) {
             if (gear == null) {
-                player.sendMessage("§7Place a tool, weapon, or armor first.");
+                bar(player, t(player, "§7Put a tool, weapon or armour on the seal first.",
+                        "§7Leg zuerst Werkzeug, Waffe oder Rüstung auf das Siegel."));
                 return;
             }
             if (insert(player, holder, gear, items.getBoosterType(stack), -1)) {
@@ -165,7 +295,21 @@ public final class BoosterSocketMenu implements Listener {
         if (holder.inventory == null) {
             return;
         }
-        if (gear == null && items.isAetherionItem(stack) && items.getBoosterType(stack) == null) {
+        if (DungeonCore.isCore(stack)) {
+            bar(player, t(player, "§7Pick the core up and click the item on the seal to infuse it.",
+                    "§7Nimm den Kern auf und klick damit auf das Teil auf dem Siegel."));
+            return;
+        }
+        if (gear != null) {
+            bar(player, t(player, "§7Take the item on the seal out first (shift-click it).",
+                    "§7Nimm zuerst den Gegenstand vom Siegel (Shift-Klick)."));
+            return;
+        }
+        if (!items.isAetherionItem(stack) || stack.getAmount() > 1) {
+            bar(player, onlyGear(player));
+            return;
+        }
+        if (items.isAetherionItem(stack) && items.getBoosterType(stack) == null) {
             ItemStack placed = stack.clone();
             placed.setAmount(1);
             holder.inventory.setItem(GEAR_SLOT, placed);
@@ -183,7 +327,7 @@ public final class BoosterSocketMenu implements Listener {
         if (cursor != null && !cursor.getType().isAir() && DungeonCore.isCore(cursor) && gear != null) {
             ItemStack infused = DungeonCoreInfusion.infuse(items, gear, cursor);
             if (infused == null) {
-                player.sendMessage("§7That core does not fit this piece.");
+                bar(player, t(player, "§7That core does not fit this piece.", "§7Dieser Kern passt nicht zu dem Teil."));
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.4f, 1f);
                 return;
             }
@@ -203,13 +347,13 @@ public final class BoosterSocketMenu implements Listener {
         ItemStack nextGear = null;
         if (cursor != null && !cursor.getType().isAir()) {
             if (!items.isAetherionItem(cursor) || items.getBoosterType(cursor) != null) {
-                player.sendMessage("§7Sockets take tools, weapons, and armor.");
+                bar(player, onlyGear(player));
                 return;
             }
             nextGear = cursor.clone();
             nextGear.setAmount(1);
             if (cursor.getAmount() > 1) {
-                player.sendMessage("§7Place one item at a time.");
+                bar(player, t(player, "§7One item at a time.", "§7Immer nur ein Gegenstand."));
                 return;
             }
         }
@@ -221,14 +365,16 @@ public final class BoosterSocketMenu implements Listener {
     private void clickSocket(Player player, Holder holder, int index, ItemStack cursor) {
         ItemStack gear = gear(holder);
         if (gear == null) {
-            player.sendMessage("§7Place a tool, weapon, or armor first.");
+            bar(player, t(player, "§7Put a tool, weapon or armour on the seal first.",
+                    "§7Leg zuerst Werkzeug, Waffe oder Rüstung auf das Siegel."));
             return;
         }
         BoosterType[] slots = BoosterSockets.read(items, gear);
         BoosterType sitting = index < slots.length ? slots[index] : null;
         BoosterType incoming = cursor == null || cursor.getType().isAir() ? null : items.getBoosterType(cursor);
         if (sitting == null && index >= capacity(gear)) {
-            player.sendMessage("§6Bonegraft socket §7· graft this item at the §6Heartforge §7in Jawcamp to open it.");
+            bar(player, t(player, "§6Bonegraft socket §7· opens with a graft at the §6Heartforge §7(Jawcamp).",
+                    "§6Bonegraft-Platz §7· öffnet mit einem Graft an der §6Heartforge §7(Jawcamp)."));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.4f, 1f);
             return;
         }
@@ -267,18 +413,17 @@ public final class BoosterSocketMenu implements Listener {
         int target = index >= 0 ? index : BoosterSockets.firstEmpty(slots);
         int open = capacity(gear);
         if (target < 0 || target >= open || slots[target] != null) {
-            player.sendMessage("§7All §f" + open + " §7booster slots are full."
-                    + (open < BoosterSockets.COUNT ? " §8More open with Bonegrafts at the Heartforge." : ""));
+            bar(player, t(player, "§7All §f" + open + " §7booster slots are full.", "§7Alle §f" + open + " §7Booster-Plätze sind voll."));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.4f, 1f);
             return false;
         }
         BoosterApplier.Status status = BoosterApplier.apply(items, gear, type);
         if (status != BoosterApplier.Status.APPLIED) {
-            player.sendMessage(switch (status) {
-                case NOT_ALLOWED -> "§7That booster does not fit this item.";
-                case FULL -> "§7All §f14 §7booster slots are full.";
-                case NO_RARITY -> "§7This item has no rarity to scale a booster.";
-                default -> "§7Could not socket that booster.";
+            bar(player, switch (status) {
+                case NOT_ALLOWED -> t(player, "§7That booster does not fit this item.", "§7Dieser Booster passt nicht auf das Teil.");
+                case FULL -> t(player, "§7All booster slots are full.", "§7Alle Booster-Plätze sind voll.");
+                case NO_RARITY -> t(player, "§7This item has no rarity to scale a booster.", "§7Das Teil hat keine Seltenheit für einen Booster.");
+                default -> t(player, "§7Could not socket that booster.", "§7Der Booster ging nicht rein.");
             });
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.4f, 1f);
             return false;
@@ -298,7 +443,7 @@ public final class BoosterSocketMenu implements Listener {
             BoosterSockets.write(gear, slots);
             holder.inventory.setItem(GEAR_SLOT, gear);
             paint(holder);
-            player.sendMessage("§7Cleared an empty socket.");
+            bar(player, t(player, "§7Cleared an empty socket.", "§7Leeren Platz aufgeräumt."));
             return false;
         }
         slots[index] = null;
@@ -433,7 +578,9 @@ public final class BoosterSocketMenu implements Listener {
 
     private ItemStack gearHint() {
         return named(Material.HOPPER, "§eItem",
-                "§7Click with a tool, weapon, or armor.",
+                "§7Click, drag or shift-click a tool,",
+                "§7weapon or armour here.",
+                "§7Shift-click it again to take it back.",
                 "§7Hold a dungeon core and click to infuse.");
     }
 
@@ -450,7 +597,8 @@ public final class BoosterSocketMenu implements Listener {
     private ItemStack emptySocket(int number) {
         return de.aetherion.items.util.GuiIcons.icon(named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§7Socket " + number,
                 "§8Empty",
-                "§7Click with a booster to socket it."), de.aetherion.items.util.GuiIcons.SPACER);
+                "§7Click or drag a booster here.",
+                "§8Shift-click a booster in your bag: next free slot."), de.aetherion.items.util.GuiIcons.SPACER);
     }
 
     private ItemStack socketIcon(BoosterType type, int number) {
@@ -465,7 +613,8 @@ public final class BoosterSocketMenu implements Listener {
             meta.setLore(List.of(
                     "§7Socket §f" + number,
                     "§aActive while socketed.",
-                    "§eClick to remove."
+                    "§eClick §7to take it on the cursor",
+                    "§eShift-click §7to put it in your bag"
             ));
             meta.getPersistentDataContainer().set(ItemKeys.guiDisplay(), PersistentDataType.BYTE, (byte) 1);
             icon.setItemMeta(meta);

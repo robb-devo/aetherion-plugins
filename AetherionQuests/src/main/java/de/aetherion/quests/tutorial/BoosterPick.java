@@ -2,7 +2,6 @@ package de.aetherion.quests.tutorial;
 
 import de.aetherion.core.api.ChromePage;
 import de.aetherion.quests.AetherionQuests;
-import de.aetherion.quests.lang.LangPack;
 import de.aetherion.quests.npc.LivingNpcProfile;
 
 import org.bukkit.Bukkit;
@@ -23,20 +22,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Temper's first booster (lesson {@code lesson_boost}): the player picks one of three from a small chest, each
- * with one plain line on what it does, instead of being handed an Emerald Booster nobody could explain. Closing
- * the chest without a pick hands over the Iron one, so nobody leaves without a booster.
+ * Temper's first boosters (lesson {@code lesson_boost}). Beta rule (Robb, 2026-11-27): "one of each" so every new
+ * player meets the whole idea. The page shows all twelve kinds with one plain line each; a click on any of them, or
+ * simply closing the page, hands over the full set. Nobody leaves without boosters.
  */
 public final class BoosterPick implements Listener {
 
-    private static final int[] SLOTS = {11, 13, 15};
-    private static final String[] IDS = {"iron_booster", "lapis_booster", "emerald_booster"};
-    private static final String DEFAULT_ID = "iron_booster";
     private static final long OPEN_DELAY = 40L;
+    /** Twelve kinds: core four on the top row, the eight specials below. */
+    private static final int[] SLOTS = {10, 11, 12, 13, 18, 19, 20, 21, 22, 23, 24, 25};
+    private static final int TAKE_SLOT = 16;
 
     private static final class Holder implements InventoryHolder {
         private Inventory inventory;
-        private boolean picked;
+        private boolean given;
 
         @Override
         public Inventory getInventory() {
@@ -44,7 +43,7 @@ public final class BoosterPick implements Listener {
         }
     }
 
-    /** Opens the pick a moment after Temper's offer (his line types out first). */
+    /** Opens the page a moment after Temper's offer (his line types out first). */
     public static void offer(Player player) {
         AetherionQuests plugin = AetherionQuests.getInstance();
         if (player == null || plugin == null) {
@@ -57,89 +56,98 @@ public final class BoosterPick implements Listener {
         }, OPEN_DELAY);
     }
 
-    private static void open(Player player) {
-        boolean german = de.aetherion.core.exile.Say.german(player);
+    /** Opens the page again (DEV test button); the set is handed over again on close. */
+    public static void open(Player player) {
+        List<ItemStack> boosters = all();
+        if (boosters.isEmpty()) {
+            return;
+        }
         Holder holder = new Holder();
-        Inventory inventory = Bukkit.createInventory(holder, 27,
-                net.kyori.adventure.text.Component.text(german ? "Wähl deinen ersten Booster" : "Pick your first booster"));
+        Inventory inventory = Bukkit.createInventory(holder, 36,
+                net.kyori.adventure.text.Component.text(t(player, "Your first boosters: one of each",
+                        "Deine ersten Booster: einer von jeder Sorte")));
         holder.inventory = inventory;
-        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta fm = filler.getItemMeta();
-        if (fm != null) {
-            fm.setDisplayName(" ");
-            filler.setItemMeta(fm);
-        }
-        for (int i = 0; i < inventory.getSize(); i++) {
-            inventory.setItem(i, filler);
-        }
-        for (int i = 0; i < SLOTS.length; i++) {
-            ItemStack shown = booster(IDS[i]);
-            if (shown == null) {
-                // Items missing: no pick, the old gift
-                give(player, DEFAULT_ID);
-                return;
-            }
+        de.aetherion.items.model.BoosterType[] types = de.aetherion.items.model.BoosterType.values();
+        for (int i = 0; i < types.length && i < SLOTS.length && i < boosters.size(); i++) {
+            ItemStack shown = boosters.get(i).clone();
             ItemMeta meta = shown.getItemMeta();
             if (meta != null) {
                 List<String> lore = new ArrayList<>();
-                lore.add(what(player, IDS[i]));
+                lore.add(what(player, types[i]));
                 lore.add("");
-                lore.add(german ? "§eKlick: der gehört dir" : "§eClick: it's yours");
-                if (meta.getLore() != null) {
-                    lore.add("");
-                    lore.addAll(meta.getLore());
-                }
+                lore.add(t(player, "§8All twelve are yours.", "§8Alle zwölf gehören dir."));
                 meta.setLore(lore);
                 shown.setItemMeta(meta);
             }
             inventory.setItem(SLOTS[i], shown);
         }
+        ItemStack take = new ItemStack(Material.CHEST);
+        ItemMeta takeMeta = take.getItemMeta();
+        if (takeMeta != null) {
+            takeMeta.setDisplayName(t(player, "§aTake all twelve", "§aAlle zwölf nehmen"));
+            takeMeta.setLore(List.of(
+                    t(player, "§7Put them in at the §eAnvil§7: item on the seal,", "§7Einsetzen am §eAmboss§7: Teil aufs Siegel,"),
+                    t(player, "§7booster into a free slot below it.", "§7Booster in einen freien Platz darunter."),
+                    t(player, "§7They come out again with one click.", "§7Mit einem Klick kommen sie wieder raus.")));
+            take.setItemMeta(takeMeta);
+        }
+        inventory.setItem(TAKE_SLOT, take);
         ChromePage.open(player, inventory, ChromePage.Theme.FORGE);
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.35f, 1.6f);
     }
 
-    /** One line on what the booster does, in words a new player knows. */
-    private static String what(Player player, String id) {
-        return switch (id) {
-            case "lapis_booster" -> de.aetherion.core.exile.Say.t(player,
-                    "§f+Health §7on whatever you socket it into.",
-                    "§f+Leben §7auf dem Teil, in das du ihn steckst.");
-            case "emerald_booster" -> de.aetherion.core.exile.Say.t(player,
-                    "§fSpread: §7mining or chopping also breaks the blocks next to it.",
+    /** One line on what each kind does, in words a new player knows. */
+    private static String what(Player player, de.aetherion.items.model.BoosterType type) {
+        return switch (type) {
+            case COAL, IRON, GOLD, DIAMOND -> t(player,
+                    "§fMore of what the piece does §7(Damage on a sword, Defense on armour, Mining Power on a pick). "
+                            + "§8Coal < Iron < Gold < Diamond.",
+                    "§fMehr von dem, was das Teil kann §7(Schaden am Schwert, Verteidigung an Rüstung, Mining Power an der "
+                            + "Spitzhacke). §8Kohle < Eisen < Gold < Diamant.");
+            case EMERALD -> t(player, "§fSpread: §7mining or chopping also breaks the blocks next to it.",
                     "§fSpread: §7Abbauen oder Hacken bricht auch die Blöcke daneben.");
-            default -> de.aetherion.core.exile.Say.t(player,
-                    "§fMore of what the piece does: §7Damage on a sword, Defense on armour, Mining Power on a pick.",
-                    "§fMehr von dem, was das Teil kann: §7Schaden am Schwert, Verteidigung an Rüstung, Mining Power an der Spitzhacke.");
+            case REDSTONE -> t(player, "§fSweep: §7your hits reach more enemies at once.",
+                    "§fSweep: §7deine Schläge treffen mehrere Gegner auf einmal.");
+            case LAPIS -> t(player, "§f+Health §7on whatever you put it in.", "§f+Leben §7auf dem Teil, in das du ihn steckst.");
+            case GLOWSTONE -> t(player, "§f+Speed §7(boots and gear).", "§f+Tempo §7(Stiefel und Ausrüstung).");
+            case WHEAT -> t(player, "§fPet catching: §7wild pets are easier to catch.",
+                    "§fPets fangen: §7wilde Pets lassen sich leichter fangen.");
+            case CARROT -> t(player, "§fHarvest: §7a swing on a field takes more ripe crops.",
+                    "§fErnte: §7ein Schlag aufs Feld erntet mehr reife Pflanzen.");
+            case OAK -> t(player, "§fCrit Damage: §7critical hits hit harder.", "§fKrit-Schaden: §7kritische Treffer treffen härter.");
+            case BIRCH -> t(player, "§fCrit Chance: §7more of your hits are critical.", "§fKrit-Chance: §7mehr Treffer werden kritisch.");
         };
     }
 
-    private static ItemStack booster(String id) {
+    private static List<ItemStack> all() {
+        List<ItemStack> out = new ArrayList<>();
         try {
             de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
-            if (items == null || items.getItemManager() == null) {
-                return null;
+            if (items == null || items.getCustomItem() == null) {
+                return out;
             }
-            de.aetherion.items.item.CustomItem custom = new de.aetherion.items.item.CustomItem(items.getItemManager());
-            return switch (id) {
-                case "lapis_booster" -> custom.createLapisBooster();
-                case "emerald_booster" -> custom.createEmeraldBooster();
-                default -> custom.createIronBooster();
-            };
+            for (de.aetherion.items.model.BoosterType type : de.aetherion.items.model.BoosterType.values()) {
+                ItemStack booster = items.getCustomItem().booster(type);
+                if (booster != null) {
+                    ItemStack one = booster.clone();
+                    one.setAmount(1);
+                    out.add(one);
+                }
+            }
         } catch (LinkageError ex) {
-            return null;
+            return new ArrayList<>();
         }
+        return out;
     }
 
-    private static void give(Player player, String id) {
-        ItemStack booster = booster(id);
-        if (booster == null) {
-            return;
-        }
-        try {
-            de.aetherion.items.storage.BoosterDelivery.giveQuestReward(player, booster);
-        } catch (LinkageError ex) {
-            player.getInventory().addItem(booster).values()
-                    .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+    private static void giveAll(Player player) {
+        for (ItemStack booster : all()) {
+            try {
+                de.aetherion.items.storage.BoosterDelivery.giveQuestReward(player, booster);
+            } catch (LinkageError ex) {
+                player.getInventory().addItem(booster).values()
+                        .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+            }
         }
     }
 
@@ -149,20 +157,17 @@ public final class BoosterPick implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player) || holder.picked
+        if (!(event.getWhoClicked() instanceof Player player) || holder.given
                 || event.getClickedInventory() != event.getView().getTopInventory()) {
             return;
         }
-        for (int i = 0; i < SLOTS.length; i++) {
-            if (SLOTS[i] == event.getSlot()) {
-                holder.picked = true;
-                give(player, IDS[i]);
-                player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 0.7f, 1.2f);
-                player.closeInventory();
-                temper(player, LangPack.say(player, "booster_tutor.picked",
-                        "Good pick. Nether Star → §eAnvil§f: gear left, booster right."));
-                return;
-            }
+        int slot = event.getSlot();
+        boolean booster = false;
+        for (int s : SLOTS) {
+            booster |= s == slot;
+        }
+        if (booster || slot == TAKE_SLOT) {
+            player.closeInventory();
         }
     }
 
@@ -175,17 +180,23 @@ public final class BoosterPick implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent event) {
-        if (!(event.getInventory().getHolder() instanceof Holder holder) || holder.picked
+        if (!(event.getInventory().getHolder() instanceof Holder holder) || holder.given
                 || !(event.getPlayer() instanceof Player player)) {
             return;
         }
-        holder.picked = true;
-        give(player, DEFAULT_ID);
-        temper(player, LangPack.say(player, "booster_tutor.picked_default",
-                "No pick? Iron, then: more of what the piece does. Nether Star → §eAnvil§f: gear left, booster right."));
+        holder.given = true;
+        giveAll(player);
+        player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 0.7f, 1.2f);
+        temper(player, t(player,
+                "There. One of each. Try them on your gear at the Anvil and keep what you like.",
+                "So. Einer von jeder Sorte. Probier sie am Amboss an deiner Ausrüstung aus und behalt, was dir gefällt."));
     }
 
     private static void temper(Player player, String line) {
         LivingNpcProfile.say(player, "booster_tutor", "Temper", line);
+    }
+
+    private static String t(Player player, String en, String german) {
+        return de.aetherion.core.exile.Say.t(player, en, german);
     }
 }

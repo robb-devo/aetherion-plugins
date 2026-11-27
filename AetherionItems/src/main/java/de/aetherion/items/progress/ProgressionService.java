@@ -155,13 +155,33 @@ public final class ProgressionService {
     }
 
     public String hint(Flag flag) {
+        return hint(null, flag);
+    }
+
+    /**
+     * Where a locked Journal tile opens, with the place from the place-name table (2026-11-27), in the player's
+     * language. Shown on the tile itself and in the action bar, never in chat.
+     */
+    public String hint(Player player, Flag flag) {
         return de.aetherion.core.api.JournalText.t(switch (flag) {
-            case TRADER -> "§7Visit the trader once. He has a face for a reason.";
-            case WORKBENCH -> "§7Market stall · Craftsman unlocks Manager → Crafting / Recipes (Mining Pickaxe next).";
-            case ANVIL -> "§7Talk to Temper (Booster Tutor). Anvil opens in the Manager after his lesson.";
-            case SPAWN_UNLOCKER -> "§7Get your first spawn unlocker. The map then has opinions.";
-            case SKILLS -> "§7Miss Ledger teaches Skills — Manager unlocks when you accept.";
-            case PETS -> "§7Lark hands you spheres. Pets unlock when that lesson starts.";
+            case TRADER -> de.aetherion.core.exile.Say.t(player,
+                    "§7Visit the Merchant at Anker Harbour once.",
+                    "§7Besuch einmal den Merchant in Anker Harbour.");
+            case WORKBENCH -> de.aetherion.core.exile.Say.t(player,
+                    "§7The Craftsman at Anker Harbour opens crafting and the Recipe Book.",
+                    "§7Der Craftsman in Anker Harbour öffnet Werkbank und Rezeptbuch.");
+            case ANVIL -> de.aetherion.core.exile.Say.t(player,
+                    "§7Temper's forge, between the Capital and the Mines, opens the Anvil.",
+                    "§7Tempers Schmiede zwischen Hauptstadt und Minen öffnet den Amboss.");
+            case SPAWN_UNLOCKER -> de.aetherion.core.exile.Say.t(player,
+                    "§7Get your first spawn unlocker. The map then has opinions.",
+                    "§7Hol dir deinen ersten Spawn-Freischalter.");
+            case SKILLS -> de.aetherion.core.exile.Say.t(player,
+                    "§7Miss Ledger in the Capital opens your skills page.",
+                    "§7Miss Ledger in der Hauptstadt öffnet deine Skill-Seite.");
+            case PETS -> de.aetherion.core.exile.Say.t(player,
+                    "§7Lark at the Farm hands you Catch Spheres and opens Pets.",
+                    "§7Lark auf der Farm gibt dir Fangkugeln und öffnet Pets.");
         });
     }
 
