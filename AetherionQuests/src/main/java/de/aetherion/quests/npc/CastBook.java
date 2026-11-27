@@ -1083,12 +1083,13 @@ public final class CastBook {
         v.greet = new String[] {"{player}! I finished a new verse. It's about gravel."};
         v.idle = new String[] {
                 "'Oh copper vein, you shone so bright, then you were gone before the night.' I'm still working on it.",
-                "The Ore Ledger wants numbers. I want rhymes. We get along surprisingly well.",
+                "The Assayer wants numbers. I want rhymes. We get along surprisingly well.",
                 "Up here the wind always smells of iron and stone.",
                 "Every miner on this ridge has lost a vein they loved. Poetry helps."
         };
         v.farewell = new String[] {"May your veins run deep!"};
         topic(v, "Read me a poem.", "'The pickaxe sings, the mountain sighs, the coal runs out before my eyes.'", "It's not finished yet. Nothing up here ever is.");
+        topic(v, "Any tips?", "Follow the coal seams downhill. Most of my poems are about veins that run out right when you get excited.", "And if the mountain rumbles, step back. That's not applause.");
 
         v = voice("bench_cynic");
         v.greetNew = new String[] {"Oh. Another tourist. Hello, {player}."};
@@ -1221,7 +1222,8 @@ public final class CastBook {
                 "My ledger has a column for 'grabbed by the troll'. It's longer than I'd like."
         };
         v.farewell = new String[] {"Mind the water under the bridge."};
-        topic(v, "The troll?", "Big, grumpy and very good at hiding under bridges.", "If you're strong enough one day, maybe you can teach him some manners.");
+        topic(v, "The troll?", "He doesn't take coins. He takes travellers, or at least he tries to.", "Big, grumpy and very good at hiding. If you're strong enough one day, teach him some manners.");
+        topic(v, "And now?", "These days I just keep the books for the bridge.", "Very short books. Mostly apologies to the people who got grabbed.");
 
         v = voice("chicken_keeper");
         v.greetNew = new String[] {"Hello, {player}! Watch your feet, the chicks are everywhere."};
