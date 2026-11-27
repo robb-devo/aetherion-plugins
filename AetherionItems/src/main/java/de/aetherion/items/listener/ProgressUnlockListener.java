@@ -39,12 +39,15 @@ public final class ProgressUnlockListener implements Listener {
         Material type = event.getClickedBlock().getType();
         Player player = event.getPlayer();
 
+        // 2026-11-27: a crafting table or anvil in the world simply opens the same page as the Journal (Temper's
+        // forge has a real anvil next to him). Locked: the hint goes to the action bar, not the chat.
         if (type == Material.CRAFTING_TABLE) {
             event.setCancelled(true);
             if (!progress.craftingTable(player)) {
-                player.sendMessage(progress.hint(ProgressionService.Flag.WORKBENCH));
+                bar(player, progress.hint(player, ProgressionService.Flag.WORKBENCH));
             } else {
-                player.sendMessage(de.aetherion.core.api.JournalText.t("§eCrafting runs through the §fAetherion Manager §e→ Crafting Table."));
+                org.bukkit.Bukkit.getScheduler().runTask(de.aetherion.items.AetherionItems.getInstance(), () ->
+                        player.openWorkbench(player.getLocation(), true));
             }
             return;
         }
@@ -52,9 +55,11 @@ public final class ProgressUnlockListener implements Listener {
         if (type == Material.ANVIL || type == Material.CHIPPED_ANVIL || type == Material.DAMAGED_ANVIL) {
             event.setCancelled(true);
             if (!progress.anvil(player)) {
-                player.sendMessage(progress.hint(ProgressionService.Flag.ANVIL));
+                bar(player, progress.hint(player, ProgressionService.Flag.ANVIL));
             } else {
-                player.sendMessage(de.aetherion.core.api.JournalText.t("§eAnvils run through the §fAetherion Manager §e→ Anvil."));
+                de.aetherion.items.util.QuestProgressHook.noteUsed(player, "AETHER_ANVIL");
+                org.bukkit.Bukkit.getScheduler().runTask(de.aetherion.items.AetherionItems.getInstance(), () ->
+                        de.aetherion.items.menu.BoosterSocketMenu.open(player));
             }
             return;
         }
@@ -91,5 +96,12 @@ public final class ProgressUnlockListener implements Listener {
             }
         }
         return false;
+    }
+
+    private static void bar(Player player, String text) {
+        if (player != null && text != null && !text.isBlank()) {
+            player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                    .deserialize(text));
+        }
     }
 }

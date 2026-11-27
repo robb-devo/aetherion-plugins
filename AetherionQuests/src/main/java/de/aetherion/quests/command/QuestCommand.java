@@ -531,6 +531,26 @@ public class QuestCommand implements CommandExecutor {
                             .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
                     player.sendMessage("§aGave " + placer.getItemMeta().getDisplayName() + " §aplacer.");
                 }
+                case "move" -> {
+                    // /aquest chests move <x> <y> <z> <nx> <ny> <nz> [north|east|south|west] (world of the sender, or "world")
+                    if (args.length < 8) {
+                        sender.sendMessage("§cUsage: /aquest chests move <x> <y> <z> <nx> <ny> <nz> [facing]");
+                        return true;
+                    }
+                    org.bukkit.World world = sender instanceof Player p ? p.getWorld() : org.bukkit.Bukkit.getWorld("world");
+                    try {
+                        org.bukkit.block.Block from = world.getBlockAt(Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+                        org.bukkit.block.Block to = world.getBlockAt(Integer.parseInt(args[5]), Integer.parseInt(args[6]), Integer.parseInt(args[7]));
+                        org.bukkit.block.BlockFace face = args.length > 8
+                                ? org.bukkit.block.BlockFace.valueOf(args[8].toUpperCase(java.util.Locale.ROOT))
+                                : null;
+                        sender.sendMessage(chests.relocate(from, to, face)
+                                ? "§aMoved the chest to " + args[5] + " " + args[6] + " " + args[7] + "."
+                                : "§cNo exploration chest there, or the new block is not empty.");
+                    } catch (IllegalArgumentException ex) {
+                        sender.sendMessage("§cBad number or facing.");
+                    }
+                }
                 case "scatter" -> {
                     String result = scatter.run(true);
                     sender.sendMessage(result == null || result.isBlank() ? "§7Nothing to scatter here." : result);
