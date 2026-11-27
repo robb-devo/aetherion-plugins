@@ -53,7 +53,7 @@ THEMES = [
 FRAME = 0xE100   # + 8 * theme + rows
 PAGE_CP = 0xE180  # + rows
 MARK = 0xE200    # + 32 * row + k: k 0..15 pocket (bit 1 top, 2 bottom, 4 left, 8 right = a pocket there), 16 seal,
-#                  17 button
+#                  17 button, 18 picked pocket, 19 picked seal, 20 arrow
 PLATE = 0xE300   # + 16 * theme + k: 0..3 left end (wing 3 = full .. 0 = none), 4..7 right end, 8..14 fill 1..64 px
 LETTER = 0xE500  # + index in LETTERS
 
@@ -193,6 +193,7 @@ def mark_pin(cv):
 
 def marks_row():
     looks = [pocket(m) for m in range(16)] + [seal(8.2, 9.1, 9.9), seal(7.4, 8.2, 8.95)]
+    looks += gen_journal_art.extra_marks()   # 18 picked pocket, 19 picked seal, 20 arrow (JournalPage.leaf)
     out = Image.new('RGBA', (20 * len(looks), 20), (0, 0, 0, 0))
     for i, im in enumerate(looks):
         out.alpha_composite(im, (20 * i, 0))
@@ -401,7 +402,7 @@ def main(root, preview=None):
         add('page_%d' % rows, page(rows), 23, 256, [chr(PAGE_CP + rows)])
     row = marks_row()
     for r in range(6):
-        add('marks_%d' % r, row, -3 - 18 * r, 20, [''.join(chr(MARK + 32 * r + k) for k in range(18))])
+        add('marks_%d' % r, row, -3 - 18 * r, 20, [''.join(chr(MARK + 32 * r + k) for k in range(row.width // 20))])
     add('letters', letters_sheet(), 15, 16, [''.join(chr(LETTER + i) for i in range(len(LETTERS)))])
     gen_journal_art.add_glyphs(add)   # the Aether Journal: spread, chapter ribbons, the strong line (0xE400..)
     font_dir = os.path.join(root, 'assets/aetherion/font')

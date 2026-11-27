@@ -1068,7 +1068,7 @@
    "ascent": -3,
    "height": 20,
    "chars": [
-    "\ue200\ue201\ue202\ue203\ue204\ue205\ue206\ue207\ue208\ue209\ue20a\ue20b\ue20c\ue20d\ue20e\ue20f\ue210\ue211"
+    "\ue200\ue201\ue202\ue203\ue204\ue205\ue206\ue207\ue208\ue209\ue20a\ue20b\ue20c\ue20d\ue20e\ue20f\ue210\ue211\ue212\ue213\ue214"
    ]
   },
   {
@@ -1077,7 +1077,7 @@
    "ascent": -21,
    "height": 20,
    "chars": [
-    "\ue220\ue221\ue222\ue223\ue224\ue225\ue226\ue227\ue228\ue229\ue22a\ue22b\ue22c\ue22d\ue22e\ue22f\ue230\ue231"
+    "\ue220\ue221\ue222\ue223\ue224\ue225\ue226\ue227\ue228\ue229\ue22a\ue22b\ue22c\ue22d\ue22e\ue22f\ue230\ue231\ue232\ue233\ue234"
    ]
   },
   {
@@ -1086,7 +1086,7 @@
    "ascent": -39,
    "height": 20,
    "chars": [
-    "\ue240\ue241\ue242\ue243\ue244\ue245\ue246\ue247\ue248\ue249\ue24a\ue24b\ue24c\ue24d\ue24e\ue24f\ue250\ue251"
+    "\ue240\ue241\ue242\ue243\ue244\ue245\ue246\ue247\ue248\ue249\ue24a\ue24b\ue24c\ue24d\ue24e\ue24f\ue250\ue251\ue252\ue253\ue254"
    ]
   },
   {
@@ -1095,7 +1095,7 @@
    "ascent": -57,
    "height": 20,
    "chars": [
-    "\ue260\ue261\ue262\ue263\ue264\ue265\ue266\ue267\ue268\ue269\ue26a\ue26b\ue26c\ue26d\ue26e\ue26f\ue270\ue271"
+    "\ue260\ue261\ue262\ue263\ue264\ue265\ue266\ue267\ue268\ue269\ue26a\ue26b\ue26c\ue26d\ue26e\ue26f\ue270\ue271\ue272\ue273\ue274"
    ]
   },
   {
@@ -1104,7 +1104,7 @@
    "ascent": -75,
    "height": 20,
    "chars": [
-    "\ue280\ue281\ue282\ue283\ue284\ue285\ue286\ue287\ue288\ue289\ue28a\ue28b\ue28c\ue28d\ue28e\ue28f\ue290\ue291"
+    "\ue280\ue281\ue282\ue283\ue284\ue285\ue286\ue287\ue288\ue289\ue28a\ue28b\ue28c\ue28d\ue28e\ue28f\ue290\ue291\ue292\ue293\ue294"
    ]
   },
   {
@@ -1113,7 +1113,7 @@
    "ascent": -93,
    "height": 20,
    "chars": [
-    "\ue2a0\ue2a1\ue2a2\ue2a3\ue2a4\ue2a5\ue2a6\ue2a7\ue2a8\ue2a9\ue2aa\ue2ab\ue2ac\ue2ad\ue2ae\ue2af\ue2b0\ue2b1"
+    "\ue2a0\ue2a1\ue2a2\ue2a3\ue2a4\ue2a5\ue2a6\ue2a7\ue2a8\ue2a9\ue2aa\ue2ab\ue2ac\ue2ad\ue2ae\ue2af\ue2b0\ue2b1\ue2b2\ue2b3\ue2b4"
    ]
   },
   {
@@ -1249,6 +1249,114 @@
    "height": 20,
    "chars": [
     "\ue443"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_leaf_1.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue451"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_tail_1.png",
+   "ascent": -24,
+   "height": 12,
+   "chars": [
+    "\ue460\ue461\ue462\ue463\ue464\ue465\ue466\ue467\ue468"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_leaf_2.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue452"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_tail_2.png",
+   "ascent": -42,
+   "height": 12,
+   "chars": [
+    "\ue470\ue471\ue472\ue473\ue474\ue475\ue476\ue477\ue478"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_leaf_3.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue453"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_tail_3.png",
+   "ascent": -60,
+   "height": 12,
+   "chars": [
+    "\ue480\ue481\ue482\ue483\ue484\ue485\ue486\ue487\ue488"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_leaf_4.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue454"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_tail_4.png",
+   "ascent": -78,
+   "height": 12,
+   "chars": [
+    "\ue490\ue491\ue492\ue493\ue494\ue495\ue496\ue497\ue498"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_leaf_5.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue455"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_tail_5.png",
+   "ascent": -96,
+   "height": 12,
+   "chars": [
+    "\ue4a0\ue4a1\ue4a2\ue4a3\ue4a4\ue4a5\ue4a6\ue4a7\ue4a8"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_leaf_6.png",
+   "ascent": 23,
+   "height": 256,
+   "chars": [
+    "\ue456"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/kit/journal_tail_6.png",
+   "ascent": -114,
+   "height": 12,
+   "chars": [
+    "\ue4b0\ue4b1\ue4b2\ue4b3\ue4b4\ue4b5\ue4b6\ue4b7\ue4b8"
    ]
   }
  ]

@@ -216,7 +216,7 @@ public class PetMenu implements Listener {
                 Bukkit.createInventory(
                         holder,
                         INVENTORY_SIZE,
-                        ManagerChrome.PETS
+                        ManagerChrome.title(ManagerChrome.Page.PETS)
                 );
         holder.bind(inventory);
 
@@ -367,10 +367,12 @@ public class PetMenu implements Listener {
         }
 
         // Same page as the collection (ManagerChrome.PETS): 45 pockets, the tab row on small seals.
-        ChromePage.open(
+        // With the journal on: a Codex page of the journal (the Aetherlex is a Codex line there).
+        de.aetherion.core.api.JournalPage.open(
                 player,
                 inventory,
                 ChromePage.Theme.PETS,
+                de.aetherion.core.api.JournalPage.Chapter.CODEX,
                 title,
                 ChromePage.block(ChromePage.block(new HashMap<>(), 0, 44, ChromePage.Mark.POCKET),
                         45, 53, ChromePage.Mark.BUTTON)
@@ -526,11 +528,12 @@ public class PetMenu implements Listener {
         marks.put(EQUIP_SLOT, ChromePage.Mark.SEAL);
         marks.put(RELEASE_SLOT, ChromePage.Mark.SEAL);
         marks.put(BACK_SLOT, ChromePage.Mark.BUTTON);
-        ChromePage.open(
+        de.aetherion.core.api.JournalPage.open(
                 player,
                 inventory,
                 ChromePage.Theme.PETS,
-                DETAILS_TITLE,
+                de.aetherion.core.api.JournalPage.Chapter.CHARACTER,
+                de.aetherion.core.api.JournalText.enabled() ? "Pets · Details" : DETAILS_TITLE,
                 marks
         );
     }

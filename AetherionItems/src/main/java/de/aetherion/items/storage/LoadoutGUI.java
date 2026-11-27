@@ -137,7 +137,7 @@ public class LoadoutGUI {
                 Bukkit.createInventory(
                         holder,
                         54,
-                        ManagerChrome.LOADOUTS
+                        ManagerChrome.title(ManagerChrome.Page.LOADOUTS)
                 );
         holder.bind(inventory);
 

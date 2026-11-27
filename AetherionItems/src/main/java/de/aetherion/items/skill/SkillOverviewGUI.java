@@ -80,7 +80,7 @@ public final class SkillOverviewGUI {
 
         @Override
         protected net.kyori.adventure.text.Component chrome() {
-            return de.aetherion.items.util.ManagerChrome.SKILLS_OVERVIEW;
+            return de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.SKILLS_OVERVIEW);
         }
 
         @Override

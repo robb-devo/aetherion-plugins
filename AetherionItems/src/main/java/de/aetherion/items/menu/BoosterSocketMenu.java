@@ -71,7 +71,7 @@ public final class BoosterSocketMenu implements Listener {
 
     private void openMenu(Player player) {
         Holder holder = new Holder();
-        Inventory inventory = Bukkit.createInventory(holder, SIZE, de.aetherion.items.util.ManagerChrome.ANVIL);
+        Inventory inventory = Bukkit.createInventory(holder, SIZE, de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.ANVIL));
         holder.inventory = inventory;
         paint(holder);
         player.openInventory(inventory);

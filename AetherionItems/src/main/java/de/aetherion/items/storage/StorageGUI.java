@@ -123,7 +123,8 @@ public class StorageGUI {
                 Bukkit.createInventory(
                         holder,
                         StorageInventory.PAGE_SIZE,
-                        ManagerChrome.STORAGE
+                        ManagerChrome.title(ManagerChrome.Page.STORAGE, null,
+                                unlockedPages > 1 ? "Storage · Page " + page : null)
                 );
         holder.bind(inventory);
 

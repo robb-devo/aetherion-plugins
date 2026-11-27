@@ -443,7 +443,7 @@ public final class MarketService implements Listener {
         Inventory inventory = Bukkit.createInventory(
                 new PriceHolder(channel, listed),
                 9,
-                de.aetherion.items.util.ManagerChrome.MARKET_LIST
+                de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.MARKET_LIST)
         );
         long base = values.valueOf(listed);
         String what = "§f" + listed.getAmount() + "× " + displayName(listed);
@@ -544,7 +544,7 @@ public final class MarketService implements Listener {
     private void openConfirm(Player player, MarketChannel channel, int page, boolean mine, MarketListing listing,
                              boolean reclaim) {
         Inventory inventory = Bukkit.createInventory(new ConfirmHolder(channel, page, mine, listing.id(), reclaim), 27,
-                de.aetherion.items.util.ManagerChrome.MARKET_CONFIRM);
+                de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.MARKET_CONFIRM));
         ItemStack pane = GuiIcons.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
@@ -726,8 +726,8 @@ public final class MarketService implements Listener {
                 new BrowseHolder(channel, safePage, pages, mine),
                 54,
                 channel == MarketChannel.BAZAAR
-                        ? de.aetherion.items.util.ManagerChrome.BAZAAR
-                        : de.aetherion.items.util.ManagerChrome.AUCTION
+                        ? de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.BAZAAR)
+                        : de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.AUCTION)
         );
         fill(inventory);
         int start = safePage * PAGE_SIZE;

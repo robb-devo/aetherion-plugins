@@ -67,6 +67,23 @@ public final class SpawnMenu {
         this.hub = hub;
     }
 
+    /** Marks of the Teleports page (the old Manager page's seals), one word per row, for the journal's leaf. */
+    private static final String LAYOUT = ".S.S.S.S. ......... .S..S..S. ......... .S..S..S. B...S....";
+
+    /** A page of the Aether Journal (Atlas › Teleports) while the journal is on, else the old Manager page. */
+    private static net.kyori.adventure.text.Component title(List<de.aetherion.core.api.BookPage.Caption> captions,
+                                                             int selectedSlot) {
+        if (!de.aetherion.core.api.JournalText.enabled()) {
+            return de.aetherion.core.api.BookPage.title('', captions);
+        }
+        return de.aetherion.core.api.JournalPage.leaf(de.aetherion.core.api.JournalPage.Chapter.ATLAS, MENU_SIZE / 9,
+                        "Atlas · Teleports")
+                .layout(LAYOUT)
+                .captions(captions)
+                .pick(selectedSlot)
+                .title();
+    }
+
     public void open(Player player) {
         boolean german = de.aetherion.core.api.AetherServices.german(player);
         Inventory inventory = Bukkit.createInventory(new Holder(), MENU_SIZE);
@@ -81,6 +98,7 @@ public final class SpawnMenu {
         ));
         List<de.aetherion.core.api.BookPage.Caption> captions = new ArrayList<>();
         HubSpawn selected = hub.selected(player);
+        int selectedSlot = -1;
 
         for (HubSpawn spawn : hub.spawns()) {
             if (!HubService.isOriginSpawn(spawn.id())) {
@@ -97,14 +115,16 @@ public final class SpawnMenu {
                     ? de.aetherion.core.api.BookPage.State.NEXT
                     : de.aetherion.core.api.BookPage.State.OPEN;
             captions.add(new de.aetherion.core.api.BookPage.Caption(slot, caption(spawn, german), state));
+            if (selected != null && selected.id().equals(spawn.id())) {
+                selectedSlot = slot;
+            }
         }
         // The round back hook on its seal, like every other Manager page (pack icon, gen_gui_icons.py).
         inventory.setItem(BACK_SLOT, de.aetherion.core.api.ChromePage.icon(item(Material.ARROW,
                 german ? "§eZurück" : "§eBack",
                 List.of(de.aetherion.core.api.JournalText.t(german ? "§7Zum Aetherion Manager." : "§7Return to the Aetherion Manager."))),
                 de.aetherion.core.api.ChromePage.BACK));
-        Inventory page = Bukkit.createInventory(new Holder(), MENU_SIZE,
-                de.aetherion.core.api.BookPage.title('', captions));
+        Inventory page = Bukkit.createInventory(new Holder(), MENU_SIZE, title(captions, selectedSlot));
         page.setContents(inventory.getContents());
         player.openInventory(page);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 1.2f);

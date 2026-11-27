@@ -54,14 +54,15 @@ public final class CodexDetailGUI {
         protected net.kyori.adventure.text.Component chrome() {
             CodexBook.Card card = CodexBook.card(key);
             if (card == null) {
-                return de.aetherion.items.util.ManagerChrome.CODEX;
+                return de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.CODEX);
             }
             if (card.ledger() == CodexBook.Ledger.COLLECTION) {
-                return de.aetherion.items.util.ManagerChrome.COLLECTION_ENTRY;
+                return de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.COLLECTION_ENTRY, null,
+                        "Collection · " + card.name());
             }
             return card.ledger() == CodexBook.Ledger.BESTIARY
-                    ? de.aetherion.items.util.ManagerChrome.BESTIARY_ENTRY
-                    : de.aetherion.items.util.ManagerChrome.CODEX;
+                    ? de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.BESTIARY_ENTRY, null, "Bestiary · " + card.name())
+                    : de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.CODEX);
         }
 
         @Override

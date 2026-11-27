@@ -54,7 +54,7 @@ public final class ChronicleGUI {
 
         @Override
         protected net.kyori.adventure.text.Component chrome() {
-            return de.aetherion.items.util.ManagerChrome.CHRONICLE;
+            return de.aetherion.items.util.ManagerChrome.title(de.aetherion.items.util.ManagerChrome.Page.CHRONICLE);
         }
 
         @Override
