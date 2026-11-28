@@ -74,6 +74,17 @@ harbour as before), `--all` puts the old jars back. The table below is older tha
 on mmo-t and mmo-r (camera flights can no longer strand a player: the first chunk of a flight is loaded before the
 lens goes there, a lost lens ends the film properly, a scene with no film behind it is released after three seconds).
 
+**Island round 4, 2026-11-28 15:11 CET (`main` `a861dbe3`), mmo-i only:** Guilds `ceb7286f`, Quests `20d47a3d` and
+AetherMobs `c926c573` on mmo-i (one restart, nobody online). Compared entry by entry with the jars they replaced:
+Quests differs only in `HudCards`, `LivingNpcSkins` and the new `skins/cast/isle_hand.png`, AetherMobs only in
+`DungeonWorlds`; Core `9f155161` and Items `0948087b` stay. The other backends keep Quests `c091584d` and their
+AetherMobs, so there `main` is ahead by exactly those classes (a new, default-off card option, one more cast skin,
+no wild pets on the Isle Dock): harmless whenever they next go out. mmo-i's Quests config now reads
+`hud-cards.big-stay: true`, `big-stay-close: sneak`, `toast-hold-ticks: 100`; `skins-signed.yml` there carries the
+signed `isle_hand` entry (made on the staging copy from the same PNG). Backup `backups/island-round4-20261128-1515`
+(`rollback.sh`; `--island` also puts the island data back, which the new Guilds rewrites: `island_guide.yml`
+version 4, old Overflow Gates saved as Splitters).
+
 Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET) put `main` `f069314`
 (PRs #159 to #187) on every backend. The round of 21:21-21:22 CET added `6f592a1` (#189: A-58, A-54/A-55, A-59,
 A-13: Core, Items, Quests, BossEngine, SamuraiBoss), and Quests followed with `6b2c6f9` (#190) at 22:55 CET. mmo-i alone got
