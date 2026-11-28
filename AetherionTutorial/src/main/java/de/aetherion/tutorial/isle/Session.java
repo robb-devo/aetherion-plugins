@@ -22,6 +22,8 @@ final class Session {
     long lastHint;
     /** A scene owns the player (camera flight, boss intro, departure): no bar, no hints, no rescue teleports. */
     boolean scene;
+    /** Heartbeats in a row the scene flag was up with no scene running (see Scenes.watch). */
+    int sceneIdle;
     /** Finished the isle before, ever: may take the short way. */
     boolean returning;
     /** Chose the short way this time. */
