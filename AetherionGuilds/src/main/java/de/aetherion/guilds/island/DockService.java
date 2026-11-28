@@ -853,7 +853,7 @@ public final class DockService implements Listener, LogisticsService.Export {
                 } catch (IllegalArgumentException ignored) {
                     type = QuarryType.COAL;
                 }
-                ItemStack core = AetherServices.items() == null ? null : AetherServices.items().create(QuarryType.CORE_ID);
+                ItemStack core = de.aetherion.guilds.util.AetherionItemsAccess.create(QuarryType.CORE_ID);
                 ItemStack goods = Res.of(type, Res.Form.COMPRESSED).stack(QUARRY_KIT_GOODS);
                 if (core == null || goods == null) {
                     // no Items on this server: nothing could be crafted, so it is the quarry itself
@@ -883,7 +883,7 @@ public final class DockService implements Listener, LogisticsService.Export {
                     amount = Math.max(1, Integer.parseInt(value));
                 } catch (NumberFormatException ignored) {
                 }
-                ItemStack core = AetherServices.items() == null ? null : AetherServices.items().create(QuarryType.CORE_ID);
+                ItemStack core = de.aetherion.guilds.util.AetherionItemsAccess.create(QuarryType.CORE_ID);
                 if (core == null) {
                     return null;
                 }
@@ -922,8 +922,11 @@ public final class DockService implements Listener, LogisticsService.Export {
     private void stageBeat(Player player, IslandHost host, int stage) {
         String hubName = de.aetherion.guilds.logistics.LogisticsService.hubName(Stages.hubLevel(stage));
         List<String> perks = Stages.perks(stage);
+        // the Hub only changes its name from stage 2 on ("Your Hub is the Hub now" said nothing at stage 1)
+        String footer = Stages.hubLevel(stage) > 1 ? "§7Your Hub is the §f" + hubName + " §7now."
+                : "§7Your next order hangs at the Dock.";
         boolean card = IslandUi.big(player, "Island stage " + Stages.clamp(stage), stripColor(Stages.name(stage)),
-                perks, stageIcons(perks.size()), "§7Your Hub is the §f" + hubName + " §7now.", "§6",
+                perks, stageIcons(perks.size()), footer, "§6",
                 "§6✦ §e" + Stages.label(stage) + " §8· §7" + stripColor(perks.isEmpty() ? "" : perks.get(0)));
         if (!card) {
             player.sendTitle("§6✦ " + Stages.label(stage) + " §6✦", "§7" + stripColor(Stages.perks(stage).get(0)), 10, 70, 20);
@@ -936,7 +939,8 @@ public final class DockService implements Listener, LogisticsService.Export {
             }
         }, 10L);
         if (!card) {
-            player.sendMessage("§6✦ " + Stages.label(stage) + "§7. Your Hub is the §f" + hubName + " §7now:");
+            player.sendMessage("§6✦ " + Stages.label(stage) + "§7" + (Stages.hubLevel(stage) > 1
+                    ? ". Your Hub is the §f" + hubName + " §7now:" : ":"));
             for (String perk : perks) {
                 player.sendMessage(" §8• " + perk);
             }

@@ -208,8 +208,7 @@ public final class MarketMenu implements MenuKit.Menu {
         if (offer.quarry() != null) {
             return minions.createQuarryItem(offer.quarry());
         }
-        ItemFactoryAccess items = AetherServices.items();
-        ItemStack made = items == null ? null : items.create(offer.itemId());
+        ItemStack made = AetherionItemsAccess.create(offer.itemId());
         if (made == null || made.getType().isAir()) {
             return null;
         }

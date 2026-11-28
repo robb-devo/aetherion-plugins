@@ -47,7 +47,7 @@ guide:
   enabled: true                   # the isle hand (needs FancyNpcs; talks in the TalkUx bubble)
   name: Corin                     # not Hollis: that's the town crier at the harbour
   title: Isle Hand
-  skin: MHF_Villager
+  skin: aetherion:isle_hand       # his own painted cast skin (aetherion:<cast id>), or a player account's name
   free-belt-tiles: 16             # the first belt the guide hands out: these tiles cost nothing
   factory-belt-tiles: 24          # act two (the Mill): free belt tiles topped up for its belts
 # The isle's quiet sound bed (wind, gulls, a hum near running machines), only for players on an island.
@@ -60,6 +60,9 @@ landing-camera:
 # The island choice on the Isle Dock: walking through a gate is the choice (no screen). Signs are fixed in place.
 starter-gates:
   enabled: true
+# On the islands and the Isle Dock the game's own "Advancement Made!" / "New Recipes Unlocked!" pop-ups stay away
+# (the Build Tool turns into a lectern, a barrel, an iron pickaxe: each of those would be one). Restart to change.
+quiet-vanilla-toasts: true
 # The island's border, always shown: a slim rail of light with crystal posts along the land you may build on.
 island-border:
   enabled: true

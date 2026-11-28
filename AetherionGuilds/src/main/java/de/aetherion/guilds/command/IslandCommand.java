@@ -193,6 +193,13 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
      * cannot click and for scripted run-throughs: {@code /island admin puppet <player> <action> [value]}. Every
      * action does exactly what the player's own click would do.
      */
+    private java.util.function.Function<Player, String> opener;
+
+    /** The test rig's "open what they look at" (the listener that opens buildings on a right-click). */
+    public void attachOpener(java.util.function.Function<Player, String> opener) {
+        this.opener = opener;
+    }
+
     private void puppet(CommandSender sender, String[] args) {
         if (!sender.hasPermission("aetherion.guild.admin") || highlight == null) {
             sender.sendMessage("No permission.");
@@ -200,7 +207,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length < 4) {
             sender.sendMessage("/island admin puppet <player> gate <0-2>|click|next|pick <n>|use|left|scroll <1|-1>"
-                    + "|part <PART>|drop|close|slot <n>|state");
+                    + "|part <PART>|drop|close|slot <n>|state|wipe|open|menu");
             return;
         }
         Player target = org.bukkit.Bukkit.getPlayerExact(args[2]);
@@ -238,13 +245,38 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "drop" -> placement.onDropTool(target);
+            case "wipe" -> sender.sendMessage("island wiped: " + islands.wipe(target.getUniqueId(), true));
+            case "open" -> sender.sendMessage(opener == null ? "no opener" : opener.apply(target));
+            case "menu" -> {
+                org.bukkit.inventory.Inventory top = target.getOpenInventory().getTopInventory();
+                StringBuilder out = new StringBuilder(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
+                        .plainText().serialize(target.getOpenInventory().title())).append(':');
+                for (int i = 0; i < top.getSize(); i++) {
+                    org.bukkit.inventory.ItemStack item = top.getItem(i);
+                    if (item != null && !item.getType().isAir() && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+                        String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                                .serialize(item.getItemMeta().displayName());
+                        if (!name.isBlank()) {
+                            out.append(" [").append(i).append("] ").append(name);
+                        }
+                    }
+                }
+                sender.sendMessage(out.toString());
+            }
             case "close" -> sender.sendMessage("card closed: " + de.aetherion.guilds.island.IslandUi.dismissCard(target));
             case "slot" -> {
                 if (target.getOpenInventory().getTopInventory().getHolder() instanceof de.aetherion.guilds.menu.MenuKit.Holder holder) {
                     holder.menu().click(target, holder, number(value, 0), org.bukkit.event.inventory.ClickType.LEFT);
                     sender.sendMessage("clicked slot " + value);
+                } else if (target.getOpenInventory().getTopInventory().getType() != org.bukkit.event.inventory.InventoryType.CRAFTING) {
+                    // another plugin's menu (the recipe book): the click goes out as the event a real click would be
+                    org.bukkit.inventory.InventoryView view = target.getOpenInventory();
+                    org.bukkit.Bukkit.getPluginManager().callEvent(new org.bukkit.event.inventory.InventoryClickEvent(view,
+                            org.bukkit.event.inventory.InventoryType.SlotType.CONTAINER, number(value, 0),
+                            org.bukkit.event.inventory.ClickType.LEFT, org.bukkit.event.inventory.InventoryAction.PICKUP_ALL));
+                    sender.sendMessage("clicked slot " + value + " (event)");
                 } else {
-                    sender.sendMessage("No island menu open.");
+                    sender.sendMessage("No menu open.");
                 }
             }
             case "state" -> sender.sendMessage(highlight.guide().puppetState(target)

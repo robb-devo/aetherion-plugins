@@ -122,7 +122,7 @@ public final class IslandBar implements Listener {
             // same ladder on guild islands (beats once per island, coins to the guild bank)
             if (goals != null && ticks % 4L == 0L && hosts.isMember(player, host)
                     && (host.isGuild() || guide == null || !guide.firstAct(host.id()))) {
-                goals.check(player, host);
+                goals.check(player, host, guide != null && guide.inFactoryTour(host));
             }
         }
     }

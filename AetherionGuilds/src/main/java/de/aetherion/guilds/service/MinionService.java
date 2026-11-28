@@ -305,7 +305,9 @@ public final class MinionService {
             hooks.placed(player, minion, false, guild.id());
         }
         guilds.save();
-        player.sendMessage("§a" + minion.quarryType().display() + " placed. It runs while the server is online.");
+        if (hooks == null) {
+            player.sendMessage("§a" + minion.quarryType().display() + " placed. §7It digs day and night, even while you are away.");
+        }
         return minion;
     }
 
@@ -322,7 +324,9 @@ public final class MinionService {
             hooks.placed(player, minion, true, island.ownerId());
         }
         personal.save();
-        player.sendMessage("§a" + minion.quarryType().display() + " placed. It runs while the server is online.");
+        if (hooks == null) {
+            player.sendMessage("§a" + minion.quarryType().display() + " placed. §7It digs day and night, even while you are away.");
+        }
         return minion;
     }
 

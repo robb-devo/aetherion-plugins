@@ -173,6 +173,10 @@ public final class PlacementService {
         int clock;
         boolean holding;
         long quietUntil;
+        /** The tool's holograms are off while a big screen card is up. */
+        boolean veiled;
+        /** The tool turned to Belt on its own (a one-off building just went up): no red cursor on that building for a moment. */
+        long calmUntil;
         /** A line from the island guide that the action bar shows instead of the tool's own (null: none). */
         String coach;
         UUID armed;
@@ -273,6 +277,25 @@ public final class PlacementService {
         }
     }
 
+    /** The island this tool built on is gone: the tool goes with it, and nothing is owed back. */
+    public void release(Player player) {
+        if (player != null) {
+            cancel(player, null);
+            forget(player);
+        }
+    }
+
+    private java.util.function.Predicate<Player> notHandedYet = player -> false;
+
+    /**
+     * {@code notHandedYet}: true while the player's own island is so new that the isle hand has not handed the
+     * tool over yet. Nothing is given back there (a tool from an island that is gone must not show up before he
+     * does): what was owed is dropped.
+     */
+    public void attachNotHandedYet(java.util.function.Predicate<Player> notHandedYet) {
+        this.notHandedYet = notHandedYet == null ? player -> false : notHandedYet;
+    }
+
     /** Did something other than the player's own Q take the tool out of their hand (it is owed back)? */
     public boolean owed(Player player) {
         return player != null && !has(player) && player.getPersistentDataContainer().has(outKey, PersistentDataType.STRING);
@@ -315,6 +338,10 @@ public final class PlacementService {
             IslandHost host = hosts.at(player.getLocation());
             if (host == null || !hosts.exists(host) || !hosts.canPlace(player, host)) {
                 continue; // someone else's island: it waits until they are home
+            }
+            if (!host.isGuild() && host.id().equals(player.getUniqueId()) && notHandedYet.test(player)) {
+                forget(player); // a brand-new island: the isle hand hands the tool over, nothing is owed from before
+                continue;
             }
             Part part;
             try {
@@ -1161,6 +1188,8 @@ public final class PlacementService {
             if (apply(player, session, Part.BELT)) {
                 refreshTool(player, session);
                 remember(player, Part.BELT);
+                // the player still aims at what they just built: no "inside your Hub" in red over its big moment
+                session.calmUntil = System.currentTimeMillis() + 6000L;
             }
             return;
         }
@@ -1381,6 +1410,8 @@ public final class PlacementService {
                 session.beltStart = null;
                 session.ghost.clearRun();
                 session.quietUntil = System.currentTimeMillis() + 2600L;
+                // the belt has arrived and the player still aims at where it went in: no red "can't start here"
+                session.calmUntil = System.currentTimeMillis() + 3500L;
                 if (!logistics.lastLayTalked()) {
                     actionBar(player, "§a✔ Into your §f" + aim.feeds.label() + " §8· " + cost
                             + " §8· §7right-click another chute for a new belt");
@@ -1725,6 +1756,10 @@ public final class PlacementService {
             return;
         }
         World world = player.getWorld();
+        Block onBelt = beltUnderCrosshair(player);
+        if (onBelt != null) {
+            clicked = onBelt; // the belt the crosshair rests on, not the ground behind its plate
+        }
         if (clicked == null) {
             clicked = player.getTargetBlockExact(24);
         }
@@ -1781,9 +1816,48 @@ public final class PlacementService {
         return cellOf(world, clicked);
     }
 
+    /**
+     * The belt tile the player's crosshair rests on, or null. A belt is a flat plate: a look across it passes over
+     * the plate and lands on the ground behind, so the block the game reports is the wrong one exactly when a
+     * piece is to be cut into the belt. The eye ray is walked instead, and the first belt cell it crosses low
+     * (where the plate and its rails are) is what the player means.
+     */
+    private Block beltUnderCrosshair(Player player) {
+        org.bukkit.Location eye = player.getEyeLocation();
+        World world = eye.getWorld();
+        if (world == null) {
+            return null;
+        }
+        Block hit = player.getTargetBlockExact(24);
+        double reach = hit == null ? 24.0 : Math.min(24.0, hit.getLocation().add(0.5, 0.5, 0.5).distance(eye) + 1.0);
+        org.bukkit.util.Vector dir = eye.getDirection().normalize();
+        int lastX = Integer.MIN_VALUE;
+        int lastY = Integer.MIN_VALUE;
+        int lastZ = Integer.MIN_VALUE;
+        for (double d = 0.6; d <= reach; d += 0.15) {
+            double x = eye.getX() + dir.getX() * d;
+            double y = eye.getY() + dir.getY() * d;
+            double z = eye.getZ() + dir.getZ() * d;
+            int bx = (int) Math.floor(x);
+            int by = (int) Math.floor(y);
+            int bz = (int) Math.floor(z);
+            if (y - by > 0.45 || (bx == lastX && by == lastY && bz == lastZ)) {
+                continue; // high over the cell (a look past it), or a cell already checked
+            }
+            lastX = bx;
+            lastY = by;
+            lastZ = bz;
+            if (logistics.isBelt(world, bx, by, bz)) {
+                return world.getBlockAt(bx, by, bz);
+            }
+        }
+        return null;
+    }
+
     private void renderPiece(Player player, Session session) {
         World world = player.getWorld();
-        Block target = player.getTargetBlockExact(24);
+        Block onBelt = beltUnderCrosshair(player);
+        Block target = onBelt != null ? onBelt : player.getTargetBlockExact(24);
         if (target == null) {
             session.ghost.clearRun();
             session.ghost.clearBoard();
@@ -1879,6 +1953,16 @@ public final class PlacementService {
             session.holding = true;
             session.lastAction = Math.max(session.lastAction, now - IDLE_MS + 60_000L);
             session.clock++;
+            if (de.aetherion.guilds.island.IslandUi.cardUp(player)) {
+                // a big card is being read: the tool's glowing markers would shine straight through it, so they
+                // step aside until it is closed (they are drawn again on the next round)
+                if (!session.veiled) {
+                    session.ghost.clear();
+                    session.veiled = true;
+                }
+                continue;
+            }
+            session.veiled = false;
             switch (session.kind) {
                 case BELTS -> renderBelts(player, session);
                 case PIECE -> renderPiece(player, session);
@@ -1998,6 +2082,10 @@ public final class PlacementService {
             session.ghost.inputs(world, pads);
         }
         Block target = player.getTargetBlockExact(24);
+        if (session.beltStart == null && System.currentTimeMillis() < session.calmUntil) {
+            session.ghost.clearRun();
+            return;
+        }
         if (session.beltStart == null) {
             if (target == null) {
                 session.ghost.clearRun();
@@ -2018,7 +2106,7 @@ public final class PlacementService {
             placeBoard(player, session, world, cell[1], cell[0], cell[2], cell[0] + 1, cell[2] + 1,
                     beltSpec(player, session, false));
             bar(player, session, problem == null
-                    ? (source != null ? "§a✔ Start at your §f" + source.label() + "§a's chute"
+                    ? (source != null ? "§a✔ Start at your §f" + logistics.label(source) + "§a's chute"
                     : piece != null ? "§a✔ New exit of your §f" + piece.label() : "§a✔ Start here")
                     + " §8· §fright-click §7· belts §f" + logistics.count(session.host) + "§8/"
                     + logistics.cap(session.host) + " §8· §fQ §7away"

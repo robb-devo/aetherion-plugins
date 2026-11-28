@@ -211,6 +211,16 @@ public final class HighlightListener implements Listener {
         }
     }
 
+    /** Staff test rig: opens the building the player looks at, exactly as their own right-click would. */
+    public String puppetOpen(Player player) {
+        Block block = player.getTargetBlockExact(8);
+        PlacedStructure structure = block == null ? null : structures.owner(block);
+        if (structure == null) {
+            return "nothing of the island's under the crosshair (" + (block == null ? "air" : block.getType()) + ")";
+        }
+        return structure.type() + (openBuilding(player, block, structure) ? " opened" : " has no menu on " + block.getType());
+    }
+
     /** Opens the menu behind a structure's control block. True when something opened. */
     private boolean openBuilding(Player player, Block block, PlacedStructure structure) {
         if (structure.building()) {

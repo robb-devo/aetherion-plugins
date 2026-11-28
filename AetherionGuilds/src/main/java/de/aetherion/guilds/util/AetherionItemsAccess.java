@@ -55,6 +55,33 @@ public final class AetherionItemsAccess {
     }
 
     /**
+     * An Aetherion item by its id, or null when Items can't make it. Items' own factory does not know the quarry
+     * parts (Quarry Core, its shard, the Mill and Forge parts) nor the Compressed / Compacted goods by id: those
+     * are asked for where Items keeps them. (Without this a contract that pays a Quarry Core paid nothing.)
+     */
+    public static ItemStack create(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return null;
+        }
+        de.aetherion.core.api.ItemFactoryAccess factory = AetherServices.items();
+        ItemStack made = factory == null ? null : factory.create(itemId);
+        if (made != null && !made.getType().isAir()) {
+            return made;
+        }
+        org.bukkit.plugin.Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
+        if (items == null || !items.isEnabled()) {
+            return null;
+        }
+        try {
+            Object found = items.getClass().getClassLoader().loadClass("de.aetherion.items.economy.CompressedResource")
+                    .getMethod("fromId", String.class).invoke(null, itemId);
+            return found instanceof ItemStack stack && !stack.getType().isAir() ? stack : null;
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    /**
      * Tells Items that the player now holds this good, so the recipes built from it (its quarry) are unlocked for
      * them the way a find in the world would have unlocked them. Nothing happens without Items, or with an Items
      * that keeps its recipe gates elsewhere.

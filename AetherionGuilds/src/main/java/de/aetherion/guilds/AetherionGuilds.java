@@ -275,6 +275,7 @@ public final class AetherionGuilds extends JavaPlugin {
         islandBar.attachGoals(goals);
         islandMenu.attachGoals(goals);
         guide.attachGoals(goals);
+        goals.attachGifted(guide::giftedParcels);
         getServer().getPluginManager().registerEvents(islandBar, this);
         highlight = new Highlight(templates, paste, hosts, land, unlock, structures, logistics, placement, projects,
                 starterMenu, buildMenu, landMenu, projectMenu, productionMenu, guide, voidScrubber);
@@ -289,12 +290,21 @@ public final class AetherionGuilds extends JavaPlugin {
         placement.attachQuarries(new PlacementService.Quarries() {
             @Override
             public org.bukkit.inventory.ItemStack find(Player player) {
+                // the quarry the tour is about comes first (its first quarry is the Cobble Quarry, whatever else is carried)
+                de.aetherion.guilds.model.QuarryType wanted = guide.wantedQuarry(player);
+                org.bukkit.inventory.ItemStack any = null;
                 for (org.bukkit.inventory.ItemStack item : player.getInventory().getStorageContents()) {
-                    if (minions.isQuarryItem(item) && item.getAmount() > 0) {
+                    if (!minions.isQuarryItem(item) || item.getAmount() <= 0) {
+                        continue;
+                    }
+                    if (wanted == null || minions.typeOf(item) == wanted) {
                         return item;
                     }
+                    if (any == null) {
+                        any = item;
+                    }
                 }
-                return null;
+                return any;
             }
 
             @Override
@@ -349,11 +359,19 @@ public final class AetherionGuilds extends JavaPlugin {
                 // set down with the Build Tool: its rig turns the way the hologram showed
                 int rot = placement.takeQuarryRot(player, StateRotator.frontTowardViewer(player.getLocation().getYaw()));
                 structures.milestone(host, "first_quarry");
-                player.sendMessage(switch (structures.raiseHousing(host, minion, rot)) {
-                    case FULL -> "§7Its housing rises round it. Lay a belt from the §6orange mark §7(Build Tool → Belt).";
-                    case RIG -> "§7Tight spot: a drill rig went up instead of the full housing."
-                            + " Belts start on any cell next to it.";
-                    case NONE -> "§7No room above it for a housing; belts can still start right next to it.";
+                boolean german = de.aetherion.core.exile.Say.german(player);
+                String name = minion.quarryType().display();
+                player.sendMessage((german ? "§a" + name + " steht. §7Er gräbt Tag und Nacht, auch wenn du weg bist. "
+                        : "§a" + name + " placed. §7It digs day and night, even while you are away. ")
+                        + switch (structures.raiseHousing(host, minion, rot)) {
+                    case FULL -> german ? "Leg ein Band von seiner §6orangen Rutsche§7."
+                            : "Lay a belt from its §6orange chute§7.";
+                    case RIG -> german ? "Wenig Platz: statt des Gehäuses steht ein Bohrturm. Bänder starten auf jedem"
+                            + " Feld daneben."
+                            : "Tight spot: a drill rig went up instead of the full housing. Belts start on any cell"
+                            + " next to it.";
+                    case NONE -> german ? "Kein Platz für ein Gehäuse darüber; Bänder starten trotzdem direkt daneben."
+                            : "No room above it for a housing; belts can still start right next to it.";
                 });
             }
 
@@ -376,6 +394,7 @@ public final class AetherionGuilds extends JavaPlugin {
         });
         personal.setRemovalHook(island -> {
             dropHost(IslandHost.personal(island.ownerId()));
+            placement.release(getServer().getPlayer(island.ownerId())); // the tool goes with the island
             guide.forget(island.ownerId());
             goals.forget(IslandHost.personal(island.ownerId()));
             progress.forget(IslandHost.personal(island.ownerId()));
@@ -401,8 +420,15 @@ public final class AetherionGuilds extends JavaPlugin {
         highlightListener.attachPieces(pieceMenu);
         highlightListener.attachHub(hubMenu);
         highlightListener.attachGuide(guide);
+        placement.attachNotHandedYet(guide::toolNotHandedYet);
         highlightListener.attachDock(dockMenu);
         getServer().getPluginManager().registerEvents(highlightListener, this);
+        if (getConfig().getBoolean("quiet-vanilla-toasts", true)) {
+            // the game's own advancement and recipe pop-ups stay off the islands and the Isle Dock
+            getServer().getPluginManager().registerEvents(new de.aetherion.guilds.world.QuietVanilla(world ->
+                    world != null && (world.equals(personal.world()) || world.equals(islands.world())
+                            || world.getName().equalsIgnoreCase("isles_lobby"))), this);
+        }
 
         GuildCommand command = new GuildCommand(guilds, minions, menu);
         command.attachHighlight(highlight);
@@ -415,6 +441,7 @@ public final class AetherionGuilds extends JavaPlugin {
         islandCommand.attachHighlight(highlight);
         islandCommand.attachFunnel(progress::report);
         islandCommand.attachDock(dock);
+        islandCommand.attachOpener(highlightListener::puppetOpen);
         var island = getCommand("island");
         if (island != null) {
             island.setExecutor(islandCommand);
@@ -452,6 +479,7 @@ public final class AetherionGuilds extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, placement::restoreTick, 60L, 20L);
         getServer().getScheduler().runTaskTimer(this, logistics::tickActive, 60L, 20L);
         getServer().getScheduler().runTaskTimer(this, unlock::tick, 200L, 100L);
+        getServer().getScheduler().runTaskTimer(this, unlock::skyTick, 45L, 20L);
         getServer().getScheduler().runTaskTimer(this, voidScrubber::tick, 60L, 1L);
         getServer().getScheduler().runTaskTimer(this, guide::tick, 60L, 2L);
         getServer().getScheduler().runTaskTimer(this, islandBar::tick, 40L, 20L);

@@ -550,8 +550,8 @@ public final class StarterGates {
             if (!(entity instanceof org.bukkit.entity.Mob mob) || mob.getScoreboardTags().contains("NPC")) {
                 continue;
             }
-            if (mob instanceof org.bukkit.entity.Tameable pet && pet.isTamed()) {
-                continue;
+            if (mob instanceof org.bukkit.entity.Tameable pet && pet.isTamed() && pet.getOwnerUniqueId() != null) {
+                continue; // somebody's own animal (a camel counts as tame from birth: only an owner makes it a pet)
             }
             if (mob.getPersistentDataContainer().has(de.aetherion.core.AetherKeys.PET_ENTITY)) {
                 continue; // a companion that came along with its owner (wild pets are kept off the dock by AetherMobs)

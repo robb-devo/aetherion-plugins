@@ -126,7 +126,8 @@ public final class FactoryGoals {
             new Goal("long_line", "Build a line through 4 machines", "Quarry → piece → Mill → Forge → hut, or any line four stops long.",
                     60_000L, (g, h) -> g.longestLine(h) >= 4),
             new Goal("land", "Buy a parcel of land", "Island menu → Land: new ground next to yours.",
-                    40_000L, (g, h) -> g.hosts.parcels(h).size() > LandService.initialParcels().size(), Scope.PERSONAL),
+                    40_000L, (g, h) -> g.hosts.parcels(h).size() > LandService.initialParcels().size() + g.gifted.applyAsInt(h),
+                    Scope.PERSONAL),
             new Goal("tier3", "Raise your Island Tier to 3", "Guild menu → Tier. More belts and one more of every machine.",
                     80_000L, (g, h) -> g.hosts.tier(h) >= 3, Scope.GUILD),
             new Goal("hub3", "Raise the Grand Hub", "Hub lectern → Hub tier. Every Mill and Forge runs twice as fast.",
@@ -186,8 +187,23 @@ public final class FactoryGoals {
         return n;
     }
 
+    /** Parcels an island got as a gift (the tour's first land): those are not "bought" and pay no goal. */
+    private java.util.function.ToIntFunction<IslandHost> gifted = host -> 0;
+
+    public void attachGifted(java.util.function.ToIntFunction<IslandHost> gifted) {
+        this.gifted = gifted == null ? host -> 0 : gifted;
+    }
+
     /** Every few seconds for a member on their island: newly done goals get their beat (once per island). */
     public void check(Player player, IslandHost host) {
+        check(player, host, false);
+    }
+
+    /**
+     * {@code guided}: the isle hand is still showing the owner round. He says what comes next himself, so the
+     * ladder joins in without its own line in chat.
+     */
+    public void check(Player player, IslandHost host, boolean guided) {
         Set<String> got = rewarded.get(host.key());
         if (got == null) {
             got = new HashSet<>();
@@ -201,7 +217,7 @@ public final class FactoryGoals {
                     }
                 }
                 Goal next = next(host);
-                if (next != null) {
+                if (next != null && !guided) {
                     player.sendMessage("§b➤ Factory goals are here. §7Next: §f" + next.title() + " §8— §7" + howNow(host, next));
                 }
                 return;

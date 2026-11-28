@@ -224,6 +224,10 @@ public final class IslandGuide implements Listener {
         long rang;
         /** He already spoke up for this visit of the owner (reset once they have gone off again). */
         boolean offered;
+        /** A moment that is playing has the floor until then (the Hub going up, the first ship): he holds his tongue. */
+        long quietUntil;
+        /** His own skin was not signed yet when he was put up: he is put up again once it is. */
+        boolean skinPending;
 
         Hand(UUID owner) {
             this.owner = owner;
@@ -464,7 +468,13 @@ public final class IslandGuide implements Listener {
                     "Band: Rechtsklick auf die §6orange Rutsche§f am Steinbruch, dann aufs §agrüne Feld§f der Hütte");
             case MILL -> t(viewer, "Set the Mill down beside your belt §7(free)",
                     "Stell die Mühle (Mill) neben dein Band §7(gratis)");
-            case SPLIT -> t(viewer, "Cut the Splitter into your belt §7(right-click the belt)",
+            case SPLIT -> structures.count(host, StructureType.SPLITTER) > 0
+                    // it stands beside the line instead of in it: say what is wrong, not the step once more
+                    ? t(viewer, "Your Splitter is not in the belt yet: pick it up §7(Build Tool › Pick up)§f, then"
+                            + " right-click the belt itself",
+                    "Dein Splitter sitzt noch nicht im Band: heb ihn auf §7(Bauwerkzeug › Pick up)§f, dann Rechtsklick"
+                            + " direkt aufs Band")
+                    : t(viewer, "Cut the Splitter into your belt §7(right-click the belt)",
                     "Setz den Splitter in dein Band §7(Rechtsklick aufs Band)");
             case FEED -> t(viewer, "Belt an §6orange side§f of the Splitter into the Mill's §agreen pad",
                     "Band von einer §6orangen Seite§f des Splitters ins §agrüne Feld§f der Mühle");
@@ -714,6 +724,60 @@ public final class IslandGuide implements Listener {
     // entry points
     // ------------------------------------------------------------------------------------------------
 
+    /** The tour's gift parcel was taken on this island (1) or not (0): the land goal counts bought land only. */
+    public int giftedParcels(IslandHost host) {
+        if (host == null || host.isGuild()) {
+            return 0;
+        }
+        State state = states.get(host.id());
+        return state != null && (state.kits & LAND_GIFT) != 0 ? 1 : 0;
+    }
+
+    /** This player's own island is so new that he has not handed the Build Tool over yet. */
+    public boolean toolNotHandedYet(Player player) {
+        if (player == null || !available()) {
+            return false;
+        }
+        IslandHost host = IslandHost.personal(player.getUniqueId());
+        State state = states.get(player.getUniqueId());
+        if (state == null) {
+            return eligible(personal.byOwner(player.getUniqueId())) && !tourAlreadyDone(host);
+        }
+        return (state.step == Step.WELCOME || state.step == Step.HUB) && (state.kits & TOOL_GIVEN) == 0
+                && !tourAlreadyDone(host);
+    }
+
+    /** The owner stands on their own island and he is still showing them round (from the welcome to the first land). */
+    public boolean showingRound(Player player) {
+        if (player == null || !available()) {
+            return false;
+        }
+        IslandHost host = hosts.at(player.getLocation());
+        if (host == null || host.isGuild() || !host.id().equals(player.getUniqueId())) {
+            return false;
+        }
+        State state = states.get(player.getUniqueId());
+        if (state == null) {
+            return eligible(personal.byOwner(player.getUniqueId())) && !tourAlreadyDone(host);
+        }
+        return state.step == Step.WELCOME ? !tourAlreadyDone(host) : state.step.touring();
+    }
+
+    /**
+     * Where he stands to greet the owner of this island (his post), or null without a guide. The landing looks
+     * his way, so his first line opens in view instead of beside it.
+     */
+    public Location greetingSpot(IslandHost host) {
+        if (host == null || host.isGuild() || !available()) {
+            return null;
+        }
+        Hand hand = hands.get(host.id());
+        if (hand != null && hand.at != null) {
+            return hand.at.clone();
+        }
+        return postSpot(host);
+    }
+
     /** Right after the claim ceremony: he says hello where the owner lands. False = no guide (caller shows the card). */
     public boolean introduce(Player player) {
         PersonalIsland island = personal.byOwner(player.getUniqueId());
@@ -834,6 +898,9 @@ public final class IslandGuide implements Listener {
                 .append(" talking=").append(hand != null && (chats.containsKey(player.getUniqueId())
                         || (talk != null && talk.talkingWith(player, hand.speakerId))))
                 .append(" bar=\"").append(String.valueOf(objective(owner, player)).replaceAll("§.", "")).append('"');
+        if (hand != null && hand.at != null) {
+            out.append(String.format(Locale.ROOT, " at=%.1f,%.1f,%.1f", hand.at.getX(), hand.at.getY(), hand.at.getZ()));
+        }
         List<TalkAccess.Reply> replies = lastReplies.get(player.getUniqueId());
         if (replies != null && !replies.isEmpty()) {
             out.append(" answers=");
@@ -1025,7 +1092,7 @@ public final class IslandGuide implements Listener {
                 return;
             }
             TalkAccess talk = AetherServices.talk();
-            if (talk != null && talk.bubbles(owner) && tooFar(owner, hand, talk)) {
+            if (talk != null && talk.bubbles(owner) && !inView(owner, hand, talk)) {
                 ring(owner, hand, () -> brief(owner, hand, true));
                 return;
             }
@@ -1039,6 +1106,9 @@ public final class IslandGuide implements Listener {
         if (delay <= 0L) {
             go.run();
         } else {
+            // nothing else of his cuts in before that (the owner standing right by him would otherwise be briefed
+            // at once, over the moment the delay was made for)
+            hand.quietUntil = System.currentTimeMillis() + delay * 50L + 500L;
             Bukkit.getScheduler().runTaskLater(plugin, go, delay);
         }
     }
@@ -1112,7 +1182,7 @@ public final class IslandGuide implements Listener {
             spareQuarry(player, host, state);
         }
         if (want == PlacementService.Part.QUARRY) {
-            handQuarry(player, false);
+            handQuarry(player, state.step == Step.QUARRY ? QuarryType.COBBLESTONE : null, false);
         }
         if (!placement.holdingTool(player) || placement.part(player) != want) {
             placement.openTool(player, host, want);
@@ -1220,7 +1290,7 @@ public final class IslandGuide implements Listener {
             talk.end(player);
         }
         chats.remove(id);
-        placement.cancel(player, null);
+        placement.release(player);
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (player.isOnline() && personal.wipe(id, true)) {
                 player.sendTitle(t(player, "§6✦ Back at the gates ✦", "§6✦ Zurück an den Toren ✦"),
@@ -1434,7 +1504,7 @@ public final class IslandGuide implements Listener {
         state.freeTiles = Math.max(state.freeTiles, kitTiles());
         if (!state.quarryGiven && firstHousing(host) == null) {
             state.quarryGiven = true;
-            handQuarry(player, true);
+            handQuarry(player, QuarryType.COBBLESTONE, true);
         }
         dirty = true;
         return true;
@@ -1442,12 +1512,13 @@ public final class IslandGuide implements Listener {
 
     /** Lost it (dropped, despawned)? He has one spare, once. Never a dead end. */
     private void spareQuarry(Player player, IslandHost host, State state) {
-        if (firstHousing(host) != null || (state.kits & SPARE_QUARRY) != 0 || hasQuarryItem(player)) {
+        if (firstHousing(host) != null || (state.kits & SPARE_QUARRY) != 0
+                || hasQuarryItem(player, QuarryType.COBBLESTONE)) {
             return;
         }
         state.kits |= SPARE_QUARRY;
         dirty = true;
-        handQuarry(player, true);
+        handQuarry(player, QuarryType.COBBLESTONE, true);
         player.sendMessage(t(player, "§7" + name() + " hands you his spare quarry.",
                 "§7" + name() + " gibt dir seinen Ersatz-Steinbruch."));
     }
@@ -1460,7 +1531,7 @@ public final class IslandGuide implements Listener {
         } else {
             spareQuarry(player, host, state);
         }
-        handQuarry(player, false);
+        handQuarry(player, QuarryType.COBBLESTONE, false);
         placement.openTool(player, host, PlacementService.Part.QUARRY);
         List<String> out = new ArrayList<>();
         if (fresh) {
@@ -1491,8 +1562,8 @@ public final class IslandGuide implements Listener {
                         List.of("§fCobble Quarry §7gräbt von allein Stein",
                                 "§f" + kitTiles() + " Bandstücke §7tragen ihn weg")),
                 Arrays.asList(new ItemStack(Material.IRON_PICKAXE), new ItemStack(Material.IRON_TRAPDOOR)),
-                t(player, "§7Quarries are built from goods. This one is on me.",
-                        "§7Steinbrüche baut man aus Waren. Der hier geht auf mich."), "§6", summary, null);
+                t(player, "§7A gift. The next one you build yourself.",
+                        "§7Geschenkt. Den nächsten baust du selbst."), "§6", summary, null);
         if (!card) {
             player.sendMessage(summary);
         }
@@ -1500,11 +1571,7 @@ public final class IslandGuide implements Listener {
 
     private void beltBrief(Player player, Hand hand, IslandHost host, State state, boolean reaction) {
         briefed(state);
-        if ((state.kits & COLOURS) == 0) {
-            state.kits |= COLOURS;
-            dirty = true;
-            coloursCard(player);
-        }
+        coloursOnce(player, state);
         placement.startBelts(player, host);
         List<String> out = new ArrayList<>();
         if (reaction) {
@@ -1519,6 +1586,20 @@ public final class IslandGuide implements Listener {
                         + " sich dazwischen."));
         speak(player, hand, out, List.of(reply(t(player, "Show me", "Zeig's mir"), NamedTextColor.GOLD,
                 () -> outline(player, firstHousing(host), firstHut(host), 6))));
+    }
+
+    /**
+     * The colours card, once per island: when the first quarry stands (the first time an orange chute and a green
+     * pad are both on screen), or with his word on belts if that moment was missed. Never left out: whoever lays
+     * the first belt without asking him has read it too.
+     */
+    private void coloursOnce(Player player, State state) {
+        if ((state.kits & COLOURS) != 0) {
+            return;
+        }
+        state.kits |= COLOURS;
+        dirty = true;
+        coloursCard(player);
     }
 
     /** The one rule of every belt, as a card: orange = out, green = in. */
@@ -1536,8 +1617,8 @@ public final class IslandGuide implements Listener {
                                 "§7Ein Band läuft von §6Orange §7nach §aGrün")),
                 Arrays.asList(new ItemStack(Material.ORANGE_CONCRETE), new ItemStack(Material.LIME_CONCRETE),
                         new ItemStack(Material.IRON_TRAPDOOR)),
-                t(player, "§7Right-click the orange chute, then the green pad",
-                        "§7Rechtsklick auf die orange Rutsche, dann aufs grüne Feld"), "§6", summary,
+                t(player, "§7Right-click orange first, then green",
+                        "§7Rechtsklick: erst Orange, dann Grün"), "§6", summary,
                 new ItemStack(Material.ORANGE_CONCRETE));
         if (!card) {
             player.sendMessage(summary);
@@ -1796,7 +1877,7 @@ public final class IslandGuide implements Listener {
                                 "§7Mehr Bänder, von jeder Maschine eine mehr")),
                 Arrays.asList(new ItemStack(Material.IRON_PICKAXE), new ItemStack(Material.EXPERIENCE_BOTTLE),
                         new ItemStack(Material.IRON_TRAPDOOR)),
-                t(player, "§7Later: the Forge, the Sorter, land of your own",
+                t(player, "§7Later: Forge, Sorter and land of your own",
                         "§7Später: Forge, Sorter, eigenes Land"), "§6", summary, null);
         if (!card) {
             player.sendMessage(summary);
@@ -1845,7 +1926,7 @@ public final class IslandGuide implements Listener {
         QuarryType type = craftType(host);
         state.craftSub = hasQuarryItem(player) ? 1 : 0;
         if (state.craftSub == 1) {
-            handQuarry(player, false);
+            handQuarry(player, hasQuarryItem(player, type) ? type : null, false);
             placement.openTool(player, host, PlacementService.Part.QUARRY);
             speak(player, hand, List.of(t(player,
                     "There it is, built by your own hands. Set it down like the first one, then belt it in.",
@@ -1949,7 +2030,7 @@ public final class IslandGuide implements Listener {
                                     () -> tip(player, hand)),
                             reply(t(player, "Thanks, " + name(), "Danke, " + name()), NamedTextColor.GRAY, null)));
             TalkAccess access = AetherServices.talk();
-            if (access != null && access.bubbles(player) && tooFar(player, hand, access)) {
+            if (access != null && access.bubbles(player) && !inView(player, hand, access)) {
                 ring(player, hand, talk);
             } else {
                 talk.run();
@@ -2073,7 +2154,7 @@ public final class IslandGuide implements Listener {
     }
 
     private void giveQuarry(Player player) {
-        handQuarry(player, true);
+        handQuarry(player, QuarryType.COBBLESTONE, true);
         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 0.9f);
         if (!IslandUi.toast(player, "Cobble Quarry from " + name(), "§7It's in your bag.",
                 "§8Next: §7Build Tool shows its rig, right-click flat ground")) {
@@ -2082,26 +2163,60 @@ public final class IslandGuide implements Listener {
     }
 
     private boolean hasQuarryItem(Player player) {
+        return hasQuarryItem(player, null);
+    }
+
+    /** A quarry item of this type in the pack ({@code want} null: of any type). */
+    private boolean hasQuarryItem(Player player, QuarryType want) {
         for (ItemStack item : player.getInventory().getStorageContents()) {
-            if (minions.isQuarryItem(item)) {
+            if (isQuarry(item, want)) {
                 return true;
             }
         }
         return false;
     }
 
+    private boolean isQuarry(ItemStack item, QuarryType want) {
+        return minions.isQuarryItem(item) && (want == null || minions.typeOf(item) == want);
+    }
+
     /**
-     * Puts a quarry into the main hand: the one in the inventory if there is one, else (when {@code create}) a new
-     * one. The held item moves to a free slot; nothing is ever deleted.
+     * The quarry the tour is about right now on the island the player stands on: its first is always the Cobble
+     * Quarry (the whole first chain runs on stone), its second the one they built themselves. Null outside those
+     * two steps. The Build Tool sets that one down first, whatever else lies in the pack.
      */
-    private void handQuarry(Player player, boolean create) {
+    public QuarryType wantedQuarry(Player player) {
+        if (player == null || !available()) {
+            return null;
+        }
+        IslandHost host = hosts.at(player.getLocation());
+        if (host == null || host.isGuild()) {
+            return null;
+        }
+        State state = states.get(host.id());
+        if (state == null) {
+            return null;
+        }
+        return switch (state.step) {
+            case QUARRY -> QuarryType.COBBLESTONE;
+            case CRAFT -> craftType(host);
+            default -> null;
+        };
+    }
+
+    /**
+     * Puts a quarry of this type into the main hand ({@code want} null: any quarry): the one in the inventory if
+     * there is one, else (when {@code create}) a new one. The held item moves to a free slot; nothing is ever
+     * deleted. A quarry of another kind that happens to lie in the pack is never taken for it.
+     */
+    private void handQuarry(Player player, QuarryType want, boolean create) {
         org.bukkit.inventory.PlayerInventory inventory = player.getInventory();
-        if (minions.isQuarryItem(inventory.getItemInMainHand())) {
+        if (isQuarry(inventory.getItemInMainHand(), want)) {
             return;
         }
         int held = inventory.getHeldItemSlot();
         for (int slot = 0; slot < inventory.getStorageContents().length; slot++) {
-            if (!minions.isQuarryItem(inventory.getItem(slot))) {
+            if (!isQuarry(inventory.getItem(slot), want)) {
                 continue;
             }
             if (slot < 9) {
@@ -2116,7 +2231,7 @@ public final class IslandGuide implements Listener {
         if (!create) {
             return;
         }
-        ItemStack quarry = minions.createQuarryItem(QuarryType.COBBLESTONE);
+        ItemStack quarry = minions.createQuarryItem(want == null ? QuarryType.COBBLESTONE : want);
         ItemStack current = inventory.getItem(held);
         if (current == null || current.getType().isAir()) {
             inventory.setItem(held, quarry);
@@ -2184,6 +2299,25 @@ public final class IslandGuide implements Listener {
         }
         double reach = Math.max(4.0, talk.reach() - 1.5);
         return player.getLocation().distanceSquared(hand.at) > reach * reach;
+    }
+
+    /**
+     * He is on the player's screen and close enough to read: what he says of his own accord (his reaction to a task
+     * done) only ever opens there. Behind the player's back it would be a line nobody saw; then he rings instead,
+     * and says it once they turn to him or click him.
+     */
+    private boolean inView(Player player, Hand hand, TalkAccess talk) {
+        if (tooFar(player, hand, talk)) {
+            return false;
+        }
+        Location eye = player.getEyeLocation();
+        org.bukkit.util.Vector to = hand.at.toVector().add(new org.bukkit.util.Vector(0, 1.9, 0)).subtract(eye.toVector());
+        double distance = to.length();
+        if (distance < 1.0) {
+            return true;
+        }
+        // about 45 degrees round where they look: his head and the bubble over it are in the picture
+        return eye.getDirection().normalize().dot(to.multiply(1.0 / distance)) > 0.70;
     }
 
     /**
@@ -2384,8 +2518,8 @@ public final class IslandGuide implements Listener {
         if (state.step == Step.MILL && stands(lineMachine(host, StructureType.MILL))) {
             state.step = Step.SPLIT;
         }
-        if (state.step == Step.SPLIT && structures.count(host, StructureType.SPLITTER) > 0) {
-            state.step = Step.FEED;
+        if (state.step == Step.SPLIT && splitterInLine(host)) {
+            state.step = Step.FEED; // a Splitter set down beside the belt is not it yet: the stone has to reach it
         }
         if (state.step == Step.FEED && millFed(host)) {
             state.step = Step.OUTPUT;
@@ -2423,6 +2557,16 @@ public final class IslandGuide implements Listener {
         return false;
     }
 
+    /** A Splitter sits in a belt line: something is belted into it. */
+    private boolean splitterInLine(IslandHost host) {
+        for (PlacedStructure structure : structures.of(host)) {
+            if (structure.type() == StructureType.SPLITTER && !structure.building() && logistics.feeding(structure) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** The first quarry's chute is belted into something (the hut, or already a Splitter on the way to it). */
     private boolean quarryBelted(IslandHost host) {
         PlacedStructure housing = firstHousing(host);
@@ -2440,9 +2584,10 @@ public final class IslandGuide implements Listener {
     }
 
     /**
-     * The first time a belt feeds the Mill on the tour, he tips a starter load in (the input topped up to one
-     * batch), so the first Compressed Cobble comes at once instead of after two minutes of waiting. Once per
-     * island; true when it went in just now.
+     * The first time a belt feeds the Mill on the tour, he tips a starter load in (the input topped up to two
+     * batches): the first Compressed Cobble comes at once and pays the Dock, the second is there for the first
+     * shipment. Without it the tour stood still for minutes at its last step, waiting for 128 stones to trickle
+     * in. Once per island; true when it went in just now.
      */
     private boolean primeOnce(IslandHost host, State state) {
         if (state.primed || !state.step.touring()) {
@@ -2454,7 +2599,7 @@ public final class IslandGuide implements Listener {
         }
         state.primed = true;
         dirty = true;
-        long added = logistics.prime(mill, Res.of(QuarryType.COBBLESTONE, Res.Form.RAW), Res.UNIT);
+        long added = logistics.prime(mill, Res.of(QuarryType.COBBLESTONE, Res.Form.RAW), 2L * Res.UNIT);
         World world = hosts.world(host);
         if (added > 0L && world != null) {
             Location top = new Location(world, mill.centerX(), mill.maxY() + 0.9, mill.centerZ());
@@ -2539,6 +2684,23 @@ public final class IslandGuide implements Listener {
                     showHolo(player, hand);
                 }
             }
+            if (!busy && hand.skinPending && skinSigned()) {
+                // his own skin got signed since he was put up: once more, with his own face
+                despawn(hand);
+                hand.skinPending = false;
+                spawn(hand);
+                if (hand.npc == null) {
+                    continue;
+                }
+            } else if (hand.skinPending && hand.npc != null && now - skinAsked > 30_000L) {
+                // the signing did not come back (a busy queue gives up on a job): asked again, every half minute
+                skinAsked = now;
+                try {
+                    dress(FancyNpcFacade.data(hand.npc));
+                } catch (ReflectiveOperationException | RuntimeException ignored) {
+                    // next round
+                }
+            }
             if (!busy) {
                 settle(hand); // the Hub went up (or came down): he takes his post there
             }
@@ -2588,7 +2750,10 @@ public final class IslandGuide implements Listener {
         if (away > 14.0 * 14.0) {
             hand.offered = false; // they went off: when they come back to him, he speaks up once
         }
-        if (!busy && !hand.offered && away <= 6.0 * 6.0 && owner.getGameMode() != org.bukkit.GameMode.SPECTATOR) {
+        boolean beatDue = state.step.actTwo() && (state.kits & CHAIN_BEAT) == 0; // the first chain's card comes first
+        if (!busy && !hand.offered && !beatDue && System.currentTimeMillis() >= hand.quietUntil
+                && away <= 6.0 * 6.0 && owner.getGameMode() != org.bukkit.GameMode.SPECTATOR
+                && (talk == null || !talk.bubbles(owner) || inView(owner, hand, talk))) {
             if (hand.waiting != null) {
                 // his reaction to a task done further away: he says it now that the owner stands by him
                 Runnable then = hand.waiting;
@@ -2632,6 +2797,17 @@ public final class IslandGuide implements Listener {
                 owner.playSound(owner.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 1.4f);
             }
             long pause = Math.max(0L, plugin.getConfig().getLong("guide.step-pause-ticks", 40L));
+            if (reached == Step.BELT && (state.kits & COLOURS) == 0) {
+                // the first quarry stands and the tool has turned to Belt: orange and green are on screen for the
+                // first time, so their card comes now (once the housing has risen), whether he is asked or not
+                pause += 50L;
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    State now = state(island.ownerId());
+                    if (owner.isOnline() && now.step.touring()) {
+                        coloursOnce(owner, now);
+                    }
+                }, 50L);
+            }
             switch (reached) {
                 case HUT -> {
                     if (before == Step.HUB) {
@@ -2658,6 +2834,7 @@ public final class IslandGuide implements Listener {
                     if (before == Step.SHIP) {
                         // the Dock plays the first ship's beat (airship, stage card) and calls on him when it is
                         // over; if that never comes (an admin stage, a beat cut short) he speaks up a little later
+                        hand.quietUntil = System.currentTimeMillis() + 400L * 50L + 500L;
                         Bukkit.getScheduler().runTaskLater(plugin, () -> {
                             State now = state(island.ownerId());
                             if (owner.isOnline() && now.step == reached && needsTalk(now) && hand.waiting == null
@@ -2985,10 +3162,7 @@ public final class IslandGuide implements Listener {
             FancyNpcFacade.invokeQuiet(data, "setCollidable", boolean.class, false);
             FancyNpcFacade.invokeQuiet(data, "setTurnToPlayer", boolean.class, true);
             FancyNpcFacade.applyVisibility(data, 48);
-            String skin = plugin.getConfig().getString("guide.skin", "MHF_Villager");
-            if (skin != null && !skin.isBlank()) {
-                FancyNpcFacade.invokeQuiet(data, "setSkin", String.class, skin);
-            }
+            hand.skinPending = dress(data);
             Object npc = FancyNpcFacade.adapt(data);
             FancyNpcFacade.invokeQuiet(npc, "setSaveToFile", boolean.class, false);
             FancyNpcFacade.create(npc);
@@ -2997,6 +3171,56 @@ public final class IslandGuide implements Listener {
             hand.npc = npc;
         } catch (Throwable t) {
             plugin.getLogger().warning(name() + " (island guide) spawn failed: " + t.getMessage());
+        }
+    }
+
+    /** The old default was a player account's name; its lookup fails these days and left him a random default body. */
+    private static final String OLD_SKIN = "MHF_Villager";
+    private static final String CAST_PREFIX = "aetherion:";
+    /** His own face: painted for him (docs/npc/skins/paint_skins.py, "isle_hand"), bundled and signed by Quests. */
+    private static final String OWN_SKIN = CAST_PREFIX + "isle_hand";
+
+    private String castSkin() {
+        String skin = plugin.getConfig().getString("guide.skin", OWN_SKIN);
+        if (skin == null || skin.isBlank() || skin.equalsIgnoreCase(OLD_SKIN)) {
+            skin = OWN_SKIN;
+        }
+        return skin.toLowerCase(Locale.ROOT).startsWith(CAST_PREFIX)
+                ? skin.substring(CAST_PREFIX.length()).toLowerCase(Locale.ROOT) : null;
+    }
+
+    /**
+     * Puts his skin on the NPC data: the cast skin painted for him (or another cast skin named as
+     * {@code aetherion:<id>} in guide.skin), else the account name the config gives. True = the cast skin is not
+     * signed yet (it is on its way: he is put up again with it as soon as it is).
+     */
+    private boolean dress(Object data) {
+        String cast = castSkin();
+        if (cast == null) {
+            FancyNpcFacade.invokeQuiet(data, "setSkin", String.class, plugin.getConfig().getString("guide.skin", ""));
+            return false;
+        }
+        try {
+            de.aetherion.quests.npc.LivingNpcSkins skins = de.aetherion.quests.npc.LivingNpcSkins.get();
+            if (skins != null && de.aetherion.quests.npc.LivingNpcSkins.hasCastSkin(cast)) {
+                return !skins.apply(data, cast);
+            }
+        } catch (LinkageError | RuntimeException ignored) {
+            // no Quests on this server (or an older one): he keeps a default body
+        }
+        return false;
+    }
+
+    /** When his skin was last asked for (one ask serves every island: they all wear the same one). */
+    private long skinAsked;
+
+    private boolean skinSigned() {
+        String cast = castSkin();
+        try {
+            de.aetherion.quests.npc.LivingNpcSkins skins = de.aetherion.quests.npc.LivingNpcSkins.get();
+            return cast != null && skins != null && skins.isSigned(cast);
+        } catch (LinkageError | RuntimeException ignored) {
+            return false;
         }
     }
 

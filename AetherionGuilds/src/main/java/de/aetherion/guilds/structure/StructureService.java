@@ -1289,8 +1289,7 @@ public final class StructureService {
         }
         hosts.refund(player, host, refund);
         if (structure.itemPaid() && structure.type().itemId() != null && AetherionItemsAccess.available()) {
-            de.aetherion.core.api.ItemFactoryAccess items = de.aetherion.core.api.AetherServices.items();
-            ItemStack item = items == null ? null : items.create(structure.type().itemId());
+            ItemStack item = AetherionItemsAccess.create(structure.type().itemId());
             if (item != null) {
                 player.getInventory().addItem(item).values()
                         .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));

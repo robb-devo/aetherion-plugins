@@ -57,6 +57,19 @@ public final class IslandUi {
         }
     }
 
+    /** A big card is on the player's screen (or about to be): glowing things in the world step aside for it. */
+    public static boolean cardUp(Player player) {
+        if (missing || player == null) {
+            return false;
+        }
+        try {
+            return de.aetherion.quests.talk.HudCards.blocking(player);
+        } catch (LinkageError ex) {
+            missing = true;
+            return false;
+        }
+    }
+
     /** Sends the big card on the player's screen away (what a sneak does). True = there was one. */
     public static boolean dismissCard(Player player) {
         if (missing || player == null) {

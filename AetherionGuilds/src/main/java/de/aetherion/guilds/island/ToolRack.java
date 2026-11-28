@@ -231,13 +231,17 @@ public final class ToolRack implements Listener {
         box(world, rack, Material.STRIPPED_SPRUCE_LOG.createBlockData(), cx, y + 1.5, cz, alongX ? 0.86f : 0.14f, 0.12f,
                 alongX ? 0.14f : 0.86f);
         box(world, rack, Material.COPPER_BLOCK.createBlockData(), cx, y + 1.62, cz, 0.22f, 0.07f, 0.22f);
+        // the tool hangs from one end of the arm, clear of the post (in the post it was half swallowed by it)
+        double hx = cx + (alongX ? 0.3 : 0.0);
+        double hz = cz + (alongX ? 0.0 : 0.3);
+        box(world, rack, Material.CHAIN.createBlockData(), hx, y + 1.36, hz, 0.05f, 0.14f, 0.05f);
         ItemStack tool = new ItemStack(Material.NETHERITE_PICKAXE);
         ItemMeta meta = tool.getItemMeta();
         if (meta != null) {
             meta.setEnchantmentGlintOverride(true);
             tool.setItemMeta(meta);
         }
-        rack.tool = world.spawn(new Location(world, cx, y + 1.02, cz), ItemDisplay.class, d -> {
+        rack.tool = world.spawn(new Location(world, hx, y + 1.06, hz), ItemDisplay.class, d -> {
             d.setItemStack(tool);
             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(0.62f, 0.62f, 0.62f),

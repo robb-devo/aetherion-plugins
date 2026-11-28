@@ -48,6 +48,8 @@ public final class LivingNpcSkins {
             "farmer", "lark", "fisher", "fishmonger", "vex", "rite_keeper", "arena_proctor",
             "farm_isle_guide", "surveyor", "vince", "bar_whisper", "eldervale_welcome", "eldervale_upgrade",
             "merchant", "isle_clerk", "forage_pad_guide", "liquidator", "amethyst_mines_guide", "canopy_clerk", "root_cellar",
+            // Corin, the isle hand of the private islands (AetherionGuilds puts him up)
+            "isle_hand",
             "town_crier", "street_sweeper", "lamp_lighter",
             // Origin island cast (SAITAMA pass)
             "harbourmaster", "crane_hand", "lighthouse_keeper", "shanty_busker", "beekeeper", "painter", "hermit",
