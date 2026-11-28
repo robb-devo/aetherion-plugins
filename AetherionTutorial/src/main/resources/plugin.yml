@@ -1,0 +1,34 @@
+name: AetherionTutorial
+version: 1.0.0
+main: de.aetherion.tutorial.TutorialPlugin
+api-version: 1.21
+author: Aetherion
+description: "Morningbell: the tutorial isle. Teaches every core system once, in order, then sails the new player to Anker Harbour."
+
+# Two roles, one jar. On the isle backend (the world 'morningbell' is loaded) it runs the lessons; on the main
+# world it only welcomes the graduates. Core gives the shared services; everything else is used when present.
+depend:
+  - AetherionCore
+
+softdepend:
+  - AetherionItems
+  - AetherionQuests
+  - BossEngine
+  - AetherionForaging
+  - AetherionMining
+  - FancyNpcs
+
+commands:
+  morningbell:
+    description: Morningbell tutorial (staff tools)
+    usage: /morningbell <status|step|next|reset|skip|boss|tp|marks|visit|poke> [player]
+    permission: aetherion.tutorial.admin
+    aliases: [mbell]
+  tutorial:
+    description: Visit Morningbell, the tutorial isle (your character stays where it is)
+    usage: /tutorial
+
+permissions:
+  aetherion.tutorial.admin:
+    description: Inspect and steer a player's tutorial
+    default: op

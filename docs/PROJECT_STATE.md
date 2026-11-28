@@ -1,6 +1,7 @@
 # Aetherion — Project state (read this first)
 
 Snapshot: **2026-11-22** (live table below, handoff folder, beta work list); older sections keep their dates.
+Newest section: **Tutorial isle Morningbell** (2026-11-28, new backend mmo-t, new module AetherionTutorial).
 One page so a new session does not have to rescan the repo. Update the dated sections when they change.
 Open work: the **beta work list** A-01..A-72 (Claude Doc "Aetherion: Beta-Arbeitsliste", copy in the project files
 and in Robb's handoff folder, see "Where the truth lives"). Work it in A-number order, one item at a time.
@@ -13,7 +14,7 @@ the private `aetherion-ops/` folder on Robb's PC (`docs/OPUS_SESSION_BIBLE.md`,
 ## What this is
 
 Minecraft MMORPG network "Aetherion" on Paper 1.21.1 behind a Velocity proxy.
-16 Maven modules in the root reactor (one plugin each), SamuraiBoss and the Velocity plugin AetherionProxy with their
+17 Maven modules in the root reactor (one plugin each), SamuraiBoss and the Velocity plugin AetherionProxy with their
 own poms, and AetherionHelm (staff panel, own builds): ~506k lines of Java, 8 unit test classes.
 CI (`.github/workflows/compile.yml`) compiles the reactor, AetherionProxy and SamuraiBoss and runs the Core, Farming and
 Fishing tests. The AetherionItems tests do not compile yet (see "Known gaps").
@@ -32,11 +33,13 @@ Fishing tests. The AetherionItems tests do not compile yet (see "Known gaps").
 | AetherionMining / Foraging / Farming / Fishing | Gathering isles (Eldervale) | 20k / 16k / 11k / 9k |
 | AetherionGnomon | Adaptive boss encounter. A test boss to check a concept, not part of the story or the game (Robb, 11-10): no work goes into it | 9k |
 | AetherionBeta / Pit / StressBots | Beta tooling, Pit minigame, QA load bots | 3k / 2k / 4k |
+| AetherionTutorial | Morningbell, the tutorial isle (role isle on mmo-t, role main on mmo-r) + its world generator | 7k (+ 6k Python) |
 | AetherionProxy | Velocity plugin: sends the resource pack once per session (own build, JDK 25) | 0.3k |
 
 Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, market),
 **mmo-d** (dungeons only), **mmo-c** (exile/story), **mmo-i** (private + guild islands), and since late October
-**mmo-m** (Titan mine test server, world `jawcamp`). On 11-02 mmo-m was behind `main` on Core, Items and Quests, had no
+**mmo-m** (Titan mine test server, world `jawcamp`), and since 2026-11-28 **mmo-t** (the tutorial isle, world
+`morningbell`; every new player starts there, see "Tutorial isle Morningbell"). On 11-02 mmo-m was behind `main` on Core, Items and Quests, had no
 Helm agent and lacked the `aetherion-armor` datapack the other backends carry; nothing there is open to players yet.
 
 ## Where the truth lives
@@ -92,7 +95,9 @@ older; the hashes are in LIVE_STATE.
 Which backend loads which plugin: Core on all six (hub, mmo-r, mmo-d, mmo-c, mmo-i, mmo-m); Items, Quests,
 AetherMobs on every mmo backend; BossEngine on hub, mmo-r, mmo-d, mmo-c; Mining on mmo-r, mmo-c, mmo-m; Foraging,
 Farming, Fishing on mmo-r and mmo-c; Dungeons and Beta on mmo-r and mmo-d; Guilds on mmo-i only (parked on mmo-r and mmo-d);
-Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmProxy` on the proxy.
+Gnomon and SamuraiBoss on mmo-r; Pit on hub; Helm agent on all, `AetherionHelmProxy` on the proxy. Since
+2026-11-28: Tutorial on mmo-t and mmo-r; mmo-t loads Core, Items, Quests, Foraging, Mining, BossEngine and Tutorial
+(no AetherMobs, no Helm agent yet).
 
 Backups of the replaced jars and configs: `backups/beta-a04-a61-20261123-190456` and
 `backups/beta-a54-a59-20261123-211821` (with `quests-190` for the #190 swap; rollback scripts inside and in the matching staging folder),
@@ -635,6 +640,64 @@ Beta list A-06 to A-12. Numbers come from bench runs with a test player on mmo-d
 - Damage numbers on dungeon mobs: the hit goes to the PDC HP pool and is left as `aetherion_boss_hit` metadata, which
   Items' `DamageNumbers` reads (as for BossEngine bosses).
 - Instance worlds are created with `keepSpawnLoaded(FALSE)` (no spawn-area preparation, was ~0.7 s each).
+
+## Tutorial isle Morningbell (2026-11-28, PC session)
+
+The last big piece before the beta: every new player starts on **Morningbell**, an island of its own on the new
+backend **mmo-t** (world `morningbell`), learns each core system when it is first needed, beats a first boss and sails
+to Anker Harbour (mmo-r) with tools, armour, boosters, a talent and the first lessons filed as done. Concept: Claude
+Doc "Morningbell: Konzept für die Tutorial-Insel" (project files). Robb's rules: each step needs the one before it,
+the boss comes last, texts a ten-year-old understands, nobody skips it the first time ("the short way" exists only
+for players who rang the bell before).
+
+- **Order** (`isle/Step`): arrival flight before sunrise → ring the bell (the sun rises) → Oda: Journal → Burr: fell a
+  tree, first skill XP, trade, workbench: Simple Pickaxe → Grett: stone and coal, iron is too hard (Mining Power) →
+  Ansel: stone armour at the forge bench, wear it, Simple Sword, one booster of each kind, socket one at the anvil →
+  Hilde: a talent (Journal › Skills), golem drill (parry, roll, three full swings) → the Flat: **Old Clanger** (a
+  hermit crab wearing the harbour bell; he gives up, nobody dies) → Captain Wim: the ferry.
+- **Module `AetherionTutorial`** (`role: auto`): on mmo-t `isle/Director` runs the lessons (EN + DE per player, beats
+  start on the NPC click or on the finished task, never on reading), `Guide` (bar, glow, the trail of light on the
+  ground, cards), `Scenes` (arrival, sunrise, departure), `Boss` + `ClangerRig` (private display rig, own fight),
+  `Cast` (7 teachers + 8 islanders, painted skins shipped signed), `IsleRules` (nobody dies, nothing breaks but lesson
+  blocks, command list), `Notes` (wraps `AetherServices.quests()`: sees what the gameplay plugins report, answers
+  `isQuestActive("lesson_combat")` during the drill, feeds the Journal's Today page), `Sandbox`, `Ambient`. On mmo-r
+  `main/MainArrival` welcomes a graduate (purse, teleports capital + mines, a card) and sends anyone who is still in
+  the middle of the island back to it. Staff: `/morningbell status|step|next|reset|skip|boss|tp|marks|visit|poke`.
+- **Who goes there**: the lobby's "play" (AetherionPit `TutorialGate`, config `tutorial.enabled`) sends a player
+  without a character (no transfer ledger entry, no main-world Quests file) to mmo-t; everyone else to mmo-r as
+  before. State per player in `<shared>/tutorial/<uuid>.yml` (new / in_progress / graduating / done, step,
+  completed-once; the beta wipe does not touch it). The island not answering twice within ten minutes lets a newcomer
+  through to mmo-r (the old harbour lessons still work as the fallback).
+- **Hand-over**: the isle stamps `tutorial_graduation` at join (keeps Egon's welcome quiet), and when the ferry casts
+  off files `welcome_aboard`, `gather_wood`, `lesson_manager`, `lesson_boost`, `lesson_combat` as completed and lifts
+  the stamp, so Miss Ledger's stamp is the first thing the mainland asks for. The character crosses by the normal
+  transfer snapshot; mmo-t has **no** shared player folders.
+- **Visits**: `/tutorial` (lobby or mmo-r) takes a player who has a character to the island **without** it: Core
+  `CharacterHost.guestPass` lets them in with nothing staged, applied or packed, `Sandbox` clears what an earlier
+  visit left on mmo-t (it refuses when any player folder there is a link to shared storage), `/tutorial leave` or the
+  ferry ends it. The character is never touched.
+- **Small changes elsewhere**: Core `ServerNames.TUTORIAL` (a character backend), `guestPass`, no exile quay on
+  mmo-t; Quests `PlayerQuestStorage.clearStarterKit` and `hud-cards.big-stay` (big cards stay until sneak or
+  left-click, hint in the card's foot; off by default, on on mmo-t); Items `AreaService.placeNamer` (HUD place names
+  from another plugin) and `WildlifeLooks.quietWorld` (no ambient wildlife in that world).
+- **mmo-t setup** (not like the other backends): no AetherMobs (biotope titles), Items `combat-system.yml` with the
+  learner timings and `tutorial.enabled: false`, Quests `hud-cards.big-stay: true`, vanilla advancements switched off
+  in `spigot.yml`, Tutorial `isle.open: false` (only ticket holders get lessons). Details and the build script:
+  `aetherion-ops` (private).
+- **The world is generated**, not hand-built: `AetherionTutorial/tools/isle/` (`python isle.py <out>` writes region
+  files, the data pack with the island's own biome, and `isle.json`: the named spots and the lesson trail the plugin
+  reads). Change the island there and build it again; do not edit the live world by hand. Skins:
+  `tools/skins/paint_cast.py`.
+- **Tests** (private staging copy of the chain lobby → mmo-t → mmo-r, bots plus a real headless client): the whole
+  way with the character crossing, quit and resume, landing on mmo-r half-way, classic chat talk, a visit with the
+  short way, after a wipe, the island down, and armour / boosters / talent / drill with real clicks. Scripts in
+  `aetherion-ops/tut-stage/`.
+- **Found on the way** (worth knowing elsewhere): a see-through TextDisplay is drawn before block displays and gets
+  painted over by them; Items' `NaturalSpawnGuard` removes hostile mobs outside combat zones and `WildlifeLooks`
+  un-hides and labels every mob without the scoreboard tag `NPC`; the Journal's tile is called "Skills" (talents are
+  its bottom row), so dialogs must say that.
+- **Open**: Helm (staff panel) does not list mmo-t yet; fights are private (other players see a fighter swing at
+  air); world polish list (quarry floor, a bigger wreck on the Flat, village interiors) in the ops notes.
 
 ## Stacked entities: crypt hologram, farm isle, trolls, fishing (2026-11-22, cloud session)
 

@@ -24,6 +24,18 @@ force-spawn-on-join: true
 aetherion-server: mmo-r
 aetherion-display-name: Aetherion
 
+# Morningbell, the tutorial isle (AetherionTutorial on its own backend). On: a player without a character is sent
+# there first, one who left it half-way goes back to it, and /tutorial takes anybody there for a visit.
+# Off: everything as before (straight to the main world).
+tutorial:
+  enabled: false
+  server: mmo-t
+  # Folders every backend shares. Empty = next to Core's shared transfer folder:
+  #   <shared>/tutorial, <shared>/transfer/ledger, <shared>/progress/AetherionQuests/players
+  store-dir: ""
+  ledger-dir: ""
+  main-quests-dir: ""
+
 # Clickable Discord invite (open URL on Discord NPC click).
 # Leave empty to auto-pick from DiscordSRV DiscordInviteLink when available.
 discord-invite: ""

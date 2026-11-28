@@ -1,0 +1,38 @@
+# AetherionTutorial: Morningbell, the tutorial isle.
+#
+# role: auto = "isle" where the isle world is loaded, "main" on the main world backend, off anywhere else.
+role: auto
+
+# The isle world (its folder holds isle.json: the named spots the lessons use, written by tools/isle).
+world: morningbell
+
+# Where a graduate sails to, and where the isle lives (Velocity names).
+main-server: mmo-r
+isle-server: mmo-t
+
+# Per-player tutorial state, shared by every backend: empty = <shared>/tutorial next to the transfer folder.
+store-dir: ""
+
+isle:
+  # false (live): only players the lobby sent (newcomers) or who asked for a visit get a lesson; anybody else is
+  # walked to the main world. true (test servers without a lobby): everybody who joins starts the lessons.
+  open: false
+  # The camera flight in before sunrise. Off = the player simply stands on the Landing.
+  flights: true
+  # Coins Old Clanger leaves behind.
+  boss-coins: 100
+  # The few animals that belong to the island (sheep in the fold, hens at the farm, the cat by the well).
+  animals: true
+  # Every player lives in the same early morning (ticks; 23000 = just before sunrise, 450 = the sun is up).
+  dawn-time: 22900
+  morning-time: 450
+  # Swimming further out than this from the middle of the island turns a player back.
+  sea-limit: 210
+  # Seconds without progress before the companion says the next step again.
+  hint-after: 45
+
+main:
+  # Coins a graduate lands with (the old harbour lessons paid about this much together).
+  purse: 300
+  # Spawns that are open on arrival (the old lessons opened them one by one).
+  spawns: [capital, mines]

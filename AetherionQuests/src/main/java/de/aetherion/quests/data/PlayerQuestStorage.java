@@ -59,6 +59,19 @@ public class PlayerQuestStorage {
         markDirty(uuid);
     }
 
+    /**
+     * Takes a mark back. The tutorial isle stamps {@code tutorial_graduation} while a newcomer is on it (so the
+     * harbour's own welcome stays quiet there) and lifts it when they sail: Miss Ledger's stamp is the first thing
+     * the mainland gives them.
+     */
+    public void clearStarterKit(UUID uuid, String questId) {
+        if (uuid == null || questId == null || !hasStarterKit(uuid, questId)) {
+            return;
+        }
+        config(uuid).set("quests." + questId + ".starter", null);
+        markDirty(uuid);
+    }
+
     public boolean hasLanguageChoice(UUID uuid) {
         return config(uuid).getBoolean("language-chosen", false);
     }
