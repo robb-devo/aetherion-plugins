@@ -256,8 +256,9 @@ final class ClangerRig {
                 px = Math.cos(p.dizzyAngle + i * Math.PI) * 0.08;
                 py = Math.sin(p.dizzyAngle + i * Math.PI) * 0.08;
             }
-            double pupilSize = p.eyes < 0.5 ? 0.0 : 0.17 * out * Math.min(1.25, p.eyes);
-            frame.box(pupil[i], ex + px, ey + py, ez + 0.13 * out, root, pupilSize, pupilSize, 0.12 * out);
+            double pupilSize = p.eyes < 0.5 ? 0.0 : 0.17 * out * Math.min(1.6, p.eyes);
+            // the pupil sits on the front of the eye, however wide the eye is open
+            frame.box(pupil[i], ex + px, ey + py, ez + eyeSize * 0.5 + 0.02 * out, root, pupilSize, pupilSize, 0.08 * out);
         }
 
         // claws: index 1 (his right) is the big one

@@ -99,6 +99,9 @@ final class Boss implements Listener {
         IronGolem body;
         BossBar bar;
         TextDisplay tell;
+        boolean tellRoll;
+        boolean tellPop;
+        float tellSize;
         Mode mode = Mode.ASLEEP;
         int t;
         int length;
@@ -253,6 +256,20 @@ final class Boss implements Listener {
         return golem;
     }
 
+    /** Staff and test rigs: he gives up now (to look at the ending without fighting for it). */
+    boolean concede(Player player) {
+        Fight fight = fights.get(player.getUniqueId());
+        if (fight == null || fight.mode == Mode.YIELD || fight.mode == Mode.GONE) {
+            return false;
+        }
+        if (fight.mode == Mode.ASLEEP) {
+            fight.pose.tuck = 0.0;
+        }
+        fight.hp = 0.0;
+        giveUp(fight);
+        return true;
+    }
+
     /** The player is leaving (quit) or was moved on by staff: everything of the fight goes, his health is kept. */
     void abort(Player player) {
         Fight fight = fights.remove(player.getUniqueId());
@@ -405,9 +422,14 @@ final class Boss implements Listener {
             }
         }
         if (f.tell != null && f.tell.isValid()) {
-            Location over = tellSpot(f);
-            if (f.tell.getLocation().distanceSquared(over) > 0.01) {
-                f.tell.teleport(over);
+            TellSpot spot = tellSpot(f, f.tellRoll);
+            if (f.tell.getLocation().distanceSquared(spot.at()) > 0.01) {
+                f.tell.teleport(spot.at());
+            }
+            float size = spot.scale() * (f.tellPop ? 1.24f : 1.0f);
+            if (Math.abs(size - f.tellSize) > 0.04f) {
+                f.tellSize = size;
+                f.tell.setTransformation(scale(size));
             }
         }
         f.rig.pose(pose, 2);
@@ -566,8 +588,8 @@ final class Boss implements Listener {
             p.playSound(spot(f), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.HOSTILE, 1.6f, 1.9f);
             p.playSound(spot(f), Sound.BLOCK_NOTE_BLOCK_PLING, SoundCategory.HOSTILE, 1.3f, 2.0f);
         }
-        if (left <= 6 && left >= 0 && f.tell != null && f.tell.isValid() && left % 2 == 0) {
-            f.tell.setTransformation(scale(left % 4 < 2 ? 3.1f : 2.5f));
+        if (left <= 6 && left >= 0 && left % 2 == 0) {
+            f.tellPop = left % 4 < 2;
         }
         if (left > 0) {
             return;
@@ -702,8 +724,8 @@ final class Boss implements Listener {
         if (f.t % every == 0) {
             p.playSound(spot(f), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.HOSTILE, 1.0f, 0.5f + (1.0f - left / (float) f.length) * 0.5f);
         }
-        if (left <= 6 && left >= 0 && f.tell != null && f.tell.isValid() && left % 2 == 0) {
-            f.tell.setTransformation(scale(left % 4 < 2 ? 3.4f : 2.8f));
+        if (left <= 6 && left >= 0 && left % 2 == 0) {
+            f.tellPop = left % 4 < 2;
         }
         if (left <= 0) {
             clearTell(f);
@@ -975,19 +997,23 @@ final class Boss implements Listener {
 
     private void showTell(Fight f, boolean roll) {
         clearTell(f);
-        Location over = tellSpot(f);
-        f.tell = isle.world().spawn(over, TextDisplay.class, d -> {
+        TellSpot spot = tellSpot(f, roll);
+        f.tellRoll = roll;
+        f.tellPop = false;
+        f.tellSize = spot.scale();
+        f.tell = isle.world().spawn(spot.at(), TextDisplay.class, d -> {
             d.setPersistent(false);
             d.setVisibleByDefault(false);
             d.addScoreboardTag(ClangerRig.TAG);
             d.text(Component.text(roll ? "!!" : "!", roll ? RED : YELLOW).decorate(TextDecoration.BOLD));
             d.setBillboard(Display.Billboard.CENTER);
             d.setShadowed(true);
+            // not "see through": that text is drawn before his block displays and they would paint over it
             d.setSeeThrough(false);
             d.setBrightness(new Display.Brightness(15, 15));
             d.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
             d.setTeleportDuration(2);
-            d.setTransformation(scale(roll ? 2.8f : 2.5f));
+            d.setTransformation(scale(spot.scale()));
         });
         f.player.showEntity(plugin, f.tell);
     }
@@ -1007,21 +1033,46 @@ final class Boss implements Listener {
         }
     }
 
+    /** Where the mark hangs and how big it is drawn. */
+    private record TellSpot(Location at, float scale) {
+    }
+
     /**
-     * Where the mark hangs: between him and the player, at a height the player sees without looking up (he is
-     * four blocks tall; a mark over his head would be off the screen for anyone standing close enough to hit him).
+     * The mark hangs between him and the player, in front of his eyes and claws, at the height the player is
+     * looking at. He is four blocks tall and a new player stands close and looks wherever: a mark over his head
+     * (where the big bosses of the main world carry theirs) would be off the screen exactly when it matters. The
+     * closer it hangs, the smaller it is drawn, so on the screen it is always about the same size.
      */
-    private Location tellSpot(Fight f) {
+    private TellSpot tellSpot(Fight f, boolean roll) {
         ClangerRig.Pose pose = f.pose;
-        Location at = f.player.getLocation();
-        double dx = at.getX() - pose.x;
-        double dz = at.getZ() - pose.z;
+        Location eye = f.player.getEyeLocation();
+        double dx = pose.x - eye.getX();
+        double dz = pose.z - eye.getZ();
         double d = Math.hypot(dx, dz);
-        double out = d < 0.01 ? 0.0 : Math.min(2.0, Math.max(0.0, d - 1.3));
-        double ux = d < 0.01 ? 0.0 : dx / d;
-        double uz = d < 0.01 ? 0.0 : dz / d;
-        double y = pose.y + 2.75 + pose.lift * 0.35;
-        return new Location(isle.world(), pose.x + ux * out, y, pose.z + uz * out);
+        // the way from the player to him; right under the flying bell: the way the player looks
+        double tx;
+        double tz;
+        if (d >= 0.6) {
+            tx = dx / d;
+            tz = dz / d;
+        } else {
+            double yaw = Math.toRadians(eye.getYaw());
+            tx = -Math.sin(yaw);
+            tz = Math.cos(yaw);
+        }
+        // his eyes stand 1.9 blocks out, the bell's wall 1.4: the mark hangs in front of both. It keeps a distance
+        // from the player's face too (the jab's mark may come close: whoever hugs the bell still has to see it)
+        double out = Math.max(1.45, Math.min(2.1, d - 0.9));
+        double back = Math.max(roll ? 0.9 : 0.3, d - out);
+        double size = back * (roll ? 1.45 : 1.3);
+        size = Math.max(roll ? 1.2 : 0.4, Math.min(roll ? 2.8 : 2.5, size));
+        // a little above the crosshair; never under his chin, never over his eyes
+        double pitch = Math.toRadians(Math.max(-50.0, Math.min(50.0, eye.getPitch())));
+        double aim = eye.getY() - Math.tan(pitch) * back + 0.10 * back;
+        double middle = Math.max(pose.y + 0.8, Math.min(pose.y + 2.6, aim));
+        // the text grows upwards from the display's own spot: its middle sits 0.15 blocks (times the size) above
+        double y = middle - 0.15 * size;
+        return new TellSpot(new Location(isle.world(), eye.getX() + tx * back, y, eye.getZ() + tz * back), (float) size);
     }
 
     private static Transformation scale(float s) {

@@ -561,6 +561,9 @@ public final class Director {
             case "bell" -> onBell(p);
             case "iron" -> onIron(p);
             case "boosters" -> boostersTaken(p);
+            case "clanger" -> {
+                return isle.boss().concede(p);
+            }
             case "castoff" -> {
                 Session s = of(p);
                 if (s != null && s.step == Step.TALK_WIM && !s.scene) {

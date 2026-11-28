@@ -27,6 +27,8 @@ final class Guide {
 
     private static final Particle.DustOptions GOLD = new Particle.DustOptions(Color.fromRGB(255, 205, 96), 1.25f);
     private static final Particle.DustOptions GOLD_SOFT = new Particle.DustOptions(Color.fromRGB(255, 232, 170), 0.9f);
+    private static final Particle.DustOptions TRAIL = new Particle.DustOptions(Color.fromRGB(255, 208, 96), 1.7f);
+    private static final Particle.DustOptions TRAIL_PALE = new Particle.DustOptions(Color.fromRGB(255, 238, 180), 1.25f);
 
     private Guide() {
     }
@@ -137,7 +139,7 @@ final class Guide {
         }
         int step = goal > here ? 1 : -1;
         double walked = 0.0;
-        double phase = (tick / 10L % 2L) * 1.0;
+        double phase = (tick / 10L % 3L) * 0.5;
         double next = 2.5 + phase;
         double px = at.getX();
         double pz = at.getZ();
@@ -154,14 +156,18 @@ final class Guide {
                 double ground = ground(player, cx, cz, y);
                 if (!Double.isNaN(ground)) {
                     y = ground;
-                    player.spawnParticle(Particle.DUST, cx, ground + 0.22, cz, 1, 0.10, 0.02, 0.10, 0.0,
-                            crumbs % 3 == 0 ? GOLD : GOLD_SOFT);
+                    player.spawnParticle(Particle.DUST, cx, ground + 0.25, cz, 1, 0.08, 0.02, 0.08, 0.0,
+                            crumbs % 2 == 0 ? TRAIL : TRAIL_PALE);
+                    if (next < 9.0) {
+                        // the first steps of it flicker a little higher: the eye finds the start of the trail
+                        player.spawnParticle(Particle.DUST, cx, ground + 0.55, cz, 1, 0.12, 0.10, 0.12, 0.0, GOLD_SOFT);
+                    }
                 }
                 if (aim == null && next >= 9.0) {
                     aim = new Location(player.getWorld(), cx, y, cz);
                 }
                 crumbs++;
-                next += 2.0;
+                next += 1.5;
             }
             walked += seg;
             px = point[0];
