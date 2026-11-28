@@ -3,7 +3,9 @@
   python realshots.py <dump dir> <out.png> shot ...          (same shot syntax as shots.py)
 
 Each shot teleports the staging camera, presses F2 in the client, and the pictures come back as one contact
-sheet (and as single files next to it, in <out>.d/). Needs `ssh aetherion-hetzner` and a running `cam.sh start`.
+sheet (and as single files next to it, in <out>.d/). Needs two environment variables (the staging box is private,
+see the ops notes): STAGE_HOST = ssh name of the box, STAGE_CLIENT_DIR = folder of the headless client there, with
+its `cam.sh start` running.
 """
 import os
 import subprocess
@@ -13,8 +15,8 @@ from PIL import Image, ImageDraw
 
 import shots
 
-HOST = os.environ.get("STAGE_HOST", "aetherion-hetzner")
-REMOTE = "/root/tut-stage/client"
+HOST = os.environ.get("STAGE_HOST", "")
+REMOTE = os.environ.get("STAGE_CLIENT_DIR", "")
 
 
 def run(cmd):
@@ -22,6 +24,8 @@ def run(cmd):
 
 
 def main():
+    if not HOST or not REMOTE:
+        sys.exit("set STAGE_HOST and STAGE_CLIENT_DIR first (see the docstring)")
     dump, out = sys.argv[1], sys.argv[2]
     wait = "7"
     args = []
