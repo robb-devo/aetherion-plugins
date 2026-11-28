@@ -69,7 +69,9 @@ Mining and BossEngine from the same build (same entries as the live jars elsewhe
 the live jars differed from this build only in the classes this round changed. Backup `backups/tutorial-20261128-1230`;
 `staging/tutorial-20261128-1230/rollback.sh --gate-only` switches only the lobby gate off (newcomers land at the
 harbour as before), `--all` puts the old jars back. The table below is older than this round and the rounds of
-2026-11-27 for Core, Items, Quests and Pit.
+2026-11-27 for Core, Items, Quests and Pit. Follow-up the same day, 13:11 CET (`main` `da336662`): Tutorial `37cbe724`
+on mmo-t and mmo-r (camera flights can no longer strand a player: the first chunk of a flight is loaded before the
+lens goes there, a lost lens ends the film properly, a scene with no film behind it is released after three seconds).
 
 Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET) put `main` `f069314`
 (PRs #159 to #187) on every backend. The round of 21:21-21:22 CET added `6f592a1` (#189: A-58, A-54/A-55, A-59,
