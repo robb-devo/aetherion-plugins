@@ -290,6 +290,7 @@ public final class UnlockService {
                 }
             };
             Runnable drift = () -> descend(player, spawn, title, subtitle, intro);
+            morning(player, spawn);
             if (camera != null && camera.enabled() && spawn != null) {
                 // the camera flies, the player stands: the shot ends in their own eyes on their own ground
                 Location focus = new Location(spawn.getWorld(), personal.originX(island) + 0.5, spawn.getY(),
@@ -301,6 +302,31 @@ public final class UnlockService {
             }
         });
     }
+
+    /**
+     * A new island is met in early morning light, whatever the hour is in the island world: this player's sky
+     * is set to just after sunrise and runs on from there (a shift of their own clock, only for them, gone
+     * when they log off or leave the islands). The film shot and the first steps never happen in the dark.
+     */
+    private void morning(Player player, Location spawn) {
+        World world = spawn == null ? null : spawn.getWorld();
+        if (world == null || !plugin.getConfig().getBoolean("landing-camera.morning", true)) {
+            return;
+        }
+        long shift = Math.floorMod(MORNING - world.getTime(), 24000L);
+        player.setPlayerTime(shift, true);
+        mornings.add(player.getUniqueId());
+    }
+
+    /** Their own island time ends where the islands end. */
+    public void leftIslands(Player player) {
+        if (player != null && mornings.remove(player.getUniqueId())) {
+            player.resetPlayerTime();
+        }
+    }
+
+    private static final long MORNING = 450L;
+    private final Set<UUID> mornings = ConcurrentHashMap.newKeySet();
 
     public void guildFounded(Player leader, Guild guild) {
         leader.sendTitle("§7Raising the harbour…", "§6" + guild.name(), 5, 80, 10);

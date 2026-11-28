@@ -628,7 +628,7 @@ public final class MinionService {
         int level = minion.level();
         String suffix = hooks == null ? "" : hooks.tagSuffix(minion);
         stand.setCustomName(GuildFormat.nametag(type, level, preview(minion)) + (suffix == null ? "" : suffix));
-        stand.setCustomNameVisible(true);
+        stand.setCustomNameVisible(!housed(minion) || !plugin.getConfig().getBoolean("logistics.machine-fx", true));
         if (housed(minion)) {
             // the ore core turns under the drill; debris rather than a swinging pick
             double spin = ((now / 1000.0) * (40 + level * 8) + Math.floorMod(minion.id().hashCode(), 360)) % 360.0;

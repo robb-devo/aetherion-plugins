@@ -54,7 +54,7 @@ public final class BuildCosts {
             case MILL -> List.of(new Line(COBBLE, 96L));
             case SPLITTER -> List.of(new Line(COBBLE, 32L));
             case FORGE -> List.of(new Line(COMPRESSED, 4L), new Line(COBBLE, 128L));
-            case OVERFLOW, SORTER -> List.of(new Line(COMPRESSED, 2L), new Line(COBBLE, 64L));
+            case SORTER -> List.of(new Line(COMPRESSED, 2L), new Line(COBBLE, 64L));
             case DOCK -> List.of(new Line(COBBLE, 64L));
             default -> List.of();
         };
@@ -66,21 +66,18 @@ public final class BuildCosts {
             new Unlock(StructureType.MILL, 1, List.of(new Line(COBBLE, 128L), new Line(null, 2_000L))),
             new Unlock(StructureType.SPLITTER, 1, List.of(new Line(COBBLE, 96L), new Line(null, 1_000L))),
             new Unlock(StructureType.FORGE, 2, List.of(new Line(COMPRESSED, 12L), new Line(null, 10_000L))),
-            new Unlock(StructureType.OVERFLOW, 2, List.of(new Line(COMPRESSED, 4L), new Line(null, 4_000L))),
             new Unlock(StructureType.SORTER, 2, List.of(new Line(COMPRESSED, 6L), new Line(null, 6_000L))));
 
     /**
      * Personal islands: the Hub board is the stage ladder. Stage 0 (the tour) opens the Mill and the Splitter (the
      * guide hands both over in chapter 3, so the prices only matter when the tour was skipped) and the Dock (one
-     * Compressed Cobble, the first block the new chain makes); the Werkhof the Overflow Gate (sharing with a
-     * priority, right after sharing evenly); the Foreman's Hall the Forge and the Sorter. No Depot: the Storage Hut
-     * does that job.
+     * Compressed Cobble, the first block the new chain makes); the Foreman's Hall the Forge and the Sorter. No
+     * Depot: the Storage Hut does that job.
      */
     public static final List<Unlock> PERSONAL_UNLOCKS = List.of(
             new Unlock(StructureType.MILL, 1, List.of(new Line(COMPRESSED, 1L), new Line(COBBLE, 64L)), 0),
             new Unlock(StructureType.SPLITTER, 1, List.of(new Line(COBBLE, 96L)), 0),
             new Unlock(StructureType.DOCK, 1, List.of(new Line(COMPRESSED, 1L)), 0),
-            new Unlock(StructureType.OVERFLOW, 1, List.of(new Line(COMPRESSED, 4L), new Line(null, 4_000L)), 1),
             new Unlock(StructureType.FORGE, 2, List.of(new Line(COMPRESSED, 12L), new Line(null, 10_000L)), 2),
             new Unlock(StructureType.SORTER, 2, List.of(new Line(COMPRESSED, 6L), new Line(null, 6_000L)), 2));
 

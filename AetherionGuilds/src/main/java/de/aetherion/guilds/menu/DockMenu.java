@@ -176,6 +176,14 @@ public final class DockMenu implements MenuKit.Menu {
         if (extra == null) {
             return null;
         }
+        if (extra.startsWith("kit:")) {
+            try {
+                return "§ethe parts of a " + de.aetherion.guilds.model.QuarryType.valueOf(extra.substring(4)).display()
+                        + " §8(you build it)";
+            } catch (IllegalArgumentException ignored) {
+                return "§ethe parts of a second quarry";
+            }
+        }
         if (extra.startsWith("quarry:")) {
             try {
                 return "§ea " + de.aetherion.guilds.model.QuarryType.valueOf(extra.substring(7)).display();

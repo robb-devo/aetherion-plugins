@@ -12,6 +12,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
@@ -24,7 +25,9 @@ import java.util.List;
  * One player's placement preview, made of BlockDisplays only that player can see (nobody else gets the
  * packets). A structure shows as a glowing hologram of its real blocks (green outline = fits, red = blocked)
  * over a tinted footprint plate; big templates fall back to an outline box. The Belt Layer shows a cursor
- * plate, the planned run as one or two flat strips, and orange markers on the chutes nearby. Beside a part's
+ * plate, the planned run as one or two flat strips, orange markers on the chutes nearby and green pads where a
+ * belt may end. Every orange mark says OUT (goods come out here) and every green one IN (goods go in here), on
+ * the hologram's own chute too: the two colours mean the same thing everywhere on the island. Beside a part's
  * hologram stands its {@link PartBoard}: what it does, what goes in and out, what it costs.
  *
  * <p>Nothing is saved: the displays are non-persistent and die with the session.
@@ -57,12 +60,17 @@ final class GhostView {
     private final List<int[]> cells = new ArrayList<>();
     private BlockDisplay plate;
     private BlockDisplay port;
+    /** "OUT" over the hologram's chute. */
+    private TextDisplay portLabel;
+    private int[] portCell;
 
     // belt preview
     private final List<BlockDisplay> legs = new ArrayList<>();
     private BlockDisplay cursor;
     private final List<BlockDisplay> chutes = new ArrayList<>();
     private final List<BlockDisplay> inputs = new ArrayList<>();
+    private final List<TextDisplay> chuteLabels = new ArrayList<>();
+    private final List<TextDisplay> inputLabels = new ArrayList<>();
 
     GhostView(Plugin plugin, Player viewer) {
         this.plugin = plugin;
@@ -110,6 +118,7 @@ final class GhostView {
             if (port != null) {
                 port.teleport(at);
             }
+            placePortLabel();
         }
         if (ok == null || ok != fits) {
             ok = fits;
@@ -180,6 +189,20 @@ final class GhostView {
         plate = spawn(at, plateBlock(fits), plateTransform(template, rotation), glow);
         port = portLocal == null ? null : spawn(at, Material.ORANGE_STAINED_GLASS.createBlockData(),
                 portTransform(portLocal, rotation), PORT);
+        portCell = portLocal == null ? null : portLocal.clone();
+        if (portCell != null) {
+            portLabel = spawnText(at, OUT);
+            placePortLabel();
+        }
+    }
+
+    /** The label stands over the hologram's chute, wherever the hologram is and however it is turned. */
+    private void placePortLabel() {
+        if (portLabel == null || !portLabel.isValid() || portCell == null || world == null) {
+            return;
+        }
+        int[] r = StateRotator.rotateXZ(portCell[0], portCell[2], rot);
+        portLabel.teleport(new Location(world, ax + r[0] + 0.5, ay + portCell[1] + 0.62, az + r[1] + 0.5));
     }
 
     private void reorient(int rotation, int[] portLocal) {
@@ -196,6 +219,8 @@ final class GhostView {
         plate.setTransformation(plateTransform(shown, rotation));
         if (port != null && portLocal != null) {
             port.setTransformation(portTransform(portLocal, rotation));
+            portCell = portLocal.clone();
+            placePortLabel();
         }
     }
 
@@ -252,6 +277,11 @@ final class GhostView {
             port.remove();
             port = null;
         }
+        if (portLabel != null) {
+            portLabel.remove();
+            portLabel = null;
+        }
+        portCell = null;
         shown = null;
         rot = -1;
         ok = null;
@@ -339,14 +369,42 @@ final class GhostView {
         }
     }
 
-    /** Orange markers on the output chutes near the player (where belts start). */
+    /** What the two colours say, the same words wherever they show. */
+    static final String OUT = "§6§lOUT";
+    static final String IN = "§a§lIN";
+
+    /** Orange markers on the output chutes near the player (where belts start): goods come OUT here. */
     void chutes(World in, List<int[]> ports) {
         markers(chutes, in, ports, Material.ORANGE_STAINED_GLASS, PORT, 0.5f);
+        labels(chuteLabels, in, ports, OUT, 0.62);
     }
 
-    /** Green pads beside the huts and machines near the player (where a belt's end snaps in). */
+    /** Green pads beside the huts and machines near the player (where a belt's end snaps in): goods go IN here. */
     void inputs(World in, List<int[]> cells) {
         markers(inputs, in, cells, Material.LIME_STAINED_GLASS, OK, 0.36f);
+        labels(inputLabels, in, cells, IN, 0.5);
+    }
+
+    /** One small word over each marker (only the builder sees it, like the markers themselves). */
+    private void labels(List<TextDisplay> list, World in, List<int[]> cells, String text, double lift) {
+        while (list.size() > cells.size()) {
+            list.remove(list.size() - 1).remove();
+        }
+        for (int i = 0; i < cells.size(); i++) {
+            int[] p = cells.get(i);
+            Location at = new Location(in, p[0] + 0.5, p[1] + lift, p[2] + 0.5);
+            if (i < list.size() && list.get(i).isValid() && list.get(i).getWorld() == in) {
+                list.get(i).teleport(at);
+            } else {
+                TextDisplay label = spawnText(at, text);
+                if (i < list.size()) {
+                    list.get(i).remove();
+                    list.set(i, label);
+                } else {
+                    list.add(label);
+                }
+            }
+        }
     }
 
     private void markers(List<BlockDisplay> list, World in, List<int[]> cells, Material look, Color glow, float size) {
@@ -403,6 +461,14 @@ final class GhostView {
             marker.remove();
         }
         inputs.clear();
+        for (TextDisplay label : chuteLabels) {
+            label.remove();
+        }
+        chuteLabels.clear();
+        for (TextDisplay label : inputLabels) {
+            label.remove();
+        }
+        inputLabels.clear();
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -487,6 +553,28 @@ final class GhostView {
                 d.setGlowing(true);
                 d.setGlowColorOverride(glow);
             }
+            d.addScoreboardTag(TAG);
+        });
+        viewer.showEntity(plugin, display);
+        return display;
+    }
+
+    private TextDisplay spawnText(Location at, String text) {
+        TextDisplay display = at.getWorld().spawn(at, TextDisplay.class, d -> {
+            d.setVisibleByDefault(false);
+            d.setPersistent(false);
+            d.text(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(text));
+            d.setBillboard(Display.Billboard.CENTER);
+            d.setAlignment(TextDisplay.TextAlignment.CENTER);
+            d.setDefaultBackground(false);
+            d.setBackgroundColor(Color.fromARGB(150, 12, 10, 16));
+            d.setShadowed(false);
+            d.setSeeThrough(false);
+            d.setBrightness(new Display.Brightness(15, 15));
+            d.setViewRange(0.45f);
+            d.setTeleportDuration(2);
+            d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(0.62f, 0.62f, 0.62f),
+                    new AxisAngle4f()));
             d.addScoreboardTag(TAG);
         });
         viewer.showEntity(plugin, display);

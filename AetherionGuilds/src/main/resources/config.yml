@@ -56,6 +56,10 @@ ambience:
 # The first landing as a film shot: out of the cloud, once round the new island, down into the player's eyes.
 landing-camera:
   enabled: true
+  morning: true                   # a new island is met just after sunrise (the player's own sky, only for them)
+# The island choice on the Isle Dock: walking through a gate is the choice (no screen). Signs are fixed in place.
+starter-gates:
+  enabled: true
 # The island's border, always shown: a slim rail of light with crystal posts along the land you may build on.
 island-border:
   enabled: true

@@ -64,8 +64,9 @@ import java.util.function.BiConsumer;
  * and one daily contract. Goods get in two ways: belts that end on the Dock (they go straight into the open
  * contracts, in that order, never into storage) or "Load from storage" in the Dock menu. A full contract is
  * collected by the airship (on its own while the owner is home, or from the menu). Rewards: coins, Dock Marks
- * (spent only on cosmetics: airship paint and harbour decoration), a second quarry at stage 1 and Quarry Cores
- * later on.
+ * (spent only on cosmetics: airship paint and harbour decoration), the parts of a second quarry at stage 1 (a
+ * Quarry Core and eight Compressed of the island's trade good: the owner crafts the quarry themselves, once) and
+ * Quarry Cores later on.
  *
  * <p><b>Ramp-up.</b> On stage 0 every quarry of the island digs {@code stages.ramp-multiplier} times as fast, so
  * the tour never waits on stone. From stage 1 on the quarry digs at its own pace and keeps digging while the
@@ -86,7 +87,7 @@ public final class DockService implements Listener, LogisticsService.Export {
     public record Need(Res res, long amount) {
     }
 
-    /** A contract at the Dock. {@code extra}: "quarry:OAK_LOG", "core:2" or null. */
+    /** A contract at the Dock. {@code extra}: "kit:OAK_LOG" (a quarry's parts), "quarry:OAK_LOG", "core:2" or null. */
     public static final class Contract {
         final Kind kind;
         final String title;
@@ -548,7 +549,7 @@ public final class DockService implements Listener, LogisticsService.Export {
             // pressed stone and raw stone, because that's what the tour's Splitter shares the quarry into
             case 0 -> new Contract(Kind.PHASE, "First Shipment", "Quarry Broker, Southwood",
                     List.of(new Need(BuildCosts.COMPRESSED, 1L), new Need(Res.of(QuarryType.COBBLESTONE, Res.Form.RAW), 64L)),
-                    2_000L, 5, "quarry:" + trade.name());
+                    2_000L, 5, "kit:" + trade.name());
             case 1 -> new Contract(Kind.PHASE, "Werkhof Order", "Quarry Broker, Southwood",
                     List.of(new Need(BuildCosts.COMPRESSED, 32L), new Need(Res.of(trade, Res.Form.RAW), 128L)),
                     10_000L, 15, "core:1");
@@ -843,6 +844,29 @@ public final class DockService implements Listener, LogisticsService.Export {
         String kind = colon < 0 ? extra : extra.substring(0, colon);
         String value = colon < 0 ? "" : extra.substring(colon + 1);
         switch (kind) {
+            case "kit" -> {
+                // the parts of a quarry, not the quarry: one Quarry Core and eight Compressed of its good, which
+                // is exactly the recipe. The owner builds it once and knows how every quarry is made.
+                QuarryType type;
+                try {
+                    type = QuarryType.valueOf(value.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException ignored) {
+                    type = QuarryType.COAL;
+                }
+                ItemStack core = AetherServices.items() == null ? null : AetherServices.items().create(QuarryType.CORE_ID);
+                ItemStack goods = Res.of(type, Res.Form.COMPRESSED).stack(QUARRY_KIT_GOODS);
+                if (core == null || goods == null) {
+                    // no Items on this server: nothing could be crafted, so it is the quarry itself
+                    hand(player, minions.createQuarryItem(type));
+                    return "§e+1 " + type.display();
+                }
+                goods.setAmount(QUARRY_KIT_GOODS);
+                hand(player, core);
+                hand(player, goods);
+                de.aetherion.guilds.util.AetherionItemsAccess.noteObtained(player, goods);
+                kitListener.accept(player, type);
+                return "§d+1 Quarry Core§7, §a+" + QUARRY_KIT_GOODS + " Compressed " + type.productName();
+            }
             case "quarry" -> {
                 QuarryType type;
                 try {
@@ -870,6 +894,19 @@ public final class DockService implements Listener, LogisticsService.Export {
             default -> {
                 return null;
             }
+        }
+    }
+
+    /** Compressed goods in a quarry's kit: what the recipe takes around the core. */
+    public static final int QUARRY_KIT_GOODS = 8;
+
+    private BiConsumer<Player, QuarryType> kitListener = (player, type) -> {
+    };
+
+    /** Told when a contract paid a quarry's parts (the tour then teaches how a quarry is made). */
+    public void onKit(BiConsumer<Player, QuarryType> listener) {
+        if (listener != null) {
+            this.kitListener = listener;
         }
     }
 
@@ -913,7 +950,7 @@ public final class DockService implements Listener, LogisticsService.Export {
         }
         List<String> lines = switch (stage) {
             case 1 -> List.of("There she goes! Your quarry calms down now, but it keeps digging while you're away.",
-                    "New: a second quarry, and the Overflow Gate. It feeds the Mill first, only the rest goes on.");
+                    "The broker paid in parts: a Quarry Core and eight Compressed goods. Craft your second quarry in the recipe book.");
             case 2 -> List.of("The Foreman's Hall! The Forge presses 128 Compressed into one Compacted. Put it behind a Mill.",
                     "And the Sorter: it picks one good off a belt and sends it its own way.");
             case 3 -> List.of("The Grand Hub. Every Mill and Forge runs twice as fast, and your island can grow: Hub, Land.");

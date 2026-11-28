@@ -62,15 +62,15 @@ public final class HubRitual {
             }
             if (IslandUi.big(player, "Island milestone", "Your Hub stands", java.util.List.of(
                             "§7At its §flectern§7:",
-                            "§fUnlock §7— Mill, Depot, Splitter and more",
-                            "§fHub tier §7— a bigger Hub, more to unlock",
-                            "§6Coin Shortcuts §7— quarries and parts for coins"),
+                            "§fNew parts §7to unlock, paid in goods",
+                            "§fProduction §7— every machine at a glance",
+                            "§fYour Build Tool§7, whenever you put it away"),
                     java.util.Arrays.asList(new org.bukkit.inventory.ItemStack(org.bukkit.Material.LECTERN),
                             new org.bukkit.inventory.ItemStack(org.bukkit.Material.SMITHING_TABLE),
-                            new org.bukkit.inventory.ItemStack(org.bukkit.Material.BEACON),
-                            new org.bukkit.inventory.ItemStack(org.bukkit.Material.GOLD_NUGGET)),
-                    "§7Build it all with the §fBuild Tool§7.", "§6",
-                    "§6✦ §eYour Hub stands §8· §7unlocks, Hub tier and Coin Shortcuts at its lectern")) {
+                            new org.bukkit.inventory.ItemStack(org.bukkit.Material.BLAST_FURNACE),
+                            new org.bukkit.inventory.ItemStack(org.bukkit.Material.NETHERITE_PICKAXE)),
+                    "§7The tool rack beside it holds your Build Tool too.", "§6",
+                    "§6✦ §eYour Hub stands §8· §7new parts, Production and your Build Tool at its lectern")) {
                 return;
             }
             player.sendTitle("§6§l✦ THE HUB IS FOUNDED ✦", "§7new machines unlock at its lectern", 8, 80, 20);

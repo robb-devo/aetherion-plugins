@@ -54,6 +54,47 @@ public final class AetherionItemsAccess {
         return progress.guildHint();
     }
 
+    /**
+     * Tells Items that the player now holds this good, so the recipes built from it (its quarry) are unlocked for
+     * them the way a find in the world would have unlocked them. Nothing happens without Items, or with an Items
+     * that keeps its recipe gates elsewhere.
+     */
+    public static void noteObtained(Player player, ItemStack stack) {
+        org.bukkit.plugin.Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
+        if (items == null || !items.isEnabled() || player == null || stack == null) {
+            return;
+        }
+        try {
+            Object unlocks = items.getClass().getMethod("recipeUnlocks").invoke(items);
+            if (unlocks != null) {
+                unlocks.getClass().getMethod("noteObtained", Player.class, ItemStack.class).invoke(unlocks, player, stack);
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // the recipe then opens the usual way: once the player has picked the good up somewhere
+        }
+    }
+
+    /**
+     * Opens the recipe book on "Ready to craft" (everything the player's bag can make right now); the book's first
+     * page when Items has no such page.
+     */
+    public static void openReadyRecipes(Player player) {
+        org.bukkit.plugin.Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
+        if (items == null || !items.isEnabled() || player == null) {
+            return;
+        }
+        try {
+            Object book = items.getClass().getMethod("getRecipeBookGUI").invoke(items);
+            if (book != null) {
+                book.getClass().getMethod("openReady", Player.class, int.class).invoke(book, player, 1);
+                return;
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // an Items without that page: the book's front page it is
+        }
+        player.performCommand("atrecipes");
+    }
+
     public static long coins(Player player) {
         CoinAccess coins = AetherServices.coins();
         if (coins == null || player == null) {

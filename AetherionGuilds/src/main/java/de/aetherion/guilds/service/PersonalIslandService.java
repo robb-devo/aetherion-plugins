@@ -594,6 +594,11 @@ public final class PersonalIslandService {
      * world plot cleared, claim slot freed. Owner can claim fresh.
      */
     public boolean wipe(UUID ownerId) {
+        return wipe(ownerId, false);
+    }
+
+    /** {@code quiet}: the caller tells the owner what happened in its own words. */
+    public boolean wipe(UUID ownerId, boolean quiet) {
         if (ownerId == null) {
             return false;
         }
@@ -615,7 +620,9 @@ public final class PersonalIslandService {
                 player.teleport(hub);
             }
             if (player.getUniqueId().equals(ownerId)) {
-                player.sendMessage("§7Your island progress was reset. Claim again with §f/island§7.");
+                if (!quiet) {
+                    player.sendMessage("§7Your island progress was reset. Claim again with §f/island§7.");
+                }
             } else {
                 player.sendMessage("§7That island was reset.");
             }

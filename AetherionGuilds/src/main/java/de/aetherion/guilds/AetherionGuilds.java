@@ -92,6 +92,7 @@ public final class AetherionGuilds extends JavaPlugin {
     private de.aetherion.guilds.island.DockService dock;
     private de.aetherion.guilds.island.LandingCamera landingCamera;
     private de.aetherion.guilds.island.IslandBorder islandBorder;
+    private de.aetherion.guilds.island.ToolRack toolRack;
     private de.aetherion.core.api.IslandAccess islandAccess;
 
     @Override
@@ -150,8 +151,9 @@ public final class AetherionGuilds extends JavaPlugin {
         projects.load();
 
         StarterSelectMenu starterMenu = new StarterSelectMenu(personal, unlock);
-        // the island choice on the Isle Dock: three gates to walk through (only where Core runs the dock)
-        starterGates = new de.aetherion.guilds.island.StarterGates(this, personal, starterMenu::openGate);
+        // the island choice on the Isle Dock: three gates, and walking through one is the choice (only where Core
+        // runs the dock)
+        starterGates = new de.aetherion.guilds.island.StarterGates(this, personal, starterMenu::claimGate);
         getServer().getScheduler().runTaskTimer(this, starterGates::tick, 80L, 4L);
         BuildMenu buildMenu = new BuildMenu(hosts, structures, logistics, placement, land);
         LandMenu landMenu = new LandMenu(hosts, land);
@@ -256,6 +258,7 @@ public final class AetherionGuilds extends JavaPlugin {
         goals.attachTitleOwner(guide::ownsTitle);
         guide.register();
         guide.attachDock(dock, dockMenu::open);
+        dock.onKit((player, type) -> guide.craftKitGiven(hosts.at(player.getLocation())));
         // land at the Hub (where it's looked for) and as the tour's last step: the first parcel is the tour's gift
         hubMenu.attachLand(landMenu, land);
         guide.attachLand(land, landMenu::open);
@@ -397,6 +400,7 @@ public final class AetherionGuilds extends JavaPlugin {
                 placement, unlock, projects, minions, buildMenu, storageMenu, machineMenu, quarryMenu, projectMenu);
         highlightListener.attachPieces(pieceMenu);
         highlightListener.attachHub(hubMenu);
+        highlightListener.attachGuide(guide);
         highlightListener.attachDock(dockMenu);
         getServer().getPluginManager().registerEvents(highlightListener, this);
 
@@ -445,6 +449,7 @@ public final class AetherionGuilds extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, paste::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, logistics::tickCargo, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, placement::tick, 5L, 4L);
+        getServer().getScheduler().runTaskTimer(this, placement::restoreTick, 60L, 20L);
         getServer().getScheduler().runTaskTimer(this, logistics::tickActive, 60L, 20L);
         getServer().getScheduler().runTaskTimer(this, unlock::tick, 200L, 100L);
         getServer().getScheduler().runTaskTimer(this, voidScrubber::tick, 60L, 1L);
@@ -458,6 +463,10 @@ public final class AetherionGuilds extends JavaPlugin {
         islandBorder = new de.aetherion.guilds.island.IslandBorder(this, hosts);
         islandBorder.setEnabled(getConfig().getBoolean("island-border.enabled", true));
         getServer().getScheduler().runTaskTimer(this, islandBorder::tick, 70L, 40L);
+        // where the Build Tool lives: a rack by every Hub, for whoever has put the tool away
+        toolRack = new de.aetherion.guilds.island.ToolRack(this, hosts, structures, logistics, placement);
+        getServer().getPluginManager().registerEvents(toolRack, this);
+        getServer().getScheduler().runTaskTimer(this, toolRack::tick, 75L, 10L);
         getServer().getScheduler().runTaskTimer(this, () -> {
             minions.catchUpAll();
             logistics.stepAll();
@@ -566,6 +575,9 @@ public final class AetherionGuilds extends JavaPlugin {
         }
         if (islandBorder != null) {
             islandBorder.clear();
+        }
+        if (toolRack != null) {
+            toolRack.clear();
         }
         if (islandAccess != null) {
             de.aetherion.core.api.AetherServices.clearIslands(islandAccess);

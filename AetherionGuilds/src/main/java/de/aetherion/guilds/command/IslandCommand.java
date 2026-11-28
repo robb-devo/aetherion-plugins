@@ -54,10 +54,18 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
+            if (args.length >= 2 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("puppet")) {
+                puppet(sender, args);
+                return true;
+            }
             sender.sendMessage("Players only.");
             return true;
         }
         String action = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
+        if (action.equals("admin") && args.length >= 2 && args[1].equalsIgnoreCase("puppet")) {
+            puppet(sender, args);
+            return true;
+        }
         if (action.equals("admin")) {
             admin(player, args);
             return true;
@@ -126,7 +134,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             }
             case "done", "cancel" -> {
                 if (highlight != null) {
-                    highlight.placement().cancel(player, "§7Build Tool put away.");
+                    highlight.placement().putAway(player);
                 }
             }
             case "production", "prod", "machines" -> {
@@ -177,6 +185,80 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7" + route.from().label() + " §8→ "
                     + (route.deadEnd() ? "§cdead end" : "§f" + route.to().label())
                     + " §8(" + route.length() + " tiles" + (res != null ? ", " + res.display() : "") + ")");
+        }
+    }
+
+    /**
+     * Staff test rig: the console (or an admin) drives another player's island actions, for a camera client that
+     * cannot click and for scripted run-throughs: {@code /island admin puppet <player> <action> [value]}. Every
+     * action does exactly what the player's own click would do.
+     */
+    private void puppet(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("aetherion.guild.admin") || highlight == null) {
+            sender.sendMessage("No permission.");
+            return;
+        }
+        if (args.length < 4) {
+            sender.sendMessage("/island admin puppet <player> gate <0-2>|click|next|pick <n>|use|left|scroll <1|-1>"
+                    + "|part <PART>|drop|close|slot <n>|state");
+            return;
+        }
+        Player target = org.bukkit.Bukkit.getPlayerExact(args[2]);
+        if (target == null) {
+            sender.sendMessage("Player must be online.");
+            return;
+        }
+        String action = args[3].toLowerCase(Locale.ROOT);
+        String value = args.length > 4 ? args[4] : "";
+        de.aetherion.guilds.structure.PlacementService placement = highlight.placement();
+        IslandHost here = highlight.hosts().at(target.getLocation());
+        switch (action) {
+            case "gate" -> {
+                List<de.aetherion.guilds.island.StarterLayout> starters = de.aetherion.guilds.island.StarterLayout.personalChoices();
+                highlight.starterMenu().claimGate(target, starters.get(Math.max(0, Math.min(starters.size() - 1, number(value, 0)))));
+                sender.sendMessage("gate " + value);
+            }
+            case "click" -> sender.sendMessage(highlight.guide().puppetClick(target));
+            case "next" -> sender.sendMessage(highlight.guide().puppetNext(target));
+            case "pick" -> sender.sendMessage(highlight.guide().puppetPick(target, number(value, 0)));
+            case "use" -> {
+                placement.onInteract(target, true, target.getTargetBlockExact(24), false);
+                sender.sendMessage("used at " + target.getTargetBlockExact(24));
+            }
+            case "left" -> placement.onInteract(target, false, target.getTargetBlockExact(24), false);
+            case "scroll" -> placement.cycle(target, number(value, 1) >= 0 ? 1 : -1);
+            case "part" -> {
+                try {
+                    if (here != null) {
+                        placement.pick(target, here, de.aetherion.guilds.structure.PlacementService.Part.valueOf(
+                                value.toUpperCase(Locale.ROOT)));
+                    }
+                } catch (IllegalArgumentException ex) {
+                    sender.sendMessage("Unknown part.");
+                }
+            }
+            case "drop" -> placement.onDropTool(target);
+            case "close" -> sender.sendMessage("card closed: " + de.aetherion.guilds.island.IslandUi.dismissCard(target));
+            case "slot" -> {
+                if (target.getOpenInventory().getTopInventory().getHolder() instanceof de.aetherion.guilds.menu.MenuKit.Holder holder) {
+                    holder.menu().click(target, holder, number(value, 0), org.bukkit.event.inventory.ClickType.LEFT);
+                    sender.sendMessage("clicked slot " + value);
+                } else {
+                    sender.sendMessage("No island menu open.");
+                }
+            }
+            case "state" -> sender.sendMessage(highlight.guide().puppetState(target)
+                    + " tool=" + (placement.has(target) ? String.valueOf(placement.part(target)) : "none")
+                    + " held=" + placement.holdingTool(target));
+            default -> sender.sendMessage("Unknown action.");
+        }
+    }
+
+    private static int number(String raw, int fallback) {
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException ex) {
+            return fallback;
         }
     }
 

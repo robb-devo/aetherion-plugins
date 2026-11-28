@@ -164,10 +164,14 @@ public final class HubMenu implements MenuKit.Menu {
         if (progress != null) {
             BuildCostsView.fill(this, inventory, player, host, hub.level());
         }
+        boolean toolOut = placement.has(player);
         inventory.setItem(BUILD, MenuKit.tile(Material.NETHERITE_PICKAXE, "§6§lBuild Tool",
                 List.of("§7Belts, huts, machines: pick a", "§7part, see it, right-click to build.", "",
-                        "§fSneak + scroll §7next part", "§fF §7all parts", "",
-                        "§e▶ Into your hand"), goalWantsBuild(host)));
+                        "§fSneak + scroll §7next part", "§fF §7all parts", "§fQ §7puts it away", "",
+                        "§7It never gets lost: it lives here, at",
+                        "§7your Hub (this tile, or the rack outside).", "",
+                        toolOut ? "§a✔ In your hotbar §8· §e▶ click for the next part" : "§e▶ Take it"),
+                !toolOut || goalWantsBuild(host)));
         inventory.setItem(MARKET, MenuKit.named(Material.GOLD_INGOT, "§6Coin Shortcuts",
                 "§7Quarries, machine parts, cores", "§7and materials, for coins.", "", "§e▶ Open"));
         inventory.setItem(PRODUCTION, MenuKit.named(Material.BLAST_FURNACE, "§aProduction",
@@ -214,7 +218,7 @@ public final class HubMenu implements MenuKit.Menu {
 
     private boolean goalWantsBuild(IslandHost host) {
         FactoryGoals.Goal next = goals == null ? null : goals.next(host);
-        return next != null && List.of("mill_line", "split", "sort", "overflow", "forge_line").contains(next.id());
+        return next != null && List.of("mill_line", "split", "sort", "forge_line").contains(next.id());
     }
 
     private ItemStack landTile(Player player, IslandHost host) {
@@ -242,7 +246,7 @@ public final class HubMenu implements MenuKit.Menu {
     private ItemStack linesTile(IslandHost host) {
         List<String> lore = new ArrayList<>();
         for (String line : logistics.hubBoard(host).split("\n")) {
-            if (line.contains("Right-click the lectern")) {
+            if (line.contains("Right-click the lectern") || line.contains("Parts, Production")) {
                 continue;
             }
             lore.add(line);

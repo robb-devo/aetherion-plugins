@@ -579,7 +579,7 @@ public final class StructureService {
         }
         if (!unlocks.test(host, type)) {
             // the tier gate guards the unlock; once a part is unlocked (Hollis' tour hands out the Forge early) it builds
-            if ((type == StructureType.FORGE || type == StructureType.OVERFLOW || type == StructureType.SORTER)
+            if ((type == StructureType.FORGE || type == StructureType.SORTER)
                     && hubLevel(host) < 2) {
                 return "Needs Hub tier 2 (upgrade it at the Hub).";
             }
@@ -1622,7 +1622,7 @@ public final class StructureService {
         }
         if (player != null && player.isOnline()) {
             String perk = structure.type() == StructureType.WORKSHOP
-                    ? (structure.level() >= 3 ? "§7every Mill and Forge runs §f2× §7as fast" : "§7Forge, Overflow Gate and Sorter unlocked")
+                    ? (structure.level() >= 3 ? "§7every Mill and Forge runs §f2× §7as fast" : "§7Forge and Sorter unlocked")
                     : structure.type().role() == StructureType.Role.PROCESSOR
                     ? "§f" + GuildFormat.compact((long) structure.ratePerSecond()) + " §7goods / s"
                     : "§7holds §f" + GuildFormat.compact(structure.capacity()) + " §7goods";

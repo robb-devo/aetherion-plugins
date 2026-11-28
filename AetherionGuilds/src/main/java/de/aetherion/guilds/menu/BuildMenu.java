@@ -25,7 +25,7 @@ import java.util.List;
  * The Build Tool's picker: one row, every part, one click. Pick a part and it goes into your hand as the Build
  * Tool; in the world, sneak + scroll walks the same row and F brings this screen back.
  * <pre>
- *   [Belt] [Storage Hut] [Hub] [Depot] [Mill] [Splitter] [Forge] [Overflow] [Sorter]
+ *   [Belt] [Storage Hut] [Hub] [Depot] [Mill] [Splitter] [Forge] [Sorter]
  *                         [Quarry]  [Take down]  [Border]
  * </pre>
  * Locked parts show where they unlock (the Hub). Nothing else lives here: upgrades, unlocks and Coin Shortcuts
@@ -199,7 +199,6 @@ public final class BuildMenu implements MenuKit.Menu {
             case "mill_line" -> type == StructureType.MILL;
             case "split" -> type == StructureType.SPLITTER;
             case "sort" -> type == StructureType.SORTER;
-            case "overflow" -> type == StructureType.OVERFLOW;
             case "forge_line" -> type == StructureType.FORGE;
             default -> false;
         };

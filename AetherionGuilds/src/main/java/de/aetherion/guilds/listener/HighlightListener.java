@@ -87,6 +87,13 @@ public final class HighlightListener implements Listener {
         this.hubMenu = hubMenu;
     }
 
+    private de.aetherion.guilds.island.IslandGuide guide;
+
+    /** The isle hand: a click that belongs to a talk with him never reaches the Build Tool. */
+    public void attachGuide(de.aetherion.guilds.island.IslandGuide guide) {
+        this.guide = guide;
+    }
+
     public HighlightListener(JavaPlugin plugin, HostService hosts, StructureService structures,
                              LogisticsService logistics, PlacementService placement, UnlockService unlock,
                              GuildProjectService projects, MinionService minions, BuildMenu build,
@@ -162,7 +169,13 @@ public final class HighlightListener implements Listener {
             return;
         }
         if (placement.holdingTool(player)) {
+            // mid-talk with the isle hand, a click that went to the talk (the next line, a reply) is never a build click
+            boolean talk = guide != null && guide.clickIsTalk(player,
+                    event.useItemInHand() == org.bukkit.event.Event.Result.DENY);
             event.setCancelled(true);
+            if (talk) {
+                return;
+            }
             Block clicked = event.getClickedBlock();
             if (event.getAction() == Action.RIGHT_CLICK_BLOCK && clicked != null && placement.opensBuildings(player)) {
                 // right-click one of your buildings with a part picked: it opens, like without the tool
@@ -545,7 +558,10 @@ public final class HighlightListener implements Listener {
 
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent event) {
-        placement.cancel(event.getPlayer(), "§7Build mode off.");
+        if (!hosts.isIslandWorld(event.getPlayer().getWorld())) {
+            unlock.leftIslands(event.getPlayer());
+        }
+        placement.cancel(event.getPlayer(), null); // it waits: back on their island it is in the hand again
         arrivalCheck(event.getPlayer());
     }
 
