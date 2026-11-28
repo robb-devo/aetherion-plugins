@@ -62,6 +62,15 @@ Helm agent and lacked the `aetherion-armor` datapack the other backends carry; n
 
 ## Live plugin builds (sha256 prefix, 2026-11-25 23:40 CET)
 
+**Newest round, 2026-11-28 12:35 CET (tutorial isle, `main` `b324b5e6`):** Core `9f155161` on all seven backends
+(the new mmo-t included), Items `0948087b` and Quests `c091584d` on the six mmo backends, Tutorial `dd4adc22` (new) on
+mmo-t and mmo-r, Pit `e901ac93` on the hub with `tutorial.enabled: true` in its config. mmo-t also runs Foraging,
+Mining and BossEngine from the same build (same entries as the live jars elsewhere). Before the swap a survey showed
+the live jars differed from this build only in the classes this round changed. Backup `backups/tutorial-20261128-1230`;
+`staging/tutorial-20261128-1230/rollback.sh --gate-only` switches only the lobby gate off (newcomers land at the
+harbour as before), `--all` puts the old jars back. The table below is older than this round and the rounds of
+2026-11-27 for Core, Items, Quests and Pit.
+
 Summary of the deploy log (LIVE_STATE). Deploy round A-04 to A-61 (2026-11-23 19:09-19:11 CET) put `main` `f069314`
 (PRs #159 to #187) on every backend. The round of 21:21-21:22 CET added `6f592a1` (#189: A-58, A-54/A-55, A-59,
 A-13: Core, Items, Quests, BossEngine, SamuraiBoss), and Quests followed with `6b2c6f9` (#190) at 22:55 CET. mmo-i alone got
@@ -696,6 +705,11 @@ for players who rang the bell before).
   painted over by them; Items' `NaturalSpawnGuard` removes hostile mobs outside combat zones and `WildlifeLooks`
   un-hides and labels every mob without the scoreboard tag `NPC`; the Journal's tile is called "Skills" (talents are
   its bottom row), so dialogs must say that.
+- **Live since 2026-11-28 12:35 CET.** Verified on the real servers with a test player (`QaTut01`, an offline test
+  identity that plays its own proxy: `aetherion-ops/tut-stage/bot/probe.mjs`): newcomer → island → ferry → mmo-r with
+  the whole inventory and the welcome; then "play" straight to mmo-r; `/tutorial` as a visit without the character
+  and back. TAB runs the network config on mmo-t minus `belowname-objective` (it wrote "NPC" under every cast name)
+  and minus the pet lines of the tab list.
 - **Open**: Helm (staff panel) does not list mmo-t yet; fights are private (other players see a fighter swing at
   air); world polish list (quarry floor, a bigger wreck on the Flat, village interiors) in the ops notes.
 
