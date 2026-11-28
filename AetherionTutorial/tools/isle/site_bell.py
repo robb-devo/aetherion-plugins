@@ -63,6 +63,8 @@ def build(w, t):
     c.mark("arrival", LX, G + 1, LZ, yaw=-90)
     c.mark("bell_big", TX, G + 11, TZ)
     c.mark("oda", LX - 2, G + 1, LZ - 3, yaw=-45)
+    # Tolly waits on the other side of the bell frame, turned to whoever wakes on the Landing
+    c.mark("tolly", LX + 3, G + 1, LZ - 2, yaw=56)
     c.mark("steps_top", STEP_TOP_X - 1, G + 1, L.STEPS_Z)
     c.mark("steps_foot", STEP_TOP_X + STEPS + 1, step_y(STEP_TOP_X + STEPS - 1), L.STEPS_Z)
 

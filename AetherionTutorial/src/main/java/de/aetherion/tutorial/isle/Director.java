@@ -310,7 +310,7 @@ public final class Director {
                 if (armourWorn(p) >= 4) {
                     react(p, Cast.ANSEL, Txt.t(p, "Fits like it was made for you. It was. Come here, one more thing.",
                             "Sitzt wie für dich gemacht. Ist sie ja auch. Komm her, eins noch."));
-                    enter(p, s, Step.TALK_ANSEL_AGAIN);
+                    taskDone(p, s, Step.TALK_ANSEL_AGAIN);
                 }
             }
             case SOCKET -> {
@@ -333,7 +333,7 @@ public final class Director {
             case GO_FLAT -> {
                 Location arena = isle.marks().at(isle.world(), "arena");
                 if (arena != null && near(p, arena, isle.marks().radius("arena", 13.0) + 1.0)) {
-                    enter(p, s, Step.BOSS);
+                    taskDone(p, s, Step.BOSS);
                 }
             }
             default -> {
@@ -409,6 +409,23 @@ public final class Director {
     }
 
     // ------------------------------------------------------------------ step changes
+
+    /**
+     * The player did what the step asked (not by talking). An old conversation that still has pages open is put
+     * away first: the next click on that person must start what they say now, not turn a page of what they said
+     * before the task.
+     */
+    private void taskDone(Player p, Session s, Step next) {
+        TalkAccess talk = AetherServices.talk();
+        if (talk != null) {
+            try {
+                talk.end(p);
+            } catch (RuntimeException ignored) {
+                // no bubble was open
+            }
+        }
+        enter(p, s, next);
+    }
 
     /** Moves the player on to {@code step}: counters fresh, the store knows, the bar follows on the next beat. */
     void enter(Player p, Session s, Step step) {
@@ -713,8 +730,22 @@ public final class Director {
             case Cast.HILDE -> hilde(p, s);
             case Cast.WIM -> wim(p, s);
             default -> {
+                if (member != null && !member.teacher()) {
+                    smallTalk(p, s, member);
+                }
             }
         }
+    }
+
+    /** An islander without a lesson: one thought at a time, the next one on the next click. */
+    private void smallTalk(Player p, Session s, Cast.Member member) {
+        String[][] talk = member.talk();
+        if (talk == null || talk.length == 0) {
+            return;
+        }
+        int turn = s.chats.merge(member.id(), 1, Integer::sum) - 1;
+        String[] pair = talk[turn % talk.length];
+        say(p, member.id(), List.of(Txt.t(p, pair[0], pair.length > 1 ? pair[1] : pair[0])), List.of());
     }
 
     private void tolly(Player p, Session s) {
@@ -723,8 +754,8 @@ public final class Director {
                     "Na los, {player}. Die Glocke, gleich da. Zieh am Seil.")), List.of());
             return;
         }
-        say(p, Cast.TOLLY, List.of(Txt.t(p, "I'm getting the ferry ready. Do what the bar at the top says, and I'll see you at the harbour!",
-                "Ich mach die Fähre klar. Tu, was die Leiste oben sagt, und wir sehen uns am Hafen!")), List.of());
+        say(p, Cast.TOLLY, List.of(Txt.t(p, "You rang it! Now the island wakes for you. The bar at the top says what is next, the lanterns show the way.",
+                "Du hast geläutet! Jetzt wacht die Insel für dich auf. Die Leiste oben sagt, was kommt, die Laternen zeigen den Weg.")), List.of());
     }
 
     private void oda(Player p, Session s) {
@@ -1016,7 +1047,7 @@ public final class Director {
             case "AETHERION_MANAGER" -> {
                 if (s.step == Step.OPEN_JOURNAL) {
                     s.progress(now());
-                    enter(p, s, Step.TALK_BURR);
+                    taskDone(p, s, Step.TALK_BURR);
                     Guide.toast(p, Txt.t(p, "Journal", "Journal"),
                             Txt.t(p, "§7Everything you learn is in here.", "§7Hier steht alles, was du lernst."),
                             Txt.t(p, "Close it and follow the lanterns down to Burr", "Schließ es und folge den Laternen hinab zu Burr"));
@@ -1025,7 +1056,7 @@ public final class Director {
             case "APPLY_BOOSTER" -> {
                 if (s.step == Step.SOCKET) {
                     s.progress(now());
-                    enter(p, s, Step.TALK_HILDE);
+                    taskDone(p, s, Step.TALK_HILDE);
                     react(p, Cast.ANSEL, Txt.t(p, "Now that sword has a bite. Hilde at the Old Watch shows you how to use it: the broken tower on the hill.",
                             "Jetzt hat das Schwert Biss. Hilde an der Alten Wacht zeigt dir, wie man es führt: der zerbrochene Turm auf dem Hügel."));
                     Guide.card(p, Txt.t(p, "LEARNT", "GELERNT"), Txt.t(p, "Boosters", "Booster"),
@@ -1037,7 +1068,7 @@ public final class Director {
             case "AETHER_SKILL" -> {
                 if (s.step == Step.TALENT) {
                     s.progress(now());
-                    enter(p, s, Step.DRILL_PARRY);
+                    taskDone(p, s, Step.DRILL_PARRY);
                     react(p, Cast.HILDE, Txt.t(p, "Good pick. Now into the ring: the golem jabs with a yellow '!'. Press F right then.",
                             "Gute Wahl. Jetzt in den Ring: Der Golem stößt mit einem gelben '!'. Drück genau dann F."));
                 }
@@ -1045,7 +1076,7 @@ public final class Director {
             case "COMBAT_PARRY" -> {
                 if (s.step == Step.DRILL_PARRY) {
                     s.progress(now());
-                    enter(p, s, Step.DRILL_ROLL);
+                    taskDone(p, s, Step.DRILL_ROLL);
                     react(p, Cast.HILDE, Txt.t(p, "Clean! Now the red '!!'. No blocking that one: hold Sneak and jump when it turns white.",
                             "Sauber! Jetzt das rote '!!'. Das blockst du nicht: Halte Schleichen und spring, wenn es weiß wird."));
                 }
@@ -1053,7 +1084,7 @@ public final class Director {
             case "COMBAT_DODGE" -> {
                 if (s.step == Step.DRILL_ROLL) {
                     s.progress(now());
-                    enter(p, s, Step.DRILL_FINISHER);
+                    taskDone(p, s, Step.DRILL_FINISHER);
                     react(p, Cast.HILDE, Txt.t(p, "Through! Last one: three hits, each with a full swing. Don't hammer, wait for the blade.",
                             "Durch! Das Letzte: drei Treffer, jeder mit vollem Schwung. Nicht hämmern, warte auf die Klinge."));
                 }
@@ -1062,7 +1093,7 @@ public final class Director {
                 if (s.step == Step.DRILL_FINISHER) {
                     s.progress(now());
                     clearGolem(p);
-                    enter(p, s, Step.GO_FLAT);
+                    taskDone(p, s, Step.GO_FLAT);
                     react(p, Cast.HILDE, Txt.t(p, "That is how you fight here. One thing left, recruit: the harbour bell is gone. Something on the Flat is wearing it.",
                             "So kämpft man hier. Eins noch, Rekrut: Die Hafenglocke ist weg. Unten im Watt trägt sie jemand spazieren."));
                     Guide.card(p, Txt.t(p, "LEARNT", "GELERNT"), Txt.t(p, "How you fight here", "So kämpfst du hier"),
@@ -1085,7 +1116,7 @@ public final class Director {
         String id = target.toLowerCase(java.util.Locale.ROOT);
         if (s.step == Step.CRAFT_PICKAXE && id.equals("simple_pickaxe")) {
             s.progress(now());
-            enter(p, s, Step.TALK_GRETT);
+            taskDone(p, s, Step.TALK_GRETT);
             react(p, Cast.BURR, Txt.t(p, "Not bad for a first one! Grett at the quarry will put it to work: over the bridge by the waterfall, down the stair.",
                     "Nicht schlecht fürs erste Mal! Grett im Steinbruch gibt ihr Arbeit: über die Brücke am Wasserfall, die Treppe hinab."));
             Guide.card(p, Txt.t(p, "LEARNT", "GELERNT"), Txt.t(p, "Crafting", "Bauen"),
@@ -1103,7 +1134,7 @@ public final class Director {
                 }
             }
             if (Integer.bitCount(s.a) >= 4) {
-                enter(p, s, Step.WEAR_ARMOR);
+                taskDone(p, s, Step.WEAR_ARMOR);
                 react(p, Cast.ANSEL, Txt.t(p, "A full set! Don't just carry it: put it on.", "Ein ganzer Satz! Trag ihn nicht nur herum: Zieh ihn an."));
             }
         }
@@ -1132,7 +1163,7 @@ public final class Director {
                 s.a += Math.max(1, amount);
                 s.progress(now());
                 if (s.a >= LOGS_GOAL) {
-                    enter(p, s, Step.TRADE_BURR);
+                    taskDone(p, s, Step.TRADE_BURR);
                     react(p, Cast.BURR, Txt.t(p, "That's a tree down! Bring the wood over here.", "Der liegt! Bring das Holz zu mir rüber."));
                 }
             }
@@ -1147,7 +1178,7 @@ public final class Director {
                 s.progress(now());
             }
             if (s.a >= STONE_GOAL && s.b >= COAL_GOAL) {
-                enter(p, s, Step.TRY_IRON);
+                taskDone(p, s, Step.TRY_IRON);
                 react(p, Cast.GRETT, Txt.t(p, "A good haul! Now try the brown-spotted stone on the west wall. That's iron.",
                         "Ordentliche Ausbeute! Jetzt versuch den Stein mit den braunen Flecken an der Westwand. Das ist Eisen."));
             }
@@ -1172,7 +1203,7 @@ public final class Director {
         if (of(p) != s) {
             return;
         }
-        enter(p, s, Step.TALK_WIM);
+        taskDone(p, s, Step.TALK_WIM);
     }
 
     /** The player walked off the Flat in the middle of it: the bell waits there for them. */

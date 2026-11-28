@@ -31,8 +31,17 @@ import java.util.function.Consumer;
 final class Skins {
 
     private static final String FOLDER = "morningbell";
-    /** Painted with slim arms. */
-    private static final Set<String> SLIM = Set.of(Cast.ODA, Cast.GRETT, Cast.HILDE);
+    /** Painted with slim arms (tools/skins/paint_cast.py: slim=True). */
+    private static final Set<String> SLIM = Set.of("oda", "grett", "hilde", "marla", "pim", "nell", "wren");
+
+    /** Every skin the cast wears (several bodies may share one). */
+    private static Set<String> wardrobe() {
+        Set<String> skins = new java.util.LinkedHashSet<>();
+        for (Cast.Member member : Cast.ALL.values()) {
+            skins.add(member.skin());
+        }
+        return skins;
+    }
 
     private final TutorialPlugin plugin;
     private final File cacheFile;
@@ -48,7 +57,7 @@ final class Skins {
         try (InputStream in = plugin.getResource("skins-signed.yml")) {
             if (in != null) {
                 YamlConfiguration shipped = YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
-                for (String id : Cast.ALL.keySet()) {
+                for (String id : wardrobe()) {
                     String hash = shipped.getString("skins." + id + ".png");
                     if (shipped.isString("skins." + id + ".value") && !loaded.isString("skins." + id + ".value")) {
                         loaded.set("skins." + id + ".value", shipped.getString("skins." + id + ".value"));
@@ -146,7 +155,7 @@ final class Skins {
             return;
         }
         boolean changed = false;
-        for (String id : Cast.ALL.keySet()) {
+        for (String id : wardrobe()) {
             try (InputStream in = plugin.getResource("skins/" + id + ".png")) {
                 if (in == null) {
                     continue;
@@ -202,7 +211,7 @@ final class Skins {
                         return;
                     }
                     String id = norm.substring(slash + FOLDER.length() + 1, norm.length() - 4);
-                    if (!Cast.ALL.containsKey(id)) {
+                    if (!wardrobe().contains(id)) {
                         return;
                     }
                     Bukkit.getScheduler().runTask(plugin, () -> {

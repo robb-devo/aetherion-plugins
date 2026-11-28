@@ -60,6 +60,8 @@ def build(w, t):
     c.mark("harbour", 26, G + 1, 77)
     c.mark("pier_head", 24, G + 1, 97)
     c.mark("captain", 26, G + 1, 91, yaw=-120)
+    # the ferry hand at the far end of the pier, by the lines
+    c.mark("tolly_harbour", 26, G + 1, 96, yaw=170)
     c.mark("gangway", PIER_X2 + 1, G + 1, GANG_Z[0])
     c.mark("bell_post", BELL[0], G + 2, BELL[1])
 

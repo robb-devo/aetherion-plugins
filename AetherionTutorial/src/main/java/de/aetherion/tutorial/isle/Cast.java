@@ -26,6 +26,9 @@ import java.util.UUID;
 /**
  * The people of Morningbell. Each is a FancyNpcs body at a named spot of the isle (never saved: they are put up on
  * enable and taken down on disable) and a guest speaker of the talk bubbles.
+ *
+ * <p>Seven of them teach (the lessons run through them). The rest live here: a baker, a shepherd, a lighthouse
+ * keeper. They have no lesson, only a line or two about what waits on the mainland, said when somebody asks.
  */
 final class Cast {
 
@@ -43,9 +46,11 @@ final class Cast {
      * @param voice one of the Quests voice blips
      * @param mark  the spot in isle.json
      * @param hand  what they hold (null = nothing)
+     * @param skin  which painted skin they wear ({@code skins/<skin>.png})
+     * @param talk  what a villager without a lesson says, {EN, DE} pairs (null for the teachers)
      */
     record Member(String id, String name, String color, String mini, String voice, String mark, Material hand,
-                  String roleEn, String roleDe) {
+                  String skin, String[][] talk) {
 
         String fancyName() {
             return "mb_" + id;
@@ -54,29 +59,74 @@ final class Cast {
         String speaker() {
             return "morningbell_" + id;
         }
+
+        boolean teacher() {
+            return talk == null;
+        }
     }
 
     static final Map<String, Member> ALL = new LinkedHashMap<>();
 
     static {
-        add(new Member(TOLLY, "Tolly", "§b", "<aqua>", "isle_hand", "tolly", Material.LANTERN,
-                "Ferry hand", "Fährjunge"));
-        add(new Member(ODA, "Oda", "§e", "<yellow>", "town_crier", "oda", Material.BOOK,
-                "Bellkeeper", "Glöcknerin"));
-        add(new Member(BURR, "Burr", "§6", "<gold>", "craftsman", "burr", Material.IRON_AXE,
-                "Charcoal burner", "Köhler"));
-        add(new Member(GRETT, "Grett", "§7", "<gray>", "foreman", "grett", Material.IRON_PICKAXE,
-                "Quarry master", "Steinbrecherin"));
-        add(new Member(ANSEL, "Ansel", "§c", "<red>", "booster_tutor", "ansel", Material.MACE,
-                "Smith", "Schmied"));
-        add(new Member(HILDE, "Hilde", "§a", "<green>", "vex", "hilde", Material.IRON_SWORD,
-                "Watch sergeant", "Wachtmeisterin"));
-        add(new Member(WIM, "Captain Wim", "§3", "<dark_aqua>", "fisher", "captain", Material.SPYGLASS,
-                "Ferry captain", "Fährkapitän"));
+        teacher(TOLLY, "Tolly", "§b", "<aqua>", "isle_hand", "tolly", Material.LANTERN, "tolly");
+        teacher(ODA, "Oda", "§e", "<yellow>", "town_crier", "oda", Material.BOOK, "oda");
+        teacher(BURR, "Burr", "§6", "<gold>", "craftsman", "burr", Material.IRON_AXE, "burr");
+        teacher(GRETT, "Grett", "§7", "<gray>", "foreman", "grett", Material.IRON_PICKAXE, "grett");
+        teacher(ANSEL, "Ansel", "§c", "<red>", "booster_tutor", "ansel", Material.MACE, "ansel");
+        teacher(HILDE, "Hilde", "§a", "<green>", "vex", "hilde", Material.IRON_SWORD, "hilde");
+        teacher(WIM, "Captain Wim", "§3", "<dark_aqua>", "fisher", "captain", Material.SPYGLASS, "wim");
+
+        // The islanders. One thought each, and it is always about the other shore: what the newcomer will find there.
+        villager("marla", "Marla", "farm_isle_guide", "baker", Material.BREAD, "marla", new String[][] {
+                {"Morning! Smell that? Wheat from Downs Farm, ground at Tam's mill.",
+                        "Morgen! Riechst du das? Weizen von der Downs Farm, gemahlen in Tams Mühle."},
+                {"On the mainland you grow your own. Captain Wim has a hoe for you.",
+                        "Auf dem Festland baust du selbst an. Kapitän Wim hat eine Hacke für dich."}});
+        villager("osk", "Osk", "merchant", "innkeeper", null, "osk", new String[][] {
+                {"Sailing today? Then no bed for you, friend. Nobody sleeps in on Morningbell.",
+                        "Du fährst heute? Dann kein Bett für dich. Auf Morningbell schläft niemand aus."},
+                {"The Capital over there has a market. Bring coins, they talk louder than I do.",
+                        "Die Hauptstadt drüben hat einen Markt. Bring Coins mit, die reden lauter als ich."}});
+        villager("pim", "Pim", "fishmonger", "market_woman", Material.APPLE, "pim", new String[][] {
+                {"Nothing for sale before the ferry leaves, love. Island rule.",
+                        "Vor der Fähre wird nichts verkauft, Schätzchen. Inselregel."},
+                {"Keep your coins. The traders on the mainland will want every one of them.",
+                        "Behalt deine Coins. Die Händler auf dem Festland wollen jeden einzelnen."}});
+        villager("nell", "Nell", "fishmonger", "fishwife", Material.COD, "nell", new String[][] {
+                {"Herring! Fresh from the weir on the Flat. If Old Clanger left any.",
+                        "Hering! Frisch aus dem Wehr im Watt. Falls Old Clanger welche übrig gelassen hat."},
+                {"Fishing is a craft of its own over there. A whole isle for it, they say.",
+                        "Fischen ist drüben ein eigenes Handwerk. Eine ganze Insel dafür, sagt man."}});
+        villager("hob", "Hob", "farmer", "farmer", Material.WHEAT, "hob", new String[][] {
+                {"Mind the furrows! These fields feed the whole island.",
+                        "Pass auf die Furchen auf! Diese Felder ernähren die ganze Insel."},
+                {"Farming has its own isle on the mainland. Bigger fields than mine, I hear.",
+                        "Auf dem Festland hat der Ackerbau eine eigene Insel. Größere Felder als meine, hört man."}});
+        villager("wren", "Wren", "lark", "shepherd", Material.SHEARS, "wren", new String[][] {
+                {"They are not pets. They are sheep. There is a difference, they tell me.",
+                        "Das sind keine Haustiere. Das sind Schafe. Da gibt es einen Unterschied, sagen sie."},
+                {"Real pets you catch on the mainland. Ask for Lark, she has a way with them.",
+                        "Echte Pets fängst du auf dem Festland. Frag nach Lark, die kann mit ihnen."}});
+        villager("tam", "Tam", "lumberjack", "miller", null, "tam", new String[][] {
+                {"Good wind today. The sails have not stopped since the bell.",
+                        "Guter Wind heute. Die Flügel stehen seit der Glocke nicht still."},
+                {"Whatever you do over there trains a skill. Do it often and it gets easy.",
+                        "Was immer du drüben tust, trainiert einen Skill. Mach es oft, dann wird es leicht."}});
+        villager("brack", "Brack", "rite_keeper", "keeper", Material.LANTERN, "brack", new String[][] {
+                {"Forty years I have lit this lamp. Every ferry found its way home.",
+                        "Vierzig Jahre zünde ich diese Lampe an. Jede Fähre hat heimgefunden."},
+                {"Everyone who sailed from here came back with stories. Bring me yours.",
+                        "Jeder, der von hier gesegelt ist, kam mit Geschichten zurück. Bring mir deine."}});
     }
 
-    private static void add(Member member) {
-        ALL.put(member.id(), member);
+    private static void teacher(String id, String name, String color, String mini, String voice, String mark,
+                                Material hand, String skin) {
+        ALL.put(id, new Member(id, name, color, mini, voice, mark, hand, skin, null));
+    }
+
+    private static void villager(String id, String name, String voice, String mark, Material hand, String skin,
+                                 String[][] talk) {
+        ALL.put(id, new Member(id, name, "§f", "<white>", voice, mark, hand, skin, talk));
     }
 
     private final TutorialPlugin plugin;
@@ -109,11 +159,11 @@ final class Cast {
         }
         Location at = isle.marks().at(isle.world(), member.mark());
         if (at == null && TOLLY.equals(id)) {
-            // older island builds have no spot for him: beside the Landing, looking at whoever arrives
+            // an island built before he had a spot of his own: beside the Landing, turned to whoever wakes there
             Location landing = isle.marks().at(isle.world(), "arrival");
             if (landing != null) {
-                at = landing.clone().add(2.0, 0.0, 2.5);
-                at.setYaw(110f);
+                at = landing.clone().add(3.0, 0.0, -2.0);
+                at.setYaw(56f);
             }
         }
         if (at != null) {
@@ -150,7 +200,9 @@ final class Cast {
     private void spawn(Object manager, Member member) {
         Location at = spot(member.id());
         if (at == null) {
-            plugin.getLogger().warning("No spot '" + member.mark() + "' on the island for " + member.name());
+            if (member.teacher()) {
+                plugin.getLogger().warning("No spot '" + member.mark() + "' on the island for " + member.name());
+            }
             return;
         }
         try {
@@ -171,7 +223,7 @@ final class Cast {
             FancyNpcFacade.invokeQuiet(data, "setCollidable", boolean.class, false);
             FancyNpcFacade.invokeQuiet(data, "setTurnToPlayer", boolean.class, true);
             FancyNpcFacade.applyVisibility(data, 64);
-            isle.skins().apply(data, member.id());
+            isle.skins().apply(data, member.skin());
             if (member.hand() != null) {
                 try {
                     data.getClass().getMethod("addEquipment", FancyNpcFacade.equipmentSlotClass(), ItemStack.class)
@@ -191,21 +243,23 @@ final class Cast {
         }
     }
 
-    /** A skin was signed after the body went up: dress it now. */
-    void redress(String id) {
-        Object npc = bodies.get(id);
-        if (npc == null) {
-            return;
-        }
-        try {
-            Object data = FancyNpcFacade.data(npc);
-            if (isle.skins().apply(data, id)) {
-                FancyNpcFacade.removeForAll(npc);
-                FancyNpcFacade.create(npc);
-                FancyNpcFacade.spawnForAll(npc);
+    /** A skin was signed after the bodies went up: dress everybody who wears it. */
+    void redress(String skin) {
+        for (Member member : ALL.values()) {
+            Object npc = member.skin().equals(skin) ? bodies.get(member.id()) : null;
+            if (npc == null) {
+                continue;
             }
-        } catch (Throwable ignored) {
-            // stays in the old skin until the next restart
+            try {
+                Object data = FancyNpcFacade.data(npc);
+                if (isle.skins().apply(data, skin)) {
+                    FancyNpcFacade.removeForAll(npc);
+                    FancyNpcFacade.create(npc);
+                    FancyNpcFacade.spawnForAll(npc);
+                }
+            } catch (Throwable ignored) {
+                // stays in the old skin until the next restart
+            }
         }
     }
 
@@ -245,6 +299,9 @@ final class Cast {
         }
         for (Member member : ALL.values()) {
             String id = member.id();
+            if (spot(id) == null) {
+                continue;
+            }
             talk.registerSpeaker(new TalkAccess.Speaker(member.speaker(), member.name(), member.color(), member.voice(),
                     () -> spot(id)));
             if (!speakers.contains(member.speaker())) {

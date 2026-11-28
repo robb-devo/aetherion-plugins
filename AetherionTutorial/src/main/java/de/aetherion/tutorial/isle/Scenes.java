@@ -248,8 +248,8 @@ final class Scenes {
         f.cue(30, () -> caption(player, Txt.t(player, "Nobody sails to the mainland unprepared.",
                 "Niemand segelt unvorbereitet zum Festland."), 50));
         f.cue(84, () -> caption(player, Txt.t(player, "§eYou are prepared, {player}.", "§eDu bist vorbereitet, {player}."), 50));
-        f.cue(56, () -> player.sendMessage(Txt.t(player, "§bTolly§8: §fSee you on the mainland, {player}!",
-                "§bTolly§8: §fWir sehen uns auf dem Festland, {player}!")));
+        f.cue(56, () -> player.sendMessage(Txt.t(player, "§eOda§8: §fGo well, {player}. The bell will ring for you again.",
+                "§eOda§8: §fGeh gut, {player}. Die Glocke läutet wieder für dich.")));
         // the mist closes in
         for (int i = 0; i < 5; i++) {
             int alpha = 70 + i * 22;

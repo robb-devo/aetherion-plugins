@@ -2,7 +2,7 @@
 """
 The faces of Morningbell.
 
-Seven original skins, painted from specs with the repo's NPC skin painter (docs/npc/skins/paint_skins.py: simple
+Fifteen original skins (seven teachers, eight islanders), painted from specs with the repo's NPC skin painter (docs/npc/skins/paint_skins.py: simple
 layers, no third-party textures). The PNGs go into the plugin jar (src/main/resources/skins/<id>.png); the plugin
 has them signed once through FancyNpcs and keeps the signatures (isle/Skins.java).
 
@@ -71,6 +71,61 @@ CAST = {
                 torso=dict(shirt="f0ece2", over="coat", over_color="243e66", lapel=True, buttons="f0c040",
                            coat_cuff="f0c040", collar="ffffff", scarf="b8322a"),
                 legs=dict(pants="e0dccc", boots="15171c", boot_h=4)),
+    # ---- the islanders (no lessons, a line or two each) ----
+    # Marla, the baker: flour to the elbows.
+    "marla": dict(slim=True, skin="light", eyes="brown", hair="7a4a24", hair_style="bun", rosy=True, mouth="grin",
+                  hat=dict(kind="bandana", color="f2efe6", rows=2, dot="f2efe6"),
+                  torso=dict(shirt="d8a070", sleeve="d8a070", sleeve_len=5, over="apron", over_color="f0ece2",
+                             apron_top=3, apron_pocket=True, stains="ffffff", stain_px=((2, 6), (5, 8), (4, 5))),
+                  legs=dict(pants="6a4a34", boots="3a2a1e", boot_h=2, dress="8a5a3a", dress_len=7)),
+    # Osk, the innkeeper: wine-red waistcoat, a moustache he is proud of.
+    "osk": dict(skin="warm", eyes="dark", hair="5a3a22", hair_style="short", beard="moustache", beard_color="5a3a22",
+                rosy=True, mouth="grin",
+                torso=dict(shirt="ece4d0", sleeve="ece4d0", sleeve_len=9, over="vest", over_color="6a2428",
+                           buttons="e8c040", belt="2a1a12", belt_row=9),
+                legs=dict(pants="3a342e", boots="1e1612", boot_h=3)),
+    # Pim, the market woman: straw hat, green bodice, sharp eyes.
+    "pim": dict(slim=True, skin="tan", eyes="green", hair="2a1e16", hair_style="braid", mouth="smirk",
+                hat=dict(kind="wide", color="e0c070", band="3f7a45", rows=2),
+                torso=dict(shirt="f0e8d0", sleeve="f0e8d0", sleeve_len=6, over="vest", over_color="3f7a45",
+                           sash="c8a030"),
+                legs=dict(pants="4a3a2a", boots="2a1e16", boot_h=2, dress="7a5a30", dress_len=8)),
+    # Nell, the fishwife: blue kerchief, oilcloth apron, hands like rope.
+    "nell": dict(slim=True, skin="light", eyes="blue", hair="c86a2a", hair_style="messy", freckles=True,
+                 mouth="grin",
+                 hat=dict(kind="bandana", color="2e5a8a", rows=2, dot="f2f2f2"),
+                 torso=dict(shirt="9aa8b0", sleeve="9aa8b0", sleeve_len=4, over="apron", over_color="5a6a72",
+                            apron_top=3, stains="8ab0b8", gloves="e0e0e8"),
+                 legs=dict(pants="3a4650", boots="1e2a32", boot_h=5)),
+    # Hob, the farmer of Downs Farm: straw in his teeth, blue overalls.
+    "hob": dict(skin="tan", eyes="blue", hair="c8a060", hair_style="short", beard="stubble", beard_color="a88040",
+                rosy=True, straw=True,
+                hat=dict(kind="wide", color="d8b860", band="6a4a2a", rows=2),
+                torso=dict(shirt="b8483a", pattern="check", pattern_color="e8d8b0", sleeve="b8483a", sleeve_len=6,
+                           over="overalls", over_color="46628a", gloves="a8844e"),
+                legs=dict(pants="46628a", boots="5a3a22", boot_h=3, patch="5e7aa2")),
+    # Wren, the shepherd: a wool vest she knitted herself, hair the wind has given up on.
+    "wren": dict(slim=True, skin="light", eyes="green", hair="e0c890", hair_style="long", freckles=True,
+                 mouth="smirk",
+                 hat=dict(kind="flatcap", color="5a7a4a", rows=2),
+                 torso=dict(shirt="e8e0c8", sleeve="e8e0c8", sleeve_len=7, over="vest", over_color="d8d0bc",
+                            scarf="5a7a4a", belt="5a3a22", belt_row=9),
+                 legs=dict(pants="7a6a4a", boots="4a3020", boot_h=4, boot_cuff="d8d0bc")),
+    # Tam, the miller: everything on him is a shade paler than it was.
+    "tam": dict(skin="pale", eyes="grey", hair="c4c0b8", hair_style="crop", beard="full", beard_color="d0ccc4",
+                mouth="flat",
+                hat=dict(kind="beanie", color="e4e0d6", rows=2),
+                torso=dict(shirt="e6e2d8", sleeve="e6e2d8", sleeve_len=6, over="apron", over_color="d2ccbe",
+                           apron_top=3, stains="ffffff", stain_px=((1, 5), (3, 8), (6, 6), (5, 4)), belt="8a7a5a",
+                           belt_row=7, belt_overlay=True),
+                legs=dict(pants="9a9484", boots="5a4a3a", boot_h=3)),
+    # Brack, the lighthouse keeper: forty years of salt wind in one face.
+    "brack": dict(skin="warm", eyes="grey", hair="dcdad2", hair_style="long", beard="full", beard_color="e6e4dc",
+                  wrinkles=True, frown=True, mouth="flat",
+                  hat=dict(kind="beanie", color="243040", rows=2),
+                  torso=dict(shirt="3a4654", over="coat", over_color="2a3440", buttons="c8a030", scarf="c8a030",
+                             coat_cuff="2a3440"),
+                  legs=dict(pants="2a2e34", boots="14161a", boot_h=4)),
 }
 
 

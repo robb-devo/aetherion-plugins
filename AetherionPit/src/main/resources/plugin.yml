@@ -16,6 +16,9 @@ commands:
     description: Transfer to Aetherion (mmo-r)
     aliases: [play, mmor]
     usage: /aetherion
+  tutorial:
+    description: Visit Morningbell, the tutorial isle (your character stays where it is)
+    usage: /tutorial
   hub:
     description: Teleport to hub spawn (0, 64, 0)
     aliases: [lobby, spawn]

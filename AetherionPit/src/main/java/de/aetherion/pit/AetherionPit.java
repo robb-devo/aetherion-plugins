@@ -79,6 +79,15 @@ public final class AetherionPit extends JavaPlugin {
                 return true;
             });
         }
+        var tutorial = getCommand("tutorial");
+        if (tutorial != null) {
+            tutorial.setExecutor((sender, c, l, a) -> {
+                if (sender instanceof org.bukkit.entity.Player player) {
+                    transfer.toTutorial(player);
+                }
+                return true;
+            });
+        }
         var hub = getCommand("hub");
         if (hub != null) {
             hub.setExecutor((sender, c, l, a) -> {

@@ -21,6 +21,8 @@ isle:
   flights: true
   # Coins Old Clanger leaves behind.
   boss-coins: 100
+  # The few animals that belong to the island (sheep in the fold, hens at the farm, the cat by the well).
+  animals: true
   # Every player lives in the same early morning (ticks; 23000 = just before sunrise, 450 = the sun is up).
   dawn-time: 22900
   morning-time: 450

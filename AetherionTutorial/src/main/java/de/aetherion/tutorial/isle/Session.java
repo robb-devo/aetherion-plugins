@@ -41,6 +41,9 @@ final class Session {
     /** Small facts of this visit ("overlook", "skills-card"), so a beat plays once. */
     final Set<String> seen = new HashSet<>();
 
+    /** How often each islander was spoken to (they say their next thought on the next click). */
+    final java.util.Map<String, Integer> chats = new java.util.HashMap<>();
+
     Session(UUID id) {
         this.id = id;
     }

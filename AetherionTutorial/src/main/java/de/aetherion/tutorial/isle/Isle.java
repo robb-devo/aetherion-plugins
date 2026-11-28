@@ -30,9 +30,11 @@ public final class Isle {
     private final Boss boss;
     private final BoosterGift boosters;
     private final Places places;
+    private final Ambient ambient;
     private Notes notes;
     private BukkitTask slow;
     private BukkitTask fast;
+    private BukkitTask life;
 
     private Isle(TutorialPlugin plugin, World world, Marks marks) {
         this.plugin = plugin;
@@ -46,6 +48,7 @@ public final class Isle {
         this.boss = new Boss(plugin, this);
         this.boosters = new BoosterGift(plugin, this);
         this.places = new Places(this);
+        this.ambient = new Ambient(plugin, this);
     }
 
     /** Null when the world has no {@code isle.json} (the island was not built by tools/isle). */
@@ -77,6 +80,8 @@ public final class Isle {
         world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
         world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
         world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+        // a still world: no crop grows, no leaf decays, no grass creeps (what must grow back, the plugins put back)
+        world.setGameRule(GameRule.RANDOM_TICK_SPEED, 0);
         world.setGameRule(GameRule.SPAWN_RADIUS, 0);
         world.setGameRule(GameRule.DO_INSOMNIA, false);
         world.setGameRule(GameRule.DO_PATROL_SPAWNING, false);
@@ -104,7 +109,14 @@ public final class Isle {
                 rules.admit(player, false);
             }
         });
-        slow = Bukkit.getScheduler().runTaskTimer(plugin, director::heartbeat, 20L, 10L);
+        slow = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // Quests registers its service again when it reloads: the listener goes back in front of it
+            if (!(de.aetherion.core.api.AetherServices.quests() instanceof Notes)) {
+                notes = Notes.install(director);
+            }
+            director.heartbeat();
+        }, 20L, 10L);
+        life = Bukkit.getScheduler().runTaskTimer(plugin, ambient::tend, 100L, 200L);
         fast = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             scenes.tick();
             boss.tick();
@@ -119,6 +131,10 @@ public final class Isle {
         if (fast != null) {
             fast.cancel();
         }
+        if (life != null) {
+            life.cancel();
+        }
+        ambient.clear();
         places.unregister();
         boss.shutdown();
         scenes.shutdown();

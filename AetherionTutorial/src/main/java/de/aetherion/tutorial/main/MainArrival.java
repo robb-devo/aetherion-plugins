@@ -59,7 +59,31 @@ public final class MainArrival implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        if (plugin.store().load(player.getUniqueId()).state == TutorialStore.State.GRADUATING) {
+            // before the Hub's own first-join hint ("FIND EGON") goes out: Egon's welcome is behind this player
+            quietHarbourHint(player);
+        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> look(player, 0), 30L);
+    }
+
+    /**
+     * AetherionHub greets whoever joins the main world for the first time with "FIND EGON". A graduate of the isle
+     * has that lesson filed already; the hint is marked as shown (reflection: Hub is not a dependency of this
+     * plugin, and without it nothing is lost).
+     */
+    private void quietHarbourHint(Player player) {
+        try {
+            org.bukkit.plugin.Plugin hub = Bukkit.getPluginManager().getPlugin("AetherionHub");
+            if (hub == null || !hub.isEnabled()) {
+                return;
+            }
+            Object service = hub.getClass().getMethod("getHub").invoke(hub);
+            if (service != null) {
+                service.getClass().getMethod("markHintShown", UUID.class).invoke(service, player.getUniqueId());
+            }
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            plugin.getLogger().fine("Could not quiet the harbour hint: " + ex);
+        }
     }
 
     @EventHandler
