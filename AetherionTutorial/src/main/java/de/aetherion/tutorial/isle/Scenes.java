@@ -52,6 +52,8 @@ final class Scenes {
         CineCam cam;
         int tick = -1;
         int waited;
+        /** Ticks the lens has stood on ground that is not loaded yet. */
+        int blind;
         boolean white;
         boolean keepLens;
 
@@ -295,6 +297,14 @@ final class Scenes {
         Guide.hide(f.player, f.session);
         f.player.closeInventory();
         Key first = f.keys.get(0);
+        // The lens must stand on loaded ground from its first tick. The flight in starts far out at sea: when that
+        // chunk was still on its way (a staff reset a second after a join), the lens counted as gone, the film was
+        // dropped, and the player hung over the water as a spectator with no way on.
+        int cx = first.pos().getBlockX() >> 4;
+        int cz = first.pos().getBlockZ() >> 4;
+        isle.world().getChunkAt(cx, cz);
+        isle.world().addPluginChunkTicket(cx, cz, plugin);
+        org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> isle.world().removePluginChunkTicket(cx, cz, plugin), 200L);
         f.cam = CineCam.start(plugin, f.player, pose(first.pos(), first.look()), 3);
         if (f.white) {
             f.cam.addWhite(4, 235);
@@ -341,13 +351,26 @@ final class Scenes {
 
     private void step(Flight f) {
         Player player = f.player;
+        if (player.isOnline() && f.cam != null && !f.cam.valid() && !f.cam.entity().isDead() && f.blind < 60) {
+            // the lens is alive, only its ground is not loaded yet: the player is brought to it and the film waits
+            f.blind++;
+            Location lens = f.cam.entity().getLocation();
+            if (player.getWorld() != lens.getWorld() || player.getLocation().distanceSquared(lens) > 0.25) {
+                player.teleport(lens);
+            }
+            return;
+        }
         if (!player.isOnline() || f.cam == null || !f.cam.valid()) {
             flights.remove(player.getUniqueId());
             if (f.cam != null) {
                 f.cam.remove();
             }
+            if (player.isOnline()) {
+                lost(f);
+            }
             return;
         }
+        f.blind = 0;
         f.cam.hold();
         if (!f.cam.attached() && f.waited < 100) {
             // the lens's ground is still on its way to the client: the film waits inside the mist
@@ -378,6 +401,62 @@ final class Scenes {
             return;
         }
         f.cam.frame(poseAt(f, f.tick));
+    }
+
+    /**
+     * The lens died under a running film (its chunk went, something removed it). The player gets their body back
+     * where the film would have set them down, and the lesson goes on as if it had ended: nobody is ever left
+     * hanging in a camera that is not there.
+     */
+    private void lost(Flight f) {
+        Player player = f.player;
+        plugin.getLogger().warning("[Morningbell] the camera of " + player.getName() + " was lost at tick " + f.tick
+                + " (step " + f.session.step + "): the film ends here.");
+        body(player, f.feet != null ? f.feet : isle.marks().at(isle.world(), "arrival"));
+        f.session.scene = false;
+        if (f.done != null) {
+            f.done.run();
+        }
+    }
+
+    private static void body(Player player, Location feet) {
+        if (player.getGameMode() == GameMode.SPECTATOR) {
+            try {
+                player.setSpectatorTarget(null);
+            } catch (RuntimeException ignored) {
+                // no target to let go of
+            }
+            player.setGameMode(GameMode.SURVIVAL);
+        }
+        if (feet != null) {
+            player.teleport(feet);
+            player.setFallDistance(0f);
+        }
+    }
+
+    /**
+     * Twice a second for a player whose session says "in a scene": if no film, sunrise or crossing is running for
+     * them (whatever the reason), the flag is a lie and they would stand there for ever without bar, hints or
+     * rescue. After three seconds of that they get their body back and the lesson is told to carry on.
+     */
+    void watch(Player player, Session session) {
+        UUID id = player.getUniqueId();
+        if (flights.containsKey(id) || sunrises.containsKey(id) || sailing.containsKey(id)) {
+            session.sceneIdle = 0;
+            return;
+        }
+        if (++session.sceneIdle < 6) {
+            return;
+        }
+        session.sceneIdle = 0;
+        plugin.getLogger().warning("[Morningbell] " + player.getName() + " was in a scene without a film (step "
+                + session.step + "): released.");
+        Location feet = session.step == Step.ARRIVE ? isle.marks().at(isle.world(), "arrival")
+                : player.getGameMode() == GameMode.SPECTATOR ? (session.ground != null ? session.ground : isle.marks().at(isle.world(), "arrival"))
+                : null;
+        body(player, feet);
+        session.scene = false;
+        isle.director().sceneLost(player, session);
     }
 
     /** A flight that only keeps the lens where it stopped. */

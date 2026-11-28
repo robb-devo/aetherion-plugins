@@ -270,6 +270,10 @@ public final class Director {
                 continue;
             }
             GameMode mode = player.getGameMode();
+            if (s.scene) {
+                // a scene with nothing behind it gives the player back (see Scenes.watch)
+                isle.scenes().watch(player, s);
+            }
             if (s.scene || s.step == Step.DONE) {
                 continue;
             }
@@ -675,6 +679,20 @@ public final class Director {
             react(p, Cast.TOLLY, Txt.t(p, "Psst, {player}! Over here. First morning? Then you ring the bell. Everybody does.",
                     "Psst, {player}! Hier drüben. Erster Morgen? Dann läutest du die Glocke. Das macht jeder."));
         });
+    }
+
+    /** A scene ended without its own ending (its camera was lost): what the ending would have done. */
+    void sceneLost(Player p, Session s) {
+        if (!p.isOnline() || of(p) != s) {
+            return;
+        }
+        if (s.step == Step.ARRIVE) {
+            enter(p, s, Step.RING_BELL);
+            react(p, Cast.TOLLY, Txt.t(p, "Psst, {player}! Over here. First morning? Then you ring the bell. Everybody does.",
+                    "Psst, {player}! Hier drüben. Erster Morgen? Dann läutest du die Glocke. Das macht jeder."));
+        } else if (s.step == Step.DEPART) {
+            stranded(p, s);
+        }
     }
 
     /** The bell on the Landing was rung. */
