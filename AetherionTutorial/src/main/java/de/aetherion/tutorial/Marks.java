@@ -26,6 +26,8 @@ public final class Marks {
     }
 
     private final Map<String, Spot> spots = new HashMap<>();
+    /** The lesson trail from the Landing to the ferry: {x, z} points about two blocks apart (may be empty). */
+    private final java.util.List<double[]> trail = new java.util.ArrayList<>();
 
     private Marks() {
     }
@@ -34,6 +36,14 @@ public final class Marks {
         Marks marks = new Marks();
         String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         JsonObject root = JsonParser.parseString(text).getAsJsonObject();
+        if (root.has("trail") && root.get("trail").isJsonArray()) {
+            for (JsonElement point : root.getAsJsonArray("trail")) {
+                if (point.isJsonArray() && point.getAsJsonArray().size() >= 2) {
+                    marks.trail.add(new double[] {point.getAsJsonArray().get(0).getAsDouble(),
+                            point.getAsJsonArray().get(1).getAsDouble()});
+                }
+            }
+        }
         JsonObject all = root.getAsJsonObject("marks");
         if (all == null) {
             return marks;
@@ -48,6 +58,11 @@ public final class Marks {
             marks.spots.put(e.getKey(), new Spot(x, y, z, yaw, radius));
         }
         return marks;
+    }
+
+    /** The lesson trail, in walking order. Not to be changed. */
+    public java.util.List<double[]> trail() {
+        return trail;
     }
 
     public boolean has(String key) {

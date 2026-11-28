@@ -38,14 +38,16 @@ final class Guide {
      * @param progress  0..1: how far the step is, or negative to show the way instead (closer = fuller)
      */
     static void bar(Player player, Session session, BarChrome.Icon icon, String objective, float progress,
-                    Location target) {
+                    Location target, Location aim) {
         String text = "§e" + Txt.t(player, "Morningbell", "Morningbell") + " §8· §f" + objective;
         float fill = progress;
         BossBar.Color color = BossBar.Color.YELLOW;
         if (target != null && target.getWorld() == player.getWorld()) {
             double d = player.getLocation().distance(target);
             if (d > 5.0) {
-                text += " §8· §e" + Txt.arrow(player, target) + " §7" + (int) d + "m";
+                // the arrow follows the way (the next bend of the trail), the metres count to the goal itself
+                Location towards = aim != null && aim.getWorld() == player.getWorld() ? aim : target;
+                text += " §8· §e" + Txt.arrow(player, towards) + " §7" + (int) d + "m";
             }
             if (progress < 0f) {
                 fill = (float) Math.max(0.05d, Math.min(1.0d, 1.0d - d / 110.0d));
@@ -104,6 +106,123 @@ final class Guide {
                         0.03, 0.2, 0.03, 0.0, i % 2 == 0 ? GOLD : GOLD_SOFT, true);
             }
         }
+    }
+
+    // ------------------------------------------------------------------ the trail
+
+    /**
+     * A trail of light on the ground, from where the player stands along the lesson way towards {@code target}
+     * (only this player sees it). Nobody has to read anything to find the next teacher: the sparks run that way.
+     *
+     * @return where the bar's arrow should point: the next bend of the way, or the target itself when it is close
+     *         or the player has left the way
+     */
+    static Location lead(Player player, de.aetherion.tutorial.Marks marks, Location target, long tick) {
+        java.util.List<double[]> trail = marks.trail();
+        if (target == null || target.getWorld() != player.getWorld() || trail.size() < 2) {
+            return target;
+        }
+        Location at = player.getLocation();
+        double toTarget = Math.hypot(at.getX() - target.getX(), at.getZ() - target.getZ());
+        if (toTarget < 9.0) {
+            return target;
+        }
+        int goal = nearest(trail, target.getX(), target.getZ(), -1, 0.0);
+        double off = Math.hypot(trail.get(goal)[0] - target.getX(), trail.get(goal)[1] - target.getZ());
+        // where on the way the player is: of all points about as near as the nearest, the one furthest along
+        int here = nearest(trail, at.getX(), at.getZ(), goal, 4.0);
+        double astray = Math.hypot(trail.get(here)[0] - at.getX(), trail.get(here)[1] - at.getZ());
+        if (astray > 16.0 || here == goal) {
+            return target;
+        }
+        int step = goal > here ? 1 : -1;
+        double walked = 0.0;
+        double phase = (tick / 10L % 2L) * 1.0;
+        double next = 2.5 + phase;
+        double px = at.getX();
+        double pz = at.getZ();
+        double y = at.getY();
+        Location aim = null;
+        int crumbs = 0;
+        for (int i = here; i != goal + step && walked < 19.0; i += step) {
+            double[] point = trail.get(i);
+            double seg = Math.hypot(point[0] - px, point[1] - pz);
+            while (seg > 1.0e-6 && walked + seg >= next && next < 19.0) {
+                double t = (next - walked) / seg;
+                double cx = px + (point[0] - px) * t;
+                double cz = pz + (point[1] - pz) * t;
+                double ground = ground(player, cx, cz, y);
+                if (!Double.isNaN(ground)) {
+                    y = ground;
+                    player.spawnParticle(Particle.DUST, cx, ground + 0.22, cz, 1, 0.10, 0.02, 0.10, 0.0,
+                            crumbs % 3 == 0 ? GOLD : GOLD_SOFT);
+                }
+                if (aim == null && next >= 9.0) {
+                    aim = new Location(player.getWorld(), cx, y, cz);
+                }
+                crumbs++;
+                next += 2.0;
+            }
+            walked += seg;
+            px = point[0];
+            pz = point[1];
+        }
+        if (aim == null) {
+            // the way to the goal is shorter than the look-ahead: the last stretch leaves the trail (a teacher
+            // stands a few steps off it)
+            return off > 12.0 ? new Location(player.getWorld(), px, y, pz) : target;
+        }
+        return aim;
+    }
+
+    /**
+     * The trail point nearest to (x, z). With {@code prefer >= 0}: among all points within {@code slack} blocks of
+     * the nearest, the one closest (along the trail) to the point {@code prefer}; the way passes some places twice.
+     */
+    private static int nearest(java.util.List<double[]> trail, double x, double z, int prefer, double slack) {
+        int best = 0;
+        double bestD = Double.MAX_VALUE;
+        for (int i = 0; i < trail.size(); i++) {
+            double d = Math.hypot(trail.get(i)[0] - x, trail.get(i)[1] - z);
+            if (d < bestD) {
+                bestD = d;
+                best = i;
+            }
+        }
+        if (prefer < 0) {
+            return best;
+        }
+        int pick = best;
+        for (int i = 0; i < trail.size(); i++) {
+            double d = Math.hypot(trail.get(i)[0] - x, trail.get(i)[1] - z);
+            if (d <= bestD + slack && Math.abs(i - prefer) < Math.abs(pick - prefer)) {
+                pick = i;
+            }
+        }
+        return pick;
+    }
+
+    /** The top of the ground at (x, z) nearest to height {@code near} (steps, slabs and bridges count). NaN: none. */
+    private static double ground(Player player, double x, double z, double near) {
+        org.bukkit.World world = player.getWorld();
+        int bx = (int) Math.floor(x);
+        int bz = (int) Math.floor(z);
+        if (!world.isChunkLoaded(bx >> 4, bz >> 4)) {
+            return Double.NaN;
+        }
+        int start = (int) Math.floor(near) + 3;
+        for (int y = start; y >= start - 8; y--) {
+            org.bukkit.block.Block below = world.getBlockAt(bx, y - 1, bz);
+            if (below.isPassable() || below.isLiquid()) {
+                continue;
+            }
+            if (!world.getBlockAt(bx, y, bz).isPassable()) {
+                continue;
+            }
+            double top = below.getBoundingBox().getMaxY();
+            return top > 0.0 ? top : y;
+        }
+        return Double.NaN;
     }
 
     // ------------------------------------------------------------------ cards

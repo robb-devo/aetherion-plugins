@@ -280,7 +280,8 @@ public final class Director {
             }
             watch(player, s, tick);
             Location target = targetOf(s);
-            Guide.bar(player, s, s.step.icon, objective(player, s), progress(s), target);
+            Location aim = Guide.lead(player, isle.marks(), target, tick);
+            Guide.bar(player, s, s.step.icon, objective(player, s), progress(s), target, aim);
             if (target != null) {
                 Guide.glow(player, target, s.step.talk() || (s.step == Step.TRY_IRON && s.a > 0) ? 2.35 : 1.3, tick);
             }

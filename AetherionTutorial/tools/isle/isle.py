@@ -56,6 +56,25 @@ def build(stage=99):
     return w, t
 
 
+def trail():
+    """The lesson trail as points about two blocks apart: [[x, z], ...] (see layout.TRAIL)."""
+    import paths
+    ways = {name: pts for name, _kind, pts in L.PATHS}
+    line = []
+    for part in L.TRAIL:
+        if isinstance(part, str):
+            pts = ways[part.lstrip("-")]
+            pts = list(reversed(pts)) if part.startswith("-") else list(pts)
+            line.extend((float(x), float(z)) for x, z in pts)
+        else:
+            line.append((float(part[0]), float(part[1])))
+    out = []
+    for x, z in paths.resample(line, spacing=2.0):
+        if not out or (round(x, 1), round(z, 1)) != tuple(out[-1]):
+            out.append([round(x, 1), round(z, 1)])
+    return out
+
+
 def datapack(folder):
     """The data pack that defines the island's biome. It belongs into <world>/datapacks/ before the first start."""
     ns, name = L.BIOME.split(":")
@@ -81,7 +100,7 @@ if __name__ == "__main__":
     w, t = build(stage)
     w.dump(os.path.join(out, "dump"))
     with open(os.path.join(out, "isle.json"), "w", encoding="utf-8") as f:
-        json.dump({"marks": w.marks, "sea": L.SEA}, f, indent=1)
+        json.dump({"marks": w.marks, "sea": L.SEA, "trail": trail()}, f, indent=1)
     if "--no-region" not in sys.argv:
         clock = time.time()
         w.save(os.path.join(out, "region"), ocean_biome=L.BIOME)

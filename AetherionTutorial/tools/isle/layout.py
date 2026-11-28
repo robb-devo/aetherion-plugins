@@ -79,6 +79,32 @@ STEPS_FLIGHTS = 3       # flights of seven steps with a two-block landing betwee
 ROUTE = ["bell_down", "to_falls", "falls_west", "to_quarry", "to_forge", "forge_village", "to_yard", "to_flat",
          "village_harbour", "shore"]
 
+# The lesson trail: one line from the Landing to the ferry, in the order the lessons are walked. Names are ways
+# from PATHS (walked start to end, or end to start with a leading '-'), pairs are single points in between (the
+# places where a lesson happens, bridges, stairs). The plugin draws a glowing trail along it and points its arrow
+# along it, so nobody has to read a word to find the next teacher.
+TRAIL = [
+    (-50, -50), (-46, -50), (-29, -50),                 # the Landing, down the Bell Steps
+    "bell_down",
+    (15, -61), (21, -61), (22, -57),                    # Burr's camp: Burr, his workbench
+    "to_falls",
+    (6, -38), (4, -38),                                 # the bridge above the fall
+    "falls_west",
+    (-9, -33), (-9, -24),                               # the stair down the escarpment
+    "to_quarry",
+    (-17, -13),                                         # Grett, at the mouth of the quarry
+    "to_forge",
+    (11, 22), (14, 22),                                 # the forge bridge
+    "forge_village",
+    (35, 43), (39, 43),                                 # across the village square
+    "to_yard",
+    (70, 28), (74, 30),                                 # the Old Watch: the yard gate, the ring
+    "to_flat",
+    (74, 85), (72, 91), (66, 88),                       # the Flat: the gate, the bell, the west gate
+    "shore",
+    (26, 77), (26, 84), (26, 91),                       # the harbour, the pier, the gangway
+]
+
 # The island's own biome (a data pack inside the world folder): its colours are the mood of the place. One
 # biome for land and sea, so the stream and the bay share one clear water. No rain, no natural spawns.
 BIOME = "morningbell:isle"
