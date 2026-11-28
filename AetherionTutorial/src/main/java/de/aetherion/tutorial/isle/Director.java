@@ -10,6 +10,9 @@ import de.aetherion.tutorial.TutorialPlugin;
 import de.aetherion.tutorial.TutorialStore;
 import de.aetherion.tutorial.Txt;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
@@ -1376,8 +1379,8 @@ public final class Director {
 
     /**
      * A beat in the speaker's bubble (the lines queue, the chips come after the last one). In classic chat mode,
-     * or when the player stands too far away, the same lines go to the chat and the chips become their first
-     * action only if there is exactly one.
+     * or when the player stands too far away, the same lines go to the chat; a single chip then simply happens,
+     * several become lines to click ({@link #offerInChat}).
      */
     boolean say(Player p, String castId, List<String> lines, List<TalkAccess.Reply> chips) {
         Cast.Member member = Cast.ALL.get(castId);
@@ -1405,8 +1408,49 @@ public final class Director {
         }
         if (chips.size() == 1 && chips.get(0).action() != null) {
             Bukkit.getScheduler().runTaskLater(plugin, chips.get(0).action(), 30L);
+        } else if (chips.size() > 1) {
+            offerInChat(p, chips);
         }
         return false;
+    }
+
+    /**
+     * Classic chat talk has no reply chips: the answers go to the chat as lines to click. Without this, nobody
+     * who switched the bubbles off could ever tell Captain Wim to cast off.
+     */
+    private void offerInChat(Player p, List<TalkAccess.Reply> chips) {
+        Session s = of(p);
+        if (s == null) {
+            return;
+        }
+        s.choices = List.copyOf(chips);
+        s.choicesUntil = System.currentTimeMillis() + 120_000L;
+        Component hover = Component.text(Txt.t(p, "Click to answer", "Klicken zum Antworten"), NamedTextColor.GRAY);
+        for (int i = 0; i < chips.size(); i++) {
+            TalkAccess.Reply chip = chips.get(i);
+            p.sendMessage(Component.text("  \u27A4 ", NamedTextColor.DARK_GRAY)
+                    .append(Component.text(chip.label(), chip.color() == null ? NamedTextColor.YELLOW : chip.color()))
+                    .clickEvent(ClickEvent.runCommand("/tutorial pick " + (i + 1)))
+                    .hoverEvent(HoverEvent.showText(hover)));
+        }
+    }
+
+    /** {@code /tutorial pick n}: the click on an answer offered in the chat. False when nothing is on offer. */
+    public boolean pick(Player p, int number) {
+        Session s = of(p);
+        if (s == null || s.choices == null || System.currentTimeMillis() > s.choicesUntil
+                || number < 1 || number > s.choices.size()) {
+            return false;
+        }
+        TalkAccess.Reply chip = s.choices.get(number - 1);
+        s.choices = null;
+        if (chip.echo() != null && !chip.echo().isBlank()) {
+            p.sendMessage("\u00A78\u00BB \u00A77" + chip.echo());
+        }
+        if (chip.action() != null) {
+            chip.action().run();
+        }
+        return true;
     }
 
     /** A short reaction: one line over the head when the player stands close, in the chat otherwise. */

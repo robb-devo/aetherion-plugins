@@ -115,6 +115,15 @@ public final class MainArrival implements Listener {
                     player.sendMessage(Txt.t(player, "§e✦ §7Your first morning on §fMorningbell §7is not over yet. Taking you back to the island…",
                             "§e✦ §7Dein erster Morgen auf §fMorningbell §7ist noch nicht vorbei. Es geht zurück auf die Insel…"));
                     plugin.toIsle(player, "");
+                    // still here a while later: the island is closed. They may look around; the lobby takes
+                    // them back to it another day
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (player.isOnline() && plugin.store().load(id).state == TutorialStore.State.IN_PROGRESS) {
+                            player.sendMessage(Txt.t(player, "§e✦ §7The island is closed for the moment. Look around here if you like: §fPlay §7in the lobby takes you back to finish your first morning once it is open again.",
+                                    "§e✦ §7Die Insel ist gerade geschlossen. Schau dich hier ruhig um: §fSpielen §7in der Lobby bringt dich zurück zu deinem ersten Morgen, sobald sie wieder offen ist."));
+                            plugin.store().forget(id);
+                        }
+                    }, 320L);
                 }
             }
             default -> {

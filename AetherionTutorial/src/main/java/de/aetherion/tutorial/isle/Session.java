@@ -41,6 +41,10 @@ final class Session {
     /** Small facts of this visit ("overlook", "skills-card"), so a beat plays once. */
     final Set<String> seen = new HashSet<>();
 
+    /** Answers offered in the chat (classic chat talk has no reply chips), and until when they count (ms). */
+    java.util.List<de.aetherion.core.api.TalkAccess.Reply> choices;
+    long choicesUntil;
+
     /** How often each islander was spoken to (they say their next thought on the next click). */
     final java.util.Map<String, Integer> chats = new java.util.HashMap<>();
 

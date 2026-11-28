@@ -22,6 +22,11 @@ import java.util.logging.Level;
  * they do here is kept in this backend's own player files and never leaves. When a new visit starts, whatever an
  * earlier visit left in those files is cleared first, so every visit is a first morning.
  *
+ * <p>The same goes for a newcomer the character ledger does not know (a first join, or the first one after their
+ * character was wiped): what this server still holds under their name is a leftover of an earlier visit, never a
+ * character. Without this, a wiped player would start their new first morning with the pockets of their last
+ * visit.
+ *
  * <p>This only ever touches files of <b>this</b> server. {@link #isolated()} proves that before anything is
  * cleared: if a player-data folder here is a link into a folder other backends read, visits are switched off
  * altogether rather than risk a real character.
@@ -95,12 +100,15 @@ final class Sandbox implements Listener {
             return;
         }
         UUID id = event.getUniqueId();
-        if (!plugin.store().visiting(id) || !plugin.store().unbegun(id)) {
+        boolean visitor = plugin.store().visiting(id) && plugin.store().unbegun(id);
+        // never somebody the ledger knows: their character is on its way here, Core has laid it out already
+        boolean newcomer = !visitor && plugin.store().fresh(id) && !plugin.hasCharacter(id);
+        if (!visitor && !newcomer) {
             return;
         }
         try {
             Bukkit.getScheduler().callSyncMethod(plugin, () -> {
-                clear(id);
+                clear(id, visitor ? "visitor" : "newcomer");
                 return Boolean.TRUE;
             }).get(8, TimeUnit.SECONDS);
         } catch (InterruptedException ex) {
@@ -111,7 +119,7 @@ final class Sandbox implements Listener {
     }
 
     /** Main thread, player offline: forget everything an earlier visit left on this server. */
-    private void clear(UUID id) {
+    private void clear(UUID id, String who) {
         if (Bukkit.getPlayer(id) != null) {
             return;
         }
@@ -183,7 +191,7 @@ final class Sandbox implements Listener {
             delete(new File(world, "stats/" + id + ".json"));
             delete(new File(world, "advancements/" + id + ".json"));
         }
-        plugin.getLogger().info("[Morningbell] Sandbox cleared for visitor " + id + " (" + cleared + " stores).");
+        plugin.getLogger().info("[Morningbell] Sandbox cleared for " + who + " " + id + " (" + cleared + " stores).");
     }
 
     private void delete(File file) {

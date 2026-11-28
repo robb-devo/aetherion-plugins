@@ -15,6 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Morningbell, the tutorial isle. One jar, two roles:
@@ -92,6 +93,20 @@ public final class TutorialPlugin extends JavaPlugin {
 
     public MainArrival arrival() {
         return arrival;
+    }
+
+    /**
+     * True when the character ledger knows this player (they have a character somewhere, or one is on its way).
+     * Reads file names only: safe on the async pre-login thread.
+     */
+    boolean hasCharacter(UUID id) {
+        try {
+            File transfer = ServerNames.snapshotDir(AetherionCore.get());
+            return new File(transfer, "ledger/" + id + ".yml").isFile() || new File(transfer, id + ".char.yml").isFile();
+        } catch (RuntimeException ex) {
+            // cannot tell: then nothing is cleared
+            return true;
+        }
     }
 
     Sandbox sandbox() {

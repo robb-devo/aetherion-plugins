@@ -127,6 +127,29 @@ public final class TutorialStore {
         }
     }
 
+    /**
+     * True when the file holds a newcomer's ticket that has not been used yet: in progress, not a visit, no step
+     * written. File only, like {@link #visiting}.
+     */
+    public boolean fresh(UUID id) {
+        if (id == null) {
+            return false;
+        }
+        File file = file(id);
+        if (!file.isFile()) {
+            return false;
+        }
+        try {
+            YamlConfiguration yaml = new YamlConfiguration();
+            yaml.loadFromString(Files.readString(file.toPath(), StandardCharsets.UTF_8));
+            String step = yaml.getString("step", "");
+            return !yaml.getBoolean("guest", false) && parse(yaml.getString("state")) == State.IN_PROGRESS
+                    && (step == null || step.isBlank());
+        } catch (IOException | org.bukkit.configuration.InvalidConfigurationException ex) {
+            return false;
+        }
+    }
+
     /** The entry as last loaded or saved here (loads it when this backend has not seen the player yet). */
     public Entry get(UUID id) {
         Entry entry = cache.get(id);

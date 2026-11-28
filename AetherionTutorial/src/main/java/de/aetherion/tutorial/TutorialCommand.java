@@ -57,6 +57,15 @@ final class TutorialCommand implements TabExecutor {
                     "§7Zur Insel geht es von der Lobby oder vom Festland: dort §f/tutorial§7."));
             return true;
         }
+        if (args.length > 1 && args[0].equalsIgnoreCase("pick")) {
+            // the click on an answer that was offered in the chat (classic chat talk)
+            try {
+                isle.director().pick(player, Integer.parseInt(args[1]));
+            } catch (NumberFormatException ignored) {
+                // not a number: nothing was picked
+            }
+            return true;
+        }
         boolean leave = args.length > 0 && (args[0].equalsIgnoreCase("leave") || args[0].equalsIgnoreCase("verlassen")
                 || args[0].equalsIgnoreCase("ende"));
         if (!isle.director().visiting(player)) {
