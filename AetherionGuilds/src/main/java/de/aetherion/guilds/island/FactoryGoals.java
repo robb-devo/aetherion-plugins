@@ -27,7 +27,7 @@ import java.util.function.BiPredicate;
 
 /**
  * The factory ladder after the first chain: one clear "next" at a time, each a small step that makes the line
- * longer, wider or smarter (a mill in the line, a second quarry, a split, a sorter, an overflow...). Every goal
+ * longer, wider or smarter (a mill in the line, a second quarry, a split, a sorter...). Every goal
  * is read straight from the island (do it in any order; the bar always shows the first one not yet done), and
  * finishing one gives a short beat and a few coins. Shown on the island bar, the Build and Production pages and
  * by Hollis ("What's next?").
@@ -101,15 +101,13 @@ public final class FactoryGoals {
             new Goal("first_ship", "Send your first ship", "Dock → First Shipment: 1 Compressed Cobble and 64 Cobble, then the airship",
                     1_000L, (g, h) -> g.stage(h) >= 1, Scope.PERSONAL),
             // stage 1, the Werkhof
-            new Goal("two_quarries", "Run two quarries into your line", "Set down your second quarry and belt it into a line.",
+            new Goal("two_quarries", "Run two quarries into your line", "Belt your second quarry's chute into a hut or a machine.",
                     8_000L, (g, h) -> g.sourceLines(h) >= 2),
             new Goal("split", "Split a line with a Splitter", "Unlock it at the Hub. Build Tool → Splitter onto a belt, then a second belt away from its side.",
                     10_000L, (g, h) -> g.pieceExits(h, StructureType.SPLITTER) >= 2),
-            new Goal("overflow", "Keep the Mill fed first", "Unlock the Overflow Gate at the Hub and cut it in where the Splitter is: the Mill gets first pick, only the rest goes on to the hut.",
-                    12_000L, (g, h) -> g.pieceExits(h, StructureType.OVERFLOW) >= 2, Scope.PERSONAL),
             new Goal("loft", "Grow your Storage Hut into a Loft", "Hub lectern → Production → the hut → Upgrade.",
                     15_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 2),
-            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Then the Overflow Gate and Sorter can be unlocked.",
+            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Then the Forge and the Sorter can be unlocked.",
                     18_000L, (g, h) -> g.structures.hubLevel(h) >= 2, Scope.GUILD),
             new Goal("stage2", "Reach the Foreman's Hall", "Dock → Werkhof Order: Compressed Cobble and your trade's goods.",
                     18_000L, (g, h) -> g.stage(h) >= 2, Scope.PERSONAL),
@@ -120,8 +118,6 @@ public final class FactoryGoals {
                     12_000L, (g, h) -> g.compactedInStorage(h) > 0L),
             new Goal("sort", "Sort goods with a Sorter", "Set a Sorter into a line, pick a good, give it a front and a side belt.",
                     20_000L, (g, h) -> g.sorterWorks(h)),
-            new Goal("overflow", "Catch the spill with an Overflow Gate", "Front belt to one hut, side belt to another: the side fills when the front is full.",
-                    25_000L, (g, h) -> g.pieceExits(h, StructureType.OVERFLOW) >= 2, Scope.GUILD),
             new Goal("warehouse", "Grow a Warehouse", "Upgrade the Storage Loft once more.",
                     40_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 3),
             new Goal("stage3", "Reach the Grand Hub", "Dock → Foreman's Order: Compacted Cobble and your trade's goods.",
@@ -130,7 +126,8 @@ public final class FactoryGoals {
             new Goal("long_line", "Build a line through 4 machines", "Quarry → piece → Mill → Forge → hut, or any line four stops long.",
                     60_000L, (g, h) -> g.longestLine(h) >= 4),
             new Goal("land", "Buy a parcel of land", "Island menu → Land: new ground next to yours.",
-                    40_000L, (g, h) -> g.hosts.parcels(h).size() > LandService.initialParcels().size(), Scope.PERSONAL),
+                    40_000L, (g, h) -> g.hosts.parcels(h).size() > LandService.initialParcels().size() + g.gifted.applyAsInt(h),
+                    Scope.PERSONAL),
             new Goal("tier3", "Raise your Island Tier to 3", "Guild menu → Tier. More belts and one more of every machine.",
                     80_000L, (g, h) -> g.hosts.tier(h) >= 3, Scope.GUILD),
             new Goal("hub3", "Raise the Grand Hub", "Hub lectern → Hub tier. Every Mill and Forge runs twice as fast.",
@@ -190,8 +187,23 @@ public final class FactoryGoals {
         return n;
     }
 
+    /** Parcels an island got as a gift (the tour's first land): those are not "bought" and pay no goal. */
+    private java.util.function.ToIntFunction<IslandHost> gifted = host -> 0;
+
+    public void attachGifted(java.util.function.ToIntFunction<IslandHost> gifted) {
+        this.gifted = gifted == null ? host -> 0 : gifted;
+    }
+
     /** Every few seconds for a member on their island: newly done goals get their beat (once per island). */
     public void check(Player player, IslandHost host) {
+        check(player, host, false);
+    }
+
+    /**
+     * {@code guided}: the isle hand is still showing the owner round. He says what comes next himself, so the
+     * ladder joins in without its own line in chat.
+     */
+    public void check(Player player, IslandHost host, boolean guided) {
         Set<String> got = rewarded.get(host.key());
         if (got == null) {
             got = new HashSet<>();
@@ -205,7 +217,7 @@ public final class FactoryGoals {
                     }
                 }
                 Goal next = next(host);
-                if (next != null) {
+                if (next != null && !guided) {
                     player.sendMessage("§b➤ Factory goals are here. §7Next: §f" + next.title() + " §8— §7" + howNow(host, next));
                 }
                 return;
@@ -284,7 +296,6 @@ public final class FactoryGoals {
         }
         String step = switch (goal.id()) {
             case "split" -> pieceStep(host, StructureType.SPLITTER);
-            case "overflow" -> pieceStep(host, StructureType.OVERFLOW);
             case "sort" -> pieceStep(host, StructureType.SORTER);
             default -> null;
         };

@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <ul>
  *   <li><b>0 First Shift</b>: Mill, Splitter, Dock. Quarries Lv1 (but the first quarry digs ten times as fast while you learn).</li>
- *   <li><b>1 Werkhof</b>: Overflow Gate, a second quarry of your starter's trade, quarries up to Lv3, the Storage Loft.</li>
+ *   <li><b>1 Werkhof</b>: the parts of a second quarry (the owner crafts it), quarries up to Lv3, the Storage Loft.</li>
  *   <li><b>2 Foreman's Hall</b>: Forge, Sorter, quarries up to Lv5, the Warehouse.</li>
  *   <li><b>3 Grand Hub</b>: every Mill and Forge twice as fast, quarries up to Lv7, buying land.</li>
  * </ul>
@@ -84,7 +84,7 @@ public final class Stages {
     /** What reaching this stage opens, for the Hub board and the stage-up beat. */
     public static List<String> perks(int stage) {
         return switch (clamp(stage)) {
-            case 1 -> List.of("§7Unlocks the §fOverflow Gate", "§7A second quarry of your trade",
+            case 1 -> List.of("§7The parts of a §fsecond quarry §8(you build it)",
                     "§7Quarries up to §fLv3§7, the §fStorage Loft", "§7Island Tier §f2 §8(more belts, +1 machine)");
             case 2 -> List.of("§7Unlocks the §fForge §7and the §fSorter", "§7Quarries up to §fLv5§7, the §fWarehouse",
                     "§7Island Tier §f3");

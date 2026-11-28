@@ -82,6 +82,9 @@ import java.util.regex.Pattern;
  *
  * <p>{@code hud-cards.big-stay}: a big card stays until the player sends it away (left-click or sneak) and says so
  * in its last line; it only leaves by itself after three minutes, so a forgotten card never blocks a talk for good.
+ * It can only be sent away once everything on it has come in, so no click that was already on its way takes it
+ * off unread. {@code hud-cards.big-stay-close: sneak} leaves the sneak key as the only way to close it: where
+ * players click all the time anyway (building on an island), a click is not a decision to close a card.
  */
 public final class HudCards implements Listener {
 
@@ -188,6 +191,8 @@ public final class HudCards implements Listener {
     private int toastHold;
     /** Big cards wait for the player (left-click or sneak) instead of running on a timer. */
     private boolean bigStay;
+    /** Stay mode: only the sneak key closes a big card (clicks belong to whatever the player is doing). */
+    private boolean staySneakOnly;
     /** A big card that nobody sends away still leaves after this long. */
     private static final int STAY_CAP = 20 * 180;
 
@@ -317,7 +322,9 @@ public final class HudCards implements Listener {
         bigHold = (int) clamp(cfg.getInt("hud-cards.big-hold-ticks", 80), 30, 400);
         toastHold = (int) clamp(cfg.getInt("hud-cards.toast-hold-ticks", 56), 20, 300);
         bigStay = cfg.getBoolean("hud-cards.big-stay", false);
-        plugin.getLogger().info("Screen cards " + (enabled ? "on" : "off") + (bigStay ? ", big cards stay until closed" : "") + ".");
+        staySneakOnly = bigStay && "sneak".equalsIgnoreCase(cfg.getString("hud-cards.big-stay-close", "both"));
+        plugin.getLogger().info("Screen cards " + (enabled ? "on" : "off")
+                + (bigStay ? ", big cards stay until closed" + (staySneakOnly ? " (sneak)" : "") : "") + ".");
     }
 
     public void shutdown() {
@@ -355,7 +362,7 @@ public final class HudCards implements Listener {
         }
         card = wrapped(journal(card));
         if (bigStay && card.kind() == Kind.BIG) {
-            card = withCloseHint(player, card);
+            card = withCloseHint(player, card, staySneakOnly);
         }
         UUID id = player.getUniqueId();
         queues.computeIfAbsent(id, k -> new ArrayDeque<>()).addLast(card);
@@ -368,8 +375,10 @@ public final class HudCards implements Listener {
     }
 
     /** Stay mode: the card's last line says how it goes away. */
-    private static Card withCloseHint(Player player, Card c) {
-        String hint = de.aetherion.core.exile.Say.t(player, "§8Sneak or left-click to close",
+    private static Card withCloseHint(Player player, Card c, boolean sneakOnly) {
+        String hint = sneakOnly
+                ? de.aetherion.core.exile.Say.t(player, "§8Sneak to close", "§8Schleichen: schließen")
+                : de.aetherion.core.exile.Say.t(player, "§8Sneak or left-click to close",
                 "§8Schleichen oder Linksklick: schließen");
         String footer = c.footer() == null || c.footer().isBlank() ? hint : c.footer() + "\n" + hint;
         return new Card(c.kind(), c.header(), c.title(), c.accent(), c.rows(), footer, c.summary(), c.emblem());
@@ -439,17 +448,35 @@ public final class HudCards implements Listener {
         return false;
     }
 
-    /** Send the big card away now (a click). True = there was one to send away. */
+    /**
+     * Send the big card away now (a click). True = there was one to send away. Where only the sneak key closes
+     * a staying card, a click leaves it up.
+     */
     public static boolean dismiss(Player player) {
         HudCards cards = instance;
-        if (cards == null || player == null) {
+        return cards != null && !cards.staySneakOnly && cards.sendAway(player);
+    }
+
+    /** Send the big card away on purpose (the sneak key, a staff command). True = there was one. */
+    public static boolean close(Player player) {
+        HudCards cards = instance;
+        return cards != null && cards.sendAway(player);
+    }
+
+    private boolean sendAway(Player player) {
+        if (player == null) {
             return false;
         }
-        Shown sh = cards.active.get(player.getUniqueId());
-        if (sh == null || sh.card.kind() != Kind.BIG || sh.closeAt >= 0 || cards.tick - sh.born < 12) {
+        Shown sh = active.get(player.getUniqueId());
+        if (sh == null || sh.card.kind() != Kind.BIG || sh.closeAt >= 0) {
             return false;
         }
-        sh.endAt = cards.tick;
+        // a staying card has to be read first: it goes only once everything on it has come in
+        long open = bigStay ? sh.revealEnd + 6L : 12L;
+        if (tick - sh.born < open) {
+            return false;
+        }
+        sh.endAt = tick;
         return true;
     }
 
@@ -1523,7 +1550,7 @@ public final class HudCards implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSneak(org.bukkit.event.player.PlayerToggleSneakEvent event) {
         if (bigStay && event.isSneaking()) {
-            dismiss(event.getPlayer());
+            close(event.getPlayer());
         }
     }
 

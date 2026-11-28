@@ -37,8 +37,13 @@ public final class DungeonWorlds {
         return name.equals("aether_test") || name.startsWith("aether_test_");
     }
 
+    /** The Isle Dock on the island backend: the small isle where an island is chosen. Nothing wild wanders there. */
+    public static boolean isIsleDock(World world) {
+        return world != null && world.getName().equalsIgnoreCase("isles_lobby");
+    }
+
     public static boolean blocksWildPets(World world) {
-        return isGuildIsland(world) || isTestArena(world) || isDungeonHub(world);
+        return isGuildIsland(world) || isIsleDock(world) || isTestArena(world) || isDungeonHub(world);
     }
 
     /** mmo-d overworld — dungeon entry only, no companion / wild pets. */

@@ -303,14 +303,14 @@ final class MachineFx {
             if (view.outCell() != null) {
                 int[] c = view.outCell();
                 pad(world, props, c[0], c[1], c[2], view.outDir(), PAD_OUT, ORANGE);
-                label(world, props, c[0] + 0.5, c[1] + 0.75, c[2] + 0.5, "§6belt out");
+                label(world, props, c[0] + 0.5, c[1] + 0.75, c[2] + 0.5, "§6§lOUT §r§6belt from here");
             }
             boolean labelled = false;
             for (int[] cell : view.inCells()) {
                 BlockFace into = BlockFace.values()[cell[3]];
                 pad(world, props, cell[0], cell[1], cell[2], into, PAD_IN, GREEN);
                 if (!labelled) {
-                    label(world, props, cell[0] + 0.5, cell[1] + 0.75, cell[2] + 0.5, "§abelt in");
+                    label(world, props, cell[0] + 0.5, cell[1] + 0.75, cell[2] + 0.5, "§a§lIN");
                     labelled = true;
                 }
             }

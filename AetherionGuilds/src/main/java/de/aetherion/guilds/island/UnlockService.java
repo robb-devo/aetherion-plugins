@@ -282,6 +282,7 @@ public final class UnlockService {
                 return;
             }
             Location spawn = personal.spawn(island);
+            faceGuide(spawn, IslandHost.personal(island.ownerId()));
             String title = "§a✦ " + starter.display() + " §a✦";
             String subtitle = "§fYour island. Grow it.";
             Runnable intro = () -> {
@@ -290,6 +291,7 @@ public final class UnlockService {
                 }
             };
             Runnable drift = () -> descend(player, spawn, title, subtitle, intro);
+            morning(player, spawn);
             if (camera != null && camera.enabled() && spawn != null) {
                 // the camera flies, the player stands: the shot ends in their own eyes on their own ground
                 Location focus = new Location(spawn.getWorld(), personal.originX(island) + 0.5, spawn.getY(),
@@ -301,6 +303,100 @@ public final class UnlockService {
             }
         });
     }
+
+    /**
+     * The landing looks at the isle hand when he stands close by: the shot ends on the one who greets you, with
+     * the room over his head in frame where his first line opens (not beside the picture). No guide, or he is
+     * further off: the starter's own look stays.
+     */
+    private void faceGuide(Location spawn, IslandHost host) {
+        if (spawn == null || guide == null) {
+            return;
+        }
+        Location hand = guide.greetingSpot(host);
+        if (hand == null || hand.getWorld() != spawn.getWorld()) {
+            return;
+        }
+        double dx = hand.getX() - spawn.getX();
+        double dz = hand.getZ() - spawn.getZ();
+        double flat = Math.sqrt(dx * dx + dz * dz);
+        if (flat < 1.2 || flat > 9.0 || Math.abs(hand.getY() - spawn.getY()) > 2.0) {
+            return;
+        }
+        spawn.setYaw((float) Math.toDegrees(Math.atan2(-dx, dz)));
+        // his speech bubble's top sits about 1.9 blocks over the eyes: keep it under the island bar
+        double pitch = 27.0 - Math.toDegrees(Math.atan2(1.9, flat));
+        spawn.setPitch((float) Math.max(-14.0, Math.min(5.0, pitch)));
+    }
+
+    /**
+     * A new island is met in early morning light, whatever the hour is in the island world: this player's sky
+     * is set to just after sunrise (their own clock, only for them, gone when they leave the islands). The film
+     * shot never happens in the dark, and {@link #skyTick()} keeps the whole tour in that one long morning.
+     */
+    private void morning(Player player, Location spawn) {
+        World world = spawn == null ? null : spawn.getWorld();
+        if (world == null || !plugin.getConfig().getBoolean("landing-camera.morning", true)) {
+            return;
+        }
+        player.getPersistentDataContainer().set(skyKey(), org.bukkit.persistence.PersistentDataType.INTEGER, 0);
+        player.setPlayerTime(MORNING, false);
+        mornings.add(player.getUniqueId());
+    }
+
+    /**
+     * Every second: while the isle hand still shows an owner round their own island, their sky is one long
+     * morning. It moves on at a quarter of the usual pace, from sunrise into the afternoon, and stops there: no
+     * step of the tour is ever built in the dark, however long somebody takes (a rejoin picks the hour up where
+     * it was). Once the tour is over, their sky simply runs on from that hour at the world's own pace.
+     */
+    public void skyTick() {
+        World world = personal.world();
+        if (world == null || guide == null || !plugin.getConfig().getBoolean("landing-camera.morning", true)) {
+            return;
+        }
+        for (Player player : world.getPlayers()) {
+            UUID id = player.getUniqueId();
+            if (guide.showingRound(player)) {
+                var data = player.getPersistentDataContainer();
+                int sky = Math.min(SKY_LATEST, data.getOrDefault(skyKey(),
+                        org.bukkit.persistence.PersistentDataType.INTEGER, 0) + SKY_PACE);
+                data.set(skyKey(), org.bukkit.persistence.PersistentDataType.INTEGER, sky);
+                player.setPlayerTime(MORNING + sky, false);
+                mornings.add(id);
+            } else if (mornings.remove(id)) {
+                Integer sky = player.getPersistentDataContainer().get(skyKey(),
+                        org.bukkit.persistence.PersistentDataType.INTEGER);
+                if (sky == null) {
+                    player.resetPlayerTime();
+                } else {
+                    // the tour ended (or they stepped onto somebody else's island): no jump, the hour runs on
+                    player.setPlayerTime(Math.floorMod(MORNING + sky - world.getTime(), 24000L), true);
+                    drifting.add(id);
+                }
+            }
+        }
+    }
+
+    /** Their own island time ends where the islands end. */
+    public void leftIslands(Player player) {
+        if (player != null && (mornings.remove(player.getUniqueId()) | drifting.remove(player.getUniqueId()))) {
+            player.resetPlayerTime();
+        }
+    }
+
+    private org.bukkit.NamespacedKey skyKey() {
+        return new org.bukkit.NamespacedKey(plugin, "tour_sky");
+    }
+
+    private static final long MORNING = 450L;
+    /** Sky ticks per second during the tour (the world's own pace is 20). */
+    private static final int SKY_PACE = 5;
+    /** The tour's sky stops here: mid-afternoon, long before the light goes. */
+    private static final int SKY_LATEST = 8200;
+    private final Set<UUID> mornings = ConcurrentHashMap.newKeySet();
+    /** Players whose sky runs on from their tour's hour (a plain offset to the world's clock). */
+    private final Set<UUID> drifting = ConcurrentHashMap.newKeySet();
 
     public void guildFounded(Player leader, Guild guild) {
         leader.sendTitle("§7Raising the harbour…", "§6" + guild.name(), 5, 80, 10);

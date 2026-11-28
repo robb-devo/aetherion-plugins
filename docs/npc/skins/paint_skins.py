@@ -896,6 +896,14 @@ CAST = {
                        torso=dict(shirt="e8ecf0", sleeve="e8ecf0", tie="2e5a3a", cuff="9a2a2a",
                                   sleeve_len=12, belt="2a2016", belt_row=9),
                        legs=dict(pants="3a3e4a", boots="1e1a16", boot_h=2)),
+    # Corin, the isle hand of every private island (AetherionGuilds IslandGuide): a cheerful handyman in a straw
+    # hat, sleeves rolled up, an ochre work vest, the island's teal as hat band and neckerchief, a pencil behind the ear.
+    "isle_hand": dict(skin="light", eyes="blue", hair="c0622a", hair_style="messy", freckles=True, rosy=True,
+                      mouth="grin", pencil_ear=True,
+                      hat=dict(kind="wide", color="e2c668", band="2f8f8a", rows=2),
+                      torso=dict(shirt="efe6cf", sleeve="efe6cf", sleeve_len=5, over="vest", over_color="c98a2c",
+                                 scarf="2f8f8a", gloves="8a6a44", belt="5a3a22", belt_row=9, belt_overlay=True),
+                      legs=dict(pants="6a5440", boots="3a2a1c", boot_h=4, boot_cuff="7a5a3a", patch="7a6450")),
     "forage_pad_guide": dict(skin="light", eyes="green", hair="8a5a2a", hair_style="messy", freckles=True,
                              mouth="grin",
                              hat=dict(kind="hood", color="4f7a3a", rows=2),

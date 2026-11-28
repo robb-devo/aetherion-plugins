@@ -108,8 +108,8 @@ public final class StructureUpgrades {
             case WORKSHOP -> to == 2
                     ? new Tier(2, "Foreman's Hall", List.of(
                     "§7Your Hub hires a foreman.",
-                    "§7Unlocks the §fForge§7, the §fOverflow",
-                    "§fGate §7and the §fSorter§7."),
+                    "§7Unlocks the §fForge §7and the",
+                    "§fSorter§7."),
                     List.of(new Cost(COMPRESSED_COBBLE, 16L, "Compressed Cobblestone"),
                             new Cost("coins", 25_000L, "Coins")), 1)
                     : new Tier(3, "Grand Hub", List.of(

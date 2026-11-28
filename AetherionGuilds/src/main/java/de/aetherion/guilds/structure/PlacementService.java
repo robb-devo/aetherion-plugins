@@ -49,8 +49,12 @@ import java.util.UUID;
  *   <li><b>Quarry</b>: sets a quarry from your pack down; the hologram is the rig that rises round it.</li>
  * </ul>
  * Clicks are only captured while the tool is in the main hand: scroll to another slot and you play normally,
- * scroll back and the tool still holds your pick. <b>Q</b> puts it away. The holograms are display entities only
- * the builder sees.
+ * scroll back and the tool still holds your pick. The holograms are display entities only the builder sees.
+ *
+ * <p><b>It is the player's own and never gets lost.</b> Only <b>Q</b> (or {@code /island done}) puts it away;
+ * then the Hub's lectern, the tool rack beside it, the isle hand and {@code /island build} hand it back. Whatever
+ * else takes it out of the hand (leaving the island, logging off, dying) is remembered on the player: back on an
+ * island they may build on, the tool is in their hand again, holding the part it held.
  */
 public final class PlacementService {
 
@@ -103,7 +107,6 @@ public final class PlacementService {
         MILL(StructureType.MILL, "Mill", Material.GRINDSTONE, "Grinds 128 raw into 1 Compressed."),
         SPLITTER(StructureType.SPLITTER, "Splitter", Material.WAXED_COPPER_GRATE, "Splits one belt into equal shares."),
         FORGE(StructureType.FORGE, "Forge", Material.BLAST_FURNACE, "Presses 128 Compressed into 1 Compacted."),
-        OVERFLOW(StructureType.OVERFLOW, "Overflow Gate", Material.WAXED_WEATHERED_COPPER_GRATE, "Front first, sides take the spill."),
         SORTER(StructureType.SORTER, "Sorter", Material.WAXED_OXIDIZED_COPPER_GRATE, "One good out the front, the rest out the sides."),
         DOCK(StructureType.DOCK, "Dock", Material.SPRUCE_BOAT, "Contracts and the airship. Belts end here."),
         DISMANTLE(null, "Pick up", Material.CHEST, "Picks up belts, buildings and quarries. Everything it cost comes back.");
@@ -170,6 +173,10 @@ public final class PlacementService {
         int clock;
         boolean holding;
         long quietUntil;
+        /** The tool's holograms are off while a big screen card is up. */
+        boolean veiled;
+        /** The tool turned to Belt on its own (a one-off building just went up): no red cursor on that building for a moment. */
+        long calmUntil;
         /** A line from the island guide that the action bar shows instead of the tool's own (null: none). */
         String coach;
         UUID armed;
@@ -187,6 +194,8 @@ public final class PlacementService {
     private final StructureService structures;
     private final LogisticsService logistics;
     private final NamespacedKey toolKey;
+    /** On the player: the part the tool held when something other than Q took it out of the hand. */
+    private final NamespacedKey outKey;
     private final Map<UUID, Session> sessions = new HashMap<>();
     private final Map<UUID, Part> lastPart = new HashMap<>();
     private Quarries quarries;
@@ -205,6 +214,7 @@ public final class PlacementService {
         this.structures = structures;
         this.logistics = logistics;
         this.toolKey = new NamespacedKey(plugin, "build_tool");
+        this.outKey = new NamespacedKey(plugin, "build_tool_out");
     }
 
     /** Where the Build Tool's quarries come from (the quarry service). */
@@ -252,6 +262,121 @@ public final class PlacementService {
 
     public boolean has(Player player) {
         return player != null && sessions.containsKey(player.getUniqueId());
+    }
+
+    /** The tool is out (in the hotbar, with this part): if anything but Q takes it, it comes back. */
+    private void remember(Player player, Part part) {
+        if (player != null && part != null) {
+            player.getPersistentDataContainer().set(outKey, PersistentDataType.STRING, part.name());
+        }
+    }
+
+    private void forget(Player player) {
+        if (player != null) {
+            player.getPersistentDataContainer().remove(outKey);
+        }
+    }
+
+    /** The island this tool built on is gone: the tool goes with it, and nothing is owed back. */
+    public void release(Player player) {
+        if (player != null) {
+            cancel(player, null);
+            forget(player);
+        }
+    }
+
+    private java.util.function.Predicate<Player> notHandedYet = player -> false;
+
+    /**
+     * {@code notHandedYet}: true while the player's own island is so new that the isle hand has not handed the
+     * tool over yet. Nothing is given back there (a tool from an island that is gone must not show up before he
+     * does): what was owed is dropped.
+     */
+    public void attachNotHandedYet(java.util.function.Predicate<Player> notHandedYet) {
+        this.notHandedYet = notHandedYet == null ? player -> false : notHandedYet;
+    }
+
+    /** Did something other than the player's own Q take the tool out of their hand (it is owed back)? */
+    public boolean owed(Player player) {
+        return player != null && !has(player) && player.getPersistentDataContainer().has(outKey, PersistentDataType.STRING);
+    }
+
+    /**
+     * Every second: whoever is owed their tool and stands on an island they may build on has it in the hand
+     * again, holding the part it held (a rejoin, a death, a trip to a friend's island). And a tool session whose
+     * item went missing (an inventory replaced under it) gets the item back.
+     */
+    public void restoreTick() {
+        long now = System.currentTimeMillis();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.isDead() || player.getGameMode() == org.bukkit.GameMode.SPECTATOR
+                    || !hosts.isIslandWorld(player.getWorld())) {
+                continue;
+            }
+            Session session = sessions.get(player.getUniqueId());
+            if (session != null) {
+                if (session.part != null && !carriesTool(player)
+                        && player.getOpenInventory().getTopInventory().getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) {
+                    giveTool(player, session);
+                }
+                continue;
+            }
+            String held = player.getPersistentDataContainer().get(outKey, PersistentDataType.STRING);
+            if (held == null) {
+                continue;
+            }
+            Long retry = restoreRetry.get(player.getUniqueId());
+            if (retry != null && now < retry) {
+                continue; // it did not fit a moment ago (a full inventory): not every second
+            }
+            if (now - player.getLastLogin() < 4000L) {
+                continue; // the character is still arriving: its inventory may be set once more
+            }
+            if (player.getOpenInventory().getTopInventory().getType() != org.bukkit.event.inventory.InventoryType.CRAFTING) {
+                continue; // in a menu: it comes once they are back in the world
+            }
+            IslandHost host = hosts.at(player.getLocation());
+            if (host == null || !hosts.exists(host) || !hosts.canPlace(player, host)) {
+                continue; // someone else's island: it waits until they are home
+            }
+            if (!host.isGuild() && host.id().equals(player.getUniqueId()) && notHandedYet.test(player)) {
+                forget(player); // a brand-new island: the isle hand hands the tool over, nothing is owed from before
+                continue;
+            }
+            Part part;
+            try {
+                part = Part.valueOf(held);
+            } catch (IllegalArgumentException ignored) {
+                part = null;
+            }
+            if (part != null && lockReason(host, part) != null) {
+                part = null;
+            }
+            openTool(player, host, part, true);
+            if (!has(player)) {
+                restoreRetry.put(player.getUniqueId(), now + 30_000L);
+            }
+            if (has(player)) {
+                actionBar(player, de.aetherion.core.exile.Say.t(player,
+                        "§6⚒ §eBuild Tool §7back in your hand §8· §fQ §7puts it away",
+                        "§6⚒ §eBauwerkzeug §7wieder in deiner Hand §8· §fQ §7legt es weg"));
+                Session back = sessions.get(player.getUniqueId());
+                if (back != null) {
+                    back.quietUntil = now + 2500L;
+                }
+            }
+        }
+    }
+
+    private final Map<UUID, Long> restoreRetry = new HashMap<>();
+
+    private boolean carriesTool(Player player) {
+        for (ItemStack item : player.getInventory().getStorageContents()) {
+            if (isTool(item)) {
+                return true;
+            }
+        }
+        return isTool(player.getItemOnCursor());
     }
 
     public Kind kind(Player player) {
@@ -637,11 +762,6 @@ public final class PlacementService {
                 rows.add(new PartBoard.Row("§aIn  §fone belt, from behind", belt));
                 rows.add(new PartBoard.Row("§6Out §fan equal share per exit", new ItemStack(part.icon())));
             }
-            case OVERFLOW -> {
-                rows.add(PartBoard.Row.of("§7Keeps the front fed first"));
-                rows.add(new PartBoard.Row("§aIn  §fone belt, from behind", belt));
-                rows.add(new PartBoard.Row("§6Out §ffront first, sides spill", new ItemStack(part.icon())));
-            }
             case SORTER -> {
                 rows.add(PartBoard.Row.of("§7Picks one good off a belt"));
                 rows.add(new PartBoard.Row("§aIn  §fone belt, from behind", belt));
@@ -780,6 +900,7 @@ public final class PlacementService {
         } else {
             player.closeInventory();
         }
+        remember(player, session.part);
         if (quiet) {
             player.playSound(player.getLocation(), Sound.ITEM_SPYGLASS_USE, 0.6f, 1.4f);
             return;
@@ -812,7 +933,7 @@ public final class PlacementService {
             case DISMANTLE -> "§7Pick up: look at a belt, building or quarry, it turns §cred§7, then §fright-click§7.";
             case QUARRY -> "§7Quarry: the hologram is its rig. Look at flat ground, §fright-click §7sets the quarry from your"
                     + " pack down, §fleft-click §7turns its chute.";
-            case SPLITTER, OVERFLOW, SORTER -> "§7" + part.label() + ": §fright-click §7a belt to cut it in. "
+            case SPLITTER, SORTER -> "§7" + part.label() + ": §fright-click §7a belt to cut it in. "
                     + part.line();
             default -> "§7" + part.label() + ": look at the ground, §fright-click §7builds, §fleft-click §7turns.";
         });
@@ -837,6 +958,7 @@ public final class PlacementService {
         }
         session.lastAction = System.currentTimeMillis();
         refreshTool(player, session);
+        remember(player, next);
         int at = parts.indexOf(next);
         String before = parts.get(((at - 1) % n + n) % n).label();
         String after = parts.get((at + 1) % n).label();
@@ -933,8 +1055,7 @@ public final class PlacementService {
         Session session = sessions.get(player.getUniqueId());
         if (session == null) {
             stripTools(player);
-            player.sendMessage("§7That build tool had expired; put away.");
-            return;
+            return; // a tool without its session (never kept across a restart): the next second hands a live one back
         }
         session.lastAction = System.currentTimeMillis();
         switch (session.kind) {
@@ -1066,16 +1187,27 @@ public final class PlacementService {
         if (session.part != null && lockReason(session.host, session.part) != null) {
             if (apply(player, session, Part.BELT)) {
                 refreshTool(player, session);
+                remember(player, Part.BELT);
+                // the player still aims at what they just built: no "inside your Hub" in red over its big moment
+                session.calmUntil = System.currentTimeMillis() + 6000L;
             }
             return;
         }
         refreshTool(player, session); // cost line vs. the new stock
     }
 
-    /** Tool dropped (Q): the mode ends quietly. */
+    /** Tool dropped (Q): the player put it away themselves. It stays away until they take it again. */
     public void onDropTool(Player player) {
+        putAway(player);
+    }
+
+    /** The player's own "put it away" (Q, /island done): nothing brings it back but taking it again. */
+    public void putAway(Player player) {
         Session session = sessions.get(player.getUniqueId());
-        cancel(player, session == null ? null : "§7Build Tool put away. §8(/island → Build hands it back)");
+        forget(player);
+        cancel(player, session == null ? null : de.aetherion.core.exile.Say.t(player,
+                "§7Build Tool put away. §8Take it again at your Hub (the lectern or the tool rack), or /island build.",
+                "§7Bauwerkzeug weggelegt. §8Hol es dir wieder an deinem Hub (Lesepult oder Werkzeughalter) oder mit /island build."));
     }
 
     private void end(Player player) {
@@ -1278,6 +1410,8 @@ public final class PlacementService {
                 session.beltStart = null;
                 session.ghost.clearRun();
                 session.quietUntil = System.currentTimeMillis() + 2600L;
+                // the belt has arrived and the player still aims at where it went in: no red "can't start here"
+                session.calmUntil = System.currentTimeMillis() + 3500L;
                 if (!logistics.lastLayTalked()) {
                     actionBar(player, "§a✔ Into your §f" + aim.feeds.label() + " §8· " + cost
                             + " §8· §7right-click another chute for a new belt");
@@ -1622,6 +1756,10 @@ public final class PlacementService {
             return;
         }
         World world = player.getWorld();
+        Block onBelt = beltUnderCrosshair(player);
+        if (onBelt != null) {
+            clicked = onBelt; // the belt the crosshair rests on, not the ground behind its plate
+        }
         if (clicked == null) {
             clicked = player.getTargetBlockExact(24);
         }
@@ -1678,9 +1816,48 @@ public final class PlacementService {
         return cellOf(world, clicked);
     }
 
+    /**
+     * The belt tile the player's crosshair rests on, or null. A belt is a flat plate: a look across it passes over
+     * the plate and lands on the ground behind, so the block the game reports is the wrong one exactly when a
+     * piece is to be cut into the belt. The eye ray is walked instead, and the first belt cell it crosses low
+     * (where the plate and its rails are) is what the player means.
+     */
+    private Block beltUnderCrosshair(Player player) {
+        org.bukkit.Location eye = player.getEyeLocation();
+        World world = eye.getWorld();
+        if (world == null) {
+            return null;
+        }
+        Block hit = player.getTargetBlockExact(24);
+        double reach = hit == null ? 24.0 : Math.min(24.0, hit.getLocation().add(0.5, 0.5, 0.5).distance(eye) + 1.0);
+        org.bukkit.util.Vector dir = eye.getDirection().normalize();
+        int lastX = Integer.MIN_VALUE;
+        int lastY = Integer.MIN_VALUE;
+        int lastZ = Integer.MIN_VALUE;
+        for (double d = 0.6; d <= reach; d += 0.15) {
+            double x = eye.getX() + dir.getX() * d;
+            double y = eye.getY() + dir.getY() * d;
+            double z = eye.getZ() + dir.getZ() * d;
+            int bx = (int) Math.floor(x);
+            int by = (int) Math.floor(y);
+            int bz = (int) Math.floor(z);
+            if (y - by > 0.45 || (bx == lastX && by == lastY && bz == lastZ)) {
+                continue; // high over the cell (a look past it), or a cell already checked
+            }
+            lastX = bx;
+            lastY = by;
+            lastZ = bz;
+            if (logistics.isBelt(world, bx, by, bz)) {
+                return world.getBlockAt(bx, by, bz);
+            }
+        }
+        return null;
+    }
+
     private void renderPiece(Player player, Session session) {
         World world = player.getWorld();
-        Block target = player.getTargetBlockExact(24);
+        Block onBelt = beltUnderCrosshair(player);
+        Block target = onBelt != null ? onBelt : player.getTargetBlockExact(24);
         if (target == null) {
             session.ghost.clearRun();
             session.ghost.clearBoard();
@@ -1748,12 +1925,17 @@ public final class PlacementService {
                 continue;
             }
             if (now - session.lastAction > IDLE_MS) {
-                cancel(player, "§7Build Tool put away (unused for a while).");
+                forget(player);
+                cancel(player, de.aetherion.core.exile.Say.t(player,
+                        "§7Build Tool put away (unused for a while). §8Your Hub hands it back.",
+                        "§7Bauwerkzeug weggelegt (länger unbenutzt). §8Dein Hub gibt es dir wieder."));
                 continue;
             }
             IslandHost here = hosts.at(player.getLocation());
             if (here == null || !here.equals(session.host)) {
-                cancel(player, "§7You left the island; Build Tool put away.");
+                cancel(player, de.aetherion.core.exile.Say.t(player,
+                        "§7You left the island: your Build Tool waits for you there.",
+                        "§7Du hast die Insel verlassen: dein Bauwerkzeug wartet dort auf dich."));
                 continue;
             }
             if (isTool(player.getInventory().getItemInOffHand())) {
@@ -1771,6 +1953,16 @@ public final class PlacementService {
             session.holding = true;
             session.lastAction = Math.max(session.lastAction, now - IDLE_MS + 60_000L);
             session.clock++;
+            if (de.aetherion.guilds.island.IslandUi.cardUp(player)) {
+                // a big card is being read: the tool's glowing markers would shine straight through it, so they
+                // step aside until it is closed (they are drawn again on the next round)
+                if (!session.veiled) {
+                    session.ghost.clear();
+                    session.veiled = true;
+                }
+                continue;
+            }
+            session.veiled = false;
             switch (session.kind) {
                 case BELTS -> renderBelts(player, session);
                 case PIECE -> renderPiece(player, session);
@@ -1890,6 +2082,10 @@ public final class PlacementService {
             session.ghost.inputs(world, pads);
         }
         Block target = player.getTargetBlockExact(24);
+        if (session.beltStart == null && System.currentTimeMillis() < session.calmUntil) {
+            session.ghost.clearRun();
+            return;
+        }
         if (session.beltStart == null) {
             if (target == null) {
                 session.ghost.clearRun();
@@ -1910,7 +2106,7 @@ public final class PlacementService {
             placeBoard(player, session, world, cell[1], cell[0], cell[2], cell[0] + 1, cell[2] + 1,
                     beltSpec(player, session, false));
             bar(player, session, problem == null
-                    ? (source != null ? "§a✔ Start at your §f" + source.label() + "§a's chute"
+                    ? (source != null ? "§a✔ Start at your §f" + logistics.label(source) + "§a's chute"
                     : piece != null ? "§a✔ New exit of your §f" + piece.label() : "§a✔ Start here")
                     + " §8· §fright-click §7· belts §f" + logistics.count(session.host) + "§8/"
                     + logistics.cap(session.host) + " §8· §fQ §7away"

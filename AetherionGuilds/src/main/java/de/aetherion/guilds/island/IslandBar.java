@@ -80,7 +80,7 @@ public final class IslandBar implements Listener {
         if (!hosts.exists(host)) {
             return null;
         }
-        String objective = guide == null ? null : guide.objective(owner);
+        String objective = guide == null ? null : guide.objective(owner, player);
         if (objective != null) {
             int total = guide.total();
             return new de.aetherion.core.api.IslandAccess.IslandGoal(objective, guide.name() + "'s island tour",
@@ -122,7 +122,7 @@ public final class IslandBar implements Listener {
             // same ladder on guild islands (beats once per island, coins to the guild bank)
             if (goals != null && ticks % 4L == 0L && hosts.isMember(player, host)
                     && (host.isGuild() || guide == null || !guide.firstAct(host.id()))) {
-                goals.check(player, host);
+                goals.check(player, host, guide != null && guide.inFactoryTour(host));
             }
         }
     }
@@ -133,12 +133,13 @@ public final class IslandBar implements Listener {
         BossBar.Color color;
         BarChrome.Icon icon;
         boolean member = hosts.isMember(player, host);
-        String objective = !host.isGuild() && member && guide != null ? guide.objective(host.id()) : null;
+        String objective = !host.isGuild() && member && guide != null ? guide.objective(host.id(), player) : null;
         String[] warn;
         if (objective != null) {
             int done = guide.progress(host.id());
             int total = guide.total();
-            text = "§e" + guide.name() + " §8› §f" + objective + " §8(" + Math.min(total, done + 1) + "/" + total + ")";
+            // "Tour › Talk to Corin (he has your next step) (4/12)" / "Tour › Set your quarry down … (3/12)"
+            text = "§eTour §8› §f" + objective + " §8(" + Math.min(total, done + 1) + "/" + total + ")";
             progress = Math.max(0.05f, done / (float) total);
             color = BossBar.Color.YELLOW;
             icon = BarChrome.Icon.STAR;

@@ -305,7 +305,9 @@ public final class MinionService {
             hooks.placed(player, minion, false, guild.id());
         }
         guilds.save();
-        player.sendMessage("§a" + minion.quarryType().display() + " placed. It runs while the server is online.");
+        if (hooks == null) {
+            player.sendMessage("§a" + minion.quarryType().display() + " placed. §7It digs day and night, even while you are away.");
+        }
         return minion;
     }
 
@@ -322,7 +324,9 @@ public final class MinionService {
             hooks.placed(player, minion, true, island.ownerId());
         }
         personal.save();
-        player.sendMessage("§a" + minion.quarryType().display() + " placed. It runs while the server is online.");
+        if (hooks == null) {
+            player.sendMessage("§a" + minion.quarryType().display() + " placed. §7It digs day and night, even while you are away.");
+        }
         return minion;
     }
 
@@ -628,7 +632,7 @@ public final class MinionService {
         int level = minion.level();
         String suffix = hooks == null ? "" : hooks.tagSuffix(minion);
         stand.setCustomName(GuildFormat.nametag(type, level, preview(minion)) + (suffix == null ? "" : suffix));
-        stand.setCustomNameVisible(true);
+        stand.setCustomNameVisible(!housed(minion) || !plugin.getConfig().getBoolean("logistics.machine-fx", true));
         if (housed(minion)) {
             // the ore core turns under the drill; debris rather than a swinging pick
             double spin = ((now / 1000.0) * (40 + level * 8) + Math.floorMod(minion.id().hashCode(), 360)) % 360.0;

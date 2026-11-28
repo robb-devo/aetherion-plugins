@@ -764,6 +764,18 @@ public final class LogisticsService {
                 }
             }
         }
+        // a belt piece wears its own copper (an Overflow Gate from an old save is a Splitter now, weathered block and all)
+        if (world != null) {
+            for (PlacedStructure piece : structures.of(host)) {
+                if (!piece.type().router() || !world.isChunkLoaded(piece.x() >> 4, piece.z() >> 4)) {
+                    continue;
+                }
+                Block block = world.getBlockAt(piece.x(), piece.y() + 1, piece.z());
+                if (block.getType() != piece.type().routerBlock() && block.getType().name().endsWith("COPPER_GRATE")) {
+                    block.setType(piece.type().routerBlock(), false);
+                }
+            }
+        }
         int[] upgrade = structures.upgradeFrameless(host);
         int housed = upgrade[0];
         int props = structures.migrateToProps(host);
@@ -1274,7 +1286,14 @@ public final class LogisticsService {
                 case EXPORT -> export == null ? null : export.line(s);
                 default -> null;
             };
-            boolean tag = type.role() != StructureType.Role.SOURCE;
+            boolean tag = type.role() != StructureType.Role.SOURCE || (digger != null && !s.frameless());
+            if (type.role() == StructureType.Role.SOURCE && digger != null && tag) {
+                Route out = routeFrom(s);
+                long stored = digger.rawEquivalent();
+                sub = "§7digs §f" + perMinute(digPerMinute(digger))
+                        + (out != null && out.to() != null ? " §8→ §7" + label(out.to())
+                        : stored > 0L ? " §8· §f" + GuildFormat.compact(stored) + " §7inside" : "");
+            }
             double tagY = type.router() ? s.y() + (type == StructureType.SORTER ? 3.35 : 2.75)
                     : de.aetherion.guilds.structure.Props.isProp(s.templateId())
                     ? s.y() + 1.0 + PropBodies.height(type, s.level(), s.templateId()) + 0.45
@@ -1287,8 +1306,12 @@ public final class LogisticsService {
                 level = minion == null ? 1 : minion.level(); // the quarry's look follows the quarry's level
                 quarryType = minion == null ? null : minion.quarryType(); // ...and its trade picks the skin
             }
-            views.add(new MachineFx.View(s, state, "§f" + label(s), sub, tag, outCell, outDir, in, exitFaces,
-                    type == StructureType.SORTER ? filterIcon(s.filter()) : null, working, tagY, fill, level, quarryType));
+            // a quarry's look grows with its level: its tag sits over the look it has now
+            double tagAt = type == StructureType.QUARRY_HOUSING && de.aetherion.guilds.structure.Props.isProp(s.templateId())
+                    ? s.y() + 1.0 + PropBodies.height(type, level, s.templateId()) + 0.45 : tagY;
+            String title = "§f" + label(s) + (type == StructureType.QUARRY_HOUSING ? " §7Lv " + level : "");
+            views.add(new MachineFx.View(s, state, title, sub, tag, outCell, outDir, in, exitFaces,
+                    type == StructureType.SORTER ? filterIcon(s.filter()) : null, working, tagAt, fill, level, quarryType));
         }
         machineFx.render(host.key(), world, views, near, tickCounter);
     }
@@ -1531,7 +1554,7 @@ public final class LogisticsService {
 
     /** One line per quarry: where its goods end up and how that line is doing. */
     public String hubBoard(IslandHost host) {
-        StringBuilder out = new StringBuilder("§e✎ Right-click the lectern: unlocks & upgrades");
+        StringBuilder out = new StringBuilder("§7Parts, Production and your Build Tool");
         int shown = 0;
         List<Route> lines = new ArrayList<>();
         for (Route route : routes(host)) {

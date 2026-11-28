@@ -246,8 +246,10 @@ public final class LandingCamera implements Listener {
         double endRadius = Math.sqrt(ex * ex + ez * ez);
         double endAngle = endRadius < 0.01 ? Math.atan2(-forward.getZ(), -forward.getX()) : Math.atan2(ez, ex);
         double startRadius = Math.max(endRadius + START_WIDTH, 32);
+        // the stand's own pitch is the final look when it has one (the landing that looks at the isle hand)
+        double endPitch = Math.abs(stand.getPitch()) > 0.01f ? stand.getPitch() : END_PITCH;
         Vector lookFirst = centre.clone().add(new Vector(0, 1.0, 0));
-        Vector lookLast = eye.clone().add(forward.clone().multiply(30)).add(new Vector(0, -30 * Math.tan(Math.toRadians(END_PITCH)), 0));
+        Vector lookLast = eye.clone().add(forward.clone().multiply(30)).add(new Vector(0, -30 * Math.tan(Math.toRadians(endPitch)), 0));
 
         Vector[] at = new Vector[FLIGHT + 1];
         for (int k = 0; k <= FLIGHT; k++) {
@@ -279,7 +281,7 @@ public final class LandingCamera implements Listener {
         }
         // the last frame looks exactly the way the player will (no turn at the hand-over)
         frames[FLIGHT].setYaw(stand.getYaw());
-        frames[FLIGHT].setPitch((float) END_PITCH);
+        frames[FLIGHT].setPitch((float) endPitch);
         return frames;
     }
 

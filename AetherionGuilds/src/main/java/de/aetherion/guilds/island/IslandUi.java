@@ -57,6 +57,32 @@ public final class IslandUi {
         }
     }
 
+    /** A big card is on the player's screen (or about to be): glowing things in the world step aside for it. */
+    public static boolean cardUp(Player player) {
+        if (missing || player == null) {
+            return false;
+        }
+        try {
+            return de.aetherion.quests.talk.HudCards.blocking(player);
+        } catch (LinkageError ex) {
+            missing = true;
+            return false;
+        }
+    }
+
+    /** Sends the big card on the player's screen away (what a sneak does). True = there was one. */
+    public static boolean dismissCard(Player player) {
+        if (missing || player == null) {
+            return false;
+        }
+        try {
+            return de.aetherion.quests.talk.HudCards.close(player);
+        } catch (LinkageError ex) {
+            missing = true;
+            return false;
+        }
+    }
+
     /** Small card at the top: "✔ title", a detail line and a muted "next" line (both may be null). */
     public static boolean toast(Player player, String title, String detail, String next) {
         if (missing || player == null) {
@@ -89,11 +115,17 @@ public final class IslandUi {
      */
     public static boolean big(Player player, String header, String title, List<String> lines, List<ItemStack> icons,
                               String next, String accent, String summary) {
+        return big(player, header, title, lines, icons, next, accent, summary, null);
+    }
+
+    /** The same, with the item that turns in the card's crest ({@code emblem}; null = the card picks one). */
+    public static boolean big(Player player, String header, String title, List<String> lines, List<ItemStack> icons,
+                              String next, String accent, String summary, ItemStack emblem) {
         if (missing || player == null) {
             return false;
         }
         try {
-            return de.aetherion.quests.api.Cards.big(player, header, title, lines, icons, next, accent, summary);
+            return de.aetherion.quests.api.Cards.big(player, header, title, lines, icons, next, accent, summary, emblem);
         } catch (LinkageError ex) {
             missing = true;
             return false;

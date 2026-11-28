@@ -2,6 +2,7 @@
 
 Snapshot: **2026-11-22** (live table below, handoff folder, beta work list); older sections keep their dates.
 Newest section: **Tutorial isle Morningbell** (2026-11-28, new backend mmo-t, new module AetherionTutorial).
+Newest island state: "Island round 4" under "Private island as its own game" (2026-11-28).
 One page so a new session does not have to rescan the repo. Update the dated sections when they change.
 Open work: the **beta work list** A-01..A-72 (Claude Doc "Aetherion: Beta-Arbeitsliste", copy in the project files
 and in Robb's handoff folder, see "Where the truth lives"). Work it in A-number order, one item at a time.
@@ -512,6 +513,55 @@ Island round 3 after Robb's playtest (2026-11-25, branch `claude/island-round-3`
   first" (Overflow) after "split"; the old Overflow goal is guild-only.
 - Out of the beta on purpose (Robb, 2026-11-25): a machine that makes something new out of several resources. Kept
   as an idea for after the beta.
+
+Island round 4 after Robb's list of 2026-11-28 (branch `claude/island-110`, Guilds + Quests + AetherMobs, mmo-i
+only; played end to end three times on a private staging copy with a real client, English and German):
+- The gate is the choice (`island/StarterGates.java`, `StarterSelectMenu.claimGate`): walking through a gate from
+  the front claims that island at once, no screen. Corin's welcome offers "Wrong island?" while nothing is built
+  (twice at most): the island is given back and the player stands at the gates again. Signs on the Isle Dock are
+  fixed in place (`Billboard.FIXED`, English and German twins shown per reader). Nothing wild lives on the dock:
+  Items' ambient wildlife is told to stay away (`WildlifeLooks.quietWorld`), AetherMobs spawns no wild pets there
+  (`DungeonWorlds.isIsleDock`), and Guilds takes off whatever is left (a camel is "tame" from birth: only an owner
+  makes a pet).
+- Talk-and-task tour (`island/IslandGuide.java`, 12 steps, `island_guide.yml` version 4 with `briefed`): a step is
+  explained and its part handed over only in a talk with Corin: on the owner's click, or as his reaction when the
+  task before it is done. He speaks of his own accord only while he is on the player's screen (`inView`); else one
+  bell, a gold "!" over his head and the bar's "Talk to Corin (he has your next step)". A moment that is playing
+  (Hub ritual, first ship) has the floor first (`Hand.quietUntil`). The landing looks at him, so his first line
+  opens in view (`UnlockService.faceGuide`; the camera takes the stand's pitch). The whole tour is one long morning
+  for its owner (`UnlockService.skyTick`, a quarter of the usual pace, kept in the player's `tour_sky`).
+- Corin has his own face: cast skin `isle_hand` (`docs/npc/skins/paint_skins.py`, bundled in Quests, signed once
+  per server through `LivingNpcSkins`; `guide.skin: aetherion:<cast id>` or an account name). The old default
+  `MHF_Villager` no longer resolves and left him a random default body on every start.
+- Quarries are built, not handed out: the First Shipment pays a Quarry Core and eight Compressed of the island's
+  trade good (`DockService` extra `kit:<type>`), tour step `CRAFT` has the owner build it in the recipe book
+  ("Ready to craft", `AetherionItemsAccess.openReadyRecipes`) and set it down. The tour's first quarry is always
+  the Cobble Quarry, whatever else is carried (`IslandGuide.wantedQuarry`).
+- Fixed on the way, also for islands outside the tour: Quarry Cores, quarry parts and the Compressed bundles could
+  not be made by id (`ItemFactoryAccess.create` does not know them), so stage contracts paid no core and the Coin
+  Shortcuts for parts sold nothing; `AetherionItemsAccess.create` asks `CompressedResource.fromId` as well. The
+  tour's gift parcel no longer pays the 40k "buy land" goal (`FactoryGoals.attachGifted`).
+- Overflow Gate is retired: old pieces load as Splitters (`StructureType.byId("overflow")`, the block is swapped),
+  nothing unlocks or builds it any more.
+- Build Tool: Corin hands it over with a card; it lives at the Hub (lectern tile, and a tool rack outside,
+  `island/ToolRack.java`). Anything but the player's own Q brings it back with its part (rejoin, death, a trip
+  away: `PlacementService.restoreTick`, PDC `build_tool_out`); a wiped island takes it along. Orange chutes carry
+  "OUT", green pads "IN"; the colours card comes once when the first quarry stands. A piece aimed at a belt lands
+  in the belt even when the look passes over its plate (`beltUnderCrosshair`), and the Splitter step only counts
+  once a Splitter is fed (a Splitter beside the belt used to strand the tour). The tool's glowing markers step
+  aside while a big card is up.
+- Cards: `hud-cards.big-stay-close: sneak|both` in Quests (with `big-stay: true`): only the sneak key closes a big
+  card, and only once it has come in. mmo-i runs `big-stay: true`, `big-stay-close: sneak`,
+  `toast-hold-ticks: 100`. The Mill gets two starter batches, so neither the Dock's price nor the first shipment is
+  a wait.
+- No vanilla pop-ups on islands (`world/QuietVanilla.java`, `quiet-vanilla-toasts`): advancement criteria and
+  recipe discoveries of the `minecraft` namespace are not counted in the island worlds and on the Isle Dock.
+- Staff test rig: `/island admin puppet <player> ...` (gate, click, next, pick, use, left, scroll, part, drop, slot,
+  open, menu, state, wipe) does exactly what the player's own click would; the staging copy and its camera client
+  are described in `aetherion-ops` (`isle-stage/`).
+- Open, on purpose: menus, machine tags, the tool's action bar and the goal toasts are English only (Corin, his
+  cards and the bar are bilingual). Aetherion recipes still raise the game's "New Recipes Unlocked!" toast
+  (`BukkitRecipeService.discoverRecipes`, every backend). Vanilla advancements are on for every other world.
 
 ## Paged talk and screen cards (2026-11-22, cloud session, Quests + Guilds, mmo-i first)
 

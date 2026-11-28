@@ -60,11 +60,13 @@ public enum StructureType {
             List.of("§7Set it on a belt. Everything",
                     "§7that comes in is shared evenly",
                     "§7over every belt leading out.")),
-    OVERFLOW("overflow", "Overflow Gate", Material.WAXED_WEATHERED_COPPER_GRATE, null, Role.ROUTER,
-            4_000L, null, 4, true, true, 262_144L, 0,
-            List.of("§7Feeds the §ffront §7belt first.",
-                    "§7Only when that line is full does",
-                    "§7the rest spill out the §fsides§7.")),
+    /**
+     * Gone from the game (the Splitter is enough). The constant stays so nothing that still names it breaks;
+     * a saved Overflow Gate loads as a Splitter ({@link #byId}), so none is ever placed or kept.
+     */
+    OVERFLOW("overflow_gate_retired", "Overflow Gate", Material.WAXED_WEATHERED_COPPER_GRATE, null, Role.ROUTER,
+            4_000L, null, 0, true, false, 262_144L, 0,
+            List.of("§7Retired: the Splitter does this job.")),
     SORTER("sorter", "Sorter", Material.WAXED_OXIDIZED_COPPER_GRATE, null, Role.ROUTER,
             6_000L, null, 4, true, true, 262_144L, 0,
             List.of("§7Pick one good. That good leaves",
@@ -224,6 +226,9 @@ public enum StructureType {
             return null;
         }
         String key = raw.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("overflow")) {
+            return SPLITTER; // the Overflow Gate is gone: what stood as one shares evenly now
+        }
         for (StructureType type : values()) {
             if (type.id.equals(key) || type.name().toLowerCase(Locale.ROOT).equals(key)) {
                 return type;

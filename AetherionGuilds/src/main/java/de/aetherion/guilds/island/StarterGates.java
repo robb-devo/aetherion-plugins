@@ -1,5 +1,6 @@
 package de.aetherion.guilds.island;
 
+import de.aetherion.core.exile.Say;
 import de.aetherion.guilds.service.PersonalIslandService;
 
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -37,11 +38,14 @@ import java.util.function.BiConsumer;
 /**
  * The island choice you can't miss: on the Isle Dock (where everyone without an island lands) three gates stand
  * in a row right in front of you, one per starter, each in its own colours with its icon turning in the arch and
- * its name in it at eye height. Walk through one and its claim screen opens (a second "yes" there, the choice is
- * for good). A banner behind them says what to do, and a newcomer gets it as a title once. Walking through is
- * caught as a crossing of the gate's plane (a sprint can't skip it), and whoever steps off the dock's edge is
- * set back on it instead of falling. Display entities only (nothing is built into the dock), never saved,
- * rebuilt when they go missing. Config {@code starter-gates.*}.
+ * its name on the lintel. Walking through one IS the choice: no screen, no second question, the island rises at
+ * once (whoever already owns an island is taken home by any gate). Only a step from the arrival side through the
+ * arch counts, so nobody claims by backing into a gate from behind. A header over the gates says what to do, and
+ * a newcomer gets it as a title once. Every text is fixed in place like a real sign (a copy on the back for
+ * whoever stands behind it), in the reader's language. Walking through is caught as a crossing of the gate's
+ * plane (a sprint can't skip it), and whoever steps off the dock's edge is set back on it instead of falling.
+ * Display entities only (nothing is built into the dock), never saved, rebuilt when they go missing. The dock
+ * stays free of wandering animals. Config {@code starter-gates.*}.
  */
 public final class StarterGates {
 
@@ -49,21 +53,24 @@ public final class StarterGates {
      * How each starter's gate looks: frame, cap, the glass in the arch, its line under the name, its sparks, the
      * floor in front of it (the column you walk through, and around it) and what stands at its feet.
      */
-    private record Look(String frame, String cap, Material glass, String color, String tagline, Particle.DustOptions dust,
-                        Material inlay, Material inlayRim, String foot) {
+    private record Look(String frame, String cap, Material glass, String color, String tagline, String taglineDe,
+                        Particle.DustOptions dust, Material inlay, Material inlayRim, String foot) {
     }
 
     private static final Map<String, Look> LOOKS = Map.of(
             "grove", new Look("minecraft:stripped_oak_log", "minecraft:flowering_azalea_leaves",
                     Material.LIME_STAINED_GLASS, "§a", "§7Mossy woods, a lily pond, quiet",
+                    "§7Mooswald, ein Seerosenteich, Ruhe",
                     new Particle.DustOptions(Color.fromRGB(0x9BE36B), 1.1f),
                     Material.MOSSY_STONE_BRICKS, Material.MOSS_BLOCK, "minecraft:flowering_azalea"),
             "quarry", new Look("minecraft:polished_deepslate", "minecraft:copper_block",
                     Material.ORANGE_STAINED_GLASS, "§6", "§7Rock and ore, made for long lines",
+                    "§7Fels und Erz, Platz für lange Bänder",
                     new Particle.DustOptions(Color.fromRGB(0xFFA54A), 1.1f),
                     Material.WAXED_CUT_COPPER, Material.POLISHED_DEEPSLATE, "minecraft:waxed_copper_bulb[lit=true]"),
             "tide", new Look("minecraft:smooth_sandstone", "minecraft:prismarine_bricks",
                     Material.LIGHT_BLUE_STAINED_GLASS, "§b", "§7Sand, a lagoon and a dock",
+                    "§7Sand, eine Lagune und ein Steg",
                     new Particle.DustOptions(Color.fromRGB(0x6FD3FF), 1.1f),
                     Material.SEA_LANTERN, Material.PRISMARINE_BRICKS, "minecraft:sea_lantern"));
 
@@ -76,8 +83,11 @@ public final class StarterGates {
 
     private final JavaPlugin plugin;
     private final PersonalIslandService personal;
-    private final BiConsumer<Player, StarterLayout> open;
+    private final BiConsumer<Player, StarterLayout> claim;
     private final List<Entity> entities = new ArrayList<>();
+    /** The signs' two language sets: each reader sees their own (never both). */
+    private final List<TextDisplay> english = new ArrayList<>();
+    private final List<TextDisplay> german = new ArrayList<>();
     private final List<ItemDisplay> icons = new ArrayList<>();
     /** Per gate: the light wave over its glass, with its full size (x, y, z in world axes). */
     private final List<BlockDisplay> waves = new ArrayList<>();
@@ -95,10 +105,11 @@ public final class StarterGates {
     private long ticks;
     private float spin;
 
-    public StarterGates(JavaPlugin plugin, PersonalIslandService personal, BiConsumer<Player, StarterLayout> open) {
+    /** {@code claim}: the player walked through this starter's gate and has no island yet. */
+    public StarterGates(JavaPlugin plugin, PersonalIslandService personal, BiConsumer<Player, StarterLayout> claim) {
         this.plugin = plugin;
         this.personal = personal;
-        this.open = open;
+        this.claim = claim;
         this.isle = new IsleDock(plugin);
     }
 
@@ -144,6 +155,12 @@ public final class StarterGates {
             return;
         }
         World world = dock.getWorld();
+        if (ticks % 25 == 0) {
+            signs(world);
+        }
+        if (ticks % 50 == 0) {
+            quiet(world);
+        }
         if (ticks % 10 == 0) {
             spin += (float) (Math.PI / 2);
             for (ItemDisplay icon : icons) {
@@ -174,17 +191,24 @@ public final class StarterGates {
                 player.setFallDistance(0f);
                 player.teleport(dock);
                 player.playSound(dock, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5f, 1.4f);
-                player.sendActionBar(LegacyComponentSerializer.legacySection()
-                        .deserialize("§7The dock ends there §8· §fwalk through a gate §7to choose your island"));
+                player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(Say.t(player,
+                        "§7The dock ends there §8· §fwalk through a gate §7to choose your island",
+                        "§7Hier endet der Steg §8· §fgeh durch ein Tor§7, um deine Insel zu wählen")));
                 continue;
             }
             if (flat > 30 * 30) {
                 last.remove(id);
                 continue;
             }
+            if (player.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                last.remove(id);
+                continue; // a camera, a staff member looking around: never a choice
+            }
             boolean owner = personal.byOwner(id) != null;
             if (!owner && greeted.add(id)) {
-                player.sendTitle("§6✦ Choose your island ✦", "§7Walk through one of the three gates", 10, 70, 20);
+                player.sendTitle(Say.t(player, "§6✦ Choose your island ✦", "§6✦ Wähle deine Insel ✦"),
+                        Say.t(player, "§7Walk through a gate: it's yours for good",
+                                "§7Geh durch ein Tor: sie gehört dir für immer"), 10, 80, 20);
                 player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.1f);
             }
             double[] prev = last.put(id, new double[]{at.getX(), at.getZ(), at.getY()});
@@ -192,7 +216,7 @@ public final class StarterGates {
             if (gate < 0 || now < cool.getOrDefault(id, 0L)) {
                 continue;
             }
-            cool.put(id, now + 1500L);
+            cool.put(id, now + 2500L);
             if (gate >= starters.size()) {
                 continue;
             }
@@ -201,15 +225,17 @@ public final class StarterGates {
             double[] c = gates.get(gate);
             world.spawnParticle(Particle.END_ROD, c[0], c[1] + 1.4, c[2], 18, 0.5, 0.9, 0.5, 0.02);
             player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1f, 1.2f);
-            if (owner) {
-                player.sendActionBar(LegacyComponentSerializer.legacySection()
-                        .deserialize("§7Your island is already yours §8· §f/island home"));
-                continue;
-            }
             if (look != null) {
                 world.spawnParticle(Particle.DUST, c[0], c[1] + 1.4, c[2], 24, 0.5, 0.9, 0.3, 0, look.dust());
             }
-            open.accept(player, starter);
+            if (owner) {
+                // every gate leads home once you have an island
+                last.remove(id);
+                personal.goHome(player);
+                continue;
+            }
+            last.remove(id);
+            claim.accept(player, starter);
         }
         for (int i = 0; i < gates.size() && i < starters.size(); i++) {
             Look look = LOOKS.get(starters.get(i).id());
@@ -256,8 +282,9 @@ public final class StarterGates {
     }
 
     /**
-     * Which gate (0..2) the step from {@code prev} to {@code at} went through (its plane crossed inside the
-     * opening, either way), or -1. A jump of more than 3 blocks is a teleport, not a step.
+     * Which gate (0..2) the step from {@code prev} to {@code at} went through: its plane crossed inside the opening
+     * from the arrival side (the choice is made by walking in, never by backing through from behind), or -1. A jump
+     * of more than 3 blocks is a teleport, not a step.
      */
     private int crossed(double[] prev, Location at) {
         if (prev == null) {
@@ -274,7 +301,7 @@ public final class StarterGates {
             double w0 = (prev[0] - c[0]) * forward[0] + (prev[1] - c[2]) * forward[1];
             double u1 = (at.getX() - c[0]) * right[0] + (at.getZ() - c[2]) * right[1];
             double w1 = (at.getX() - c[0]) * forward[0] + (at.getZ() - c[2]) * forward[1];
-            if ((w0 < 0.0) == (w1 < 0.0)) {
+            if (!(w0 < 0.0 && w1 >= 0.0)) {
                 continue;
             }
             double t = w0 / (w0 - w1);
@@ -339,12 +366,18 @@ public final class StarterGates {
             gates.add(new double[]{cx, y, cz});
             gate(world, starters.get(i), cx, y, cz, yaw);
         }
-        // the one line you need, right in front of you as you land: just over your head, so you walk under it
-        // toward the gates behind it
-        double bx = spot.getX() + 2.6 * forward[0];
-        double bz = spot.getZ() + 2.6 * forward[1];
-        text(world, new Location(world, bx, y + 2.25, bz),
-                "§6✦ §f§lChoose your island §6✦\n§7Walk through a gate §8· §7it's yours for good", 0.85f, true);
+        // the one line you need, as a header over the three gates: fixed like a sign, clear of every gate's own name,
+        // and nothing hangs between you and the gates
+        double hx = spot.getX() + (ahead - 0.36) * forward[0];
+        double hz = spot.getZ() + (ahead - 0.36) * forward[1];
+        sign(world, hx, y + HEIGHT + 1.62, hz, "§6✦ §f§lChoose your island §6✦", "§6✦ §f§lWähle deine Insel §6✦", 1.25f,
+                true);
+        sign(world, hx, y + HEIGHT + 1.3, hz, "§7Walk through a gate §8· §7it's yours for good",
+                "§7Geh durch ein Tor §8· §7sie gehört dir für immer", 0.72f, true);
+        double kx = spot.getX() + (ahead + 0.36) * forward[0];
+        double kz = spot.getZ() + (ahead + 0.36) * forward[1];
+        sign(world, kx, y + HEIGHT + 1.62, kz, "§6✦ §f§lIsle Dock §6✦", "§6✦ §f§lInsel-Steg §6✦", 1.25f, false);
+        signs(world);
     }
 
     private void gate(World world, StarterLayout starter, double cx, double y, double cz, float yaw) {
@@ -385,11 +418,13 @@ public final class StarterGates {
         });
         icons.add(item);
         entities.add(item);
-        // its name on the lintel, toward the dock spawn, on a dark plate so it reads against the sky
-        double lx = -0.4 * forward[0];
-        double lz = -0.4 * forward[1];
-        text(world, new Location(world, cx + lx, y + HEIGHT + 0.06, cz + lz), look.color() + "§l" + starter.display()
-                + "\n" + look.tagline(), 0.7f, true);
+        // its name plate, fixed flat on the lintel toward the dock spawn (dark, so it reads against the sky), and
+        // again on the back for whoever stands behind the gates
+        String name = look.color() + "§l" + starter.display();
+        sign(world, cx - 0.36 * forward[0], y + HEIGHT + 0.03, cz - 0.36 * forward[1], name + "\n" + look.tagline(),
+                name + "\n" + look.taglineDe(), 0.7f, true);
+        sign(world, cx + 0.36 * forward[0], y + HEIGHT + 0.03, cz + 0.36 * forward[1], name + "\n" + look.tagline(),
+                name + "\n" + look.taglineDe(), 0.7f, false);
     }
 
     /** The wave: a sheet of white glass just in front of the gate's glass (sized and moved by {@link #wave()}). */
@@ -436,23 +471,93 @@ public final class StarterGates {
         entities.add(display);
     }
 
-    private void text(World world, Location at, String text, float scale, boolean background) {
+    /**
+     * A sign: text fixed in place like a painted board (it never turns with the reader, so nothing swings into a
+     * gate's frame at an angle), once in English and once in German at the same spot. {@code front}: it faces the
+     * dock spawn; else it faces away from it (the back of the gates). Each reader is shown their language's copy.
+     */
+    private void sign(World world, double x, double y, double z, String en, String de, float scale, boolean front) {
+        // a text display reads from the side its yaw looks at: toward the spawn is against "forward"
+        double dx = front ? -forward[0] : forward[0];
+        double dz = front ? -forward[1] : forward[1];
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        english.add(text(world, new Location(world, x, y, z, yaw, 0f), en, scale));
+        german.add(text(world, new Location(world, x, y, z, yaw, 0f), de, scale));
+    }
+
+    private TextDisplay text(World world, Location at, String text, float scale) {
         TextDisplay display = world.spawn(at, TextDisplay.class, d -> {
             d.text(LegacyComponentSerializer.legacySection().deserialize(text));
-            // upright and turning to whoever reads it (never tilted back the way a CENTER billboard leans)
-            d.setBillboard(Display.Billboard.VERTICAL);
+            d.setBillboard(Display.Billboard.FIXED);
             d.setAlignment(TextDisplay.TextAlignment.CENTER);
             d.setDefaultBackground(false);
-            d.setBackgroundColor(background ? Color.fromARGB(170, 16, 13, 22) : Color.fromARGB(0, 0, 0, 0));
-            d.setLineWidth(260);
-            d.setShadowed(!background);
+            d.setBackgroundColor(Color.fromARGB(190, 16, 13, 22));
+            d.setLineWidth(300);
+            d.setShadowed(false);
             d.setBrightness(new Display.Brightness(15, 15));
             d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, scale),
                     new AxisAngle4f()));
+            d.setVisibleByDefault(false);
             d.setPersistent(false);
             d.addScoreboardTag(TAG);
         });
         entities.add(display);
+        return display;
+    }
+
+    /** Every reader on the dock sees the signs in their own language (checked about once a second). */
+    private void signs(World world) {
+        for (Player player : world.getPlayers()) {
+            boolean de = Say.german(player);
+            for (TextDisplay display : german) {
+                show(player, display, de);
+            }
+            for (TextDisplay display : english) {
+                show(player, display, !de);
+            }
+        }
+    }
+
+    private void show(Player player, TextDisplay display, boolean visible) {
+        if (!display.isValid()) {
+            return;
+        }
+        if (visible && !player.canSee(display)) {
+            player.showEntity(plugin, display);
+        } else if (!visible && player.canSee(display)) {
+            player.hideEntity(plugin, display);
+        }
+    }
+
+    private boolean quietAsked;
+
+    /**
+     * The dock is a place to choose in peace: no ambient wildlife is put there (Items is asked once, if it knows
+     * how), and whatever wandered or was spawned in anyway is taken off it. Named pets and anything a plugin
+     * tagged as its own NPC stay.
+     */
+    private void quiet(World world) {
+        if (!quietAsked) {
+            quietAsked = true;
+            try {
+                Class.forName("de.aetherion.items.world.WildlifeLooks").getMethod("quietWorld", String.class)
+                        .invoke(null, world.getName());
+            } catch (ReflectiveOperationException | LinkageError ignored) {
+                // an older Items: the sweep below keeps the dock clear
+            }
+        }
+        for (Entity entity : world.getNearbyEntities(dock, 40, 24, 40)) {
+            if (!(entity instanceof org.bukkit.entity.Mob mob) || mob.getScoreboardTags().contains("NPC")) {
+                continue;
+            }
+            if (mob instanceof org.bukkit.entity.Tameable pet && pet.isTamed() && pet.getOwnerUniqueId() != null) {
+                continue; // somebody's own animal (a camel counts as tame from birth: only an owner makes it a pet)
+            }
+            if (mob.getPersistentDataContainer().has(de.aetherion.core.AetherKeys.PET_ENTITY)) {
+                continue; // a companion that came along with its owner (wild pets are kept off the dock by AetherMobs)
+            }
+            mob.remove();
+        }
     }
 
     public void forgetPlayer(UUID id) {
@@ -467,6 +572,8 @@ public final class StarterGates {
             entity.remove();
         }
         entities.clear();
+        english.clear();
+        german.clear();
         icons.clear();
         waves.clear();
         waveSizes.clear();

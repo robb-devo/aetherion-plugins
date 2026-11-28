@@ -66,60 +66,30 @@ public final class StarterSelectMenu implements MenuKit.Menu {
         player.playSound(player.getLocation(), open ? Sound.BLOCK_AMETHYST_BLOCK_CHIME : Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.2f);
     }
 
-    private static final int GATE_CLAIM = 11;
-    private static final int GATE_INFO = 13;
-    private static final int GATE_BACK = 15;
-
     /**
-     * Walked through a starter's gate on the Isle Dock: just that one, with a plain yes / not this one (the
-     * choice is for good, so it always asks once). Locked before Level 20: the same screen says when it opens.
+     * Walked through a starter's gate on the Isle Dock: that is the choice, there is no second question. The island
+     * rises at once. Before Level 20 nothing is claimed: the player is told when the island opens.
      */
-    public void openGate(Player player, StarterLayout starter) {
+    public void claimGate(Player player, StarterLayout starter) {
         if (personal.byOwner(player.getUniqueId()) != null) {
-            player.sendMessage("§7Your island is already claimed. §f/island home");
+            personal.goHome(player);
             return;
         }
-        boolean open = AetherionItemsAccess.islandUnlocked(player);
-        Inventory inventory = MenuKit.create(this, starter, 27, "§8✦ " + starter.display());
-        List<String> lore = new ArrayList<>(starter.lore());
-        lore.add("");
-        lore.add("§8The starter can't be swapped later.");
-        inventory.setItem(GATE_INFO, MenuKit.glow(MenuKit.named(starter.icon(), "§e§l" + starter.display(), lore)));
-        if (open) {
-            inventory.setItem(GATE_CLAIM, MenuKit.glow(MenuKit.named(Material.LIME_STAINED_GLASS_PANE,
-                    "§a§l✔ Make this my island", "§7Your " + starter.display() + " rises now", "§7and you land on it.")));
-        } else {
-            inventory.setItem(GATE_CLAIM, MenuKit.named(Material.GRAY_STAINED_GLASS_PANE, "§7Not open yet",
-                    AetherionItemsAccess.islandHint(), "", "§7This is what waits for you."));
+        if (!AetherionItemsAccess.islandUnlocked(player)) {
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.7f, 1f);
+            player.sendTitle(de.aetherion.core.exile.Say.t(player, "§7Not yet", "§7Noch nicht"),
+                    AetherionItemsAccess.islandHint(), 5, 60, 15);
+            return;
         }
-        inventory.setItem(GATE_BACK, MenuKit.named(Material.RED_STAINED_GLASS_PANE, "§c✖ Not this one",
-                "§7Step back and look at the others."));
-        ChromePage.open(player, inventory, ChromePage.Theme.ISLAND);
-        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.3f);
+        player.closeInventory();
+        PersonalIsland island = personal.createStarter(player, starter);
+        if (island != null) {
+            unlock.claim(player, island, starter);
+        }
     }
 
     @Override
     public void click(Player player, MenuKit.Holder holder, int slot, ClickType click) {
-        if (holder.context() instanceof StarterLayout starter) {
-            if (slot == GATE_BACK) {
-                player.closeInventory();
-                return;
-            }
-            if (slot != GATE_CLAIM) {
-                return;
-            }
-            if (!AetherionItemsAccess.islandUnlocked(player)) {
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.7f, 1f);
-                player.sendMessage(AetherionItemsAccess.islandHint());
-                return;
-            }
-            player.closeInventory();
-            PersonalIsland island = personal.createStarter(player, starter);
-            if (island != null) {
-                unlock.claim(player, island, starter);
-            }
-            return;
-        }
         if (slot == CLOSE) {
             player.closeInventory();
             return;
