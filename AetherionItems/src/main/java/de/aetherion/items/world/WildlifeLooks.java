@@ -176,6 +176,19 @@ public final class WildlifeLooks implements Listener {
 
     /** Soft cap so animal anchors + ambient wildlife do not pack a chunk. */
     public static final int MAX_ANIMALS_PER_CHUNK = 3;
+
+    /** Worlds whose own plugin keeps them free of ambient wildlife (lower case names). */
+    private static final java.util.Set<String> QUIET_WORLDS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * No ambient wildlife is put around players in this world from now on (the tutorial isle: nothing may wander
+     * into a lesson, and nothing there is hunted). Animal zones and whatever the world's own plugin spawns stay.
+     */
+    public static void quietWorld(String worldName) {
+        if (worldName != null && !worldName.isBlank()) {
+            QUIET_WORLDS.add(worldName.toLowerCase(Locale.ROOT));
+        }
+    }
     /** Ambient wildlife soft cap in a player's nearby bubble. */
     public static final int AMBIENT_NEARBY_CAP = 4;
 
@@ -1716,7 +1729,8 @@ public final class WildlifeLooks implements Listener {
             return false;
         }
         String name = world.getName().toLowerCase(Locale.ROOT);
-        return !name.startsWith("aedun_")
+        return !QUIET_WORLDS.contains(name)
+                && !name.startsWith("aedun_")
                 && !name.startsWith("ae_dun")
                 && !name.equals("aether_guilds")
                 && !name.startsWith("aether_guild")

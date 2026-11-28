@@ -235,7 +235,7 @@ public final class Director {
             case TALK_ANSEL_AGAIN -> Txt.t(p, "Talk to §cAnsel", "Sprich mit §cAnsel");
             case SOCKET -> Txt.t(p, "Put a booster into your sword §7(anvil)", "Setz einen Booster ins Schwert §7(Amboss)");
             case TALK_HILDE -> Txt.t(p, "Climb to §aHilde §fat the Old Watch", "Steig zu §aHilde §fan der Alten Wacht");
-            case TALENT -> Txt.t(p, "Journal: put a §eTalent §finto the free slot", "Journal: Setz ein §eTalent §fin den freien Platz");
+            case TALENT -> Txt.t(p, "Journal, then §eSkills§f: click a talent", "Journal, dann §eSkills§f: Klick ein Talent an");
             case DRILL_PARRY -> Txt.t(p, "Parry the §eyellow §fjab: press §eF", "Pariere den §egelben §fStoß: drück §eF");
             case DRILL_ROLL -> Txt.t(p, "Roll through the §cred §fslam: §eSneak + Jump", "Rolle durch den §croten §fHieb: §eSchleichen + Springen");
             case DRILL_FINISHER -> Txt.t(p, "Land three fully charged hits", "Lande drei voll aufgeladene Treffer");
@@ -396,8 +396,8 @@ public final class Director {
                     "Rechtsklick auf den Amboss. Schwert aufs Siegel, einen Booster in einen Platz darunter.");
             case TALK_HILDE -> Txt.t(p, "The broken tower on the hill east of the village. Up the path.",
                     "Der zerbrochene Turm auf dem Hügel östlich vom Dorf. Den Pfad hinauf.");
-            case TALENT -> Txt.t(p, "Journal (right-click the book), then Talents. Click one, it goes into your free slot.",
-                    "Journal (Rechtsklick aufs Buch), dann Talente. Klick eins an, es wandert in deinen freien Platz.");
+            case TALENT -> Txt.t(p, "Journal (right-click the book), then Skills. The three talents sit in the bottom row: click one, it goes into your free slot.",
+                    "Journal (Rechtsklick aufs Buch), dann Skills. Die drei Talente stehen in der untersten Reihe: Klick eins an, es wandert in deinen freien Platz.");
             case DRILL_PARRY -> Txt.t(p, "Wait for the yellow '!' over the golem, then press F (swap hands).",
                     "Warte auf das gelbe '!' über dem Golem, dann drück F (Hand wechseln).");
             case DRILL_ROLL -> Txt.t(p, "Red '!!' means roll: hold Sneak and jump when it turns white.",
@@ -935,18 +935,18 @@ public final class Director {
     private void hilde(Player p, Session s) {
         switch (s.step) {
             case TALK_HILDE -> {
-                unlock(p, "SKILLS", Txt.t(p, "Talents", "Talente"), Txt.t(p, "A page in your Journal", "Eine Seite in deinem Journal"));
+                unlock(p, "SKILLS", Txt.t(p, "Skills and talents", "Skills und Talente"), Txt.t(p, "A page in your Journal", "Eine Seite in deinem Journal"));
                 enter(p, s, Step.TALENT);
                 say(p, Cast.HILDE, List.of(
                         Txt.t(p, "Recruit {player}. Armour on, blade at hand. Good. I'm Hilde.",
                                 "Rekrut {player}. Rüstung an, Klinge zur Hand. Gut. Ich bin Hilde."),
                         Txt.t(p, "Before we fight: talents. Small tricks you choose for yourself. More open as your skills level up.",
                                 "Bevor wir kämpfen: Talente. Kleine Kniffe, die du dir selbst aussuchst. Mit jedem Skill-Level werden es mehr."),
-                        Txt.t(p, "Open your Journal, go to Talents, and put one into your free slot.",
-                                "Öffne dein Journal, geh zu Talente und setz eins in deinen freien Platz.")), List.of());
+                        Txt.t(p, "Open your Journal and click Skills. In the bottom row are three talents: click one, and it sits in your free slot.",
+                                "Öffne dein Journal und klick auf Skills. In der untersten Reihe stehen drei Talente: Klick eins an, dann sitzt es in deinem freien Platz.")), List.of());
             }
-            case TALENT -> say(p, Cast.HILDE, List.of(Txt.t(p, "Journal, Talents, pick one. It goes into your free slot.",
-                    "Journal, Talente, eins aussuchen. Es wandert in deinen freien Platz.")), List.of());
+            case TALENT -> say(p, Cast.HILDE, List.of(Txt.t(p, "Journal, Skills, then one of the three talents in the bottom row. It goes into your free slot.",
+                    "Journal, Skills, dann eins der drei Talente in der untersten Reihe. Es wandert in deinen freien Platz.")), List.of());
             case DRILL_PARRY -> {
                 if (!hasGolem(p)) {
                     spawnGolem(p);
@@ -999,6 +999,24 @@ public final class Director {
                     }
                 }, go), new TalkAccess.Reply(stay, NamedTextColor.GRAY, () -> say(p, Cast.WIM, List.of(Txt.t(p,
                         "Take your time. I'm not going anywhere without you.", "Lass dir Zeit. Ohne dich fahre ich nirgendwohin.")), List.of()), stay)));
+    }
+
+    /**
+     * The isle stands in for the harbour's first quests, so the Journal's path must not send a newcomer to people
+     * who are not here ("Bring Egon ten oak logs"): while a lesson runs, those count as done as far as the isle
+     * has taught them. The real files are written when the ferry casts off ({@link #graduate}).
+     */
+    boolean stoodIn(Player p, String questId) {
+        Session s = of(p);
+        if (s == null || questId == null) {
+            return false;
+        }
+        return switch (questId.toLowerCase(java.util.Locale.ROOT)) {
+            // "Arrived": the first tools and the Journal are the isle's own
+            case "gather_wood" -> true;
+            case "lesson_boost" -> s.step.ordinal() > Step.SOCKET.ordinal();
+            default -> false;
+        };
     }
 
     // ------------------------------------------------------------------ the short way for those who know it

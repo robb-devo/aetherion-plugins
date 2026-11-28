@@ -94,6 +94,12 @@ public final class Isle {
             world.setSpawnLocation(arrival);
         }
         places.register();
+        try {
+            // Items puts huntable wildlife around every player in an overworld: not here, nothing wanders into a lesson
+            de.aetherion.items.world.WildlifeLooks.quietWorld(world.getName());
+        } catch (LinkageError ignored) {
+            // an Items build without the switch: the animals are a nuisance, not a danger
+        }
         skins.onSigned(cast::redress);
         Bukkit.getPluginManager().registerEvents(rules, plugin);
         Bukkit.getPluginManager().registerEvents(boss, plugin);

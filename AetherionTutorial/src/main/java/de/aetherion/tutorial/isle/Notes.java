@@ -20,12 +20,14 @@ import java.util.UUID;
  * <p>Every gameplay plugin already tells Quests what a player just did ("opened the Journal", "crafted a Simple
  * Pickaxe", "broke stone", "parried"). The lessons need exactly those reports, so the isle wraps the registered
  * service instead of adding hooks to five plugins: each call is passed on unchanged and also shown to the
- * {@link Director}. Three answers are the isle's own while a player is in a lesson:
+ * {@link Director}. Four answers are the isle's own while a player is in a lesson:
  * <ul>
  *     <li>{@code canChopTrees}: true from the felling lesson on (the harbour's Forager is not here to allow it);</li>
  *     <li>{@code isQuestActive("lesson_combat")}: true during the drill, because the combat kit only reports clean
  *     moves while that quest runs;</li>
- *     <li>the Journal's goal list and the HUD radar point at the current lesson.</li>
+ *     <li>the Journal's goal list and the HUD radar point at the current lesson;</li>
+ *     <li>{@code isQuestCompleted}: the harbour quests the isle stands in for count as done as far as it has taught
+ *     them, so the Journal's path does not point at people who are not here.</li>
  * </ul>
  */
 final class Notes implements QuestProgressAccess {
@@ -119,12 +121,12 @@ final class Notes implements QuestProgressAccess {
         return target != null ? target : inner.questTarget(player);
     }
 
-    // ------------------------------------------------------------------ passed straight on
-
     @Override
     public boolean isQuestCompleted(Player player, String questId) {
-        return inner.isQuestCompleted(player, questId);
+        return director.stoodIn(player, questId) || inner.isQuestCompleted(player, questId);
     }
+
+    // ------------------------------------------------------------------ passed straight on
 
     @Override
     public boolean shouldGuidePetsEquip(Player player) {
