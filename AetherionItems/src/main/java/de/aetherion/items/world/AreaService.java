@@ -30,6 +30,29 @@ public final class AreaService {
 
     public static final int RADIUS = 50;
 
+    /**
+     * Names for places no Area Tool marks: a plugin that owns a whole world (the tutorial isle) names its own
+     * spots. Asked only where this service would say "Wilderness"; null = no name here.
+     */
+    private static volatile java.util.function.Function<Location, String> placeNamer;
+
+    public static void placeNamer(java.util.function.Function<Location, String> namer) {
+        placeNamer = namer;
+    }
+
+    private static String namedByOwner(Location location) {
+        java.util.function.Function<Location, String> namer = placeNamer;
+        if (namer == null || location == null || location.getWorld() == null) {
+            return null;
+        }
+        try {
+            String name = namer.apply(location);
+            return name == null || name.isBlank() ? null : name;
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
     private final JavaPlugin plugin;
     private final File file;
     private final Map<UUID, AreaZone> zones = new ConcurrentHashMap<>();
@@ -239,6 +262,10 @@ public final class AreaService {
         }
         if (location == null || location.getWorld() == null) {
             return "Wilderness";
+        }
+        String owned = namedByOwner(location);
+        if (owned != null) {
+            return owned;
         }
         String world = location.getWorld().getName();
         if (world.startsWith("aedun_")) {

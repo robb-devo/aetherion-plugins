@@ -11,7 +11,8 @@ import java.util.Locale;
  * {@code network.this-server} is blank and Velocity has not answered GetServer yet.
  *
  * <p>Roles (fixed): hub = lobby + pit, mmo-r = main world, mmo-d = dungeons only,
- * mmo-c = exile (story / ferry), mmo-i = private + guild islands only, mmo-m = the mines only.
+ * mmo-c = exile (story / ferry), mmo-i = private + guild islands only, mmo-m = the mines only,
+ * mmo-t = Morningbell, the tutorial isle (a new character is born there and sails to mmo-r).
  */
 public final class ServerNames {
 
@@ -24,6 +25,8 @@ public final class ServerNames {
     public static final String ISLANDS = "mmo-i";
     /** The mines ({@code aether_veins} Amethyst Mine and what grows around it). Never islands, never dungeons. */
     public static final String MINES = "mmo-m";
+    /** Morningbell, the tutorial isle ({@code morningbell}). A new character starts here and leaves once, to the main world. */
+    public static final String TUTORIAL = "mmo-t";
     /**
      * Historical alias — same Velocity backend as {@link #EXILE}.
      * Colosseum combat itself lives on the main world, not this backend.
@@ -39,7 +42,7 @@ public final class ServerNames {
     public static final int PORT_COLOSSEUM = PORT_EXILE;
 
     /** Backends that carry a character between each other (transfer v6). Hub is join + pit only. */
-    public static final List<String> CHARACTER_BACKENDS = List.of(MAIN, DUNGEON, EXILE, ISLANDS, MINES);
+    public static final List<String> CHARACTER_BACKENDS = List.of(MAIN, DUNGEON, EXILE, ISLANDS, MINES, TUTORIAL);
 
     private ServerNames() {
     }
@@ -72,6 +75,10 @@ public final class ServerNames {
         return is(MINES, name);
     }
 
+    public static boolean isTutorial(String name) {
+        return is(TUTORIAL, name);
+    }
+
     public static boolean isDungeon(String name) {
         return is(DUNGEON, name);
     }
@@ -100,6 +107,7 @@ public final class ServerNames {
             case EXILE -> "the Exile shore";
             case ISLANDS -> "the Isles";
             case MINES -> "the Mines";
+            case TUTORIAL -> "Morningbell";
             case HUB -> "the Harbour Lobby";
             default -> "Aetherion";
         };

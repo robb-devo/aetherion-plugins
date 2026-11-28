@@ -30,6 +30,7 @@
         <module>AetherionBeta</module>
         <module>AetherionStressBots</module>
         <module>AetherionGnomon</module>
+        <module>AetherionTutorial</module>
     </modules>
 
     <properties>

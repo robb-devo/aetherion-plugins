@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 
@@ -87,6 +88,7 @@ public final class CharacterHost implements Listener, CharacterTransport {
     private final Set<UUID> packedOnStop = ConcurrentHashMap.newKeySet();
     private volatile ToIntFunction<Player> runFloor = player -> 0;
     private volatile File mainWorldFolder;
+    private volatile Predicate<UUID> guestPass = id -> false;
 
     /**
      * Builds a host; the caller registers {@link #guard()} and the host itself as listeners of {@code plugin}.
@@ -180,9 +182,30 @@ public final class CharacterHost implements Listener, CharacterTransport {
         return guard.phase(id) == CharacterGuard.Phase.WAITING;
     }
 
-    /** Let in on a backend that does not hold their character (holder unreachable). */
+    /** Let in on a backend that does not hold their character (holder unreachable, or a {@link #guestPass}). */
     public boolean isGuest(UUID id) {
         return id != null && guests.contains(id);
+    }
+
+    /**
+     * Visitors this backend lets in <b>without</b> their character, on purpose (the tutorial isle: somebody who
+     * already has a character walks the lessons again). For whoever passes, the join neither stages nor applies
+     * the pending snapshot and never touches the ledger, so the character stays exactly where it is; the visit
+     * starts with empty pockets and nothing done here is packed (same rules as an out-of-reach guest).
+     *
+     * <p>The test also runs on the async pre-login thread: it must only read.
+     */
+    public void guestPass(Predicate<UUID> pass) {
+        this.guestPass = pass == null ? id -> false : pass;
+    }
+
+    private boolean hasGuestPass(UUID id) {
+        try {
+            return id != null && guestPass.test(id);
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("[Transfer] Guest pass check failed for " + id + ": " + ex.getMessage());
+            return false;
+        }
     }
 
     @Override
@@ -289,6 +312,10 @@ public final class CharacterHost implements Listener, CharacterTransport {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
         if (!settings.sync() || event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+            return;
+        }
+        if (hasGuestPass(event.getUniqueId())) {
+            // comes without the character: nothing of it is laid out here
             return;
         }
         store.stageBeforeLogin(event.getUniqueId(), mainWorldFolder());
@@ -399,6 +426,15 @@ public final class CharacterHost implements Listener, CharacterTransport {
      */
     public void arrive(Player player, Consumer<CharacterStore.ApplyResult> after) {
         if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (hasGuestPass(player.getUniqueId())) {
+            // A visit without the character: the pending snapshot and the ledger stay as they are.
+            if (guests.add(player.getUniqueId())) {
+                store.stashLiveForGuest(player);
+                plugin.getLogger().info("[Transfer] " + player.getName() + " is here on a guest pass — character stays with "
+                        + store.ledger().holder(player.getUniqueId()));
+            }
             return;
         }
         CharacterStore.ApplyResult result = store.applyOnJoin(player);

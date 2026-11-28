@@ -79,6 +79,9 @@ import java.util.regex.Pattern;
  * <p>Visible to the owner only, never saved, tagged like the talk UI so the janitors clean up after a crash.
  * Off by default ({@code hud-cards.enabled}). One card at a time per player, the rest wait their turn; a big card
  * holds new talk lines back until it is gone, and a left-click (after a moment) sends it away early.
+ *
+ * <p>{@code hud-cards.big-stay}: a big card stays until the player sends it away (left-click or sneak) and says so
+ * in its last line; it only leaves by itself after three minutes, so a forgotten card never blocks a talk for good.
  */
 public final class HudCards implements Listener {
 
@@ -183,6 +186,10 @@ public final class HudCards implements Listener {
     private float toastScale;
     private int bigHold;
     private int toastHold;
+    /** Big cards wait for the player (left-click or sneak) instead of running on a timer. */
+    private boolean bigStay;
+    /** A big card that nobody sends away still leaves after this long. */
+    private static final int STAY_CAP = 20 * 180;
 
     private static final class Motion {
         Vector last;
@@ -309,7 +316,8 @@ public final class HudCards implements Listener {
         toastScale = (float) clamp(cfg.getDouble("hud-cards.toast-scale", 0.24), 0.08, 0.8);
         bigHold = (int) clamp(cfg.getInt("hud-cards.big-hold-ticks", 80), 30, 400);
         toastHold = (int) clamp(cfg.getInt("hud-cards.toast-hold-ticks", 56), 20, 300);
-        plugin.getLogger().info("Screen cards " + (enabled ? "on" : "off") + ".");
+        bigStay = cfg.getBoolean("hud-cards.big-stay", false);
+        plugin.getLogger().info("Screen cards " + (enabled ? "on" : "off") + (bigStay ? ", big cards stay until closed" : "") + ".");
     }
 
     public void shutdown() {
@@ -346,6 +354,9 @@ public final class HudCards implements Listener {
             return false;
         }
         card = wrapped(journal(card));
+        if (bigStay && card.kind() == Kind.BIG) {
+            card = withCloseHint(player, card);
+        }
         UUID id = player.getUniqueId();
         queues.computeIfAbsent(id, k -> new ArrayDeque<>()).addLast(card);
         Shown now = active.get(id);
@@ -354,6 +365,14 @@ public final class HudCards implements Listener {
             now.endAt = Math.min(now.endAt, tick + 1);
         }
         return true;
+    }
+
+    /** Stay mode: the card's last line says how it goes away. */
+    private static Card withCloseHint(Player player, Card c) {
+        String hint = de.aetherion.core.exile.Say.t(player, "§8Sneak or left-click to close",
+                "§8Schleichen oder Linksklick: schließen");
+        String footer = c.footer() == null || c.footer().isBlank() ? hint : c.footer() + "\n" + hint;
+        return new Card(c.kind(), c.header(), c.title(), c.accent(), c.rows(), footer, c.summary(), c.emblem());
     }
 
     /** While the journal is on, Manager and Nether Star read as the journal, texts other plugins hand in included. */
@@ -859,7 +878,8 @@ public final class HudCards implements Listener {
                 }
             }
         }
-        if (sh.bar != null && t >= 6 && (t - 6) % 5 == 0) {
+        boolean stays = bigStay && sh.card.kind() == Kind.BIG;
+        if (sh.bar != null && !stays && t >= 6 && (t - 6) % 5 == 0) {
             long total = Math.max(1L, sh.endAt - (sh.born + 6L));
             sh.bar.stretch = (float) clamp((sh.endAt - tick) / (double) total, 0.0, 1.0);
             move(sh, sh.bar, 5);
@@ -893,7 +913,7 @@ public final class HudCards implements Listener {
         }
         if (big) {
             sh.revealEnd = 12L + sh.tiles.size() * 5L + sh.rows * 4L + 4L;
-            sh.endAt = tick + sh.revealEnd + bigHold;
+            sh.endAt = tick + sh.revealEnd + (bigStay ? STAY_CAP : bigHold);
             player.playSound(player.getLocation(), Sound.UI_TOAST_IN, SoundCategory.MASTER, 0.9f, 1.0f);
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.75f, 1.05f);
         } else {
@@ -1496,6 +1516,14 @@ public final class HudCards implements Listener {
         }
         if (dismiss(event.getPlayer())) {
             clickUsed.put(event.getPlayer().getUniqueId(), tick);
+        }
+    }
+
+    /** Stay mode: sneaking sends a big card away too. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSneak(org.bukkit.event.player.PlayerToggleSneakEvent event) {
+        if (bigStay && event.isSneaking()) {
+            dismiss(event.getPlayer());
         }
     }
 

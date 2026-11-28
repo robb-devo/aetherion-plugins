@@ -115,9 +115,10 @@ public final class AetherionCore extends JavaPlugin {
         }
         exile = new ExileLink(this, link, snapshots);
         exileHost = new ExileHost(this, exile, snapshots);
-        if (!exile.isExileServer() && !ServerNames.isMines(here)) {
+        if (!exile.isExileServer() && !ServerNames.isMines(here) && !ServerNames.isTutorial(here)) {
             // The Veil Quay islet (ferry departure) lives on the main world; idle until /exile setquay placed it.
-            // The mine server carries mmo-r's config copy, so it must never build the islet into its own world.
+            // The mine server carries mmo-r's config copy, so it must never build the islet into its own world;
+            // the tutorial isle has a ferry of its own and no way to the exile.
             exileQuay = new de.aetherion.core.exile.ExileQuay(this, exile);
         }
 
